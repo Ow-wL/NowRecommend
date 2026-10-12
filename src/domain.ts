@@ -2,7 +2,7 @@ import { items, type Category, type Item } from './data';
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[] };
 export type Store = { version: 1; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[] };
@@ -68,7 +68,7 @@ export function effectiveConditions(editor: ConditionEditor): Conditions {
 export function changeText(session: Session, raw: string): Session {
   const old = editorFor(session);
   const editor = old.parsedRaw === raw ? old : { ...old, parsedRaw: raw, automatic: parseConditions(raw, session.category), removedTags: [], removedExcluded: [] };
-  return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0 };
+  return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: old.parsedRaw === raw ? session.currentIds : undefined };
 }
 export function toggleCondition(session: Session, value: string, exclusion = false): Session {
   const editor = structuredClone(editorFor(session));
@@ -81,11 +81,11 @@ export function toggleCondition(session: Session, value: string, exclusion = fal
     editor.manual[key] = [...new Set([...editor.manual[key], value])];
     editor[removed] = editor[removed].filter(t => t !== value);
   }
-  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0 };
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: undefined };
 }
 export function changeBudget(session: Session, input: string): Session {
   const editor = { ...editorFor(session), budgetInput: input };
-  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0 };
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: undefined };
 }
 export function conditionConflicts(session: Session): string[] {
   const conflicts = session.conditions.tags.filter(t => session.conditions.excluded.includes(t));
@@ -94,22 +94,36 @@ export function conditionConflicts(session: Session): string[] {
   return [...new Set(conflicts)];
 }
 export function recommend(session: Session, profile: Profile): Recommendation[] {
-  const { category, conditions, excludedIds, revision } = session;
+  const { category, conditions } = session;
   const preferred = new Set([...profile.tags, ...items.filter(i => profile.selected.includes(i.id)).flatMap(i => i.tags)]);
-  const candidates = items.filter(i => i.category === category && !profile.disliked.includes(i.id) && !excludedIds.includes(i.id)
-    && !conditions.excluded.some(t => [...i.tags, ...i.ingredients].includes(t))
-    && (conditions.maxPrice === null || (i.cost ?? 0) <= conditions.maxPrice));
+  const candidates = eligibleCandidates(session, profile);
   const score = (i: Item) => i.tags.filter(t => preferred.has(t)).length + 2 * i.tags.filter(t => conditions.tags.includes(t)).length;
   const ranked = candidates.sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id));
-  // Keep context matches ahead of unrelated candidates; rotate among eligible matches for variety.
-  const matched = ranked.filter(i => !conditions.tags.length || i.tags.some(t => conditions.tags.includes(t)));
-  const pool = matched.length ? matched : ranked;
-  const offset = pool.length ? (revision * (category === 'food' ? 3 : 5)) % pool.length : 0;
-  const rotated = [...pool.slice(offset), ...pool.slice(0, offset)];
-  return rotated.slice(0, category === 'food' ? 3 : 5).map(item => {
+  const seen = new Set(session.seenIds || []);
+  const pool = session.currentIds ? session.currentIds.map(id => ranked.find(i => i.id === id)).filter((i): i is Item => !!i) : [...ranked.filter(i => !seen.has(i.id)), ...ranked.filter(i => seen.has(i.id))];
+  return pool.slice(0, category === 'food' ? 3 : 5).map(item => {
     const taste = item.tags.filter(t => preferred.has(t)).slice(0, 2);
     const context = item.tags.filter(t => conditions.tags.includes(t)).slice(0, 2);
     return { item, tasteReason: taste.length ? `좋아하는 ${taste.join(' · ')}에 가까워요` : '새로운 취향을 발견해보세요',
       contextReason: context.length ? `이번에 고른 ${context.join(' · ')}에 어울려요` : '제외 조건을 지키는 새로운 선택이에요' };
   });
+}
+
+export function eligibleCandidates(session: Session, profile: Profile): Item[] {
+  return items.filter(i => i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
+    && !session.conditions.excluded.some(t => [...i.tags, ...i.ingredients].includes(t))
+    && (session.conditions.maxPrice === null || typeof i.cost === 'number' && i.cost <= session.conditions.maxPrice));
+}
+export function nextBatch(session: Session, profile: Profile): Session {
+  const before = new Set(session.seenIds || []);
+  const currentIds = recommend({ ...session, currentIds: undefined }, profile).map(r => r.item.id);
+  return { ...session, currentIds, seenIds: [...new Set([...before, ...currentIds])], batchNewCount: currentIds.filter(id => !before.has(id)).length };
+}
+export function candidateInfo(session: Session, profile: Profile) {
+  const count = eligibleCandidates(session, profile).length;
+  const beforeBudget = eligibleCandidates({ ...session, conditions: { ...session.conditions, maxPrice: null } }, profile).length;
+  const max = session.conditions.maxPrice;
+  const budgets = [...new Set(items.filter(i => i.category === 'food' && typeof i.cost === 'number' && max !== null && i.cost > max).map(i => i.cost!))].sort((a,b) => a-b);
+  const suggestions = session.category === 'food' && max !== null ? budgets.map(price => ({ price, gain: eligibleCandidates({ ...session, conditions: { ...session.conditions, maxPrice: price } }, profile).length - count })).filter(s => s.gain > 0).slice(0,3) : [];
+  return { count, budgetRemoved: beforeBudget - count, suggestions };
 }

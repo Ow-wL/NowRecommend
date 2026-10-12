@@ -18,7 +18,7 @@ export function readTab(): TabState {
       if (v.version === 1 && typeof v.active === 'boolean' && ['food','music'].includes(s?.category) && typeof s.raw === 'string' && s.raw.length <= 300 && validConditions(s.conditions) && strings(s.excludedIds) && Number.isInteger(s.revision) && s.revision >= 0
         && ['home','recommend','onboard','favorites','history','taste','login','complete'].includes(v.view?.page) && ['food','music'].includes(v.view?.category) && ['input','confirm','results'].includes(v.view?.step)
         && (!e || typeof e.parsedRaw === 'string' && validConditions(e.automatic) && validConditions(e.manual) && strings(e.removedTags) && strings(e.removedExcluded) && (e.budgetInput === undefined || typeof e.budgetInput === 'string'))
-        && (!v.draftProfile || profile(v.draftProfile))) return v;
+        && (!v.draftProfile || profile(v.draftProfile)) && (!s.seenIds || strings(s.seenIds)) && (!s.currentIds || strings(s.currentIds)) && (s.batchNewCount === undefined || Number.isInteger(s.batchNewCount) && s.batchNewCount >= 0)) return v;
     }
   } catch { /* A tab storage failure must not prevent startup. */ }
   return { version: 1, view: defaultView, session: newSession(), active: false };

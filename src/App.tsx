@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCheck, ChevronRight, Clock3, Heart, Headphones, House, Info, Leaf, LogOut, Menu, Music2, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Utensils, X } from 'lucide-react';
 import { items, options, exclusions, categoryLabel, type Category, type Item } from './data';
-import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, updateFeedback, type HistoryEntry, type Profile, type Session } from './domain';
+import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session } from './domain';
 import { readStore, writeStore } from './storage';
 import { RecommendationCard } from './components/RecommendationCard';
 import { parseRoute, routeFor, viewReducer, type Page, type Step } from './navigation';
@@ -89,6 +89,7 @@ export default function App() {
   }, [view]);
   useEffect(() => { setTabWarning(!writeTab({ version: 1, view, session, active, draftProfile, editingProfile, onboardSummary, query, selectedOnly })); }, [view, session, active, draftProfile, editingProfile, onboardSummary, query, selectedOnly]);
   const previousPage = useRef(page);
+  const candidateStatus = candidateInfo(session, store.profiles[session.category]);
   const budgetError = validateBudget(session.editor?.budgetInput ?? '');
   const conflicts = conditionConflicts(session);
   const results = useMemo(() => recommend(session, store.profiles[session.category]), [session, store.profiles]);
@@ -125,27 +126,25 @@ export default function App() {
     const entry: HistoryEntry = { id: crypto.randomUUID(), date: new Date().toISOString(), category: current.category, raw: current.raw || '직접 선택한 조건', conditions: structuredClone(current.conditions), resultIds: recommended.map(r => r.item.id) };
     setStore(s => ({ ...s, history: [entry, ...s.history].slice(0, 50) }));
   }
-  async function run(again = false) {
+  function run(again = false, skipFailure = false) {
     if (budgetError || conflicts.length) return;
-    const current = again ? { ...session, revision: session.revision + 1 } : session;
-    const token = ++requestCounter.current;
-    setBusy(true); setRequestError(false);
-    await new Promise(resolve => setTimeout(resolve, 550));
-    if (token !== requestCounter.current) return;
-    setBusy(false);
-    if (failNext) { setFailNext(false); setRequestError(true); return; }
+    setRequestError(false);
+    if (failNext && !skipFailure) { setFailNext(false); setRequestError(true); return; }
+    const current = nextBatch({ ...session, revision: again ? session.revision + 1 : session.revision }, store.profiles[session.category]);
     setSession(current); record(current); setStep('results');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
   function applyFeedback(scope: 'session' | 'long') {
     if (!feedbackItem) return;
     const id = feedbackItem.id;
+    const previousSession = session;
     const next = updateFeedback(store.profiles[category], session, id, scope);
     setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: next.profile } }));
-    setSession(next.session); setFeedbackItem(null);
+    const displayed = nextBatch(next.session, next.profile);
+    setSession(displayed); setFeedbackItem(null);
     notify(scope === 'session' ? '이번 추천에서 제외했어요. 새 요청에서는 다시 추천될 수 있어요.' : '장기 비선호에 추가했어요. 다음 추천에도 반영할게요.', () => {
       if (scope === 'long') setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { ...s.profiles[category], disliked: s.profiles[category].disliked.filter(v => v !== id) } } }));
-      else setSession(s => ({ ...s, excludedIds: s.excludedIds.filter(v => v !== id) }));
+      setSession(s => ({ ...previousSession, seenIds: [...new Set([...(s.seenIds || []), ...(previousSession.seenIds || [])])] }));
     });
   }
   function reuse(entry: HistoryEntry) { setHistoryPreview(null); start(entry.category, entry.raw, true); setSession({ category: entry.category, raw: entry.raw, conditions: structuredClone(entry.conditions), excludedIds: [], revision: 0 }); }
@@ -192,16 +191,17 @@ export default function App() {
           {conflicts.length > 0 && <div className="error-box" role="alert">함께 적용할 수 없는 조건이 있어요: {conflicts.join(', ')}. 조건을 해제한 뒤 진행해주세요.</div>}
           <p className="parser-help small">지원 표현: {category === 'food' ? '8천원, 1만 5천원, 15,000원, 이만원 이하, 안 매운, 밀 제외' : '과제, 산책, 차분한, 활기찬, 연주곡, 보컬 없는'}. 아래에 표시된 조건만 적용하며 그 밖의 표현은 해석하지 못할 수 있어요.</p>
 
-          {requestError && <div className="error-box" role="alert"><strong>조건 확인을 잠시 완료하지 못했어요.</strong><p>다시 시도하거나, 지금 직접 고른 조건으로 추천받을 수 있어요.</p><button className="text-button" onClick={() => { record(session); setStep('results'); setRequestError(false); }}>직접 선택한 조건으로 계속 <ArrowRight size={14} /></button></div>}
+          {requestError && <div className="error-box" role="alert"><strong>조건 확인을 잠시 완료하지 못했어요.</strong><p>다시 시도하거나, 지금 직접 고른 조건으로 추천받을 수 있어요.</p><button className="text-button" disabled={!!budgetError || conflicts.length > 0} onClick={() => run(false, true)}>직접 선택한 조건으로 계속 <ArrowRight size={14} /></button></div>}
           <div className="form-actions"><span><ShieldCheck size={14} /> 오늘의 조건은 평소 취향을 바꾸지 않아요</span><button className="button primary" disabled={busy || !!budgetError || conflicts.length > 0} onClick={() => { if (step === 'input') { setSession(s => changeText(s, s.raw)); setStep('confirm'); } else run(); }}>{busy ? <span className="spinner" /> : <Sparkles size={16} />}{busy ? '추천을 고르는 중' : step === 'input' ? '조건 확인하기' : requestError ? '다시 시도하기' : '추천받기'}{!busy && <ArrowRight size={15} />}</button></div>
         </section><aside className="context-sidebar"><div className="panel context-profile"><span className={`small-icon ${category}`}>{category === 'food' ? <Utensils size={19} /> : <Headphones size={19} />}</span><h3>평소의 나는</h3><p>오늘의 요청과 따로 기억하고 있어요.</p><div className="mini-tags">{store.profiles[category].tags.map(t => <span key={t}>{t}</span>)}</div><div className="profile-picked">{store.profiles[category].selected.slice(0, 5).map(id => { const i = items.find(i => i.id === id); return i ? <span key={id}>{i.emoji} {i.name}</span> : null; })}</div><button className="text-button" onClick={() => editTaste(category)}>취향 수정 <ArrowRight size={14} /></button></div><div className="gentle-tip"><Leaf size={20} /><h4>오늘은 달라도 괜찮아요.</h4><p>평소 매운 음식을 좋아해도<br />오늘은 담백한 한 끼를 고를 수 있죠.<br />지금의 선택에 집중해보세요.</p></div></aside></div> : <>
           <div className="result-summary"><div><span className="summary-label">이번 요청</span><strong>{session.raw || '직접 선택한 조건'}</strong><div className="mini-tags">{session.conditions.tags.map(t => <span key={t}>{t}</span>)}{session.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}{session.conditions.maxPrice !== null && <span>{session.conditions.maxPrice.toLocaleString()}원 이하</span>}</div></div><button className="button secondary" disabled={busy} onClick={() => { setStep('confirm'); setRequestError(false); }}><SlidersHorizontal size={15} /> 조건 수정</button></div>
           <div className="section-heading result-heading"><h2>{category === 'food' ? '오늘의 메뉴' : '오늘의 플레이리스트'} <span className="count">{results.length}</span></h2><span>{category === 'food' ? '당신을 위한 세 가지 선택' : '당신의 하루에 어울리는 다섯 곡'}</span></div>
-          {results.length < (category === 'food' ? 3 : 5) && <div className="notice warning"><Info size={18} /><div><strong>{results.length ? '조건에 맞는 후보가 조금 부족해요.' : '지금 조건에 맞는 후보가 없어요.'}</strong><p>제외 항목{session.conditions.excluded.length ? ` (${session.conditions.excluded.join(', ')})` : ''}, 가격대 또는 비선호 항목을 확인해주세요. 조건은 자동으로 완화하지 않아요.</p><button className="text-button" onClick={() => setStep('confirm')}>조건 조정하기 <ArrowRight size={14} /></button></div></div>}
+          {results.length < (category === 'food' ? 3 : 5) && <div className="notice warning"><Info size={18} /><div><strong>{results.length ? '조건에 맞는 후보가 조금 부족해요.' : '지금 조건에 맞는 후보가 없어요.'}</strong><p>등록 데이터에서 필수 제외·장기 비선호·이번 요청 제외·예산을 적용한 후보는 {candidateStatus.count}개예요. {candidateStatus.budgetRemoved > 0 ? `그중 예산 때문에 추가로 빠진 후보는 ${candidateStatus.budgetRemoved}개예요.` : '예산만 변경해서 늘어나는 후보는 없을 수 있어요.'} 필수 제외는 자동으로 완화하지 않아요.</p>{candidateStatus.suggestions.map(s => <button key={s.price} className="text-button" onClick={() => { setSession(current => changeBudget(current, String(s.price))); setStep('confirm'); }}>예산을 {s.price.toLocaleString()}원으로 변경하면 후보 {s.gain}개 추가</button>)}<button className="text-button" onClick={() => setStep('confirm')}>조건 조정하기 <ArrowRight size={14} /></button></div></div>}
+          {session.batchNewCount !== undefined && session.batchNewCount < results.length && <div className="notice" role="status"><Info size={18} /><div><strong>{session.batchNewCount === 0 ? '새로운 후보를 모두 살펴봤어요.' : `새 후보 ${session.batchNewCount}개 + 이전 후보 ${results.length - session.batchNewCount}개`}</strong><p>적합도 순서로 이전 후보를 다시 보여드려요. 조건을 바꾸거나 새 요청을 시작할 수 있어요.</p></div></div>}
           <div className={`result-grid ${category}`}>{results.map(r => itemCard(r.item, r))}</div>
           {requestError && <div className="error-box" role="alert">재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.</div>}
           <div className="reroll-panel"><div><span className="small-icon"><Sparkles size={20} /></span><div><h3>조금 다른 선택도 궁금한가요?</h3><p>지금의 조건을 유지하고 다른 후보를 살펴보세요.</p></div></div><button className="button secondary" disabled={busy || results.length === 0} onClick={() => run(true)}>{busy ? <span className="spinner" /> : <Sparkles size={16} />}{busy ? '다른 추천을 고르는 중' : '다른 추천 보기'}</button></div>
-          {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => setSession(s => ({ ...s, excludedIds: s.excludedIds.filter(v => v !== id) }))}>{items.find(i => i.id === id)?.name}<X size={12} /></button>)}</div>}
+          {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => setSession(s => nextBatch({ ...s, excludedIds: s.excludedIds.filter(v => v !== id) }, store.profiles[s.category]))}>{items.find(i => i.id === id)?.name}<X size={12} /></button>)}</div>}
           <div className="new-session-link"><button className="text-button" onClick={() => start(category, '', true)}>새 요청 시작 <ArrowRight size={15} /></button><button className="text-button" onClick={endRequest}>요청 종료</button></div>
         </>}
       </>}
