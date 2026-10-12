@@ -1,0 +1,19 @@
+:root {
+  color-scheme: dark;
+  --bg-canvas: #101114; --bg-sidebar: #131519; --bg-surface: #181A1F;
+  --bg-elevated: #20232A; --bg-hover: #292D35; --bg-pressed: #343A45;
+  --border-subtle: #333843; --border-control: #737D8C;
+  --text-primary: #F5F5F7; --text-secondary: #B7BDC8; --text-muted: #929BAA;
+  --accent: #FFAD7A; --accent-hover: #FFC097; --accent-pressed: #F59B62;
+  --text-on-accent: #1B110B; --bg-selected: #30251F;
+  --food: #FFBD8A; --music: #BEB4FF; --bg-music: #272338;
+  --success: #8FDCB0; --bg-success: #1D2D25;
+  --warning: #F2CA78; --bg-warning: #30291C;
+  --danger: #FF9BA2; --bg-danger: #332126;
+  --focus: #96C2FF; --overlay: rgb(0 0 0 / 64%);
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
+  --radius-control: 10px; --radius-card: 16px; --radius-dialog: 20px;
+  --content-max: 1200px; --sidebar-width: 232px; --header-height: 64px;
+  --motion-fast: 120ms; --motion-normal: 180ms; --ease-standard: cubic-bezier(.2,0,0,1);
+}

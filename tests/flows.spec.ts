@@ -10,7 +10,7 @@ async function onboard(page: Page, category: 'food' | 'music' = 'food') {
 
 test('food journey, favorites, history and browser persistence', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '오늘도, 나에게 맞는 선택.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '지금, 어떤 선택이 필요하세요?' })).toBeVisible();
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await expect(page.getByRole('button', { name: '취향 요약 확인' })).toBeDisabled();
   const choices = page.locator('.selection-card');
@@ -45,12 +45,12 @@ test('session exclusion clears while long feedback persists and can be reversed'
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   const first = await page.locator('.result-grid h3').first().textContent();
   await page.locator('.feedback-button').first().click();
-  await page.getByRole('button', { name: '오늘만 제외', exact: false }).click();
+  await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
   await page.getByRole('button', { name: '되돌리기' }).click();
   await expect(page.locator('.result-grid')).toContainText(first!);
   await page.locator('.feedback-button').first().click();
-  await page.getByRole('button', { name: '오늘만 제외', exact: false }).click();
+  await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
   await page.getByRole('button', { name: '새로운 상황으로 추천받기' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
   await page.getByRole('button', { name: '조건 확인하기' }).click();
@@ -116,7 +116,7 @@ test('no eligible candidates, empty collections, and confirmed deletion', async 
   await expect(page.locator('.notice.warning')).toBeVisible();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(1);
   await page.locator('.feedback-button').click();
-  await page.getByRole('button', { name: '오늘만 제외', exact: false }).click();
+  await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(0);
   await expect(page.locator('.notice.warning')).toContainText('지금 조건에 맞는 후보가 없어요.');
   await page.getByRole('button', { name: '추천 기록', exact: true }).click();
