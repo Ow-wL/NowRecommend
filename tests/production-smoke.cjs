@@ -22,7 +22,7 @@ const fs = require('node:fs');
   if(await page.locator('.result-grid .item-card').count()!==5)throw new Error('Expected five songs');
   if(await page.locator('.result-grid a').first().getAttribute('target')!=='_blank')throw new Error('External link should open a new tab');
   await page.getByRole('button',{name:'이걸로 선택',exact:true}).first().click();await page.getByRole('heading',{name:'오늘의 선택을 남겼어요'}).waitFor();
-  await page.goto(base+'#/history');await page.locator('.history-row').waitFor();await page.reload();await page.locator('.history-row').waitFor();
+  await page.goto(base+'#/history');await page.locator('.history-row').first().waitFor();await page.reload();await page.locator('.history-row').first().waitFor();
   const storage=await page.evaluate(()=>JSON.parse(localStorage.getItem('nowrecommend-prototype-v1')));
   if(storage.version!==2 || storage.history.length!==2 || !storage.history[0].selected)throw new Error('Production history persistence failed');
   await page.screenshot({path:'artifacts/dark-pages-1440-history.png',fullPage:true});

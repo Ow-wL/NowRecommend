@@ -59,7 +59,7 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## 범위와 남은 작업
 
-이번 구현은 plans.md의 P0 6단계입니다. 구현·검증 기록은 IMPLEMENTATION.md, 디자인 기준은 DESIGN.md에 있습니다.
+이번 구현은 plans.md의 P0 6단계입니다. 구현 기록은 [IMPLEMENTATION.md](./IMPLEMENTATION.md), 테스트·배포 검증과 수동 검수 제한은 [VERIFICATION.md](./VERIFICATION.md), 디자인 기준은 [DESIGN.md](./DESIGN.md)에 있습니다.
 
 카탈로그는 미검증 샘플 음식 16개·음악 15곡입니다. 가격 범위와 필터용 기준 가격은 다르며 실제 판매 가격·재료를 보증하지 않습니다. 데이터 ID·필드·태그·검색 URL은 자동 검증하지만 실제 곡·아티스트·가격의 운영 검수는 별도입니다.
 

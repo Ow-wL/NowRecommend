@@ -1,6 +1,6 @@
 # P0 검증 기록 — 2026-10-13
 
-plans.md의 순서 1~6을 구현했다. 1~5단계는 각각 커밋·푸시했으며 6단계의 최종 회귀를 통과했다. 배포 확인을 진행 중이다. 계획 원문의 체크리스트는 실제 사용자·하드웨어 검수까지 모두 마친 것으로 오해하지 않도록 유지한다.
+plans.md의 순서 1~6을 구현하고 각각 커밋·푸시했다. 6단계의 최종 회귀와 실제 Pages 배포 검증을 통과했다. 계획 원문의 체크리스트는 실제 사용자·하드웨어 검수까지 모두 마친 것으로 오해하지 않도록 유지한다.
 
 ## 확인한 동작
 
@@ -24,7 +24,9 @@ plans.md의 순서 1~6을 구현했다. 1~5단계는 각각 커밋·푸시했으
 - `artifacts/before-{home,food,music}-{390,1440}.png`: 기존 버전 비교 자료.
 - `artifacts/comparison-{home,food,music}-{390,1440}.png`: 핵심 화면 전후 비교.
 - `artifacts/dark-*`: 최종 상태 캡처. 확대·긴 제목·저장 실패 포함. 산출물은 로컬에 보관하며 Git 추적 대상에서 제외한다.
-- 실제 Pages 검증은 `node tests/production-smoke.cjs`로 음식·음악 흐름·자산·해시·저장 상태를 확인하고 `artifacts/pages-verification.json`에 결과를 남긴다. 현재 배포 확인 대기.
+- 실제 Pages 검증은 `node tests/production-smoke.cjs`로 실행해 통과했다. 2026-10-13 04:57 KST에 음식·음악 흐름·자산·해시·저장 상태를 확인하고 `artifacts/pages-verification.json`에 결과를 남겼다.
+- 배포 대상 커밋: `432cb31`. [Actions 성공](https://github.com/Ow-wL/NowRecommend/actions/runs/38300932792), [공개 페이지](https://ow-wl.github.io/NowRecommend/) 접근을 각각 확인했다. 음식 3개·음악 5곡, 선택 완료 새로고침, 뒤로/앞으로, 즐겨찾기 유지, 기록 직접 진입 새로고침, v2 저장을 검증했다. 페이지 오류·같은 사이트의 400 이상 자산 응답은 0건이다.
+- `artifacts/dark-pages-1440-history.png`의 실제 배포 기록 화면도 직접 검수했다.
 
 ## 남은 과제
 
