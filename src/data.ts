@@ -1,4 +1,5 @@
 export type Category = 'food' | 'music';
+export const CATALOG_META = { version: '2026-10-13-sample-1', status: 'sample-unverified', source: '기존 프로토타입 카탈로그', reviewed: false } as const;
 export type Item = { id: string; category: Category; name: string; subtitle: string; description: string; tags: string[]; ingredients: string[]; emoji: string; color: string; price?: string; cost?: number };
 const food = (id: string, name: string, emoji: string, description: string, tags: string[], ingredients: string[], price: string, cost: number, color = '#f4e9d9'): Item => ({ id, category: 'food', name, subtitle: price, description, tags, ingredients, emoji, color, price, cost });
 const music = (id: string, name: string, artist: string, emoji: string, tags: string[], color: string): Item => ({ id, category: 'music', name, subtitle: artist, description: `${tags.slice(0, 2).join(' · ')} 분위기의 곡`, tags, ingredients: [], emoji, color });
@@ -41,3 +42,15 @@ export const options: Record<Category, string[]> = {
   music: ['과제', '휴식', '산책', '운동', '차분함', '활기참', '낮은 에너지', '중간 에너지', '높은 에너지', '연주곡', '보컬', '재즈', '피아노', '팝', '어쿠스틱'],
 };
 export const exclusions: Record<Category, string[]> = { food: ['매콤함', '소고기', '돼지고기', '닭고기', '생선', '밀', '땅콩', '유제품', '버섯', '달걀', '콩'], music: ['보컬', '높은 에너지', '록', '팝', '피아노'] };
+export function validateCatalog(catalog: Item[] = items): string[] {
+  const errors: string[] = [], ids = new Set<string>();
+  const allowed = { food: new Set([...options.food,'한식','일식','양식','분식','간식']), music: new Set([...options.music,'록','발라드']) };
+  for (const item of catalog) {
+    if (ids.has(item.id)) errors.push(`중복 ID: ${item.id}`); ids.add(item.id);
+    if (!item.id || !item.name || !item.subtitle || !item.description || !item.tags.length) errors.push(`필수 필드: ${item.id}`);
+    if (!['food','music'].includes(item.category) || item.tags.some(t=>!allowed[item.category]?.has(t))) errors.push(`태그/분야: ${item.id}`);
+    if (item.category === 'food' && (!item.price || typeof item.cost !== 'number' || item.cost <= 0)) errors.push(`기준 가격: ${item.id}`);
+    if (item.category === 'music' && new URL(`https://www.youtube.com/results?search_query=${encodeURIComponent(item.subtitle+' '+item.name)}`).hostname !== 'www.youtube.com') errors.push(`검색 링크: ${item.id}`);
+  }
+  return errors;
+}

@@ -1,4 +1,15 @@
 import { test, expect } from '@playwright/test';
+test('resuming an unfinished food request does not reuse a music profile draft',async({page})=>{
+  await page.goto('/');await page.getByRole('button',{name:'음식 추천',exact:true}).click();
+  await page.locator('.selection-card').first().click();
+  await page.getByRole('button',{name:'내 취향',exact:true}).click();
+  await page.getByRole('button',{name:'등록하기',exact:true}).nth(1).click();
+  await page.locator('.selection-card').first().click();
+  await page.getByRole('button',{name:'홈',exact:true}).click();
+  await page.getByRole('button',{name:'이어서 추천받기'}).click();
+  await expect(page.getByRole('heading',{name:'평소 좋아하는 음식을 골라주세요.'})).toBeVisible();
+  await expect(page.locator('.selection-card.selected')).toHaveCount(0);
+});
 test('refresh, browser back, home resume and explicit request end preserve the right scope', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
