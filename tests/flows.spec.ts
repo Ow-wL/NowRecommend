@@ -8,6 +8,28 @@ async function onboard(page: Page, category: 'food' | 'music' = 'food') {
   await page.getByRole('button', { name: '확인하고 저장' }).click();
 }
 
+test('condition edits preserve manual choices and prevent stale automatic conditions', async ({ page }) => {
+  await page.goto('/'); await onboard(page);
+  await page.getByLabel('지금의 상황').fill('매운 점심, 이만원 이하');
+  await page.getByRole('button', { name: '혼자', exact: true }).click();
+  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  await expect(page.getByLabel('참고 예산 상한')).toHaveValue('20000');
+  await page.getByLabel('매콤함 조건 삭제').click();
+  await page.getByRole('button', { name: '이전 단계', exact: true }).click();
+  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  await expect(page.getByLabel('매콤함 조건 삭제')).toHaveCount(0);
+  await page.getByLabel('참고 예산 상한').fill('-1');
+  await expect(page.getByRole('button', { name: '추천받기', exact: true })).toBeDisabled();
+  await page.getByLabel('참고 예산 상한').fill('8000');
+  await page.getByRole('button', { name: '이전 단계', exact: true }).click();
+  await page.getByLabel('지금의 상황').fill('담백한 저녁, 1만 5천원 이하');
+  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  await expect(page.getByLabel('점심 조건 삭제')).toHaveCount(0);
+  await expect(page.getByLabel('담백함 조건 삭제')).toBeVisible();
+  await expect(page.getByLabel('혼자 조건 삭제')).toBeVisible();
+  await expect(page.getByLabel('참고 예산 상한')).toHaveValue('8000');
+});
+
 test('food journey, favorites, history and browser persistence', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '지금, 어떤 선택이 필요하세요?' })).toBeVisible();
@@ -109,7 +131,7 @@ test('no eligible candidates, empty collections, and confirmed deletion', async 
   // Hard exclusions and budget leave one candidate, which can then be temporarily excluded.
   const tags = ['매콤함','소고기','닭고기','생선','밀','유제품','달걀','콩'];
   for (const tag of tags) await page.locator('.chip.exclude').filter({ hasText: new RegExp(`^${tag}$`) }).click();
-  await page.getByLabel('참고 가격대').selectOption('10000');
+  await page.getByLabel('참고 예산 상한').fill('10000');
   // The vegetable curry remains eligible; verify limited results and visible explanation.
   await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();

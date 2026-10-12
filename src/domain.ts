@@ -1,7 +1,8 @@
 import { items, type Category, type Item } from './data';
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number };
+export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[] };
 export type Store = { version: 1; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[] };
@@ -24,9 +25,73 @@ export function parseConditions(text: string, category: Category): Conditions {
     for (const ingredient of ['소고기', '돼지고기', '닭고기', '생선', '밀', '땅콩', '유제품', '버섯', '달걀', '콩']) {
       if (new RegExp(`(?<![가-힣])${ingredient}.{0,6}(제외|빼|피하|싫|없이|알레르기)`).test(text)) condition.excluded.push(ingredient);
     }
-    if (/만원|만 원|10,?000원/.test(text)) condition.maxPrice = 10000;
+    condition.maxPrice = parseAmount(text);
   } else if (/보컬.?없|가사.?없|보컬.{0,5}(제외|싫)/.test(text)) condition.excluded.push('보컬');
   return condition;
+}
+
+function smallNumber(value: string): number {
+  if (/^\d+$/.test(value)) return Number(value);
+  const digits: Record<string, number> = { 일: 1, 이: 2, 삼: 3, 사: 4, 오: 5, 육: 6, 칠: 7, 팔: 8, 구: 9 };
+  if (value.includes('십')) { const [tens, ones] = value.split('십'); return (digits[tens] || 1) * 10 + (digits[ones] || 0); }
+  return digits[value] || 1;
+}
+export function parseAmount(text: string): number | null {
+  const match = text.match(/(?<![가-힣\d-])((?:(?:[\d,]+|[일이삼사오육칠팔구십]+)\s*)?(?:만|천)(?:\s*(?:\d+|[일이삼사오육칠팔구십]+)?\s*천)?(?:\s*\d+)?|[\d,]+)\s*원/);
+  if (!match) return null;
+  let source = match[1].replace(/[\s,]/g, '');
+  let amount = 0;
+  for (const [unit, multiplier] of [['만', 10000], ['천', 1000]] as const) {
+    if (source.includes(unit)) { const split = source.split(unit); amount += smallNumber(split[0]) * multiplier; source = split[1]; }
+  }
+  amount += source ? smallNumber(source) : 0;
+  return amount >= 100 && amount <= 1000000 ? amount : null;
+}
+export function validateBudget(input: string): string | null {
+  if (!input.trim()) return null;
+  if (!/^\d+$/.test(input.trim()) || Number(input) < 100 || Number(input) > 1000000) return '예산은 100~1,000,000원의 정수로 입력해주세요.';
+  return null;
+}
+export function createEditor(raw: string, category: Category): ConditionEditor {
+  return { parsedRaw: raw, automatic: parseConditions(raw, category), manual: emptyConditions(), removedTags: [], removedExcluded: [] };
+}
+function editorFor(session: Session): ConditionEditor {
+  // Older requests and historical conditions are explicit values, never invented history.
+  return session.editor || { ...createEditor(session.raw, session.category), automatic: emptyConditions(), manual: structuredClone(session.conditions), budgetInput: session.conditions.maxPrice === null ? '' : String(session.conditions.maxPrice) };
+}
+export function effectiveConditions(editor: ConditionEditor): Conditions {
+  const excluded = [...new Set([...editor.automatic.excluded.filter(t => !editor.removedExcluded.includes(t)), ...editor.manual.excluded])];
+  const tags = [...new Set([...editor.automatic.tags.filter(t => !editor.removedTags.includes(t) && !excluded.includes(t)), ...editor.manual.tags])];
+  const maxPrice = editor.budgetInput === undefined ? editor.automatic.maxPrice : editor.budgetInput.trim() && !validateBudget(editor.budgetInput) ? Number(editor.budgetInput) : null;
+  return { tags, excluded, maxPrice };
+}
+export function changeText(session: Session, raw: string): Session {
+  const old = editorFor(session);
+  const editor = old.parsedRaw === raw ? old : { ...old, parsedRaw: raw, automatic: parseConditions(raw, session.category), removedTags: [], removedExcluded: [] };
+  return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0 };
+}
+export function toggleCondition(session: Session, value: string, exclusion = false): Session {
+  const editor = structuredClone(editorFor(session));
+  const key = exclusion ? 'excluded' : 'tags';
+  const removed = exclusion ? 'removedExcluded' : 'removedTags';
+  if (session.conditions[key].includes(value)) {
+    editor.manual[key] = editor.manual[key].filter(t => t !== value);
+    editor[removed] = [...new Set([...editor[removed], value])];
+  } else {
+    editor.manual[key] = [...new Set([...editor.manual[key], value])];
+    editor[removed] = editor[removed].filter(t => t !== value);
+  }
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0 };
+}
+export function changeBudget(session: Session, input: string): Session {
+  const editor = { ...editorFor(session), budgetInput: input };
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0 };
+}
+export function conditionConflicts(session: Session): string[] {
+  const conflicts = session.conditions.tags.filter(t => session.conditions.excluded.includes(t));
+  if (session.conditions.tags.includes('연주곡') && session.conditions.tags.includes('보컬')) conflicts.push('연주곡과 보컬');
+  if (session.editor?.manual.tags.some(t => session.editor!.automatic.excluded.includes(t) && !session.editor!.removedExcluded.includes(t))) conflicts.push('직접 선택과 문장의 제외 조건');
+  return [...new Set(conflicts)];
 }
 export function recommend(session: Session, profile: Profile): Recommendation[] {
   const { category, conditions, excludedIds, revision } = session;
