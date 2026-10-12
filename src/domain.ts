@@ -2,12 +2,15 @@ import { items, type Category, type Item } from './data';
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[] };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
-export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[] };
-export type Store = { version: 1; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[] };
+export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
+export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[] };
+export type Selection = { result: Recommendation; date: string; roundId: string };
+export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; legacy?: boolean; trimmedRounds?: number };
+export type Store = { version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[] };
 export const emptyProfile = (): Profile => ({ selected: [], tags: [], disliked: [] });
-export const emptyStore = (): Store => ({ version: 1, name: '취향 탐험가', profiles: { food: emptyProfile(), music: emptyProfile() }, favorites: [], history: [] });
+export const emptyStore = (): Store => ({ version: 2, name: '취향 탐험가', profiles: { food: emptyProfile(), music: emptyProfile() }, favorites: [], history: [] });
 export const emptyConditions = (): Conditions => ({ tags: [], excluded: [], maxPrice: null });
 export function updateFeedback(profile: Profile, session: Session, id: string, scope: 'session' | 'long') {
   return { profile: scope === 'long' ? { ...profile, disliked: [...new Set([...profile.disliked, id])] } : profile,
@@ -68,7 +71,7 @@ export function effectiveConditions(editor: ConditionEditor): Conditions {
 export function changeText(session: Session, raw: string): Session {
   const old = editorFor(session);
   const editor = old.parsedRaw === raw ? old : { ...old, parsedRaw: raw, automatic: parseConditions(raw, session.category), removedTags: [], removedExcluded: [] };
-  return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: old.parsedRaw === raw ? session.currentIds : undefined };
+  return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: old.parsedRaw === raw ? session.currentIds : undefined, snapshot: old.parsedRaw === raw ? session.snapshot : undefined };
 }
 export function toggleCondition(session: Session, value: string, exclusion = false): Session {
   const editor = structuredClone(editorFor(session));
@@ -81,11 +84,11 @@ export function toggleCondition(session: Session, value: string, exclusion = fal
     editor.manual[key] = [...new Set([...editor.manual[key], value])];
     editor[removed] = editor[removed].filter(t => t !== value);
   }
-  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: undefined };
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: undefined, snapshot: undefined };
 }
 export function changeBudget(session: Session, input: string): Session {
   const editor = { ...editorFor(session), budgetInput: input };
-  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: undefined };
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: undefined, snapshot: undefined };
 }
 export function conditionConflicts(session: Session): string[] {
   const conflicts = session.conditions.tags.filter(t => session.conditions.excluded.includes(t));
@@ -94,6 +97,10 @@ export function conditionConflicts(session: Session): string[] {
   return [...new Set(conflicts)];
 }
 export function recommend(session: Session, profile: Profile): Recommendation[] {
+  if (session.snapshot) {
+    const eligible = new Set(eligibleCandidates(session, profile).map(i => i.id));
+    return session.snapshot.filter(r => eligible.has(r.item.id));
+  }
   const { category, conditions } = session;
   const preferred = new Set([...profile.tags, ...items.filter(i => profile.selected.includes(i.id)).flatMap(i => i.tags)]);
   const candidates = eligibleCandidates(session, profile);
@@ -116,8 +123,9 @@ export function eligibleCandidates(session: Session, profile: Profile): Item[] {
 }
 export function nextBatch(session: Session, profile: Profile): Session {
   const before = new Set(session.seenIds || []);
-  const currentIds = recommend({ ...session, currentIds: undefined }, profile).map(r => r.item.id);
-  return { ...session, currentIds, seenIds: [...new Set([...before, ...currentIds])], batchNewCount: currentIds.filter(id => !before.has(id)).length };
+  const snapshot = structuredClone(recommend({ ...session, currentIds: undefined, snapshot: undefined }, profile));
+  const currentIds = snapshot.map(r => r.item.id);
+  return { ...session, id: session.id || crypto.randomUUID(), roundId: crypto.randomUUID(), snapshot, currentIds, seenIds: [...new Set([...before, ...currentIds])], batchNewCount: currentIds.filter(id => !before.has(id)).length };
 }
 export function candidateInfo(session: Session, profile: Profile) {
   const count = eligibleCandidates(session, profile).length;

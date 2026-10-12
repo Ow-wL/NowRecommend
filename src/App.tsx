@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCheck, ChevronRight, Clock3, Heart, Headphones, House, Info, Leaf, LogOut, Menu, Music2, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Utensils, X } from 'lucide-react';
 import { items, options, exclusions, categoryLabel, type Category, type Item } from './data';
-import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session } from './domain';
-import { readStore, writeStore } from './storage';
+import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback } from './domain';
+import { readStoreResult, writeStore, downloadRecovery, clearDamagedStore } from './storage';
+import { recordRound, selectResult } from './history';
+import { HistoryDetails } from './components/HistoryDetails';
 import { RecommendationCard } from './components/RecommendationCard';
 import { parseRoute, routeFor, viewReducer, type Page, type Step } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
@@ -33,7 +35,9 @@ function Modal({ title, children, onClose }: { title: string; children: ReactNod
 }
 
 export default function App() {
-  const [store, setStore] = useState(readStore);
+  const [loaded] = useState(readStoreResult);
+  const [store, setStore] = useState(loaded.store);
+  const [storageBlocked, setStorageBlocked] = useState(loaded.issue === 'damaged');
   const [initial] = useState(readTab);
   const [view, dispatchView] = useReducer(viewReducer, { ...initial.view, ...parseRoute(window.location.hash), step: /#\/(recommend|onboard)\//.test(window.location.hash) ? parseRoute(window.location.hash).step : initial.view.step, category: /#\/(recommend|onboard)\//.test(window.location.hash) ? parseRoute(window.location.hash).category : initial.session.category });
   const { page, category, step } = view;
@@ -42,6 +46,9 @@ export default function App() {
   const setStep = (step: Step) => dispatchView({ step });
   const [session, setSession] = useState<Session>(initial.session);
   const [active, setActive] = useState(initial.active);
+  const [completedId, setCompletedId] = useState(initial.completedId || '');
+  const completed = store.history.find(h=>h.id === completedId);
+  const selectionLock = useRef('');
   const [draftProfile, setDraftProfile] = useState<Profile>(initial.draftProfile || store.profiles[category]);
   const [query, setQuery] = useState(initial.query || '');
   const [selectedOnly, setSelectedOnly] = useState(initial.selectedOnly || false);
@@ -87,14 +94,15 @@ export default function App() {
     const hash = routeFor(view);
     if (window.location.hash !== hash) { lastHash.current = hash; window.location.hash = hash; }
   }, [view]);
-  useEffect(() => { setTabWarning(!writeTab({ version: 1, view, session, active, draftProfile, editingProfile, onboardSummary, query, selectedOnly })); }, [view, session, active, draftProfile, editingProfile, onboardSummary, query, selectedOnly]);
+  useEffect(() => { setTabWarning(!writeTab({ version: 1, view, session, active, draftProfile, editingProfile, onboardSummary, query, selectedOnly, completedId })); }, [view, session, active, draftProfile, editingProfile, onboardSummary, query, selectedOnly, completedId]);
   const previousPage = useRef(page);
   const candidateStatus = candidateInfo(session, store.profiles[session.category]);
   const budgetError = validateBudget(session.editor?.budgetInput ?? '');
   const conflicts = conditionConflicts(session);
   const results = useMemo(() => recommend(session, store.profiles[session.category]), [session, store.profiles]);
 
-  useEffect(() => { setStorageWarning(!writeStore(store)); }, [store]);
+  useEffect(() => { setStorageWarning(storageBlocked || !writeStore(store)); }, [store, storageBlocked]);
+  useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast]);
   useEffect(() => { if (previousPage.current !== page) { window.scrollTo({ top: 0, behavior: 'instant' }); previousPage.current = page; } }, [page]);
   useEffect(() => () => { requestCounter.current++; }, []);
@@ -106,11 +114,11 @@ export default function App() {
     if (!forceNew && !raw && active && session.category === next) { setCategory(next); navigate(store.profiles[next].selected.length < 5 ? 'onboard' : 'recommend'); return; }
     setActive(true); setSelectedOnly(false);
     requestCounter.current++; setBusy(false); setRequestError(false); setToast(null); setMobileNav(false); setQuery('');
-    setCategory(next); setStep('input'); setSession({ category: next, raw, conditions: parseConditions(raw, next), editor: createEditor(raw, next), excludedIds: [], revision: 0 });
+    setCategory(next); setStep('input'); setSession({ ...newSession(next), category: next, raw, conditions: parseConditions(raw, next), editor: createEditor(raw, next), excludedIds: [], revision: 0 });
     if (store.profiles[next].selected.length < 5) { setDraftProfile(store.profiles[next]); setEditingProfile(false); setOnboardSummary(false); setPage('onboard'); }
     else setPage('recommend');
   }
-  function endRequest() { setActive(false); setSession(newSession(category)); setStep('input'); navigate('home'); notify('今回のリクエストを終了しました。'.replace('今回のリクエストを終了しました。', '이번 요청을 종료했어요.')); }
+  function endRequest() { setActive(false); setSession(newSession(category)); setStep('input'); navigate('home'); notify('이번 요청을 종료했어요.'); }
   function editTaste(next: Category) { setCategory(next); setDraftProfile(store.profiles[next]); setEditingProfile(true); setOnboardSummary(false); setQuery(''); navigate('onboard'); }
   function saveProfile() {
     setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: draftProfile } }));
@@ -121,10 +129,24 @@ export default function App() {
     setSession(s => toggleCondition(s, value, excluded));
   }
   function favorite(id: string) { const saved = store.favorites.includes(id); setStore(s => ({ ...s, favorites: toggle(s.favorites, id) })); notify(saved ? '즐겨찾기에서 해제했어요.' : '즐겨찾기에 저장했어요.'); }
-  function record(current: Session) {
-    const recommended = recommend(current, store.profiles[current.category]);
-    const entry: HistoryEntry = { id: crypto.randomUUID(), date: new Date().toISOString(), category: current.category, raw: current.raw || '직접 선택한 조건', conditions: structuredClone(current.conditions), resultIds: recommended.map(r => r.item.id) };
-    setStore(s => ({ ...s, history: [entry, ...s.history].slice(0, 50) }));
+  function record(current: Session, feedback: Feedback[] = []) {
+    setStore(s=>({...s,history:recordRound(s.history,current,current.snapshot || recommend(current,s.profiles[current.category]),feedback)}));
+  }
+  function choose(result: Recommendation) {
+    if (!active || !session.id || !session.roundId || selectionLock.current === session.id) return;
+    selectionLock.current = session.id;
+    const current = session;
+    setStore(s=>{ const history=recordRound(s.history,current,current.snapshot || results); return {...s,history:history.map(h=>h.id === current.id ? selectResult(h,result,current.roundId!) : h)}; });
+    setCompletedId(current.id!); setActive(false); setSession(newSession(category)); setPage('complete'); setToast(null);
+  }
+  function reviseSelection(entry: HistoryEntry, result?: Recommendation, roundId = '') {
+    const updated = result ? selectResult(entry,result,roundId) : {...entry,selected:undefined};
+    setStore(s=>({...s,history:s.history.map(h=>h.id === entry.id ? updated : h)}));
+    setHistoryPreview(updated);
+  }
+  function restoreTemporary(id: string) {
+    const current=nextBatch({...session,excludedIds:session.excludedIds.filter(v=>v !== id)},store.profiles[session.category]);
+    setSession(current);record(current,[{itemId:id,scope:'session',action:'restore',date:new Date().toISOString()}]);
   }
   function run(again = false, skipFailure = false) {
     if (budgetError || conflicts.length) return;
@@ -141,20 +163,21 @@ export default function App() {
     const next = updateFeedback(store.profiles[category], session, id, scope);
     setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: next.profile } }));
     const displayed = nextBatch(next.session, next.profile);
-    setSession(displayed); setFeedbackItem(null);
+    setSession(displayed); record(displayed,[{itemId:id,scope,action:'exclude',date:new Date().toISOString()}]); setFeedbackItem(null);
     notify(scope === 'session' ? '이번 추천에서 제외했어요. 새 요청에서는 다시 추천될 수 있어요.' : '장기 비선호에 추가했어요. 다음 추천에도 반영할게요.', () => {
       if (scope === 'long') setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { ...s.profiles[category], disliked: s.profiles[category].disliked.filter(v => v !== id) } } }));
-      setSession(s => ({ ...previousSession, seenIds: [...new Set([...(s.seenIds || []), ...(previousSession.seenIds || [])])] }));
+      const restored = {...previousSession,roundId:crypto.randomUUID(),seenIds:[...new Set([...(displayed.seenIds || []),...(previousSession.seenIds || [])])]};
+      setSession(restored);record(restored,[{itemId:id,scope,action:'restore',date:new Date().toISOString()}]);
     });
   }
-  function reuse(entry: HistoryEntry) { setHistoryPreview(null); start(entry.category, entry.raw, true); setSession({ category: entry.category, raw: entry.raw, conditions: structuredClone(entry.conditions), excludedIds: [], revision: 0 }); }
+  function reuse(entry: HistoryEntry) { setHistoryPreview(null); start(entry.category, entry.raw, true); setSession({ ...newSession(entry.category), category: entry.category, raw: entry.raw, conditions: structuredClone(entry.conditions), excludedIds: [], revision: 0 }); }
 
   const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
   const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
   const tabFilter = <div className="filter-tabs" role="group" aria-label="분야 필터">{(['all', 'food', 'music'] as const).map(f => <button key={f} aria-pressed={filter === f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f === 'all' ? '전체' : categoryLabel[f]}</button>)}</div>;
-  const itemCard = (item: Item, reasons?: { tasteReason: string; contextReason: string }) => <RecommendationCard key={item.id} item={item} saved={store.favorites.includes(item.id)} reasons={reasons} onSave={() => favorite(item.id)} onExclude={() => setFeedbackItem(item)} />;
+  const itemCard = (item: Item, reasons?: { tasteReason: string; contextReason: string }) => <RecommendationCard key={item.id} item={item} saved={store.favorites.includes(item.id)} reasons={reasons} onSave={() => favorite(item.id)} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose({item,...reasons}) : undefined} />;
 
   return <div className="app-shell"><a className="skip-link" href="#main-content">본문 바로가기</a>
     {mobileNav && <button className="nav-backdrop" aria-label="메뉴 닫기" onClick={() => setMobileNav(false)} />}
@@ -168,12 +191,13 @@ export default function App() {
     <div className="workspace"><header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="메뉴 열기" onClick={() => setMobileNav(true)}><Menu size={21} /></button><span>나의 오늘</span><ChevronRight size={13} /><b>{pageTitle[page]}</b></div><div className="topbar-right"><span className="demo-badge"><span /> 체험 버전</span><button className="top-avatar" aria-label="브라우저 프로필" onClick={() => { setNameDraft(store.name); setDialog('account'); }}>{store.name.slice(0, 1)}</button></div></header>
       <main id="main-content" className={`main-content ${page}`}>
       {tabWarning && <div className="notice warning" role="status">현재 요청을 탭에 저장하지 못했어요. 새로고침하면 입력과 일시 제외가 사라질 수 있어요.</div>}
-      {storageWarning && <div className="notice warning">이 브라우저에서는 저장할 수 없어요. 지금 체험은 가능하지만 새로고침하면 변경 내용이 사라질 수 있어요.</div>}
+      {storageBlocked && <div className="notice warning"><div><strong>저장된 데이터가 손상되어 원본을 보호하고 있어요.</strong><p>현재 변경은 영구 저장하지 않아요. 원본을 내려받아 보관한 뒤 설정에서 초기화할 수 있어요.</p><button className="button secondary" onClick={() => downloadRecovery(loaded.raw || '')}>손상 원본 내려받기</button><button className="text-button" onClick={()=>setDialog('reset')}>초기화 확인</button></div></div>}
+      {storageWarning && !storageBlocked && <div className="notice warning">이 브라우저에서는 저장할 수 없어요. 지금 체험은 가능하지만 새로고침하면 변경 내용이 사라질 수 있어요.</div>}
       {page === 'home' && <>
         <div className="welcome"><div><h1>지금, 어떤 선택이 필요하세요?</h1><p>평소 취향에 오늘의 상황을 더해 골라보세요.</p></div></div>
         <section className="discover-section"><div className="category-grid">{(['food', 'music'] as Category[]).map(c => <button key={c} className={`category-card ${c}-category`} onClick={() => start(c)}><span className="category-icon">{c === 'food' ? <Utensils size={24} /> : <Headphones size={24} />}</span><span className="category-copy"><h2>{c === 'food' ? '오늘 뭐 먹지?' : '지금 뭐 듣지?'}</h2><span>{c === 'food' ? '입맛과 상황에 맞는 한 끼를 찾아요.' : '지금의 기분에 어울리는 음악을 찾아요.'}</span><small>{store.profiles[c].selected.length >= 5 ? '평소 취향 등록됨' : '취향 5개를 골라 시작해요'}</small><span className="category-link">{categoryLabel[c]} 추천받기 <ArrowRight size={16} /></span></span></button>)}</div></section>
         {active && <section className="panel home-history"><h2>진행 중인 {categoryLabel[session.category]} 요청</h2><p>{session.raw || '직접 고른 조건으로 진행 중이에요.'}</p><button className="button primary" onClick={() => start(session.category)}>이어서 추천받기 <ArrowRight size={16} /></button><button className="text-button" onClick={endRequest}>요청 종료</button></section>}
-        <section className="panel home-history"><h2>최근 선택</h2><p>아직 선택한 항목이 없어요.</p><button className="text-button" onClick={() => start('food')}>추천 시작하기 <ArrowRight size={16} /></button></section>
+        <section className="panel home-history"><h2>최근 선택</h2>{store.history.some(h=>h.selected) ? store.history.filter(h=>h.selected).slice(0,3).map(h=><div className="recent-choice" key={h.id}><button className="text-button" onClick={()=>setHistoryPreview(h)}>{h.selected!.result.item.name}</button><span className="small">{categoryLabel[h.category]} · 선택한 항목</span></div>) : <><p>아직 선택한 항목이 없어요.</p><button className="text-button" onClick={() => start('food')}>추천 시작하기 <ArrowRight size={16} /></button></>}</section>
       </>}
 
       {page === 'onboard' && <>
@@ -201,13 +225,15 @@ export default function App() {
           <div className={`result-grid ${category}`}>{results.map(r => itemCard(r.item, r))}</div>
           {requestError && <div className="error-box" role="alert">재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.</div>}
           <div className="reroll-panel"><div><span className="small-icon"><Sparkles size={20} /></span><div><h3>조금 다른 선택도 궁금한가요?</h3><p>지금의 조건을 유지하고 다른 후보를 살펴보세요.</p></div></div><button className="button secondary" disabled={busy || results.length === 0} onClick={() => run(true)}>{busy ? <span className="spinner" /> : <Sparkles size={16} />}{busy ? '다른 추천을 고르는 중' : '다른 추천 보기'}</button></div>
-          {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => setSession(s => nextBatch({ ...s, excludedIds: s.excludedIds.filter(v => v !== id) }, store.profiles[s.category]))}>{items.find(i => i.id === id)?.name}<X size={12} /></button>)}</div>}
+          {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => restoreTemporary(id)}>{items.find(i => i.id === id)?.name}<X size={12} /></button>)}</div>}
           <div className="new-session-link"><button className="text-button" onClick={() => start(category, '', true)}>새 요청 시작 <ArrowRight size={15} /></button><button className="text-button" onClick={endRequest}>요청 종료</button></div>
         </>}
       </>}
 
+      {page === 'complete' && completed?.selected && <><div className="page-heading"><CheckCheck size={32} className="success-icon" /><h1>오늘의 선택을 남겼어요</h1><p>선택한 항목을 기록했어요. 실제 식사·감상 완료를 뜻하지 않아요.</p></div><section className="panel completion-panel"><h2>{completed.selected.result.item.name}</h2><p>{completed.selected.result.item.subtitle}</p><div className="reasons"><p><b>평소 취향</b>{completed.selected.result.tasteReason}</p><p><b>이번 상황</b>{completed.selected.result.contextReason}</p></div><p>당시 상황: {completed.raw}</p><div className="mini-tags">{completed.conditions.tags.map(t=><span key={t}>{t}</span>)}{completed.conditions.excluded.map(t=><span key={t}>{t} 제외</span>)}{completed.conditions.maxPrice !== null && <span>{completed.conditions.maxPrice.toLocaleString()}원 이하</span>}</div>{completed.category === 'music' && <a className="text-button" target="_blank" rel="noopener noreferrer" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(completed.selected.result.item.subtitle+' '+completed.selected.result.item.name)}`} aria-label="YouTube에서 검색 (새 탭)">YouTube에서 검색 <ArrowRight size={16} /></a>}<div className="card-actions"><button className="button primary" onClick={()=>navigate('history')}>추천 기록 보기</button><button className="button secondary" onClick={()=>setHistoryPreview(completed)}>선택 변경</button><button className="button secondary" onClick={()=>start(completed.category,'',true)}>새 요청 시작</button></div></section></>}
+
       {page === 'favorites' && <><div className="page-heading"><h1>좋아하는 선택을 모아두었어요.</h1><p>다시 만나고 싶은 음식과 음악. 마음에 든 순간을 꺼내보세요.</p></div>{tabFilter}<div className="collection-grid">{items.filter(i => store.favorites.includes(i.id) && (filter === 'all' || i.category === filter)).map(i => itemCard(i))}</div>{!items.some(i => store.favorites.includes(i.id) && (filter === 'all' || i.category === filter)) && <div className="empty-state"><span><Heart size={30} /></span><h3>아직 저장한 {filter === 'all' ? '추천이' : `${categoryLabel[filter]}이`} 없어요.</h3><p>추천 카드의 하트를 누르면 여기에 모여요.</p><button className="button primary" onClick={() => start(filter === 'music' ? 'music' : 'food')}>취향에 맞는 추천 찾기 <ArrowRight size={16} /></button></div>}</>}
-      {page === 'history' && <><div className="page-heading"><h1>그날의 선택, 그때의 취향.</h1><p>지난 추천의 조건과 결과를 확인하고 같은 상황으로 다시 시작해보세요.</p></div>{tabFilter}<div className="history-list">{store.history.filter(h => filter === 'all' || h.category === filter).map(h => <article className="history-row" key={h.id}><span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={22} /> : <Headphones size={22} />}</span><div className="history-content"><span>{categoryLabel[h.category]} 추천 · {new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(h.date))}</span><button className="history-title" onClick={() => setHistoryPreview(h)}>{h.raw}</button><p>{h.resultIds.map(id => items.find(i => i.id === id)?.name).filter(Boolean).join(' · ') || '조건에 맞는 결과 없음'}</p></div><button className="button secondary compact" onClick={() => reuse(h)}>다시 추천 <ArrowRight size={14} /></button><button className="icon-button" aria-label={`${h.raw} 기록 삭제`} onClick={() => { setDeleteId(h.id); setDialog('deleteHistory'); }}><Trash2 size={16} /></button></article>)}</div>{!store.history.some(h => filter === 'all' || h.category === filter) && <div className="empty-state"><span><Clock3 size={30} /></span><h3>첫 번째 선택을 기다리고 있어요.</h3><p>추천받은 상황과 결과를 여기에서 다시 볼 수 있어요.</p><button className="button primary" onClick={() => start(filter === 'music' ? 'music' : 'food')}>추천 시작하기 <ArrowRight size={16} /></button></div>}</>}
+      {page === 'history' && <><div className="page-heading"><h1>그날의 선택, 그때의 취향.</h1><p>지난 추천의 조건과 결과를 확인하고 같은 상황으로 다시 시작해보세요.</p></div>{tabFilter}<div className="history-list">{store.history.filter(h => filter === 'all' || h.category === filter).map(h => <article className="history-row" key={h.id}><span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={22} /> : <Headphones size={22} />}</span><div className="history-content"><span>{categoryLabel[h.category]} 추천 · {new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(h.date))}</span><button className="history-title" onClick={() => setHistoryPreview(h)}>{h.raw}</button><p>{h.selected ? `최종 선택: ${h.selected.result.item.name}` : h.legacy ? '이전 버전 기록 · 최종 선택 미등록' : h.rounds.at(-1)?.results.map(r=>r.item.name).join(' · ') || '조건에 맞는 결과 없음'}</p></div><button className="button secondary compact" onClick={() => reuse(h)}>다시 추천 <ArrowRight size={14} /></button><button className="icon-button" aria-label={`${h.raw} 기록 삭제`} onClick={() => { setDeleteId(h.id); setDialog('deleteHistory'); }}><Trash2 size={16} /></button></article>)}</div>{!store.history.some(h => filter === 'all' || h.category === filter) && <div className="empty-state"><span><Clock3 size={30} /></span><h3>첫 번째 선택을 기다리고 있어요.</h3><p>추천받은 상황과 결과를 여기에서 다시 볼 수 있어요.</p><button className="button primary" onClick={() => start(filter === 'music' ? 'music' : 'food')}>추천 시작하기 <ArrowRight size={16} /></button></div>}</>}
       {page === 'taste' && <><div className="page-heading"><h1>내 취향은, 내가 정해요.</h1><p>평소 좋아하는 것과 원하지 않는 것을 따로 관리해요.</p></div><div className="taste-grid">{(['food', 'music'] as Category[]).map(c => <section className="panel taste-panel" key={c}><div className="section-heading"><h2><span className={`small-icon ${c}`}>{c === 'food' ? <Utensils size={18} /> : <Music2 size={18} />}</span>{categoryLabel[c]} 취향</h2><button className="text-button" onClick={() => editTaste(c)}>{store.profiles[c].selected.length >= 5 ? '편집하기' : '등록하기'}<ArrowRight size={14} /></button></div><h4>처음 고른 선호 항목</h4><div className="summary-items">{store.profiles[c].selected.map(id => { const i = items.find(i => i.id === id); return i ? <span key={id}>{i.emoji} {i.name}</span> : null; })}</div>{!store.profiles[c].selected.length && <p className="muted">아직 취향을 등록하지 않았어요.</p>}<div className="mini-tags">{store.profiles[c].tags.map(t => <span key={t}>{t}</span>)}</div><div className="form-divider" /><h4>피드백으로 추가한 장기 비선호 <span>{store.profiles[c].disliked.length}</span></h4><p className="form-description">개별 항목만 제외해요. 비슷한 메뉴나 장르까지 확대하지 않아요.</p><div className="chips">{store.profiles[c].disliked.map(id => <button className="chip exclude selected" key={id} aria-label={`${items.find(i => i.id === id)?.name} 비선호 해제`} onClick={() => { setStore(s => ({ ...s, profiles: { ...s.profiles, [c]: { ...s.profiles[c], disliked: s.profiles[c].disliked.filter(v => v !== id) } } })); notify('장기 비선호를 해제했어요.'); }}>{items.find(i => i.id === id)?.name}<X size={13} /></button>)}</div>{!store.profiles[c].disliked.length && <p className="muted small">등록된 장기 비선호가 없어요.</p>}<button className="text-button danger reset-taste" onClick={() => { setCategory(c); setDialog('resetTaste'); }}>이 분야 취향 초기화</button></section>)}</div><div className="notice"><ShieldCheck size={20} /><div><strong>‘이번 요청에서 제외’는 내 취향에 남지 않아요.</strong><p>음식과 음악은 각각 독립적으로 기억해요. 다른 분야의 취향을 임의로 추측하지 않아요.</p></div></div></>}
       {page === 'login' && <div className="login-panel panel"><span className="brand-mark"><Sparkles size={26} /></span><h1>당신의 취향에서 시작해요.</h1><p>이름만 입력하고 체험을 이어가세요.<br />실제 회원가입 없이 화면 흐름을 살펴볼 수 있어요.</p><form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); navigate('home'); }}><label className="field-title" htmlFor="demo-name">체험 이름</label><input id="demo-name" required maxLength={16} placeholder="어떻게 불러드릴까요?" value={nameDraft} onChange={e => setNameDraft(e.target.value)} /><button className="button primary full-width">체험 시작하기 <ArrowRight size={17} /></button></form></div>}
       <footer className="footer"><span><Sparkles size={13} /> 지금 추천</span><span>평소의 나와, 지금의 나를 함께.</span><button onClick={() => setDialog('about')}>체험 안내</button></footer>
@@ -215,9 +241,9 @@ export default function App() {
     </div>
     {toast && <div className="toast" role="status"><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); setToast(null); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={() => setToast(null)}><X size={15} /></button></div>}
     {feedbackItem && <Modal title="이 추천은 어떤 점이 아쉬웠나요?" onClose={() => setFeedbackItem(null)}><p className="modal-description"><b>{feedbackItem.name}</b>에 대한 의견을 어디까지 반영할지 골라주세요.</p><button className="feedback-option" onClick={() => applyFeedback('session')}><span className="small-icon food"><Clock3 size={21} /></span><span><b>이번 요청에서 제외</b><small>이번 요청에서만 빼고 다른 항목을 추천해요.<br />새로운 상황으로 시작하면 다시 만날 수 있어요.</small></span><ChevronRight size={19} /></button><button className="feedback-option" onClick={() => applyFeedback('long')}><span className="small-icon music"><SlidersHorizontal size={21} /></span><span><b>원래 내 취향이 아님</b><small>이 항목을 장기 비선호에 저장해요.<br />다음 요청에서도 제외하며, 내 취향에서 해제할 수 있어요.</small></span><ChevronRight size={19} /></button><button className="button secondary full-width" onClick={() => setFeedbackItem(null)}>취소</button></Modal>}
-    {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><p className="modal-description">{historyPreview.raw}</p><div className="mini-tags">{historyPreview.conditions.tags.map(t => <span key={t}>{t}</span>)}{historyPreview.conditions.excluded.map(t => <span key={t} className="excluded-tag">{t} 제외</span>)}{historyPreview.conditions.maxPrice !== null && <span>{historyPreview.conditions.maxPrice.toLocaleString()}원 이하</span>}</div><div className="preview-results">{historyPreview.resultIds.map(id => { const i = items.find(i => i.id === id); return i ? <div key={id}><span>{i.emoji}</span><div><b>{i.name}</b><small>{i.subtitle}</small></div></div> : null; })}</div><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
+    {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} /><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
     {dialog === 'about' && <Modal title="지금 추천을 먼저 경험해보세요." onClose={() => setDialog(null)}><p className="modal-description">취향 등록부터 조건 수정, 추천과 피드백까지 직접 사용해볼 수 있는 체험 버전이에요.</p><div className="about-list"><p><Check size={17} /> 음식 16개와 음악 15곡의 예시 데이터로 추천해요.</p><p><Check size={17} /> 문장의 알려진 표현을 조건으로 바꿔요. 실제 AI 연결 전이라 놓친 조건은 직접 수정해주세요.</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> 계정 인증과 실제 주문·음원 재생은 포함하지 않아요.</p></div><div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div></Modal>}
     {dialog === 'account' && <Modal title="브라우저 프로필·설정" onClose={() => setDialog(null)}><p className="modal-description">취향과 기록은 이 브라우저에만 저장돼요. 기기 간 동기화는 지원하지 않아요. 이름을 바꿀 수 있어요.</p><form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('체험 이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button primary full-width">변경 저장</button></form><div className="account-links"><button onClick={() => { setDialog(null); setNameDraft(store.name); navigate('login'); }}><LogOut size={17} /> 체험 나가기</button><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 체험 데이터 모두 초기화</button></div></Modal>}
-    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
+    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;
 }

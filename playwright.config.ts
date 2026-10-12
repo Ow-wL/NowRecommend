@@ -4,6 +4,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
+  workers: 2,
   timeout: 30000,
   use: { baseURL, channel: 'msedge', headless: true, viewport: { width: 1440, height: 1050 } },
   webServer: { command: `npm run dev -- --port ${port}`, url: baseURL, reuseExistingServer: false, timeout: 30000 },

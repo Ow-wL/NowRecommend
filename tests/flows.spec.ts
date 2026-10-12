@@ -102,6 +102,9 @@ test('independent music onboarding produces five songs and external links', asyn
   await expect(page.locator('.result-grid')).not.toContainText('아이유');
   const links = page.locator('.result-grid a'); await expect(links).toHaveCount(5);
   await expect(links.first()).toHaveAttribute('target', '_blank');
+  await page.getByRole('button', { name: '이걸로 선택', exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: '오늘의 선택을 남겼어요' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'YouTube에서 검색 (새 탭)' })).toHaveAttribute('target', '_blank');
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await expect(page.getByRole('heading', { name: '평소 좋아하는 음식을 골라주세요.' })).toBeVisible();
 });
