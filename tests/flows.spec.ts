@@ -73,7 +73,7 @@ test('session exclusion clears while long feedback persists and can be reversed'
   await expect(page.locator('.result-grid')).toContainText(first!);
   await page.locator('.feedback-button').first().click();
   await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
-  await page.getByRole('button', { name: '새로운 상황으로 추천받기' }).click();
+  await page.getByRole('button', { name: '새 요청 시작' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
   await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
@@ -81,7 +81,7 @@ test('session exclusion clears while long feedback persists and can be reversed'
   await page.locator('.feedback-button').first().click();
   await page.getByRole('button', { name: '원래 내 취향이 아님', exact: false }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
-  await page.getByRole('button', { name: '새로운 상황으로 추천받기' }).click();
+  await page.getByRole('button', { name: '새 요청 시작' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
   await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
