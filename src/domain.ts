@@ -2,7 +2,7 @@ import { items, type Category, type Item } from './data';
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[] };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[] };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
@@ -108,7 +108,8 @@ export function recommend(session: Session, profile: Profile): Recommendation[] 
   const score = (i: Item) => i.tags.filter(t => preferred.has(t)).length + 2 * i.tags.filter(t => conditions.tags.includes(t)).length;
   const ranked = candidates.sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id));
   const seen = new Set(session.seenIds || []);
-  const pool = session.currentIds ? session.currentIds.map(id => ranked.find(i => i.id === id)).filter((i): i is Item => !!i) : [...ranked.filter(i => !seen.has(i.id)), ...ranked.filter(i => seen.has(i.id))];
+  const pinned=new Set(session.pinnedIds || []);
+  const pool = session.currentIds ? session.currentIds.map(id => ranked.find(i => i.id === id)).filter((i): i is Item => !!i) : [...ranked.filter(i=>pinned.has(i.id)),...ranked.filter(i => !pinned.has(i.id) && !seen.has(i.id)), ...ranked.filter(i => !pinned.has(i.id) && seen.has(i.id))];
   return pool.slice(0, category === 'food' ? 3 : 5).map(item => {
     const taste = item.tags.filter(t => preferred.has(t)).slice(0, 2);
     const context = item.tags.filter(t => conditions.tags.includes(t)).slice(0, 2);
@@ -127,7 +128,17 @@ export function nextBatch(session: Session, profile: Profile): Session {
   const before = new Set(session.seenIds || []);
   const snapshot = structuredClone(recommend({ ...session, currentIds: undefined, snapshot: undefined }, profile));
   const currentIds = snapshot.map(r => r.item.id);
-  return { ...session, id: session.id || crypto.randomUUID(), roundId: crypto.randomUUID(), snapshot, currentIds, seenIds: [...new Set([...before, ...currentIds])], batchNewCount: currentIds.filter(id => !before.has(id)).length };
+  return { ...session, id: session.id || crypto.randomUUID(), roundId: crypto.randomUUID(), snapshot, currentIds, pinnedIds:(session.pinnedIds || []).filter(id=>currentIds.includes(id)),compareIds:(session.compareIds || []).filter(id=>currentIds.includes(id)),seenIds: [...new Set([...before, ...currentIds])], batchNewCount: currentIds.filter(id => !before.has(id)).length };
+}
+export function replaceCandidate(session:Session,profile:Profile,id:string):Session|null {
+  if(session.pinnedIds?.includes(id))return null;
+  const current=recommend(session,profile);
+  if(!current.some(r=>r.item.id===id))return null;
+  const remaining=recommend({...session,currentIds:undefined,snapshot:undefined,pinnedIds:[],excludedIds:[...session.excludedIds,...current.map(r=>r.item.id)]},profile);
+  const replacement=remaining.find(r=>!session.seenIds?.includes(r.item.id));
+  if(!replacement)return null;
+  const snapshot=structuredClone(current.map(r=>r.item.id===id?replacement:r));
+  return {...session,snapshot,currentIds:snapshot.map(r=>r.item.id),seenIds:[...new Set([...(session.seenIds || []),...snapshot.map(r=>r.item.id)])],compareIds:(session.compareIds || []).filter(v=>v!==id),roundId:crypto.randomUUID(),revision:session.revision+1,batchNewCount:1};
 }
 export function candidateInfo(session: Session, profile: Profile) {
   const count = eligibleCandidates(session, profile).length;

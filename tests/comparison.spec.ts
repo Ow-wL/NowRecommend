@@ -1,0 +1,9 @@
+import {test,expect} from '@playwright/test';
+for(const width of [390,1440])test(`pin, replace, compare and choose at ${width}`,async({page})=>{
+  await page.setViewportSize({width,height:900});await page.addInitScript(()=>{if(!localStorage.getItem('nowrecommend-prototype-v1'))localStorage.setItem('nowrecommend-prototype-v1',JSON.stringify({version:2,name:'검증',profiles:{food:{selected:['f01','f02','f03','f04','f05'],tags:[],disliked:[]},music:{selected:['m01','m02','m03','m04','m05'],tags:[],disliked:[]}},favorites:[],history:[]}));});
+  await page.goto('/#/recommend/food');await page.getByRole('button',{name:'조건 확인하기'}).click();await page.getByRole('button',{name:'추천받기',exact:true}).click();
+  const first=await page.locator('.result-grid h3').allTextContents();await page.getByRole('button',{name:`${first[0]} 이번 요청 고정`,exact:true}).click();await expect(page.getByRole('button',{name:`${first[0]} 한 장 교체`})).toBeDisabled();
+  await page.getByRole('button',{name:`${first[1]} 한 장 교체`}).click();const next=await page.locator('.result-grid h3').allTextContents();expect(next[0]).toBe(first[0]);expect(next[2]).toBe(first[2]);expect(next[1]).not.toBe(first[1]);
+  await page.reload();await expect(page.getByRole('button',{name:`${first[0]} 이번 요청 고정`})).toHaveAttribute('aria-pressed','true');
+  for(const name of next)await page.getByRole('button',{name:`${name} 비교 항목`,exact:true}).click();await page.getByRole('button',{name:'선택한 후보 비교',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('평소 취향');await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`artifacts/extensions-compare-${width}.png`});await page.getByRole('dialog').getByRole('button',{name:`${first[0]} 선택`,exact:true}).click();await expect(page.getByRole('heading',{name:'오늘의 선택을 남겼어요'})).toBeVisible();
+});
