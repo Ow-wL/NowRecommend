@@ -8,7 +8,8 @@ export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exc
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string };
 export type Selection = { result: Recommendation; date: string; roundId: string };
 export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; legacy?: boolean; trimmedRounds?: number };
-export type Store = { version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[] };
+export type Preset = { id: string; category: Category; name: string; conditions: Conditions };
+export type Store = { version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[]; presets?: Preset[] };
 export const emptyProfile = (): Profile => ({ selected: [], tags: [], disliked: [] });
 export const emptyStore = (): Store => ({ version: 2, name: '취향 탐험가', profiles: { food: emptyProfile(), music: emptyProfile() }, favorites: [], history: [] });
 export const emptyConditions = (): Conditions => ({ tags: [], excluded: [], maxPrice: null });
