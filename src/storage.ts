@@ -1,6 +1,7 @@
 import { emptyStore, type Store } from './domain';
 import { validConditions, validRecommendation } from './sessionStorage';
 import { validPreset } from './presets';
+import {validAppearance} from './theme';
 const KEY = 'nowrecommend-prototype-v1';
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === 'string');
 const date = (v: unknown) => typeof v === 'string' && Number.isFinite(Date.parse(v));
@@ -17,6 +18,7 @@ export function decodeStore(text: string): Store | null {
     const v = JSON.parse(text);
     if (![1,2].includes(v?.version) || typeof v.name !== 'string' || v.name.length > 100 || !['food','music'].every(c => ['selected','tags','disliked'].every(k => strings(v.profiles?.[c]?.[k]))) || !strings(v.favorites) || !Array.isArray(v.history) || v.history.length > 50 || !v.history.every((h:any) => validHistory(h,v.version))) return null;
     if (v.presets !== undefined && (!Array.isArray(v.presets) || v.presets.length > 40 || !v.presets.every(validPreset) || new Set(v.presets.map((p:any)=>p.id)).size !== v.presets.length || ['food','music'].some(c=>v.presets.filter((p:any)=>p.category===c).length > 20))) return null;
+    if(v.appearance!==undefined && !validAppearance(v.appearance))return null;
     return v.version === 2 ? v : { ...v, version:2, history:v.history.map((h:any)=>({...h,rounds:[],legacy:true})) };
   } catch { return null; }
 }

@@ -1,0 +1,4 @@
+import {it,expect} from 'vitest';
+import {accentTokens,contrast,validAppearance} from './theme';
+it('validates appearance without accepting arbitrary css',()=>{expect(validAppearance({mode:'system',accent:'#123abc'})).toBe(true);expect(validAppearance({mode:'other'})).toBe(false);expect(validAppearance({mode:'dark',accent:'red;display:none'})).toBe(false);});
+it('keeps readable text, links and control boundaries with extreme custom colors in both modes',()=>{for(const mode of ['dark','light'] as const)for(const color of ['#000000','#ffffff','#ffad7a','#beb4ff','#8fdcb0','#0000ff','#808080','#ff0000']){const t=accentTokens(color,mode);for(const bg of [t['--accent-fill'],t['--accent-hover'],t['--accent-pressed']])expect(contrast(t['--text-on-accent'],bg)).toBeGreaterThanOrEqual(4.5);expect(contrast(t['--accent'],t['--bg-selected'])).toBeGreaterThanOrEqual(4.5);expect(contrast(t['--accent'],mode==='dark'?'#292d35':'#e4e8ee')).toBeGreaterThanOrEqual(4.5);}});
