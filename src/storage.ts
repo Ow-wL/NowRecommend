@@ -39,6 +39,9 @@ export function writeStore(store:Store):boolean {
 export function clearDamagedStore():boolean {
   try { localStorage.removeItem(KEY); return true; } catch { return false; }
 }
+export function replaceStore(store:Store):boolean {
+  try{const old=localStorage.getItem(KEY);if(old!==null)localStorage.setItem(KEY+'-before-import',old);localStorage.setItem(KEY,JSON.stringify(store));return true;}catch{return false;}
+}
 export function downloadRecovery(raw:string) {
   const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));
   const anchor=document.createElement('a');anchor.href=url;anchor.download='nowrecommend-recovery.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
