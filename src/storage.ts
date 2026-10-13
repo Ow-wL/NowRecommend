@@ -8,7 +8,8 @@ const date = (v: unknown) => typeof v === 'string' && Number.isFinite(Date.parse
 function validHistory(h: any, version: number): boolean {
   if (!h || typeof h.id !== 'string' || !date(h.date) || !['food','music'].includes(h.category) || typeof h.raw !== 'string' || !strings(h.resultIds) || !validConditions(h.conditions)) return false;
   if(version === 1) return true;
-  return Array.isArray(h.rounds) && h.rounds.length <= 10 && h.rounds.every((r: any) => typeof r.id === 'string' && date(r.date) && typeof r.raw === 'string' && validConditions(r.conditions) && Array.isArray(r.results) && r.results.every(validRecommendation) && strings(r.excludedIds) && Array.isArray(r.feedback) && r.feedback.every((f:any) => typeof f.itemId === 'string' && ['session','long'].includes(f.scope) && ['exclude','restore'].includes(f.action) && date(f.date)))
+  return (h.legacy===undefined || typeof h.legacy==='boolean') && (h.trimmedRounds===undefined || Number.isInteger(h.trimmedRounds) && h.trimmedRounds>=0)
+    && Array.isArray(h.rounds) && h.rounds.length <= 10 && h.rounds.every((r: any) => r && typeof r.id === 'string' && date(r.date) && typeof r.raw === 'string' && validConditions(r.conditions) && Array.isArray(r.results) && r.results.every(validRecommendation) && strings(r.excludedIds) && (r.catalogVersion===undefined || typeof r.catalogVersion==='string') && (r.candidateScope===undefined || r.candidateScope==='favorites' && strings(r.candidateIds)) && Array.isArray(r.feedback) && r.feedback.length<=100 && r.feedback.every((f:any) => f && typeof f.itemId === 'string' && ['session','long'].includes(f.scope) && ['exclude','restore'].includes(f.action) && date(f.date)))
     && (h.selected === undefined || validRecommendation(h.selected.result) && date(h.selected.date) && typeof h.selected.roundId === 'string')
     && (h.review === undefined || h.selected && (h.review.rating === undefined || ['good','neutral','poor'].includes(h.review.rating)) && typeof h.review.note==='string' && h.review.note.length<=200 && date(h.review.date) && h.review.itemId===h.selected.result.item.id && h.review.roundId===h.selected.roundId);
 }
@@ -19,7 +20,7 @@ export function decodeStore(text: string): Store | null {
     if (![1,2].includes(v?.version) || typeof v.name !== 'string' || v.name.length > 100 || !['food','music'].every(c => ['selected','tags','disliked'].every(k => strings(v.profiles?.[c]?.[k]))) || !strings(v.favorites) || !Array.isArray(v.history) || v.history.length > 50 || !v.history.every((h:any) => validHistory(h,v.version))) return null;
     if (v.presets !== undefined && (!Array.isArray(v.presets) || v.presets.length > 40 || !v.presets.every(validPreset) || new Set(v.presets.map((p:any)=>p.id)).size !== v.presets.length || ['food','music'].some(c=>v.presets.filter((p:any)=>p.category===c).length > 20))) return null;
     if(v.appearance!==undefined && !validAppearance(v.appearance))return null;
-    return v.version === 2 ? v : { ...v, version:2, history:v.history.map((h:any)=>({...h,rounds:[],legacy:true})) };
+    return v.version === 2 ? v : { ...v, version:2, history:v.history.map((h:any)=>({id:h.id,date:h.date,category:h.category,raw:h.raw,conditions:h.conditions,resultIds:h.resultIds,rounds:[],legacy:true})) };
   } catch { return null; }
 }
 export type StoreLoad = { store:Store; issue?: 'damaged'|'unavailable'; raw?:string };

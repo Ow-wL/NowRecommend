@@ -11,7 +11,7 @@ export function validConditions(v: any): boolean {
 }
 export function validRecommendation(v: any): boolean {
   const i = v?.item;
-  return !!i && typeof i.id === 'string' && ['food','music'].includes(i.category) && ['name','subtitle','description','emoji','color'].every(k => typeof i[k] === 'string') && strings(i.tags) && strings(i.ingredients) && (i.cost === undefined || Number.isFinite(i.cost)) && typeof v.tasteReason === 'string' && typeof v.contextReason === 'string';
+  return !!i && typeof i.id === 'string' && ['food','music'].includes(i.category) && ['name','subtitle','description','emoji','color'].every(k => typeof i[k] === 'string') && strings(i.tags) && strings(i.ingredients) && (i.price===undefined || typeof i.price==='string') && (i.cost === undefined || Number.isFinite(i.cost) && i.cost>=0) && typeof v.tasteReason === 'string' && typeof v.contextReason === 'string';
 }
 function profile(v: any): boolean { return !!v && strings(v.selected) && strings(v.tags) && strings(v.disliked); }
 export function readTab(): TabState {

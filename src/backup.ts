@@ -37,4 +37,4 @@ export function parseBackup(text:string):BackupPreview {
   const issue=importIssue(store);if(issue)throw new Error(issue);
   return {store,date:envelope?value.exportedAt:undefined};
 }
-export function downloadBackup(store:Store) {const url=URL.createObjectURL(new Blob([createBackup(store)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`nowrecommend-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+export function downloadBackup(store:Store) {const url=URL.createObjectURL(new Blob([createBackup(store)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`nowrecommend-backup-${new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

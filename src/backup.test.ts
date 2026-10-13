@@ -12,4 +12,5 @@ describe('full replacement backup validation',()=>{
     expect(()=>parseBackup(' '.repeat(5000001))).toThrow('5MB');
     expect(()=>parseBackup(JSON.stringify({app:'other',backupVersion:1,exportedAt:new Date().toISOString(),data:emptyStore()}))).toThrow();
   });
+  it('rejects malformed optional history and item fields before rendering',()=>{const s=nextBatch(newSession(),emptyProfile()),entry=recordRound([],s,s.snapshot!)[0];expect(()=>parseBackup(createBackup({...emptyStore(),history:[{...entry,trimmedRounds:{} as any}]}))).toThrow();const bad=structuredClone(entry);bad.rounds[0].results[0].item.price=[] as any;expect(()=>parseBackup(createBackup({...emptyStore(),history:[bad]}))).toThrow();expect(()=>parseBackup(createBackup({...emptyStore(),appearance:{mode:'dark',accent:'unsafe'} as any}))).toThrow();});
 });
