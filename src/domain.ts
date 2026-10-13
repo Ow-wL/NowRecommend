@@ -2,10 +2,10 @@ import { items, type Category, type Item } from './data';
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[] };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[] };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
-export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string };
+export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
 export type Selection = { result: Recommendation; date: string; roundId: string };
 export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; legacy?: boolean; trimmedRounds?: number };
 export type Preset = { id: string; category: Category; name: string; conditions: Conditions };
@@ -119,6 +119,7 @@ export function recommend(session: Session, profile: Profile): Recommendation[] 
 
 export function eligibleCandidates(session: Session, profile: Profile): Item[] {
   return items.filter(i => i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
+    && (session.candidateScope !== 'favorites' || (session.candidateIds || []).includes(i.id))
     && !session.conditions.excluded.some(t => [...i.tags, ...i.ingredients].includes(t))
     && (session.conditions.maxPrice === null || typeof i.cost === 'number' && i.cost <= session.conditions.maxPrice));
 }
