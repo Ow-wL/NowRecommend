@@ -12,5 +12,10 @@ export function recordRound(history: HistoryEntry[], session: Session, results: 
 }
 export function selectResult(entry: HistoryEntry, result: Recommendation, roundId: string): HistoryEntry {
   if (entry.selected?.result.item.id === result.item.id && entry.selected.roundId === roundId) return entry;
-  return { ...entry, selected: { result: structuredClone(result), roundId, date: new Date().toISOString() } };
+  return { ...entry,review:undefined, selected: { result: structuredClone(result), roundId, date: new Date().toISOString() } };
+}
+export function reviewSelection(entry:HistoryEntry,rating:'good'|'neutral'|'poor'|undefined,note:string):HistoryEntry {
+  if(!entry.selected)return entry;
+  const text=note.trim().slice(0,200);
+  return {...entry,review:!rating && !text?undefined:{rating,note:text,date:new Date().toISOString(),itemId:entry.selected.result.item.id,roundId:entry.selected.roundId}};
 }

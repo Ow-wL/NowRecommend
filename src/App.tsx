@@ -9,7 +9,7 @@ import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
 import { readStoreResult, writeStore, replaceStore, downloadRecovery, clearDamagedStore } from './storage';
 import { DataManagement } from './components/DataManagement';
-import { recordRound, selectResult } from './history';
+import { recordRound, selectResult,reviewSelection } from './history';
 import { HistoryDetails } from './components/HistoryDetails';
 import { Modal, useFocusTrap } from './components/Modal';
 import { RecommendationCard } from './components/RecommendationCard';
@@ -136,7 +136,7 @@ export default function App() {
     setCompletedId(current.id!); setActive(false); setSession(newSession(category)); setPage('complete'); setToast(null);
   }
   function reviseSelection(entry: HistoryEntry, result?: Recommendation, roundId = '') {
-    const updated = result ? selectResult(entry,result,roundId) : {...entry,selected:undefined};
+    const updated = result ? selectResult(entry,result,roundId) : {...entry,selected:undefined,review:undefined};
     setStore(s=>({...s,history:s.history.map(h=>h.id === entry.id ? updated : h)}));
     setHistoryPreview(updated);
   }
@@ -255,7 +255,7 @@ export default function App() {
     </div>
     {toast && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); setToast(null); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={() => setToast(null)}><X size={15} /></button></div>}
     {feedbackItem && <Modal title="어떤 이유로 바꾸고 싶으세요?" onClose={() => setFeedbackItem(null)}><p className="modal-description"><b>{feedbackItem.name}</b>에 대한 의견을 어디까지 반영할지 골라주세요.</p><button className="feedback-option" onClick={() => applyFeedback('session')}><span className="small-icon food"><Clock3 size={21} /></span><span><b>이번 요청에서 제외</b><small>이번 요청에서만 빼고 다른 항목을 추천해요.<br />새로운 상황으로 시작하면 다시 만날 수 있어요.</small></span><ChevronRight size={19} /></button><button className="feedback-option" onClick={() => applyFeedback('long')}><span className="small-icon music"><SlidersHorizontal size={21} /></span><span><b>원래 내 취향이 아님</b><small>이 항목을 장기 비선호에 저장해요.<br />다음 요청에서도 제외하며, 내 취향에서 해제할 수 있어요.</small></span><ChevronRight size={19} /></button><button className="button secondary full-width" onClick={() => setFeedbackItem(null)}>취소</button></Modal>}
-    {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} /><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
+    {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} onReview={(rating,note)=>{const next=reviewSelection(historyPreview,rating,note);setStore(s=>({...s,history:s.history.map(h=>h.id===next.id?next:h)}));setHistoryPreview(next);}}/><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
     {presetPreview && <Modal title={`${presetPreview.name} 적용 확인`} onClose={()=>setPresetPreview(null)}><p>이 {categoryLabel[presetPreview.category]} 조건으로 현재 입력 문장·조건·예산을 바꿔요. 평소 취향은 바꾸지 않아요. 같은 분야의 진행 중 요청이 있으면 이번 요청 제외는 유지해요.</p><ConditionsSummary conditions={presetPreview.conditions}/><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={()=>setPresetPreview(null)}>취소</button><button className="button primary" onClick={applyPreview}>이 조건 적용</button></div></Modal>}
     {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons}/></Modal>}
     {compareOpen && <Modal title="후보 비교" onClose={()=>setCompareOpen(false)}><Comparison results={results.filter(r=>session.compareIds?.includes(r.item.id))} onChoose={r=>{setCompareOpen(false);choose(r);}}/></Modal>}

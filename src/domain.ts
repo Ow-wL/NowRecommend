@@ -7,7 +7,8 @@ export type Recommendation = { item: Item; tasteReason: string; contextReason: s
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
 export type Selection = { result: Recommendation; date: string; roundId: string };
-export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; legacy?: boolean; trimmedRounds?: number };
+export type Review = { rating?:'good'|'neutral'|'poor';note:string;date:string;itemId:string;roundId:string };
+export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; review?:Review;legacy?: boolean; trimmedRounds?: number };
 export type Preset = { id: string; category: Category; name: string; conditions: Conditions };
 export type Store = { version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[]; presets?: Preset[] };
 export const emptyProfile = (): Profile => ({ selected: [], tags: [], disliked: [] });

@@ -8,7 +8,8 @@ function validHistory(h: any, version: number): boolean {
   if (!h || typeof h.id !== 'string' || !date(h.date) || !['food','music'].includes(h.category) || typeof h.raw !== 'string' || !strings(h.resultIds) || !validConditions(h.conditions)) return false;
   if(version === 1) return true;
   return Array.isArray(h.rounds) && h.rounds.length <= 10 && h.rounds.every((r: any) => typeof r.id === 'string' && date(r.date) && typeof r.raw === 'string' && validConditions(r.conditions) && Array.isArray(r.results) && r.results.every(validRecommendation) && strings(r.excludedIds) && Array.isArray(r.feedback) && r.feedback.every((f:any) => typeof f.itemId === 'string' && ['session','long'].includes(f.scope) && ['exclude','restore'].includes(f.action) && date(f.date)))
-    && (h.selected === undefined || validRecommendation(h.selected.result) && date(h.selected.date) && typeof h.selected.roundId === 'string');
+    && (h.selected === undefined || validRecommendation(h.selected.result) && date(h.selected.date) && typeof h.selected.roundId === 'string')
+    && (h.review === undefined || h.selected && (h.review.rating === undefined || ['good','neutral','poor'].includes(h.review.rating)) && typeof h.review.note==='string' && h.review.note.length<=200 && date(h.review.date) && h.review.itemId===h.selected.result.item.id && h.review.roundId===h.selected.roundId);
 }
 export function decodeStore(text: string): Store | null {
   try {
