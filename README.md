@@ -30,7 +30,7 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## API 서버와 DB (개발 중)
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R4(AI 재순위·설명)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R5(AI 조건 해석)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
 
 ### 프론트엔드의 두 가지 모드
 
@@ -73,6 +73,10 @@ curl http://127.0.0.1:8010/api/catalog?category=food
   6. 요청마다 `recommendation_logs`에 기록합니다.
 - 현재 키는 무료 등급이라 생성 요청이 **분당 5회, 하루 20회**로 제한됩니다. 한도를 넘으면 결과가 `retrieval_only`로 나옵니다(plans-rag.md §12 결정 5).
 - 재순위 설정: `LLM_MODEL`(기본 `gemini-3.6-flash`), `RERANK_ENABLED`(기본 true), `RERANK_TIMEOUT_MS`(기본·최소 10000).
+- `POST /api/parse`는 `{category, text}`를 받습니다.
+  - 브라우저와 같은 규칙으로 먼저 해석하고, 규칙이 놓친 단어가 있을 때만 LLM에 물어 결과를 합칩니다. 제외는 합집합이고, 예산은 규칙이 먼저입니다.
+  - 응답의 `ai`는 `not_needed`·`used`·`unavailable`·`failed` 중 하나입니다. LLM 해석은 `PARSE_ENABLED=false`로 끌 수 있습니다.
+  - 해석 규칙은 `shared/parse-cases.json`으로 프론트 `parseConditions`와 서버가 함께 검사합니다.
 - `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 
@@ -108,7 +112,7 @@ py -3.14 -m venv .venv
 
 ## 입력 해석
 
-규칙 기반으로 알려진 표현만 해석합니다. 예: `8천원`, `1만 5천원`, `15,000원`, `이만원 이하`, `안 매운`, `밀 제외`, `과제`, `산책`, `차분한`, `보컬 없는`.
+규칙 기반으로 알려진 표현만 해석합니다. 예: `8천원`, `1만 5천원`, `15,000원`, `이만원 이하`, `안 매운`, `매운 건 빼고`, `밀 제외`, `과제`, `산책`, `차분한`, `보컬 없는`. 서버 모드에서는 규칙이 놓친 단어가 있을 때만 AI가 함께 해석하고, 확인 화면에 그 사실과 적용하지 않은 표현을 보여줍니다.
 
 자동 추출과 직접 선택을 분리합니다. 같은 문장 재확인에는 삭제한 자동 조건을 되살리지 않으며, 새 문장에는 자동 조건만 다시 계산합니다. 직접 예산이 우선하고 빈 직접 예산은 제한 해제입니다. 직접 예산은 100~1,000,000원의 정수만 허용합니다. 충돌 조건은 수정 후 추천할 수 있습니다. 해석하지 못한 표현은 적용하지 않습니다.
 

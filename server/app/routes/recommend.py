@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..db import get_session
 from ..embeddings import GeminiEmbedder, QueryEmbedder
-from ..llm.client import CooldownModel, GeminiJsonModel, JsonModel
+from ..llm.client import JsonModel
+from ..llm.provider import shared_model
 from ..recommend import PipelineConfig, recommend
 from ..schemas import RecommendRequest
 
@@ -25,13 +26,9 @@ def get_query_embedder() -> Callable[[str], list[float]] | None:
                                         attempts=1, timeout_ms=5000))
 
 
-@lru_cache
 def get_rerank_model() -> JsonModel | None:
     """None without an API key or with RERANK_ENABLED=false: results stay retrieval_only."""
-    settings = get_settings()
-    if not settings.gemini_api_key or not settings.rerank_enabled:
-        return None
-    return CooldownModel(GeminiJsonModel(settings.gemini_api_key, settings.llm_model, timeout_ms=settings.rerank_timeout_ms))
+    return shared_model() if get_settings().rerank_enabled else None
 
 
 def get_pipeline_config() -> PipelineConfig:

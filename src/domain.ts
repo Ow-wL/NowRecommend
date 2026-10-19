@@ -4,7 +4,9 @@ import { getCatalog } from './catalog';
 const catalogItems = () => getCatalog().items;
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
-export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
+export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string;
+  /** How the server read `raw` ('local': server unreachable, browser rules kept). Applies only while raw matches. */
+  ai?: { raw: string; source: 'rule' | 'rule+ai' | 'local'; unparsed: string[] } };
 export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local' };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
@@ -30,7 +32,7 @@ export function parseConditions(text: string, category: Category): Conditions {
     : [[/과제|공부|집중|작업/, '과제'], [/휴식|쉬|잠|편안/, '휴식'], [/산책|걷/, '산책'], [/운동|달리|러닝/, '운동'], [/잔잔|차분|조용/, '차분함'], [/활기|신나|밝은/, '활기참'], [/적당히|적당한/, '중간 에너지'], [/연주곡|보컬.?없|가사.?없/, '연주곡'], [/재즈/, '재즈'], [/피아노/, '피아노'], [/어쿠스틱/, '어쿠스틱']];
   for (const [pattern, value] of rules) if (pattern.test(text)) condition.tags.push(value);
   if (category === 'food') {
-    if (/안\s*매운|맵지\s*않|매운.{0,5}(제외|싫|피하|말고)/.test(text)) { condition.excluded.push('매콤함'); condition.tags = condition.tags.filter(t => t !== '매콤함'); }
+    if (/안\s*매운|맵지\s*않|매운.{0,5}(제외|빼|싫|피하|말고)/.test(text)) { condition.excluded.push('매콤함'); condition.tags = condition.tags.filter(t => t !== '매콤함'); }
     for (const ingredient of excludableIngredients) {
       if (new RegExp(`(?<![가-힣])${ingredient}.{0,6}(제외|빼|피하|싫|없이|알레르기)`).test(text)) condition.excluded.push(ingredient);
     }
@@ -78,6 +80,12 @@ export function changeText(session: Session, raw: string): Session {
   const old = editorFor(session);
   const editor = old.parsedRaw === raw ? old : { ...old, parsedRaw: raw, automatic: parseConditions(raw, session.category), removedTags: [], removedExcluded: [] };
   return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: old.parsedRaw === raw ? session.currentIds : undefined, snapshot: old.parsedRaw === raw ? session.snapshot : undefined };
+}
+/** Replaces the automatic conditions of an unchanged sentence with the server's reading (rules + AI). */
+export function applyParsed(session: Session, raw: string, automatic: Conditions | null, ai: NonNullable<ConditionEditor['ai']>): Session {
+  if (session.raw !== raw || !session.editor || session.editor.parsedRaw !== raw) return session;
+  const editor = { ...session.editor, ...(automatic ? { automatic: structuredClone(automatic) } : {}), ai };
+  return { ...session, editor, conditions: effectiveConditions(editor), revision: 0, ...(automatic ? { currentIds: undefined, snapshot: undefined } : {}) };
 }
 export function toggleCondition(session: Session, value: string, exclusion = false): Session {
   const editor = structuredClone(editorFor(session));

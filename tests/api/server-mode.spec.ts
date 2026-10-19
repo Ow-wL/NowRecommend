@@ -90,3 +90,52 @@ test('replaces a single card through the server', async ({ page }) => {
   expect(bodies[1]).toMatchObject({ count: 1, pinnedIds: [] });
   expect(bodies[1].excludedIds).toEqual(expect.arrayContaining(['f02', 'f07', 'f12']));
 });
+
+const SENTENCE = '속이 안 좋아서 부담 없는 걸로';
+async function confirmSentence(page: Page, text = SENTENCE) {
+  await page.goto('/#/recommend/food');
+  await page.locator('#situation').fill(text);
+  await page.getByRole('button', { name: '조건 확인하기' }).click();
+}
+
+test('reads missed words with the server and keeps the answer for the same sentence', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const parses: any[] = [], recommends: any[] = [];
+  await page.route(`${API}/api/parse`, route => {
+    if (route.request().method() === 'POST') parses.push(route.request().postDataJSON());
+    return fulfill(route, { conditions: { tags: ['담백함', '따뜻함'], excluded: ['매콤함'], maxPrice: null }, unparsed: ['좋아서'], source: 'rule+ai', ai: 'used' });
+  });
+  await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') recommends.push(route.request().postDataJSON()); return fulfill(route, batch(['f02', 'f12', 'f09'])); });
+  await confirmSentence(page);
+  await expect(page.getByText('AI가 문장을 함께 해석했어요.')).toBeVisible();
+  await expect(page.getByText('적용하지 않은 표현: 좋아서')).toBeVisible();
+  await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '매콤함', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(parses).toEqual([{ category: 'food', text: SENTENCE }]);
+  await page.getByRole('button', { name: '따뜻함 조건 삭제' }).click();
+  await page.getByRole('button', { name: '이전 단계' }).click();
+  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toHaveCount(0); // the removal survives re-confirming
+  expect(parses).toHaveLength(1);
+  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await expect(page.locator('.result-grid h3')).toHaveCount(3);
+  expect(recommends[0].conditions).toEqual({ tags: ['담백함'], excluded: ['매콤함'], maxPrice: null });
+});
+
+test('falls back to the browser rules when parsing fails', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  await page.route(`${API}/api/parse`, route => fulfill(route, { detail: 'down' }, 503));
+  await confirmSentence(page);
+  await expect(page.getByText('서버에 연결하지 못해 기본 규칙으로 해석했어요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '담백함 조건 삭제' })).toBeVisible();
+});
+
+test('does not ask the server about an empty sentence', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  let parses = 0;
+  await page.route(`${API}/api/parse`, route => { parses++; return fulfill(route, {}); });
+  await page.goto('/#/recommend/food');
+  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  await expect(page.getByRole('button', { name: '추천받기', exact: true })).toBeVisible();
+  expect(parses).toBe(0);
+});

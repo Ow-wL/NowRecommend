@@ -1,0 +1,425 @@
+{
+  "about": "parseConditions(src/domain.ts)와 서버 규칙 파서(server/app/parsing/rules.py)가 함께 검사하는 사례.",
+  "cases": [
+    {
+      "category": "food",
+      "text": "혼자 먹을 담백한 저녁이 먹고 싶어",
+      "expected": {
+        "tags": [
+          "혼자",
+          "저녁",
+          "담백함"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "매콤한 점심, 만원 이하",
+      "expected": {
+        "tags": [
+          "점심",
+          "매콤함"
+        ],
+        "excluded": [],
+        "maxPrice": 10000
+      }
+    },
+    {
+      "category": "food",
+      "text": "친구랑 둘이 칼칼한 국물",
+      "expected": {
+        "tags": [
+          "함께",
+          "매콤함",
+          "국물"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "안 매운 걸로 8천원 이하",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "매콤함"
+        ],
+        "maxPrice": 8000
+      }
+    },
+    {
+      "category": "food",
+      "text": "맵지 않고 따뜻한 거",
+      "expected": {
+        "tags": [
+          "따뜻함"
+        ],
+        "excluded": [
+          "매콤함"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "매운 건 빼고 채소 많은 점심",
+      "expected": {
+        "tags": [
+          "점심",
+          "채소"
+        ],
+        "excluded": [
+          "매콤함"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "1만 5천원 이하로 저녁",
+      "expected": {
+        "tags": [
+          "저녁"
+        ],
+        "excluded": [],
+        "maxPrice": 15000
+      }
+    },
+    {
+      "category": "food",
+      "text": "15,000원 정도 고소한 메뉴",
+      "expected": {
+        "tags": [
+          "고소함"
+        ],
+        "excluded": [],
+        "maxPrice": 15000
+      }
+    },
+    {
+      "category": "food",
+      "text": "이만원 이하 함께 먹을 저녁",
+      "expected": {
+        "tags": [
+          "함께",
+          "저녁"
+        ],
+        "excluded": [],
+        "maxPrice": 20000
+      }
+    },
+    {
+      "category": "food",
+      "text": "밀 제외, 시원한 점심",
+      "expected": {
+        "tags": [
+          "점심",
+          "차가움"
+        ],
+        "excluded": [
+          "밀"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "땅콩 알레르기 있어요",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "땅콩"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "돼지고기 빼고 소고기 제외",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "소고기",
+          "돼지고기"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "유제품 없이 담백하게",
+      "expected": {
+        "tags": [
+          "담백함"
+        ],
+        "excluded": [
+          "유제품"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "버섯 싫어 달걀도 피하고 싶어",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "버섯",
+          "달걀"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "콩 빼고 혼밥",
+      "expected": {
+        "tags": [
+          "혼자"
+        ],
+        "excluded": [
+          "콩"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "비 오는 날 얼큰한 국물",
+      "expected": {
+        "tags": [
+          "매콤함",
+          "국물"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "속이 안 좋아서 부담 없는 걸로",
+      "expected": {
+        "tags": [
+          "담백함"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "더운 날 시원하게 점심",
+      "expected": {
+        "tags": [
+          "점심",
+          "차가움"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "3만원으로 기념일 저녁",
+      "expected": {
+        "tags": [
+          "저녁"
+        ],
+        "excluded": [],
+        "maxPrice": 30000
+      }
+    },
+    {
+      "category": "food",
+      "text": "오천원으로 간단하게",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": 5000
+      }
+    },
+    {
+      "category": "food",
+      "text": "그냥 아무거나",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "닭고기 없이 생선도 제외 순한 저녁",
+      "expected": {
+        "tags": [
+          "저녁",
+          "담백함"
+        ],
+        "excluded": [
+          "닭고기",
+          "생선"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "야채 듬뿍 차가운 점심",
+      "expected": {
+        "tags": [
+          "점심",
+          "차가움",
+          "채소"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "과제하면서 들을 적당히 활기찬 음악",
+      "expected": {
+        "tags": [
+          "과제",
+          "활기참",
+          "중간 에너지"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "보컬 없는 잔잔한 피아노",
+      "expected": {
+        "tags": [
+          "차분함",
+          "연주곡",
+          "피아노"
+        ],
+        "excluded": [
+          "보컬"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "가사 없이 집중할 연주곡",
+      "expected": {
+        "tags": [
+          "과제",
+          "연주곡"
+        ],
+        "excluded": [
+          "보컬"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "산책할 때 듣기 좋은 밝은 노래",
+      "expected": {
+        "tags": [
+          "산책",
+          "활기참"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "운동하면서 신나는 곡",
+      "expected": {
+        "tags": [
+          "운동",
+          "활기참"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "잠 오기 전 편안한 재즈",
+      "expected": {
+        "tags": [
+          "휴식",
+          "재즈"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "보컬 싫어 조용한 거",
+      "expected": {
+        "tags": [
+          "차분함"
+        ],
+        "excluded": [
+          "보컬"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "어쿠스틱 기타 느낌",
+      "expected": {
+        "tags": [
+          "어쿠스틱"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "비 오는 밤 혼자 듣기 좋은 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "공부할 때 차분한 거, 만원",
+      "expected": {
+        "tags": [
+          "과제",
+          "차분함"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "러닝할 때 들을 노래",
+      "expected": {
+        "tags": [
+          "운동"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    }
+  ]
+}

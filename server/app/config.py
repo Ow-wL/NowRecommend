@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     embedding_dim: int = 768  # must equal the vector(768) column
     llm_model: str = "gemini-3.6-flash"
     rerank_enabled: bool = True
+    parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)
     db_connect_timeout: int = 3
