@@ -1,4 +1,5 @@
-import { exclusions, items, options, type Category } from './data';
+import { exclusions, options, type Category } from './data';
+import { getCatalog } from './catalog';
 import { emptyConditions, type Conditions, type Preset, type Session } from './domain';
 import { validConditions } from './sessionStorage';
 
@@ -13,7 +14,7 @@ export const defaultPresets: Preset[] = [
 export function validPreset(value: any): value is Preset {
   if (!value || typeof value.id !== 'string' || !value.id.length || value.id.length > 100 || !['food','music'].includes(value.category) || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 30 || !validConditions(value.conditions)) return false;
   const category = value.category as Category;
-  const tags = new Set([...options[category], ...items.filter(i=>i.category === category).flatMap(i=>i.tags)]);
+  const tags = new Set([...options[category], ...getCatalog().items.filter(i=>i.category === category).flatMap(i=>i.tags)]);
   return value.conditions.tags.every((t:string)=>tags.has(t)) && value.conditions.excluded.every((t:string)=>exclusions[category].includes(t)) && (category === 'food' || value.conditions.maxPrice === null) && (value.conditions.maxPrice === null || Number.isInteger(value.conditions.maxPrice));
 }
 export function applyPreset(session: Session, conditions: Conditions): Session {

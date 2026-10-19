@@ -16,7 +16,12 @@ npm run test:e2e
 
 기본 주소는 `http://127.0.0.1:5173`입니다. 브라우저 테스트 설정은 `channel: msedge`이며, 시스템 Edge가 없으면 `npx playwright install msedge`로 준비합니다. Chromium 설치만으로 이 설정의 Edge를 대체할 수는 없습니다.
 
-다른 프로젝트가 5173을 사용하면 테스트 실행에만 임시 포트를 지정합니다. 기본 개발·테스트 포트는 바뀌지 않으며 기존 서버를 재사용하거나 종료하지 않습니다.
+브라우저 테스트는 두 프로젝트로 나뉩니다.
+
+- `offline`: 기존 스펙. API 주소 없이 지정 포트(기본 5173)에서 실행합니다.
+- `api`: `tests/api/`. 다음 포트(기본 5174)에 가짜 API 주소 `http://127.0.0.1:5999`로 띄운 dev 서버에서 실행하고, 요청은 route로 가로챕니다. 실제 서버나 Gemini는 호출하지 않습니다.
+
+다른 프로젝트가 5173을 사용하면 테스트 실행에만 임시 포트를 지정합니다(서버 모드 테스트는 그다음 포트를 사용). 기본 개발·테스트 포트는 바뀌지 않으며 기존 서버를 재사용하거나 종료하지 않습니다.
 
 ```powershell
 $env:PLAYWRIGHT_PORT = '5187'
@@ -25,7 +30,26 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## API 서버와 DB (개발 중)
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R2(유사도 추천 API)까지 완료된 상태입니다. 프론트엔드는 아직 서버를 호출하지 않습니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R3(프론트엔드 연결)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+
+### 프론트엔드의 두 가지 모드
+
+| 모드 | 조건 | 동작 |
+|---|---|---|
+| 오프라인 | `VITE_API_BASE_URL` 없음(GitHub Pages 빌드 포함) | 기존과 같이 내장 카탈로그(`src/data.ts`)와 브라우저 규칙으로 즉시 추천 |
+| 서버 | `VITE_API_BASE_URL=http://127.0.0.1:8010` | `/api/catalog`로 카탈로그를 받고, 추천·재추천·피드백 후 다시 채우기·한 장 교체를 `/api/recommend`로 요청 |
+
+서버 모드로 개발 서버를 띄우려면 아래처럼 실행합니다. API의 CORS 허용 주소가 `127.0.0.1:5173`·`localhost:5173`이므로 포트를 바꾸면 `CORS_ORIGINS`도 함께 바꿔야 합니다.
+
+```powershell
+$env:VITE_API_BASE_URL = 'http://127.0.0.1:8010'
+try { npm run dev } finally { Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue }
+```
+
+- 카탈로그는 응답 형식을 검사한 뒤 탭의 sessionStorage에 캐시합니다. 서버가 응답하지 않으면 캐시나 내장 카탈로그로 계속 동작합니다.
+- 추천 요청 중에는 버튼이 "추천을 고르는 중"으로 잠깁니다. 화면을 옮기거나 새 요청을 보내면 이전 응답은 무시합니다.
+- 서버 오류·시간 초과 시 "다시 시도하기"와 "기본 추천으로 보기"(브라우저 규칙)를 제공합니다. 기본 추천으로 본 결과에는 안내가 표시됩니다.
+- 장기 비선호·이번 요청 제외를 누르면 해당 카드는 바로 사라지고, 빈자리는 서버 응답으로 채웁니다. 서버가 실패해도 피드백 자체는 유지됩니다.
 
 Docker Desktop이 필요합니다. PostgreSQL 17 + pgvector와 FastAPI 서버를 함께 실행하며, API 컨테이너는 시작할 때 Alembic 마이그레이션을 적용합니다.
 

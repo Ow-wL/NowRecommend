@@ -2,8 +2,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } fro
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
 import { ArrowLeft, ArrowRight, Check, CheckCheck, ChevronRight, Clock3, Heart, Headphones, House, Info, Leaf, LogOut, Menu, Music2, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Utensils, X } from 'lucide-react';
-import { items, options, exclusions, categoryLabel, type Category, type Item } from './data';
-import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, replaceCandidate, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset } from './domain';
+import { options, exclusions, categoryLabel, type Category, type Item } from './data';
+import { loadCatalog, useCatalog } from './catalog';
+import { apiEnabled } from './api/client';
+import { fetchRecommendations } from './api/recommend';
+import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, applyBatch, replaceCandidate, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset } from './domain';
 import { Comparison } from './components/Comparison';
 import { applyPreset } from './presets';
 import { Presets, ConditionsSummary } from './components/Presets';
@@ -23,6 +26,9 @@ const toggle = (values: string[], value: string) => values.includes(value) ? val
 
 export default function App() {
   const [loaded] = useState(readStoreResult);
+  const catalog = useCatalog();
+  const { items } = catalog;
+  useEffect(() => { void loadCatalog(); }, []);
   const [store, setStore] = useState(loaded.store);
   useLayoutEffect(()=>{const apply=()=>applyAppearance(store.appearance);apply();const media=window.matchMedia('(prefers-color-scheme:dark)');if(store.appearance?.mode!=='system')return;media.addEventListener('change',apply);return ()=>media.removeEventListener('change',apply);},[store.appearance]);
   const [storageBlocked, setStorageBlocked] = useState(loaded.issue === 'damaged');
@@ -54,7 +60,7 @@ export default function App() {
   const [deleteId, setDeleteId] = useState('');
   const [nameDraft, setNameDraft] = useState(store.name);
   const [busy, setBusy] = useState(false);
-  const [requestError, setRequestError] = useState(false);
+  const [requestError, setRequestError] = useState<false | 'demo' | 'server'>(false);
   const [failNext, setFailNext] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [smallScreen, setSmallScreen] = useState(()=>window.matchMedia('(max-width:1023px)').matches);
@@ -97,7 +103,7 @@ export default function App() {
   const candidateStatus = candidateInfo(session, store.profiles[session.category]);
   const budgetError = validateBudget(session.editor?.budgetInput ?? '');
   const conflicts = conditionConflicts(session);
-  const results = useMemo(() => recommend(session, store.profiles[session.category]), [session, store.profiles]);
+  const results = useMemo(() => recommend(session, store.profiles[session.category], items), [session, store.profiles, items]);
   const allPinned=results.length>0 && results.every(r=>session.pinnedIds?.includes(r.item.id));
 
   useEffect(() => { const failed = storageBlocked || !writeStore(store); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
@@ -144,17 +150,30 @@ export default function App() {
     setStore(s=>({...s,history:s.history.map(h=>h.id === entry.id ? updated : h)}));
     setHistoryPreview(updated);
   }
-  function restoreTemporary(id: string) {
-    const current=nextBatch({...session,excludedIds:session.excludedIds.filter(v=>v !== id)},store.profiles[session.category]);
-    setSession(current);record(current,[{itemId:id,scope:'session',action:'restore',date:new Date().toISOString()}]);
+  // Offline (no VITE_API_BASE_URL) or an explicit fallback computes locally and synchronously, exactly as before.
+  // With the API server, the request is async: stale answers are dropped via requestCounter and failures offer a retry.
+  function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
+    if (!apiEnabled() || local) { done({ ...nextBatch(base, profile), source: local ? 'local' : undefined }); return; }
+    const token = ++requestCounter.current;
+    setBusy(true); setRequestError(false);
+    fetchRecommendations(base, profile)
+      .then(remote => { if (token === requestCounter.current) done({ ...applyBatch(base, remote.results), source: 'server' }); })
+      .catch(() => { if (token === requestCounter.current) setRequestError('server'); })
+      .finally(() => { if (token === requestCounter.current) setBusy(false); });
   }
-  function run(again = false, skipFailure = false) {
+  function restoreTemporary(id: string) {
+    withBatch({...session,excludedIds:session.excludedIds.filter(v=>v !== id)},store.profiles[session.category],current=>{
+      setSession(current);record(current,[{itemId:id,scope:'session',action:'restore',date:new Date().toISOString()}]);
+    });
+  }
+  function run(again = false, skipFailure = false, local = false) {
     if (budgetError || conflicts.length) return;
     setRequestError(false);
-    if (failNext && !skipFailure) { setFailNext(false); setRequestError(true); return; }
-    const current = nextBatch({ ...session, revision: again ? session.revision + 1 : session.revision }, store.profiles[session.category]);
-    setSession(current); record(current); setStep('results');
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (failNext && !skipFailure) { setFailNext(false); setRequestError('demo'); return; }
+    withBatch({ ...session, revision: again ? session.revision + 1 : session.revision }, store.profiles[session.category], current => {
+      setSession(current); record(current); setStep('results');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, local);
   }
   function applyFeedback(scope: 'session' | 'long') {
     if (!feedbackItem) return;
@@ -162,12 +181,15 @@ export default function App() {
     const previousSession = session;
     const next = updateFeedback(store.profiles[category], session, id, scope);
     setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: next.profile } }));
-    const displayed = nextBatch(next.session, next.profile);
-    setSession(displayed); record(displayed,[{itemId:id,scope,action:'exclude',date:new Date().toISOString()}]); setFeedbackItem(null);
-    notify(scope === 'session' ? '이번 추천에서 제외했어요. 새 요청에서는 다시 추천될 수 있어요.' : '장기 비선호에 추가했어요. 다음 추천에도 반영할게요.', () => {
-      if (scope === 'long') setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { ...s.profiles[category], disliked: s.profiles[category].disliked.filter(v => v !== id) } } }));
-      const restored = {...previousSession,roundId:crypto.randomUUID(),seenIds:[...new Set([...(displayed.seenIds || []),...(previousSession.seenIds || [])])]};
-      setSession(restored);record(restored,[{itemId:id,scope,action:'restore',date:new Date().toISOString()}]);
+    // The excluded card disappears at once (the snapshot is filtered); the refill may take a server round trip.
+    setSession(next.session); setFeedbackItem(null);
+    withBatch(next.session, next.profile, displayed => {
+      setSession(displayed); record(displayed,[{itemId:id,scope,action:'exclude',date:new Date().toISOString()}]);
+      notify(scope === 'session' ? '이번 추천에서 제외했어요. 새 요청에서는 다시 추천될 수 있어요.' : '장기 비선호에 추가했어요. 다음 추천에도 반영할게요.', () => {
+        if (scope === 'long') setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { ...s.profiles[category], disliked: s.profiles[category].disliked.filter(v => v !== id) } } }));
+        const restored = {...previousSession,roundId:crypto.randomUUID(),seenIds:[...new Set([...(displayed.seenIds || []),...(previousSession.seenIds || [])])]};
+        setSession(restored);record(restored,[{itemId:id,scope,action:'restore',date:new Date().toISOString()}]);
+      });
     });
   }
   function reuse(entry: HistoryEntry) { setHistoryPreview(null); start(entry.category, entry.raw, true); setSession({ ...newSession(entry.category), category: entry.category, raw: entry.raw, conditions: structuredClone(entry.conditions), excludedIds: [], revision: 0 }); }
@@ -178,7 +200,18 @@ export default function App() {
     notify('프리셋 조건을 적용했어요. 평소 취향은 바뀌지 않아요.');
   }
   function recommendSaved(c:Category,ids:string[]) { start(c,'',true);setSession({...newSession(c),editor:createEditor('',c),candidateScope:'favorites',candidateIds:[...ids]}); }
-  function replaceOne(id:string) { const next=replaceCandidate(session,store.profiles[session.category],id);if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.'); }
+  function replaceOne(id:string) {
+    const done=(next:Session|null)=>{if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.');};
+    const profile=store.profiles[session.category];
+    if(!apiEnabled()){done(replaceCandidate(session,profile,id));return;}
+    if(!canReplace(session,results,id))return;
+    const base=session,current=results,token=++requestCounter.current;
+    setBusy(true);setRequestError(false);
+    fetchRecommendations(replacementRequest(base,current),profile,{count:1})
+      .then(remote=>{if(token===requestCounter.current)done(applyReplacement(base,current,id,remote.results));})
+      .catch(()=>{if(token===requestCounter.current)setRequestError('server');})
+      .finally(()=>{if(token===requestCounter.current)setBusy(false);});
+  }
   function importStore(next:typeof store):string|null {
     if(!replaceStore(next))return '브라우저에 저장하지 못했어요. 기존 데이터는 유지돼요.';
     setStore(next);setStorageBlocked(false);setStorageWarning(false);setSession(newSession());setActive(false);setCompletedId('');setDraftProfile(next.profiles.food);setEditingProfile(false);setOnboardSummary(false);selectionLock.current='';setDialog(null);navigate('home');notify('백업 데이터를 가져왔어요.');return null;
@@ -232,16 +265,18 @@ export default function App() {
           {presetList(category)}<button className="button secondary" disabled={!!budgetError || conflicts.length>0 || (store.presets || []).filter(p=>p.category===category).length>=20} onClick={()=>{setPresetName('');setSavePresetOpen(true);}}>현재 조건을 프리셋으로 저장</button><p className="small">분야별 최대 20개 · 상황 문장, 취향, 이번 요청 제외는 저장하지 않아요.</p>
           <p className="parser-help small">지원 표현: {category === 'food' ? '8천원, 1만 5천원, 15,000원, 이만원 이하, 안 매운, 밀 제외' : '과제, 산책, 차분한, 활기찬, 연주곡, 보컬 없는'}. 아래에 표시된 조건만 적용하며 그 밖의 표현은 해석하지 못할 수 있어요.</p>
 
-          {requestError && <div className="error-box" role="alert"><strong>조건 확인을 잠시 완료하지 못했어요.</strong><p>다시 시도하거나, 지금 직접 고른 조건으로 추천받을 수 있어요.</p><button className="text-button" disabled={!!budgetError || conflicts.length > 0} onClick={() => run(false, true)}>직접 선택한 조건으로 계속 <ArrowRight size={14} /></button></div>}
+          {requestError === 'server' && <div className="error-box" role="alert"><strong>추천 서버에 연결하지 못했어요.</strong><p>잠시 후 다시 시도하거나, 이 브라우저의 기본 방식으로 추천받을 수 있어요.</p><button className="text-button" disabled={busy || !!budgetError || conflicts.length > 0} onClick={() => run(false, true, true)}>기본 추천으로 보기 <ArrowRight size={14} /></button></div>}
+          {requestError === 'demo' && <div className="error-box" role="alert"><strong>조건 확인을 잠시 완료하지 못했어요.</strong><p>다시 시도하거나, 지금 직접 고른 조건으로 추천받을 수 있어요.</p><button className="text-button" disabled={!!budgetError || conflicts.length > 0} onClick={() => run(false, true)}>직접 선택한 조건으로 계속 <ArrowRight size={14} /></button></div>}
           <div className="form-actions"><span><ShieldCheck size={14} /> 오늘의 조건은 평소 취향을 바꾸지 않아요</span><button className="button primary" disabled={busy || !!budgetError || conflicts.length > 0} onClick={() => { if (step === 'input') { setSession(s => changeText(s, s.raw)); setStep('confirm'); } else run(); }}>{busy ? <span className="spinner" /> : <Sparkles size={16} />}{busy ? '추천을 고르는 중' : step === 'input' ? '조건 확인하기' : requestError ? '다시 시도하기' : '추천받기'}{!busy && <ArrowRight size={15} />}</button></div>
         </section><aside className="context-sidebar"><div className="panel context-profile"><span className={`small-icon ${category}`}>{category === 'food' ? <Utensils size={19} /> : <Headphones size={19} />}</span><h3>평소의 나는</h3><p>오늘의 요청과 따로 기억하고 있어요.</p><div className="mini-tags">{store.profiles[category].tags.map(t => <span key={t}>{t}</span>)}</div><div className="profile-picked">{store.profiles[category].selected.slice(0, 5).map(id => { const i = items.find(i => i.id === id); return i ? <span key={id}>{i.emoji} {i.name}</span> : null; })}</div><button className="text-button" onClick={() => editTaste(category)}>취향 수정 <ArrowRight size={14} /></button></div><div className="gentle-tip"><Leaf size={20} /><h4>오늘은 달라도 괜찮아요.</h4><p>평소 매운 음식을 좋아해도<br />오늘은 담백한 한 끼를 고를 수 있죠.<br />지금의 선택에 집중해보세요.</p></div></aside></div> : <>
           <div className="result-summary"><div><span className="summary-label">이번 요청</span><strong>{session.raw || '직접 선택한 조건'}</strong><div className="mini-tags">{session.conditions.tags.map(t => <span key={t}>{t}</span>)}{session.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}{session.conditions.maxPrice !== null && <span>{session.conditions.maxPrice.toLocaleString()}원 이하</span>}</div></div><button className="button secondary" disabled={busy} onClick={() => { setStep('confirm'); setRequestError(false); }}><SlidersHorizontal size={15} /> 조건 수정</button></div>
           <div className="section-heading result-heading"><h2>{category === 'food' ? '오늘의 메뉴' : '오늘의 플레이리스트'} <span className="count">{results.length}</span></h2><span>{category === 'food' ? '조건에 맞는 후보를 비교해보세요' : '곡을 골라 외부 검색으로 이어가세요'}</span></div>
           {results.length < (category === 'food' ? 3 : 5) && <div className="notice warning"><Info size={18} /><div><strong>{results.length ? '조건에 맞는 후보가 조금 부족해요.' : '지금 조건에 맞는 후보가 없어요.'}</strong><p>등록 데이터에서 필수 제외·장기 비선호·이번 요청 제외·예산을 적용한 후보는 {candidateStatus.count}개예요. {candidateStatus.budgetRemoved > 0 ? `그중 예산 때문에 추가로 빠진 후보는 ${candidateStatus.budgetRemoved}개예요.` : '예산만 변경해서 늘어나는 후보는 없을 수 있어요.'} 필수 제외는 자동으로 완화하지 않아요.</p>{candidateStatus.suggestions.map(s => <button key={s.price} className="text-button" onClick={() => { setSession(current => changeBudget(current, String(s.price))); setStep('confirm'); }}>예산을 {s.price.toLocaleString()}원으로 변경하면 후보 {s.gain}개 추가</button>)}<button className="text-button" onClick={() => setStep('confirm')}>조건 조정하기 <ArrowRight size={14} /></button></div></div>}
+          {session.source === 'local' && apiEnabled() && <div className="notice" role="status"><Info size={18} /><div><strong>기본 추천으로 보여드리고 있어요.</strong><p>추천 서버에 연결하지 못해 이 브라우저의 기본 방식으로 골랐어요. 다른 추천 보기를 누르면 서버 추천을 다시 시도해요.</p></div></div>}
           {session.batchNewCount !== undefined && session.batchNewCount < results.length && <div className="notice" role="status"><Info size={18} /><div><strong>{session.batchNewCount === 0 ? '새로운 후보를 모두 살펴봤어요.' : `새 후보 ${session.batchNewCount}개 + 이전 후보 ${results.length - session.batchNewCount}개`}</strong><p>적합도 순서로 이전 후보를 다시 보여드려요. 조건을 바꾸거나 새 요청을 시작할 수 있어요.</p></div></div>}
           <div className={`result-grid ${category}`}>{results.map(r => itemCard(r.item, r))}</div>
           <div className="comparison-toolbar"><span>비교 {session.compareIds?.length || 0}/3 · 고정 {session.pinnedIds?.length || 0}개 (이번 요청만)</span><button className="button secondary" disabled={results.filter(r=>session.compareIds?.includes(r.item.id)).length<2} onClick={()=>setCompareOpen(true)}>선택한 후보 비교</button><button className="text-button" onClick={()=>setSession(s=>({...s,compareIds:[]}))}>비교 선택 비우기</button></div>
-          {requestError && <div className="error-box" role="alert">재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.</div>}
+          {requestError && <div className="error-box" role="alert">{requestError === 'server' ? <><strong>추천 서버에 연결하지 못했어요.</strong><p>아래 버튼으로 다시 시도하거나 기본 방식으로 추천받을 수 있어요.</p><button className="text-button" disabled={busy} onClick={() => run(true, true, true)}>기본 추천으로 보기 <ArrowRight size={14} /></button></> : '재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.'}</div>}
           <div className="reroll-panel"><div><span className="small-icon"><Sparkles size={20} /></span><div><h3>조금 다른 선택도 궁금한가요?</h3><p>{allPinned?'모든 후보를 고정했어요. 하나 이상 고정을 해제하면 재추천할 수 있어요.':'지금의 조건과 고정 후보를 유지하고 다른 후보를 살펴보세요.'}</p></div></div><button className="button secondary" disabled={busy || results.length === 0 || allPinned} onClick={() => run(true)}>{busy ? <span className="spinner" /> : <Sparkles size={16} />}{busy ? '다른 추천을 고르는 중' : '다른 추천 보기'}</button></div>
           {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => restoreTemporary(id)}>{items.find(i => i.id === id)?.name}<X size={12} /></button>)}</div>}
           <div className="new-session-link"><button className="text-button" onClick={() => start(category, '', true)}>새 요청 시작 <ArrowRight size={15} /></button><button className="text-button" onClick={endRequest}>요청 종료</button></div>

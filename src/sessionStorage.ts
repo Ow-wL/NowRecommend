@@ -1,4 +1,5 @@
 import { emptyConditions, type Profile, type Session } from './domain';
+import { validItem } from './catalog';
 import { defaultView, type View } from './navigation';
 const KEY = 'nowrecommend-session-v1';
 export type TabState = { version: 1; view: View; session: Session; active: boolean; draftProfile?: Profile; editingProfile?: boolean; onboardSummary?: boolean; query?: string; selectedOnly?: boolean; completedId?: string };
@@ -10,8 +11,7 @@ export function validConditions(v: any): boolean {
   return !!v && strings(v.tags) && strings(v.excluded) && (v.maxPrice === null || Number.isFinite(v.maxPrice) && v.maxPrice >= 100 && v.maxPrice <= 1000000);
 }
 export function validRecommendation(v: any): boolean {
-  const i = v?.item;
-  return !!i && typeof i.id === 'string' && ['food','music'].includes(i.category) && ['name','subtitle','description','emoji','color'].every(k => typeof i[k] === 'string') && strings(i.tags) && strings(i.ingredients) && (i.price===undefined || typeof i.price==='string') && (i.cost === undefined || Number.isFinite(i.cost) && i.cost>=0) && typeof v.tasteReason === 'string' && typeof v.contextReason === 'string';
+  return validItem(v?.item) && typeof v.tasteReason === 'string' && typeof v.contextReason === 'string';
 }
 function profile(v: any): boolean { return !!v && strings(v.selected) && strings(v.tags) && strings(v.disliked); }
 export function readTab(): TabState {
@@ -22,7 +22,7 @@ export function readTab(): TabState {
       if (v.version === 1 && typeof v.active === 'boolean' && ['food','music'].includes(s?.category) && typeof s.raw === 'string' && s.raw.length <= 300 && validConditions(s.conditions) && strings(s.excludedIds) && Number.isInteger(s.revision) && s.revision >= 0
         && ['home','recommend','onboard','favorites','history','taste','login','complete'].includes(v.view?.page) && ['food','music'].includes(v.view?.category) && ['input','confirm','results'].includes(v.view?.step)
         && (!e || typeof e.parsedRaw === 'string' && validConditions(e.automatic) && validConditions(e.manual) && strings(e.removedTags) && strings(e.removedExcluded) && (e.budgetInput === undefined || typeof e.budgetInput === 'string'))
-        && (s.pinnedIds===undefined || strings(s.pinnedIds) && s.pinnedIds.length<=(s.category==='food'?3:5)) && (s.compareIds===undefined || strings(s.compareIds) && s.compareIds.length<=3) && (s.candidateScope === undefined || s.candidateScope === 'favorites' && strings(s.candidateIds)) && (!v.draftProfile || profile(v.draftProfile)) && (!s.seenIds || strings(s.seenIds)) && (!s.currentIds || strings(s.currentIds)) && (s.batchNewCount === undefined || Number.isInteger(s.batchNewCount) && s.batchNewCount >= 0) && (s.id === undefined || typeof s.id === 'string') && (s.roundId === undefined || typeof s.roundId === 'string') && (s.snapshot === undefined || Array.isArray(s.snapshot) && s.snapshot.every(validRecommendation)) && (v.completedId === undefined || typeof v.completedId === 'string')) return v;
+        && (s.pinnedIds===undefined || strings(s.pinnedIds) && s.pinnedIds.length<=(s.category==='food'?3:5)) && (s.compareIds===undefined || strings(s.compareIds) && s.compareIds.length<=3) && (s.candidateScope === undefined || s.candidateScope === 'favorites' && strings(s.candidateIds)) && (s.source === undefined || ['server','local'].includes(s.source)) && (!v.draftProfile || profile(v.draftProfile)) && (!s.seenIds || strings(s.seenIds)) && (!s.currentIds || strings(s.currentIds)) && (s.batchNewCount === undefined || Number.isInteger(s.batchNewCount) && s.batchNewCount >= 0) && (s.id === undefined || typeof s.id === 'string') && (s.roundId === undefined || typeof s.roundId === 'string') && (s.snapshot === undefined || Array.isArray(s.snapshot) && s.snapshot.every(validRecommendation)) && (v.completedId === undefined || typeof v.completedId === 'string')) return v;
     }
   } catch { /* A tab storage failure must not prevent startup. */ }
   return { version: 1, view: defaultView, session: newSession(), active: false };

@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { items, categoryLabel, type Category, type Item } from '../data';
+import { categoryLabel, type Category, type Item } from '../data';
+import { useCatalog } from '../catalog';
 export function Favorites({ids,card,onRecommend,onStart}: {ids:string[];card:(i:Item)=>ReactNode;onRecommend:(c:Category,ids:string[])=>void;onStart:(c:Category)=>void}) {
   const [category,setCategory]=useState<'all'|Category>('all'),[query,setQuery]=useState(''),[tag,setTag]=useState('');
+  const { items } = useCatalog();
   const saved=[...ids].reverse().map(id=>items.find(i=>i.id===id)).filter((i):i is Item=>!!i);
   const tags=[...new Set(saved.filter(i=>category==='all' || i.category===category).flatMap(i=>i.tags))];
   const visible=saved.filter(i=>(category==='all'||i.category===category) && (!tag||i.tags.includes(tag)) && `${i.name} ${i.subtitle}`.toLowerCase().includes(query.toLowerCase()));

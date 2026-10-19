@@ -1,10 +1,10 @@
 import type { Feedback, HistoryEntry, Recommendation, Session } from './domain';
-import { CATALOG_META } from './data';
+import { getCatalog } from './catalog';
 export function recordRound(history: HistoryEntry[], session: Session, results: Recommendation[], feedback: Feedback[] = [], date = new Date().toISOString()): HistoryEntry[] {
   if (!session.id || !session.roundId) return history;
   const existing = history.find(h => h.id === session.id);
   if (existing?.rounds.some(r => r.id === session.roundId)) return history;
-  const round = { id: session.roundId, date, raw: session.raw, conditions: structuredClone(session.conditions), results: structuredClone(results), feedback: structuredClone(feedback), excludedIds: [...session.excludedIds], catalogVersion: CATALOG_META.version, candidateScope:session.candidateScope,candidateIds:session.candidateIds ? [...session.candidateIds] : undefined };
+  const round = { id: session.roundId, date, raw: session.raw, conditions: structuredClone(session.conditions), results: structuredClone(results), feedback: structuredClone(feedback), excludedIds: [...session.excludedIds], catalogVersion: getCatalog().version, candidateScope:session.candidateScope,candidateIds:session.candidateIds ? [...session.candidateIds] : undefined };
   const rounds = [...(existing?.rounds || []), round];
   const trimmed = Math.max(0, rounds.length - 10);
   const entry: HistoryEntry = { ...(existing || {}), id: session.id, date: existing?.date || date, category: session.category, raw: session.raw || '직접 선택한 조건', conditions: structuredClone(session.conditions), resultIds: results.map(r=>r.item.id), rounds: rounds.slice(-10), trimmedRounds: (existing?.trimmedRounds || 0) + trimmed };

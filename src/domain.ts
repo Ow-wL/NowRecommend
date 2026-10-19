@@ -1,8 +1,11 @@
-import { items, excludableIngredients, type Category, type Item } from './data';
+import { excludableIngredients, type Category, type Item } from './data';
+import { getCatalog } from './catalog';
+
+const catalogItems = () => getCatalog().items;
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[] };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local' };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
@@ -99,14 +102,15 @@ export function conditionConflicts(session: Session): string[] {
   if (session.editor?.manual.tags.some(t => session.editor!.automatic.excluded.includes(t) && !session.editor!.removedExcluded.includes(t))) conflicts.push('직접 선택과 문장의 제외 조건');
   return [...new Set(conflicts)];
 }
-export function recommend(session: Session, profile: Profile): Recommendation[] {
+// The local recommender: offline mode and the fallback when the API server cannot answer.
+export function recommend(session: Session, profile: Profile, catalog: Item[] = catalogItems()): Recommendation[] {
   if (session.snapshot) {
-    const eligible = new Set(eligibleCandidates(session, profile).map(i => i.id));
+    const eligible = new Set(eligibleCandidates(session, profile, catalog).map(i => i.id));
     return session.snapshot.filter(r => eligible.has(r.item.id));
   }
   const { category, conditions } = session;
-  const preferred = new Set([...profile.tags, ...items.filter(i => profile.selected.includes(i.id)).flatMap(i => i.tags)]);
-  const candidates = eligibleCandidates(session, profile);
+  const preferred = new Set([...profile.tags, ...catalog.filter(i => profile.selected.includes(i.id)).flatMap(i => i.tags)]);
+  const candidates = eligibleCandidates(session, profile, catalog);
   const score = (i: Item) => i.tags.filter(t => preferred.has(t)).length + 2 * i.tags.filter(t => conditions.tags.includes(t)).length;
   const ranked = candidates.sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id));
   const seen = new Set(session.seenIds || []);
@@ -120,33 +124,46 @@ export function recommend(session: Session, profile: Profile): Recommendation[] 
   });
 }
 
-export function eligibleCandidates(session: Session, profile: Profile): Item[] {
-  return items.filter(i => i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
+export function eligibleCandidates(session: Session, profile: Profile, catalog: Item[] = catalogItems()): Item[] {
+  return catalog.filter(i => i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
     && (session.candidateScope !== 'favorites' || (session.candidateIds || []).includes(i.id))
     && !session.conditions.excluded.some(t => [...i.tags, ...i.ingredients].includes(t))
     && (session.conditions.maxPrice === null || typeof i.cost === 'number' && i.cost <= session.conditions.maxPrice));
 }
-export function nextBatch(session: Session, profile: Profile): Session {
+/** Starts a new round from results computed locally or by the API server. */
+export function applyBatch(session: Session, results: Recommendation[]): Session {
   const before = new Set(session.seenIds || []);
-  const snapshot = structuredClone(recommend({ ...session, currentIds: undefined, snapshot: undefined }, profile));
+  const snapshot = structuredClone(results);
   const currentIds = snapshot.map(r => r.item.id);
   return { ...session, id: session.id || crypto.randomUUID(), roundId: crypto.randomUUID(), snapshot, currentIds, pinnedIds:(session.pinnedIds || []).filter(id=>currentIds.includes(id)),compareIds:(session.compareIds || []).filter(id=>currentIds.includes(id)),seenIds: [...new Set([...before, ...currentIds])], batchNewCount: currentIds.filter(id => !before.has(id)).length };
 }
-export function replaceCandidate(session:Session,profile:Profile,id:string):Session|null {
-  if(session.pinnedIds?.includes(id))return null;
-  const current=recommend(session,profile);
-  if(!current.some(r=>r.item.id===id))return null;
-  const remaining=recommend({...session,currentIds:undefined,snapshot:undefined,pinnedIds:[],excludedIds:[...session.excludedIds,...current.map(r=>r.item.id)]},profile);
-  const replacement=remaining.find(r=>!session.seenIds?.includes(r.item.id));
+export function nextBatch(session: Session, profile: Profile): Session {
+  return applyBatch(session, recommend({ ...session, currentIds: undefined, snapshot: undefined }, profile));
+}
+/** The request for a single replacement: current cards are excluded and nothing stays pinned. */
+export function replacementRequest(session: Session, current: Recommendation[]): Session {
+  return {...session,currentIds:undefined,snapshot:undefined,pinnedIds:[],excludedIds:[...session.excludedIds,...current.map(r=>r.item.id)]};
+}
+export function canReplace(session: Session, current: Recommendation[], id: string): boolean {
+  return !session.pinnedIds?.includes(id) && current.some(r=>r.item.id===id);
+}
+/** Swaps one card for the first candidate not yet seen in this request; null when there is none. */
+export function applyReplacement(session:Session,current:Recommendation[],id:string,candidates:Recommendation[]):Session|null {
+  const replacement=candidates.find(r=>!session.seenIds?.includes(r.item.id));
   if(!replacement)return null;
   const snapshot=structuredClone(current.map(r=>r.item.id===id?replacement:r));
   return {...session,snapshot,currentIds:snapshot.map(r=>r.item.id),seenIds:[...new Set([...(session.seenIds || []),...snapshot.map(r=>r.item.id)])],compareIds:(session.compareIds || []).filter(v=>v!==id),roundId:crypto.randomUUID(),revision:session.revision+1,batchNewCount:1};
 }
-export function candidateInfo(session: Session, profile: Profile) {
-  const count = eligibleCandidates(session, profile).length;
-  const beforeBudget = eligibleCandidates({ ...session, conditions: { ...session.conditions, maxPrice: null } }, profile).length;
+export function replaceCandidate(session:Session,profile:Profile,id:string):Session|null {
+  const current=recommend(session,profile);
+  if(!canReplace(session,current,id))return null;
+  return applyReplacement(session,current,id,recommend(replacementRequest(session,current),profile));
+}
+export function candidateInfo(session: Session, profile: Profile, catalog: Item[] = catalogItems()) {
+  const count = eligibleCandidates(session, profile, catalog).length;
+  const beforeBudget = eligibleCandidates({ ...session, conditions: { ...session.conditions, maxPrice: null } }, profile, catalog).length;
   const max = session.conditions.maxPrice;
-  const budgets = [...new Set(items.filter(i => i.category === 'food' && typeof i.cost === 'number' && max !== null && i.cost > max).map(i => i.cost!))].sort((a,b) => a-b);
-  const suggestions = session.category === 'food' && max !== null ? budgets.map(price => ({ price, gain: eligibleCandidates({ ...session, conditions: { ...session.conditions, maxPrice: price } }, profile).length - count })).filter(s => s.gain > 0).slice(0,3) : [];
+  const budgets = [...new Set(catalog.filter(i => i.category === 'food' && typeof i.cost === 'number' && max !== null && i.cost > max).map(i => i.cost!))].sort((a,b) => a-b);
+  const suggestions = session.category === 'food' && max !== null ? budgets.map(price => ({ price, gain: eligibleCandidates({ ...session, conditions: { ...session.conditions, maxPrice: price } }, profile, catalog).length - count })).filter(s => s.gain > 0).slice(0,3) : [];
   return { count, budgetRemoved: beforeBudget - count, suggestions };
 }

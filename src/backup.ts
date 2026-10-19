@@ -1,4 +1,5 @@
-import {items,options,exclusions,type Category} from './data';
+import {options,exclusions,type Category} from './data';
+import {getCatalog} from './catalog';
 import type {Store} from './domain';
 import {decodeStore} from './storage';
 
@@ -6,7 +7,7 @@ export const MAX_BACKUP_BYTES=5_000_000;
 export type BackupPreview={store:Store;date?:string};
 const unique=(ids:string[])=>new Set(ids).size===ids.length;
 export function importIssue(store:Store):string|null {
-  const ids=new Map(items.map(i=>[i.id,i.category]));
+  const ids=new Map(getCatalog().items.map(i=>[i.id,i.category]));
   // Historical snapshots may refer to retired catalog IDs; validate against their frozen category.
   for(const h of store.history) for(const r of h.rounds) for(const v of r.results){if(ids.has(v.item.id) && ids.get(v.item.id)!==v.item.category)return '기록 항목의 분야가 일치하지 않아요.';ids.set(v.item.id,v.item.category);}
   for(const h of store.history) if(h.selected){const i=h.selected.result.item;if(ids.has(i.id)&&ids.get(i.id)!==i.category)return '선택 항목의 분야가 일치하지 않아요.';ids.set(i.id,i.category);}
@@ -16,7 +17,7 @@ export function importIssue(store:Store):string|null {
   }
   if(!unique(store.favorites)||store.favorites.some(id=>!ids.has(id)))return '즐겨찾기 항목 ID가 올바르지 않아요.';
   if(!unique(store.history.map(h=>h.id)))return '기록 ID가 중복돼요.';
-  const conditions=(v:any,c:Category)=>v.tags.length<=30 && v.excluded.length<=30 && unique(v.tags) && unique(v.excluded) && v.tags.every((t:string)=>[...options[c],...items.filter(i=>i.category===c).flatMap(i=>i.tags)].includes(t)) && v.excluded.every((t:string)=>exclusions[c].includes(t)) && (v.maxPrice===null || c==='food' && Number.isInteger(v.maxPrice));
+  const conditions=(v:any,c:Category)=>v.tags.length<=30 && v.excluded.length<=30 && unique(v.tags) && unique(v.excluded) && v.tags.every((t:string)=>[...options[c],...getCatalog().items.filter(i=>i.category===c).flatMap(i=>i.tags)].includes(t)) && v.excluded.every((t:string)=>exclusions[c].includes(t)) && (v.maxPrice===null || c==='food' && Number.isInteger(v.maxPrice));
   for(const h of store.history){
     if(!h.id || h.id.length>100 || h.raw.length>300 || !conditions(h.conditions,h.category) || !unique(h.resultIds)||h.resultIds.some(id=>ids.get(id)!==h.category)||!unique(h.rounds.map(r=>r.id)))return '기록 ID·분야·조건이 올바르지 않아요.';
     for(const r of h.rounds){
