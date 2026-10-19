@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     embedding_model: str = "gemini-embedding-2"
     embedding_dim: int = 768  # must equal the vector(768) column
     db_connect_timeout: int = 3
+    # Store request sentences in recommendation_logs (local/evaluation only; set false when deployed).
+    log_raw_text: bool = True
 
 
 @lru_cache

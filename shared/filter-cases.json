@@ -1,0 +1,245 @@
+{
+  "about": "eligibleCandidates(src/domain.ts)와 서버 SQL 필터가 함께 검사하는 사례. 시드 카탈로그 기준.",
+  "cases": [
+    {
+      "name": "음식 조건 없음",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": null
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f01",
+        "f02",
+        "f03",
+        "f04",
+        "f05",
+        "f06",
+        "f07",
+        "f08",
+        "f09",
+        "f10",
+        "f11",
+        "f12",
+        "f13",
+        "f14",
+        "f15",
+        "f16"
+      ]
+    },
+    {
+      "name": "밀 제외",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "밀"
+        ],
+        "maxPrice": null
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f02",
+        "f03",
+        "f04",
+        "f05",
+        "f07",
+        "f08",
+        "f12",
+        "f14",
+        "f15",
+        "f16"
+      ]
+    },
+    {
+      "name": "매콤함·생선 제외",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "매콤함",
+          "생선"
+        ],
+        "maxPrice": null
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f01",
+        "f02",
+        "f03",
+        "f06",
+        "f07",
+        "f10",
+        "f12",
+        "f13",
+        "f14",
+        "f16"
+      ]
+    },
+    {
+      "name": "예산 9,000원",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": 9000
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f04",
+        "f09",
+        "f10",
+        "f11"
+      ]
+    },
+    {
+      "name": "예산 10,000원 + 밀 제외, 원하는 태그는 필터가 아님",
+      "category": "food",
+      "conditions": {
+        "tags": [
+          "국물"
+        ],
+        "excluded": [
+          "밀"
+        ],
+        "maxPrice": 10000
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f02",
+        "f04",
+        "f07",
+        "f12",
+        "f14",
+        "f15"
+      ]
+    },
+    {
+      "name": "장기 비선호·이번 요청 제외",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": null
+      },
+      "disliked": [
+        "f01",
+        "f04"
+      ],
+      "excludedIds": [
+        "f09"
+      ],
+      "candidateIds": null,
+      "expectedIds": [
+        "f02",
+        "f03",
+        "f05",
+        "f06",
+        "f07",
+        "f08",
+        "f10",
+        "f11",
+        "f12",
+        "f13",
+        "f14",
+        "f15",
+        "f16"
+      ]
+    },
+    {
+      "name": "즐겨찾기 범위 + 제외 적용",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "생선"
+        ],
+        "maxPrice": null
+      },
+      "candidateIds": [
+        "f01",
+        "f05",
+        "f09",
+        "f12",
+        "m01"
+      ],
+      "disliked": [],
+      "excludedIds": [],
+      "expectedIds": [
+        "f01",
+        "f12"
+      ]
+    },
+    {
+      "name": "음악 보컬 제외",
+      "category": "music",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "보컬"
+        ],
+        "maxPrice": null
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "m06",
+        "m07",
+        "m08",
+        "m09",
+        "m10",
+        "m11",
+        "m12"
+      ]
+    },
+    {
+      "name": "음악 피아노·높은 에너지 제외",
+      "category": "music",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "피아노",
+          "높은 에너지"
+        ],
+        "maxPrice": null
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "m01",
+        "m05",
+        "m10",
+        "m11",
+        "m14",
+        "m15"
+      ]
+    },
+    {
+      "name": "음악에 예산을 걸면 가격 없는 곡은 모두 빠짐",
+      "category": "music",
+      "conditions": {
+        "tags": [],
+        "excluded": [],
+        "maxPrice": 10000
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": []
+    }
+  ]
+}

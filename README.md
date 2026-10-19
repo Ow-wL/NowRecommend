@@ -25,7 +25,7 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## API 서버와 DB (개발 중)
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R1(DB 스키마·시드·임베딩·카탈로그 API)까지 완료된 상태입니다. 프론트엔드는 아직 서버를 호출하지 않습니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R2(유사도 추천 API)까지 완료된 상태입니다. 프론트엔드는 아직 서버를 호출하지 않습니다.
 
 Docker Desktop이 필요합니다. PostgreSQL 17 + pgvector와 FastAPI 서버를 함께 실행하며, API 컨테이너는 시작할 때 Alembic 마이그레이션을 적용합니다.
 
@@ -40,6 +40,12 @@ curl http://127.0.0.1:8010/api/catalog?category=food
 - `app.cli.embed`: 검수 완료 항목 중 임베딩 원문·모델·차원이 바뀐 항목만 `gemini-embedding-2`(768차원)로 계산합니다. `--dry-run`은 API를 호출하지 않고 대상만 보여줍니다.
 - `src/data.ts`를 고치면 `npx vite-node scripts/export-catalog.ts`로 시드 파일을 다시 만듭니다. 둘이 어긋나면 `npm test`가 실패합니다.
 - `GET /api/catalog?category=food|music`은 검수 완료 항목만 프론트 `Item` 형식으로 돌려주고, 카탈로그 전체 내용 기준의 `catalogVersion`을 함께 줍니다.
+- `POST /api/recommend`는 다음 순서로 동작합니다.
+  1. 필수 제외·예산·비선호·이번 요청 제외·즐겨찾기 범위를 SQL로 거릅니다.
+  2. 상황 문장 임베딩, 취향 항목 평균 벡터, 조건 태그 일치를 합쳐 점수를 매깁니다.
+  3. 탐색 온도 `tau`와 MMR로 후보를 고르고, 템플릿 이유와 함께 돌려줍니다(`mode: retrieval_only`).
+  4. 요청마다 `recommendation_logs`에 기록합니다.
+- 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 
 - 호스트 포트 기본값은 DB `5433`, API `8010`입니다. 충돌하면 `DB_PORT`, `API_PORT` 환경 변수로 바꿉니다.
 - `GEMINI_API_KEY`는 셸 환경 변수 또는 루트 `.env`에서 읽습니다. health 응답에는 설정 여부만 표시됩니다.

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routes import catalog, health
+from .routes import catalog, health, recommend
 from .vocab import get_vocab
 
 
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health.router)
     app.include_router(catalog.router)
+    app.include_router(recommend.router)
     return app
 
 
