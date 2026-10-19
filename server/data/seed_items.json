@@ -1,0 +1,669 @@
+{
+  "source": "2026-10-13-sample-1",
+  "items": [
+    {
+      "id": "f01",
+      "category": "food",
+      "name": "쌀국수",
+      "artist": null,
+      "subtitle": "9,000–12,000원",
+      "description": "따뜻한 국물과 부드러운 면, 가볍게 즐기는 한 그릇.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "혼자",
+        "저녁",
+        "점심",
+        "국물"
+      ],
+      "ingredients": [
+        "소고기",
+        "밀"
+      ],
+      "price_label": "9,000–12,000원",
+      "cost": 10000,
+      "emoji": "🍜",
+      "color": "#f4e9d9"
+    },
+    {
+      "id": "f02",
+      "category": "food",
+      "name": "닭곰탕",
+      "artist": null,
+      "subtitle": "9,000–11,000원",
+      "description": "푹 고아낸 맑은 국물로 속까지 편안한 한 끼.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "혼자",
+        "저녁",
+        "국물"
+      ],
+      "ingredients": [
+        "닭고기"
+      ],
+      "price_label": "9,000–11,000원",
+      "cost": 10000,
+      "emoji": "🥣",
+      "color": "#e9efdf"
+    },
+    {
+      "id": "f03",
+      "category": "food",
+      "name": "버섯 리조토",
+      "artist": null,
+      "subtitle": "13,000–17,000원",
+      "description": "버섯의 풍미와 크리미한 밥이 만나는 작은 휴식.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "고소함",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "버섯",
+        "유제품"
+      ],
+      "price_label": "13,000–17,000원",
+      "cost": 15000,
+      "emoji": "🍄",
+      "color": "#eee5db"
+    },
+    {
+      "id": "f04",
+      "category": "food",
+      "name": "김치찌개",
+      "artist": null,
+      "subtitle": "8,000–10,000원",
+      "description": "익숙해서 더 좋은, 칼칼하고 든든한 집밥.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기"
+      ],
+      "price_label": "8,000–10,000원",
+      "cost": 9000,
+      "emoji": "🍲",
+      "color": "#fae5d9"
+    },
+    {
+      "id": "f05",
+      "category": "food",
+      "name": "연어 초밥",
+      "artist": null,
+      "subtitle": "14,000–18,000원",
+      "description": "부드러운 연어와 산뜻한 밥의 균형.",
+      "tags": [
+        "담백함",
+        "차가움",
+        "점심",
+        "혼자",
+        "일식"
+      ],
+      "ingredients": [
+        "생선"
+      ],
+      "price_label": "14,000–18,000원",
+      "cost": 16000,
+      "emoji": "🍣",
+      "color": "#f7e5e1"
+    },
+    {
+      "id": "f06",
+      "category": "food",
+      "name": "토마토 파스타",
+      "artist": null,
+      "subtitle": "12,000–16,000원",
+      "description": "새콤한 토마토 소스로 기분까지 산뜻하게.",
+      "tags": [
+        "상큼함",
+        "따뜻함",
+        "양식",
+        "저녁"
+      ],
+      "ingredients": [
+        "밀",
+        "토마토"
+      ],
+      "price_label": "12,000–16,000원",
+      "cost": 14000,
+      "emoji": "🍝",
+      "color": "#f6e1d3"
+    },
+    {
+      "id": "f07",
+      "category": "food",
+      "name": "비빔밥",
+      "artist": null,
+      "subtitle": "8,000–11,000원",
+      "description": "다채로운 채소를 한 그릇에 담은 든든한 선택.",
+      "tags": [
+        "고소함",
+        "점심",
+        "한식",
+        "채소",
+        "혼자"
+      ],
+      "ingredients": [
+        "달걀",
+        "참깨"
+      ],
+      "price_label": "8,000–11,000원",
+      "cost": 9500,
+      "emoji": "🥗",
+      "color": "#e4ecda"
+    },
+    {
+      "id": "f08",
+      "category": "food",
+      "name": "마라탕",
+      "artist": null,
+      "subtitle": "10,000–15,000원",
+      "description": "얼얼하고 매콤한 국물로 오늘의 스트레스를 훌훌.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "저녁"
+      ],
+      "ingredients": [
+        "땅콩",
+        "소고기"
+      ],
+      "price_label": "10,000–15,000원",
+      "cost": 12000,
+      "emoji": "🌶️",
+      "color": "#f7deda"
+    },
+    {
+      "id": "f09",
+      "category": "food",
+      "name": "우동",
+      "artist": null,
+      "subtitle": "7,000–10,000원",
+      "description": "탱글한 면과 은은한 국물, 부담 없는 한 끼.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "일식"
+      ],
+      "ingredients": [
+        "밀",
+        "생선"
+      ],
+      "price_label": "7,000–10,000원",
+      "cost": 8500,
+      "emoji": "🍥",
+      "color": "#f0e9d6"
+    },
+    {
+      "id": "f10",
+      "category": "food",
+      "name": "샌드위치",
+      "artist": null,
+      "subtitle": "6,000–9,000원",
+      "description": "바쁜 날에도 가볍고 알차게 챙기는 한 끼.",
+      "tags": [
+        "담백함",
+        "차가움",
+        "점심",
+        "혼자",
+        "채소"
+      ],
+      "ingredients": [
+        "밀",
+        "달걀"
+      ],
+      "price_label": "6,000–9,000원",
+      "cost": 7500,
+      "emoji": "🥪",
+      "color": "#e8edda"
+    },
+    {
+      "id": "f11",
+      "category": "food",
+      "name": "떡볶이",
+      "artist": null,
+      "subtitle": "5,000–8,000원",
+      "description": "달콤하고 매콤한 소스에 쫀득한 떡을 푹.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "분식",
+        "간식"
+      ],
+      "ingredients": [
+        "밀",
+        "생선"
+      ],
+      "price_label": "5,000–8,000원",
+      "cost": 6500,
+      "emoji": "🍢",
+      "color": "#f5ddd3"
+    },
+    {
+      "id": "f12",
+      "category": "food",
+      "name": "두부 덮밥",
+      "artist": null,
+      "subtitle": "8,000–11,000원",
+      "description": "노릇한 두부와 채소로 채우는 편안한 저녁.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "고소함",
+        "혼자",
+        "저녁",
+        "채소"
+      ],
+      "ingredients": [
+        "콩"
+      ],
+      "price_label": "8,000–11,000원",
+      "cost": 9500,
+      "emoji": "🍚",
+      "color": "#ecebd8"
+    },
+    {
+      "id": "f13",
+      "category": "food",
+      "name": "치킨",
+      "artist": null,
+      "subtitle": "18,000–23,000원",
+      "description": "바삭한 한 입, 함께 먹으면 더 즐거운 메뉴.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁"
+      ],
+      "ingredients": [
+        "닭고기",
+        "밀"
+      ],
+      "price_label": "18,000–23,000원",
+      "cost": 20000,
+      "emoji": "🍗",
+      "color": "#f7e5c8"
+    },
+    {
+      "id": "f14",
+      "category": "food",
+      "name": "채소 카레",
+      "artist": null,
+      "subtitle": "8,000–12,000원",
+      "description": "향긋한 향신료와 부드러운 채소가 어우러진 한 그릇.",
+      "tags": [
+        "따뜻함",
+        "채소",
+        "점심",
+        "혼자"
+      ],
+      "ingredients": [
+        "감자",
+        "당근"
+      ],
+      "price_label": "8,000–12,000원",
+      "cost": 10000,
+      "emoji": "🍛",
+      "color": "#f3e6c6"
+    },
+    {
+      "id": "f15",
+      "category": "food",
+      "name": "메밀국수",
+      "artist": null,
+      "subtitle": "8,000–11,000원",
+      "description": "시원한 국물에 깔끔하게 즐기는 면 요리.",
+      "tags": [
+        "담백함",
+        "차가움",
+        "점심",
+        "혼자",
+        "일식"
+      ],
+      "ingredients": [
+        "메밀",
+        "생선"
+      ],
+      "price_label": "8,000–11,000원",
+      "cost": 9500,
+      "emoji": "🥢",
+      "color": "#e4e9e2"
+    },
+    {
+      "id": "f16",
+      "category": "food",
+      "name": "소고기 스테이크",
+      "artist": null,
+      "subtitle": "25,000–35,000원",
+      "description": "여유로운 저녁에 즐기는 풍부한 고기 맛.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "소고기",
+        "유제품"
+      ],
+      "price_label": "25,000–35,000원",
+      "cost": 30000,
+      "emoji": "🥩",
+      "color": "#eee0d8"
+    },
+    {
+      "id": "m01",
+      "category": "music",
+      "name": "밤편지",
+      "artist": "아이유",
+      "subtitle": "아이유",
+      "description": "차분함 · 휴식 분위기의 곡",
+      "tags": [
+        "차분함",
+        "휴식",
+        "보컬",
+        "발라드",
+        "낮은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🌙",
+      "color": "#dfe5ed"
+    },
+    {
+      "id": "m02",
+      "category": "music",
+      "name": "사건의 지평선",
+      "artist": "윤하",
+      "subtitle": "윤하",
+      "description": "활기참 · 산책 분위기의 곡",
+      "tags": [
+        "활기참",
+        "산책",
+        "보컬",
+        "록",
+        "높은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🌅",
+      "color": "#eddbc9"
+    },
+    {
+      "id": "m03",
+      "category": "music",
+      "name": "Hype Boy",
+      "artist": "NewJeans",
+      "subtitle": "NewJeans",
+      "description": "활기참 · 운동 분위기의 곡",
+      "tags": [
+        "활기참",
+        "운동",
+        "보컬",
+        "팝",
+        "높은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🫧",
+      "color": "#dce8ee"
+    },
+    {
+      "id": "m04",
+      "category": "music",
+      "name": "Dynamite",
+      "artist": "BTS",
+      "subtitle": "BTS",
+      "description": "활기참 · 운동 분위기의 곡",
+      "tags": [
+        "활기참",
+        "운동",
+        "보컬",
+        "팝",
+        "높은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🪩",
+      "color": "#e6dfef"
+    },
+    {
+      "id": "m05",
+      "category": "music",
+      "name": "봄날",
+      "artist": "BTS",
+      "subtitle": "BTS",
+      "description": "차분함 · 산책 분위기의 곡",
+      "tags": [
+        "차분함",
+        "산책",
+        "보컬",
+        "팝",
+        "중간 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🌸",
+      "color": "#f0dfe5"
+    },
+    {
+      "id": "m06",
+      "category": "music",
+      "name": "River Flows in You",
+      "artist": "이루마",
+      "subtitle": "이루마",
+      "description": "차분함 · 과제 분위기의 곡",
+      "tags": [
+        "차분함",
+        "과제",
+        "연주곡",
+        "피아노",
+        "낮은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🎹",
+      "color": "#e0e8de"
+    },
+    {
+      "id": "m07",
+      "category": "music",
+      "name": "Kiss the Rain",
+      "artist": "이루마",
+      "subtitle": "이루마",
+      "description": "차분함 · 휴식 분위기의 곡",
+      "tags": [
+        "차분함",
+        "휴식",
+        "과제",
+        "연주곡",
+        "피아노",
+        "낮은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🌧️",
+      "color": "#dfe6ed"
+    },
+    {
+      "id": "m08",
+      "category": "music",
+      "name": "One Summer’s Day",
+      "artist": "히사이시 조",
+      "subtitle": "히사이시 조",
+      "description": "차분함 · 과제 분위기의 곡",
+      "tags": [
+        "차분함",
+        "과제",
+        "연주곡",
+        "피아노",
+        "중간 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🌿",
+      "color": "#e4ead7"
+    },
+    {
+      "id": "m09",
+      "category": "music",
+      "name": "Summer",
+      "artist": "히사이시 조",
+      "subtitle": "히사이시 조",
+      "description": "활기참 · 과제 분위기의 곡",
+      "tags": [
+        "활기참",
+        "과제",
+        "연주곡",
+        "피아노",
+        "중간 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "☀️",
+      "color": "#f0e6c8"
+    },
+    {
+      "id": "m10",
+      "category": "music",
+      "name": "Take Five",
+      "artist": "The Dave Brubeck Quartet",
+      "subtitle": "The Dave Brubeck Quartet",
+      "description": "차분함 · 과제 분위기의 곡",
+      "tags": [
+        "차분함",
+        "과제",
+        "연주곡",
+        "재즈",
+        "중간 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🎷",
+      "color": "#eadbcf"
+    },
+    {
+      "id": "m11",
+      "category": "music",
+      "name": "Blue in Green",
+      "artist": "Miles Davis",
+      "subtitle": "Miles Davis",
+      "description": "차분함 · 과제 분위기의 곡",
+      "tags": [
+        "차분함",
+        "과제",
+        "연주곡",
+        "재즈",
+        "낮은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "💧",
+      "color": "#dde5e8"
+    },
+    {
+      "id": "m12",
+      "category": "music",
+      "name": "Clair de lune",
+      "artist": "Claude Debussy",
+      "subtitle": "Claude Debussy",
+      "description": "차분함 · 과제 분위기의 곡",
+      "tags": [
+        "차분함",
+        "과제",
+        "휴식",
+        "연주곡",
+        "피아노",
+        "낮은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "✨",
+      "color": "#e6e0ee"
+    },
+    {
+      "id": "m13",
+      "category": "music",
+      "name": "좋은 날",
+      "artist": "아이유",
+      "subtitle": "아이유",
+      "description": "활기참 · 산책 분위기의 곡",
+      "tags": [
+        "활기참",
+        "산책",
+        "보컬",
+        "팝",
+        "높은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🌼",
+      "color": "#efead2"
+    },
+    {
+      "id": "m14",
+      "category": "music",
+      "name": "바람이 불어오는 곳",
+      "artist": "김광석",
+      "subtitle": "김광석",
+      "description": "차분함 · 산책 분위기의 곡",
+      "tags": [
+        "차분함",
+        "산책",
+        "보컬",
+        "어쿠스틱",
+        "중간 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🍃",
+      "color": "#dfebdd"
+    },
+    {
+      "id": "m15",
+      "category": "music",
+      "name": "Love poem",
+      "artist": "아이유",
+      "subtitle": "아이유",
+      "description": "차분함 · 휴식 분위기의 곡",
+      "tags": [
+        "차분함",
+        "휴식",
+        "보컬",
+        "발라드",
+        "낮은 에너지"
+      ],
+      "ingredients": [],
+      "price_label": null,
+      "cost": null,
+      "emoji": "🕊️",
+      "color": "#e6e3df"
+    }
+  ]
+}

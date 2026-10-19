@@ -1,6 +1,6 @@
 # 지금 추천 — DB·유사도 검색·AI 재순위 구현 계획
 
-작성일: 2026-10-19 · 상태: **R0 완료(2026-10-19), R1 대기** · 결정: B 방식(유사도 검색으로 후보를 뽑고, AI는 그 후보 안에서만 고르고 설명)
+작성일: 2026-10-19 · 상태: **R0·R1 완료(2026-10-19), R2 대기** · 결정: B 방식(유사도 검색으로 후보를 뽑고, AI는 그 후보 안에서만 고르고 설명)
 
 이 문서는 이전 주의 [plans.md](./plans.md)(P0·P1·P2, 정적 사이트)에 이어지는 서버·DB·AI 단계의 실행 계획이다. 화면 규칙과 디자인 기준은 계속 plans.md와 [DESIGN.md](./DESIGN.md)를 따른다.
 
@@ -47,7 +47,7 @@ flowchart LR
 | 서버 | Python 3.12 · FastAPI · Pydantic v2 | 상위 기획서의 계획 스택. 개발 PC에 Python 3.12·Docker 설치되어 있음 |
 | DB | PostgreSQL 17 + pgvector (`pgvector/pgvector:pg17` Docker 이미지) | 필터와 유사도 계산을 한 쿼리로 처리. 별도 벡터 DB 운영 불필요 |
 | DB 접근 | SQLAlchemy 2 · psycopg 3 · `pgvector` 파이썬 패키지 · Alembic | 마이그레이션 이력 관리 |
-| 임베딩 | `gemini-embedding-2`, 768차원 | 안정 버전. 768차원은 자동 재정규화됨. `task_type` 대신 문장 접두어로 작업 지정 ([Embeddings 문서](https://ai.google.dev/gemini-api/docs/embeddings)) |
+| 임베딩 | `gemini-embedding-2`, 768차원 | 안정 버전. 768차원은 자동 재정규화됨. `task_type` 대신 문장 접두어로 작업 지정 ([Embeddings 문서](https://ai.google.dev/gemini-api/docs/embeddings)). R1 확인: 문자열 목록을 그대로 보내면 **하나의 임베딩으로 합쳐지므로** 문장마다 별도 `Content`로 보내고 개수를 검사함 |
 | 생성 모델 | `gemini-3.6-flash` (환경 변수로 교체 가능), 구조화 출력 | 안정 Flash 모델, JSON 스키마 출력 지원 ([모델 문서](https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash)) |
 | SDK | `google-genai` | 공식 파이썬 SDK. 호출부는 `llm/client.py` 한 곳에 모아 API 형태 변경에 대비 |
 | 테스트 | pytest · 가짜 LLM 어댑터 · Docker 테스트 DB | AI 없이도 전 경로 테스트 |
@@ -257,7 +257,7 @@ score = w_ctx·cos(q_ctx, item) + w_taste·cos(v_taste, item) + w_tag·tagMatch 
 | 단계 | 내용 | 완료 기준 | 예상 |
 |---|---|---|---|
 | R0 환경 ✅ | docker-compose(db·api), FastAPI 골격, `/api/health`, `shared/vocab.json` 추출 | `docker compose up` 후 health OK, 프론트 기존 테스트 통과 — **완료**: pgvector 0.8.7 확인, pytest 9·vitest 73·Playwright 36 통과 | 2~3h |
-| R1 DB·시드 | Alembic 스키마, `export-catalog.ts`로 31개 이전, `cli/seed`·`cli/embed`, `/api/catalog`, erd.md 갱신 | DB 31개 모두 reviewed·임베딩 보유, 카탈로그 API가 data.ts와 같은 내용 | 3~4h |
+| R1 DB·시드 ✅ | Alembic 스키마, `export-catalog.ts`로 31개 이전, `cli/seed`·`cli/embed`, `/api/catalog`, erd.md 갱신 | DB 31개 모두 reviewed·임베딩 보유, 카탈로그 API가 data.ts와 같은 내용 — **완료**: 31개 임베딩(gemini-embedding-2/768), 재실행 시 0개, 시드·data.ts 일치 테스트 추가 | 3~4h |
 | R2 유사도 추천 | 필터 SQL, 점수, τ+MMR, `/api/recommend`(`retrieval_only`, 템플릿 이유) | 필터 공통 사례 통과, τ=0에서 같은 입력 → 같은 결과 | 4~6h |
 | R3 프론트 연결 | api client, 카탈로그 로더, 비동기 추천·피드백·교체, 로딩·오류·오프라인 모드 | 서버 있음/없음 둘 다 전체 흐름 동작, 기존 Playwright 통과 | 6~8h |
 | R4 AI 재순위 | 프롬프트, 구조화 출력, 검증·대체, 로그 | 가짜 LLM으로 무효 ID·중복·부족·시간 초과 사례 통과, 실제 모델로 대표 10건 확인 | 4~5h |

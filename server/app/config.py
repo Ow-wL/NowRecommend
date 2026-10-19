@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173", "https://ow-wl.github.io"]
     vocab_path: Path = PROJECT_ROOT / "shared" / "vocab.json"
     gemini_api_key: str | None = None
+    embedding_model: str = "gemini-embedding-2"
+    embedding_dim: int = 768  # must equal the vector(768) column
     db_connect_timeout: int = 3
 
 

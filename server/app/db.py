@@ -3,6 +3,7 @@ from functools import lru_cache
 
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, sessionmaker
 
 from .config import get_settings
 
@@ -15,6 +16,16 @@ def get_engine() -> Engine:
         pool_pre_ping=True,
         connect_args={"connect_timeout": settings.db_connect_timeout},
     )
+
+
+@lru_cache
+def get_sessionmaker() -> sessionmaker[Session]:
+    return sessionmaker(get_engine(), expire_on_commit=False)
+
+
+def get_session():
+    with get_sessionmaker()() as session:
+        yield session
 
 
 @dataclass(frozen=True)
