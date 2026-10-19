@@ -23,6 +23,32 @@ $env:PLAYWRIGHT_PORT = '5187'
 try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction SilentlyContinue }
 ```
 
+## API 서버와 DB (개발 중)
+
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R0 환경 구성까지 완료된 상태입니다. 프론트엔드는 아직 서버를 호출하지 않습니다.
+
+Docker Desktop이 필요합니다. PostgreSQL 17 + pgvector와 FastAPI 서버를 함께 실행합니다.
+
+```powershell
+docker compose up -d --build
+curl http://127.0.0.1:8010/api/health
+```
+
+- 호스트 포트 기본값은 DB `5433`, API `8010`입니다. 충돌하면 `DB_PORT`, `API_PORT` 환경 변수로 바꿉니다.
+- `GEMINI_API_KEY`는 셸 환경 변수 또는 루트 `.env`에서 읽습니다. health 응답에는 설정 여부만 표시됩니다.
+- 태그·제외 어휘의 단일 기준은 `shared/vocab.json`입니다. 프론트(`src/data.ts`)와 서버가 같은 파일을 읽습니다.
+
+서버 단위 테스트(Python 3.12 이상):
+
+```powershell
+cd server
+py -3.14 -m venv .venv
+.venv\Scripts\python -m pip install -e ".[dev]"
+.venv\Scripts\python -m pytest
+```
+
+`docker compose up -d db` 후 `$env:NOWREC_DB_TESTS='1'`을 설정하면 실제 DB 연결 테스트까지 실행합니다.
+
 ## 사용 흐름
 
 1. 음식 또는 음악 선택 → 해당 분야의 평소 선호 항목 5개 이상 등록.

@@ -1,3 +1,4 @@
+import vocab from '../shared/vocab.json' with { type: 'json' };
 export type Category = 'food' | 'music';
 export const CATALOG_META = { version: '2026-10-13-sample-1', status: 'sample-unverified', source: '기존 프로토타입 카탈로그', reviewed: false } as const;
 export type Item = { id: string; category: Category; name: string; subtitle: string; description: string; tags: string[]; ingredients: string[]; emoji: string; color: string; price?: string; cost?: number };
@@ -37,14 +38,13 @@ export const items: Item[] = [
   music('m15', 'Love poem', '아이유', '🕊️', ['차분함', '휴식', '보컬', '발라드', '낮은 에너지'], '#e6e3df'),
 ];
 export const categoryLabel: Record<Category, string> = { food: '음식', music: '음악' };
-export const options: Record<Category, string[]> = {
-  food: ['혼자', '함께', '점심', '저녁', '담백함', '매콤함', '고소함', '상큼함', '따뜻함', '차가움', '국물', '채소'],
-  music: ['과제', '휴식', '산책', '운동', '차분함', '활기참', '낮은 에너지', '중간 에너지', '높은 에너지', '연주곡', '보컬', '재즈', '피아노', '팝', '어쿠스틱'],
-};
-export const exclusions: Record<Category, string[]> = { food: ['매콤함', '소고기', '돼지고기', '닭고기', '생선', '밀', '땅콩', '유제품', '버섯', '달걀', '콩'], music: ['보컬', '높은 에너지', '록', '팝', '피아노'] };
+// Tag vocabulary is shared with the API server; edit shared/vocab.json, not these constants.
+export const options: Record<Category, string[]> = { food: vocab.food.conditionTags, music: vocab.music.conditionTags };
+export const exclusions: Record<Category, string[]> = { food: vocab.food.exclusions, music: vocab.music.exclusions };
+export const excludableIngredients: string[] = vocab.food.excludableIngredients;
 export function validateCatalog(catalog: Item[] = items): string[] {
   const errors: string[] = [], ids = new Set<string>();
-  const allowed = { food: new Set([...options.food,'한식','일식','양식','분식','간식']), music: new Set([...options.music,'록','발라드']) };
+  const allowed = { food: new Set([...options.food,...vocab.food.extraTags]), music: new Set([...options.music,...vocab.music.extraTags]) };
   for (const item of catalog) {
     if (ids.has(item.id)) errors.push(`중복 ID: ${item.id}`); ids.add(item.id);
     if (!item.id || !item.name || !item.subtitle || !item.description || !item.tags.length) errors.push(`필수 필드: ${item.id}`);

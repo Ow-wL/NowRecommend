@@ -1,4 +1,4 @@
-import { items, type Category, type Item } from './data';
+import { items, excludableIngredients, type Category, type Item } from './data';
 export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
 export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number | null };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string };
@@ -28,7 +28,7 @@ export function parseConditions(text: string, category: Category): Conditions {
   for (const [pattern, value] of rules) if (pattern.test(text)) condition.tags.push(value);
   if (category === 'food') {
     if (/안\s*매운|맵지\s*않|매운.{0,5}(제외|싫|피하|말고)/.test(text)) { condition.excluded.push('매콤함'); condition.tags = condition.tags.filter(t => t !== '매콤함'); }
-    for (const ingredient of ['소고기', '돼지고기', '닭고기', '생선', '밀', '땅콩', '유제품', '버섯', '달걀', '콩']) {
+    for (const ingredient of excludableIngredients) {
       if (new RegExp(`(?<![가-힣])${ingredient}.{0,6}(제외|빼|피하|싫|없이|알레르기)`).test(text)) condition.excluded.push(ingredient);
     }
     condition.maxPrice = parseAmount(text);
