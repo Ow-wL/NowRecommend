@@ -17,6 +17,8 @@ class CategoryVocab(BaseModel):
     extraTags: list[str]
     exclusions: list[str]
     excludableIngredients: list[str]
+    # Words the rule parsers read as exclusions ("밀가루" → 밀, "고기" → 소고기·돼지고기·닭고기).
+    exclusionAliases: dict[str, list[str]] = {}
 
     @model_validator(mode="after")
     def check_consistency(self) -> "CategoryVocab":
@@ -29,6 +31,9 @@ class CategoryVocab(BaseModel):
             raise ValueError(f"exclusions에 정의되지 않은 값: {sorted(unknown)}")
         if missing := set(self.excludableIngredients) - set(self.exclusions):
             raise ValueError(f"제외 목록에 없는 재료: {sorted(missing)}")
+        for word, values in self.exclusionAliases.items():
+            if not word.strip() or word in self.exclusions or not values or not set(values) <= set(self.exclusions):
+                raise ValueError(f"exclusionAliases: 잘못된 동의어 {word!r}")
         return self
 
     @property

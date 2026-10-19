@@ -1,4 +1,4 @@
-import { excludableIngredients, type Category, type Item } from './data';
+import { exclusionAliases, exclusions, type Category, type Item } from './data';
 import { getCatalog } from './catalog';
 
 const catalogItems = () => getCatalog().items;
@@ -31,14 +31,27 @@ export function parseConditions(text: string, category: Category): Conditions {
     ? [[/혼자|혼밥/, '혼자'], [/함께|친구|둘이/, '함께'], [/저녁/, '저녁'], [/점심/, '점심'], [/담백|순한|부담.?없/, '담백함'], [/매콤|매운|칼칼|얼큰/, '매콤함'], [/고소/, '고소함'], [/따뜻|따끈/, '따뜻함'], [/시원|차가운/, '차가움'], [/국물/, '국물'], [/채소|야채/, '채소']]
     : [[/과제|공부|집중|작업/, '과제'], [/휴식|쉬|잠|편안/, '휴식'], [/산책|걷/, '산책'], [/운동|달리|러닝/, '운동'], [/잔잔|차분|조용/, '차분함'], [/활기|신나|밝은/, '활기참'], [/적당히|적당한/, '중간 에너지'], [/연주곡|보컬.?없|가사.?없/, '연주곡'], [/재즈/, '재즈'], [/피아노/, '피아노'], [/어쿠스틱/, '어쿠스틱']];
   for (const [pattern, value] of rules) if (pattern.test(text)) condition.tags.push(value);
+  const excluded = listedExclusions(text, category);
   if (category === 'food') {
-    if (/안\s*매운|맵지\s*않|매운.{0,5}(제외|빼|싫|피하|말고)/.test(text)) { condition.excluded.push('매콤함'); condition.tags = condition.tags.filter(t => t !== '매콤함'); }
-    for (const ingredient of excludableIngredients) {
-      if (new RegExp(`(?<![가-힣])${ingredient}.{0,6}(제외|빼|피하|싫|없이|알레르기)`).test(text)) condition.excluded.push(ingredient);
-    }
+    if (new RegExp(`안\\s*매운|맵지\\s*않|매운.{0,5}(${EXCLUDE})`).test(text)) excluded.add('매콤함');
     condition.maxPrice = parseAmount(text);
-  } else if (/보컬.?없|가사.?없|보컬.{0,5}(제외|싫)/.test(text)) condition.excluded.push('보컬');
+  } else if (/보컬.?없|가사.?없|보컬.{0,5}(제외|싫)/.test(text)) excluded.add('보컬');
+  // Like "매운 건 빼고": an excluded value is never also a wanted tag ("피아노 말고").
+  condition.excluded = exclusions[category].filter(v => excluded.has(v));
+  condition.tags = condition.tags.filter(t => !excluded.has(t));
   return condition;
+}
+const EXCLUDE = /제외|빼|피하|싫|없[이는게음고]|말고|못\s*먹|안\s*먹|알레르기/.source;
+// Items joined by spaces, commas or particles: "고기 생선 달걀 다 빼줘", "소고기와 돼지고기는 제외".
+const JOINER = /[\s,]*(?:이랑|하고|이나|과|와|랑|및|나|도)?[\s,]*/.source;
+/** Every listed word before an exclusion trigger, mapped to vocabulary values via exclusionAliases (shared/vocab.json). */
+function listedExclusions(text: string, category: Category): Set<string> {
+  const words: Record<string, string[]> = { ...Object.fromEntries(exclusions[category].map(v => [v, [v]])), ...exclusionAliases[category] };
+  const term = Object.keys(words).sort((a, b) => b.length - a.length).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const found = new Set<string>();
+  for (const match of text.matchAll(new RegExp(`(?<![가-힣])((?:${term})(?:${JOINER}(?:${term}))*).{0,6}?(?:${EXCLUDE})`, 'g')))
+    for (const [word] of match[1].matchAll(new RegExp(term, 'g'))) for (const value of words[word]) found.add(value);
+  return found;
 }
 
 function smallNumber(value: string): number {

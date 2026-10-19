@@ -28,6 +28,8 @@ def write(tmp_path, food_overrides):
         {"conditionTags": ["혼자", "혼자"]},
         {"exclusions": ["매콤함", "없는태그"]},
         {"excludableIngredients": ["소고기", "새우"]},
+        {"exclusionAliases": {"새우깡": ["새우"]}},
+        {"exclusionAliases": {"밀": ["밀"]}},
     ],
 )
 def test_inconsistent_vocab_is_rejected(tmp_path, overrides):

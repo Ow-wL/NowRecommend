@@ -5,6 +5,9 @@ Both implementations are checked against shared/parse-cases.json; change them to
 """
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
+
+from ..vocab import CategoryVocab, get_vocab
 
 FOOD_RULES = [
     (r"혼자|혼밥", "혼자"), (r"함께|친구|둘이", "함께"), (r"저녁", "저녁"), (r"점심", "점심"),
@@ -16,9 +19,11 @@ MUSIC_RULES = [
     (r"잔잔|차분|조용", "차분함"), (r"활기|신나|밝은", "활기참"), (r"적당히|적당한", "중간 에너지"),
     (r"연주곡|보컬.?없|가사.?없", "연주곡"), (r"재즈", "재즈"), (r"피아노", "피아노"), (r"어쿠스틱", "어쿠스틱"),
 ]
-NOT_SPICY = r"안\s*매운|맵지\s*않|매운.{0,5}(제외|빼|싫|피하|말고)"
+EXCLUDE = r"제외|빼|피하|싫|없[이는게음고]|말고|못\s*먹|안\s*먹|알레르기"
+NOT_SPICY = rf"안\s*매운|맵지\s*않|매운.{{0,5}}({EXCLUDE})"
 NO_VOCALS = r"보컬.?없|가사.?없|보컬.{0,5}(제외|싫)"
-INGREDIENTS = ["소고기", "돼지고기", "닭고기", "생선", "밀", "땅콩", "유제품", "버섯", "달걀", "콩"]
+# Items joined by spaces, commas or particles: "고기 생선 달걀 다 빼줘", "소고기와 돼지고기는 제외".
+JOINER = r"[\s,]*(?:이랑|하고|이나|과|와|랑|및|나|도)?[\s,]*"
 AMOUNT = re.compile(r"(?<![가-힣0-9-])((?:(?:[0-9,]+|[일이삼사오육칠팔구십]+)\s*)?(?:만|천)(?:\s*(?:[0-9]+|[일이삼사오육칠팔구십]+)?\s*천)?(?:\s*[0-9]+)?|[0-9,]+)\s*원")
 DIGITS = {"일": 1, "이": 2, "삼": 3, "사": 4, "오": 5, "육": 6, "칠": 7, "팔": 8, "구": 9}
 
@@ -40,27 +45,47 @@ def _cover(result: RuleParse, pattern: str, text: str) -> bool:
     return bool(spans)
 
 
+@lru_cache
+def _exclusion_patterns(category: str) -> tuple[re.Pattern, re.Pattern, dict[str, list[str]]]:
+    vocab: CategoryVocab = get_vocab().for_category(category)
+    words = {**{value: [value] for value in vocab.exclusions}, **vocab.exclusionAliases}
+    term = "|".join(re.escape(w) for w in sorted(words, key=len, reverse=True))
+    listed = re.compile(rf"(?<![가-힣])((?:{term})(?:{JOINER}(?:{term}))*).{{0,6}}?(?:{EXCLUDE})")
+    return listed, re.compile(term), words
+
+
+def _listed_exclusions(result: RuleParse, text: str, category: str) -> set[str]:
+    """Every listed word before an exclusion trigger, mapped to vocabulary values via exclusionAliases."""
+    listed, term, words = _exclusion_patterns(category)
+    found: set[str] = set()
+    for match in listed.finditer(text):
+        result.spans.append(match.span())
+        for word in term.findall(match.group(1)):
+            found.update(words[word])
+    return found
+
+
 def parse_rules(text: str, category: str) -> RuleParse:
     result = RuleParse()
     for pattern, value in FOOD_RULES if category == "food" else MUSIC_RULES:
         if _cover(result, pattern, text):
             result.tags.append(value)
+    excluded = _listed_exclusions(result, text, category)
     if category == "food":
         if _cover(result, NOT_SPICY, text):
-            result.excluded.append("매콤함")
-            result.tags = [t for t in result.tags if t != "매콤함"]
-        for ingredient in INGREDIENTS:
-            if _cover(result, rf"(?<![가-힣]){ingredient}.{{0,6}}(제외|빼|피하|싫|없이|알레르기)", text):
-                result.excluded.append(ingredient)
+            excluded.add("매콤함")
         if match := AMOUNT.search(text):
             result.max_price = _amount(match.group(1))
             result.spans.append(match.span())
     else:
         if _cover(result, NO_VOCALS, text):
-            result.excluded.append("보컬")
+            excluded.add("보컬")
         # Music has no budget; the amount is understood (and ignored), so it must not trigger the LLM.
         if match := AMOUNT.search(text):
             result.spans.append(match.span())
+    # Like "매운 건 빼고": an excluded value is never also a wanted tag ("피아노 말고").
+    result.excluded = [v for v in get_vocab().for_category(category).exclusions if v in excluded]
+    result.tags = [t for t in result.tags if t not in excluded]
     return result
 
 

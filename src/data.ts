@@ -42,6 +42,7 @@ export const categoryLabel: Record<Category, string> = { food: '음식', music: 
 export const options: Record<Category, string[]> = { food: vocab.food.conditionTags, music: vocab.music.conditionTags };
 export const exclusions: Record<Category, string[]> = { food: vocab.food.exclusions, music: vocab.music.exclusions };
 export const excludableIngredients: string[] = vocab.food.excludableIngredients;
+export const exclusionAliases: Record<Category, Record<string, string[]>> = { food: vocab.food.exclusionAliases, music: vocab.music.exclusionAliases };
 export function validateCatalog(catalog: Item[] = items): string[] {
   const errors: string[] = [], ids = new Set<string>();
   const allowed = { food: new Set([...options.food,...vocab.food.extraTags]), music: new Set([...options.music,...vocab.music.extraTags]) };
