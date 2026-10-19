@@ -37,6 +37,7 @@ class PipelineConfig:
     weights: Weights = Weights()
     selection: SelectionParams = SelectionParams()
     log_raw_text: bool = True
+    write_log: bool = True  # offline evaluation runs (app.cli.eval) keep the request log clean
 
 
 def as_vector(value) -> np.ndarray | None:
@@ -109,15 +110,16 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
 
     request_id = uuid.uuid4()
     latency_ms = round((time.perf_counter() - started) * 1000)
-    _write_log(session, RecommendationLog(
-        id=request_id, category=request.category, raw_text=request.raw if config.log_raw_text else None,
-        conditions=conditions.model_dump(),
-        params={"weights": config.weights.__dict__, "selection": selection.__dict__, "contextVector": context_vector is not None,
-                "tasteVector": taste_vector is not None, "rerankModel": rerank_model.model if rerank_model else None,
-                "aiPicks": sum(p.by_ai for p in picks)},
-        candidate_ids=pool, candidate_scores={i: {"score": round(scores[i].score, 4), **scores[i].parts} for i in pool},
-        result_ids=result_ids, mode=mode, latency_ms=latency_ms, error=";".join(errors) or None,
-    ))
+    if config.write_log:
+        _write_log(session, RecommendationLog(
+            id=request_id, category=request.category, raw_text=request.raw if config.log_raw_text else None,
+            conditions=conditions.model_dump(),
+            params={"weights": config.weights.__dict__, "selection": selection.__dict__, "contextVector": context_vector is not None,
+                    "tasteVector": taste_vector is not None, "rerankModel": rerank_model.model if rerank_model else None,
+                    "aiPicks": sum(p.by_ai for p in picks)},
+            candidate_ids=pool, candidate_scores={i: {"score": round(scores[i].score, 4), **scores[i].parts} for i in pool},
+            result_ids=result_ids, mode=mode, latency_ms=latency_ms, error=";".join(errors) or None,
+        ))
     return {
         "results": results,
         "meta": {

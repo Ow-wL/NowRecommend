@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     db_connect_timeout: int = 3
     # Store request sentences in recommendation_logs (local/evaluation only; set false when deployed).
     log_raw_text: bool = True
+    # POSTs to /api/recommend and /api/parse per client per minute (0 = off); TRUST_PROXY reads X-Forwarded-For.
+    rate_limit_per_minute: int = 30
+    trust_proxy: bool = False
 
 
 @lru_cache

@@ -1,0 +1,51 @@
+name: Server tests
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', 'shared/**', '.github/workflows/server-ci.yml']
+  pull_request:
+    paths: ['server/**', 'shared/**', '.github/workflows/server-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: nowrecommend
+          POSTGRES_PASSWORD: nowrecommend
+          POSTGRES_DB: nowrecommend
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U nowrecommend -d nowrecommend"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      # CI-only throwaway database. No GEMINI_API_KEY: tests use fake embedders and models.
+      DATABASE_URL: postgresql+psycopg://nowrecommend:nowrecommend@127.0.0.1:5432/nowrecommend
+      NOWREC_DB_TESTS: '1'
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: server/pyproject.toml
+      - name: Install server
+        run: pip install -e ".[dev]"
+      - name: Apply migrations
+        run: alembic upgrade head
+      - name: Models match migrations
+        run: alembic check
+      - name: Run tests (including database tests)
+        run: pytest -q

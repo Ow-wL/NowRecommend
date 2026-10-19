@@ -30,7 +30,7 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## API 서버와 DB (개발 중)
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R6(AI 초안 카탈로그)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R7(평가·CI·배포 정리)까지 완료된 상태입니다. 공개 배포 방법은 [DEPLOY.md](./DEPLOY.md)에 있습니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
 
 ### 프론트엔드의 두 가지 모드
 
@@ -93,6 +93,9 @@ docker compose exec api python -m app.cli.review import
 - 파일을 고쳐 `decision`을 `approve`·`reject`로 바꿉니다. **음식은 재료를 확인한 뒤 `allergensChecked: true`로 바꿔야 승인됩니다.**
 - `review import`: 승인 항목을 `reviewed`로 바꾸고 임베딩합니다. 오래된 파일로 이미 처리된 항목을 덮어쓰지 않습니다.
 - 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다.
+- `python -m app.cli.eval`(server 폴더에서 실행)은 평가 세트 60개(`server/eval/cases.json`)로 기존 규칙·유사도·취향만 방식을 비교하고, 조건 해석 정확도를 잽니다. 결과는 `server/eval/report.md`에 씁니다. `--with-ai`를 주면 AI 경로도 일부 사례에 대해 측정하며, 이때는 생성 한도를 씁니다.
+- 서버 테스트는 GitHub Actions `server-ci.yml`에서 pgvector 컨테이너와 함께 실행됩니다(`server/`·`shared/` 변경 시).
+- `POST /api/recommend`·`/api/parse`는 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔).
 - `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 
@@ -145,7 +148,7 @@ py -3.14 -m venv .venv
 
 ## 배포
 
-이 폴더가 GitHub 저장소 루트입니다. Settings → Pages → Source에서 GitHub Actions를 사용합니다. `main` 푸시가 `.github/workflows/deploy-pages.yml`의 단위 테스트·빌드·배포를 실행합니다.
+이 폴더가 GitHub 저장소 루트입니다. Settings → Pages → Source에서 GitHub Actions를 사용합니다. `main` 푸시가 `.github/workflows/deploy-pages.yml`의 단위 테스트·빌드·배포를 실행합니다. 저장소 변수 `VITE_API_BASE_URL`이 없으면 Pages는 오프라인 모드로 빌드됩니다. API 서버를 공개 배포하는 방법은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
 실제 사이트: [지금 추천](https://ow-wl.github.io/NowRecommend/).
 
