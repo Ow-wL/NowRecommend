@@ -1,33 +1,43 @@
+/* Design tokens — "clean light" (DESIGN.md §3). Light is the default; dark keeps the same roles.
+   Contrast floors checked by tests: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1. */
 :root {
-  color-scheme: dark;
-  --bg-canvas: #101114; --bg-sidebar: #131519; --bg-surface: #181A1F;
-  --bg-elevated: #20232A; --bg-hover: #292D35; --bg-pressed: #343A45;
-  --border-subtle: #333843; --border-control: #737D8C;
-  --text-primary: #F5F5F7; --text-secondary: #B7BDC8; --text-muted: #929BAA;
-  --accent: #FFAD7A; --accent-hover: #FFC097; --accent-pressed: #F59B62;
-  --text-on-accent: #1B110B; --bg-selected: #30251F;
-  --food: #FFBD8A; --music: #BEB4FF; --bg-music: #272338;
-  --success: #8FDCB0; --bg-success: #1D2D25;
-  --warning: #F2CA78; --bg-warning: #30291C;
-  --danger: #FF9BA2; --bg-danger: #332126;
-  --focus: #96C2FF; --overlay: rgb(0 0 0 / 64%);
+  color-scheme: light;
+  --bg-canvas: #F2F4F6; --bg-sidebar: #FFFFFF; --bg-surface: #FFFFFF;
+  --bg-elevated: #F9FAFB; --bg-hover: #F2F4F6; --bg-pressed: #E5E8EB; --bg-tonal: #F2F4F6;
+  --border-subtle: #E5E8EB; --border-control: #868E96;
+  --text-primary: #191F28; --text-secondary: #4E5968; --text-muted: #636E79;
+  --accent: #1B64DA; --accent-fill: #1F6FE5; --accent-hover: #1B64DA; --accent-pressed: #1957C2;
+  --text-on-accent: #FFFFFF; --bg-selected: #E8F3FF;
+  --food: #C2410C; --bg-food: #FFF1EA; --music: #5B3FD9; --bg-music: #F1EEFF;
+  --success: #0A7A4B; --bg-success: #E6F7EF;
+  --warning: #8A5A00; --bg-warning: #FFF6E0;
+  --danger: #D22030; --bg-danger: #FFEEEE;
+  --focus: #3182F6; --overlay: rgb(0 0 0 / 40%);
+  --bg-inverse: #191F28; --text-inverse: #FFFFFF;
+  --shadow-card: 0 1px 2px rgb(0 27 55 / 4%);
+  --shadow-raised: 0 8px 24px rgb(0 27 55 / 8%);
+  --shadow-dialog: 0 24px 64px rgb(0 27 55 / 18%);
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
-  --radius-control: 10px; --radius-card: 16px; --radius-dialog: 20px;
-  --content-max: 1200px; --sidebar-width: 232px; --header-height: 64px;
-  --motion-fast: 120ms; --motion-normal: 180ms; --ease-standard: cubic-bezier(.2,0,0,1);
+  --radius-control: 12px; --radius-card: 20px; --radius-dialog: 24px; --radius-small: 8px;
+  --content-max: 1080px; --sidebar-width: 248px; --header-height: 60px;
+  --motion-fast: 120ms; --motion-normal: 200ms; --ease-standard: cubic-bezier(.2,0,0,1);
 }
-:root[data-theme="light"] {
-  color-scheme:light;
-  --bg-canvas:#F4F6F8;--bg-sidebar:#FFFFFF;--bg-surface:#FFFFFF;
-  --bg-elevated:#F0F2F5;--bg-hover:#E4E8EE;--bg-pressed:#D7DDE5;
-  --border-subtle:#CAD2DC;--border-control:#697889;
-  --text-primary:#17202D;--text-secondary:#3C4A5C;--text-muted:#536170;
-  --accent:#A6420C;--accent-fill:#FFAD7A;--accent-hover:#FFC097;--accent-pressed:#F59B62;
-  --text-on-accent:#1B110B;--bg-selected:#FFF0E6;
-  --food:#92400E;--music:#5D44B5;--bg-music:#ECE7FF;
-  --success:#21643C;--bg-success:#E0F3E7;
-  --warning:#77500C;--bg-warning:#FFF3D8;
-  --danger:#A1273A;--bg-danger:#FFE9ED;
-  --focus:#245CC7;--overlay:rgb(0 0 0 / 48%);
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-canvas: #131417; --bg-sidebar: #17181C; --bg-surface: #1E1F24;
+  --bg-elevated: #2A2B31; --bg-hover: #2F3037; --bg-pressed: #3A3B43; --bg-tonal: #2A2B31;
+  --border-subtle: #2C2D33; --border-control: #737B87;
+  --text-primary: #F2F4F6; --text-secondary: #B0B8C1; --text-muted: #9AA3AE;
+  --accent: #6BA6FF; --accent-fill: #1F6FE5; --accent-hover: #1B64DA; --accent-pressed: #1957C2;
+  --text-on-accent: #FFFFFF; --bg-selected: #1B2A44;
+  --food: #FF9F6E; --bg-food: #33231B; --music: #B4A6FF; --bg-music: #272240;
+  --success: #5BD39A; --bg-success: #1B2E25;
+  --warning: #F5C451; --bg-warning: #30291A;
+  --danger: #FF8A93; --bg-danger: #3A2125;
+  --focus: #6BA6FF; --overlay: rgb(0 0 0 / 60%);
+  --bg-inverse: #F2F4F6; --text-inverse: #191F28;
+  --shadow-card: none;
+  --shadow-raised: 0 8px 24px rgb(0 0 0 / 32%);
+  --shadow-dialog: 0 24px 64px rgb(0 0 0 / 50%);
 }

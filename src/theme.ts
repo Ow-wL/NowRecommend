@@ -9,15 +9,16 @@ function readable(color:string,backgrounds:string[],towards:string):string {
   for(let i=0;i<=100;i++){const value=mix(color,towards,i/100);if(backgrounds.every(bg=>contrast(value,bg)>=4.5))return value;}return towards;
 }
 export function accentTokens(color:string,theme:'dark'|'light'):Record<string,string> {
-  const selected=mix(theme==='dark'?'#181a1f':'#ffffff',color,.12);
-  const foreground=readable(color,theme==='dark'?['#292d35',selected]:['#e4e8ee',selected],theme==='dark'?'#ffffff':'#000000');
+  // Surfaces from styles/tokens.css: the accent must stay readable on cards, hover fills and its own tint.
+  const selected=mix(theme==='dark'?'#1e1f24':'#ffffff',color,.12);
+  const foreground=readable(color,theme==='dark'?['#2f3037','#1e1f24',selected]:['#f2f4f6','#ffffff',selected],theme==='dark'?'#ffffff':'#000000');
   const text=contrast(color,'#000000')>=contrast(color,'#ffffff')?'#000000':'#ffffff';
   return {'--accent':foreground,'--accent-fill':color,'--accent-hover':readable(mix(color,'#ffffff',.1),[text],text==='#000000'?'#ffffff':'#000000'),'--accent-pressed':readable(mix(color,'#000000',.12),[text],text==='#000000'?'#ffffff':'#000000'),'--text-on-accent':text,'--bg-selected':selected};
 }
 export function applyAppearance(appearance?:Appearance) {
-  const mode=appearance?.mode || 'dark',theme=mode==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):mode;
+  const mode=appearance?.mode || 'light',theme=mode==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):mode;
   const root=document.documentElement;root.dataset.theme=theme;
   const keys=['--accent','--accent-fill','--accent-hover','--accent-pressed','--text-on-accent','--bg-selected'];
   keys.forEach(key=>root.style.removeProperty(key));if(appearance?.accent)Object.entries(accentTokens(appearance.accent,theme)).forEach(([key,value])=>root.style.setProperty(key,value));
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#101114':'#f4f6f8');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#131417':'#f2f4f6');
 }
