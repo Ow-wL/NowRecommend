@@ -72,7 +72,7 @@ def test_model_order_and_reasons_are_used(catalog):
     model = FakeModel(reverse_order)
     response = post(catalog, model)
     candidates = [c["id"] for c in model.payloads[0]["candidates"]]
-    assert response["meta"]["mode"] == "rag"
+    assert response["meta"]["mode"] == "rag" and response["meta"]["ai"] == "used" and response["meta"]["situational"] is True
     assert ids(response) == list(reversed(candidates))[:3]
     assert response["results"][0]["contextReason"] == "AI가 본 상황"
     entry = log_for(catalog, response)
@@ -96,6 +96,7 @@ def test_model_failure_falls_back_to_retrieval(catalog):
     failed = post(catalog, FakeModel(boom))
     without = post(catalog, None)
     assert failed["meta"]["mode"] == without["meta"]["mode"] == "retrieval_only"
+    assert (failed["meta"]["ai"], without["meta"]["ai"]) == ("failed", "off")
     assert ids(failed) == ids(without)
     assert log_for(catalog, failed).error == "rerank:TimeoutError"
 

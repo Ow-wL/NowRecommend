@@ -2,7 +2,8 @@
 
 Cosine values from one embedding model sit in a narrow band (≈0.6–0.85), so each cosine component is
 min-max normalised over the eligible candidates before weighting; otherwise the 0–1 tag match would dominate.
-Weights of missing components (no sentence, no taste) are redistributed over the remaining ones.
+A missing sentence vector hands its weight to the condition tags (both are "situation"); any other missing
+component's weight is redistributed proportionally over the remaining ones.
 """
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -63,7 +64,12 @@ def score_candidates(candidates: Sequence[Candidate], context_vector: np.ndarray
     taste = np.mean(taste_parts, axis=0) if taste_parts else None
     tag = np.array([overlap(c.tags, wanted) for c in candidates]) if wanted else None
 
-    components = {"context": (context, weights.context), "taste": (taste, weights.taste), "tag": (tag, weights.tag)}
+    tag_weight = weights.tag
+    if context is None and tag is not None:
+        # The sentence and the wanted tags both describe the situation. Without the sentence vector its share goes to
+        # the tags; a proportional split let taste dominate (R7: food hit@3 0.93 → 0.43 without the query embedding).
+        tag_weight += weights.context
+    components = {"context": (context, weights.context), "taste": (taste, weights.taste), "tag": (tag, tag_weight)}
     active = {name: (values, w) for name, (values, w) in components.items() if values is not None}
     total_weight = sum(w for _, w in active.values())
     scored = []

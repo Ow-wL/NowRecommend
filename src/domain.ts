@@ -7,7 +7,9 @@ export type Conditions = { tags: string[]; excluded: string[]; maxPrice: number 
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[]; budgetInput?: string;
   /** How the server read `raw` ('local': server unreachable, browser rules kept). Applies only while raw matches. */
   ai?: { raw: string; source: 'rule' | 'rule+ai' | 'local'; unparsed: string[] } };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local' };
+export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local';
+  /** How the server produced the current cards (only with source 'server'): AI used/failed/off, sentence meaning used. */
+  quality?: { ai: 'used' | 'failed' | 'off'; context: boolean } };
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };

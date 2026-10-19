@@ -86,3 +86,13 @@ def test_pinned_items_that_are_no_longer_eligible_are_dropped():
 def test_mean_vector_is_normalised():
     assert np.linalg.norm(mean_vector([unit(1, 0), unit(0, 1)])) == pytest.approx(1)
     assert mean_vector([]) is None
+
+
+def test_missing_sentence_vector_hands_its_weight_to_the_tags():
+    # a matches the wanted tag, b matches the taste; without a sentence vector the situation must still win.
+    candidates = [Candidate("a", ["담백함"], unit(0, 1)), Candidate("b", [], unit(1, 0))]
+    result = scores(candidates, context=None, taste=unit(1, 0), tags=["담백함"])
+    w = Weights()
+    assert result["a"].score == pytest.approx((w.tag + w.context) / (w.tag + w.context + w.taste))
+    assert result["b"].score == pytest.approx(w.taste / (w.tag + w.context + w.taste))
+    assert result["a"].score > result["b"].score

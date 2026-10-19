@@ -82,9 +82,10 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
     allowed = [*pinned_ids, *unseen] if enough else pool
     required = [] if enough else unseen
 
-    mode = "retrieval_only"
+    mode, ai_status = "retrieval_only", "off"  # ai: off (no model) | failed (tried, unusable) | used
     picks = [Pick(i, *templates[i], by_ai=False) for i in pool[: request.result_count]]
     if rerank_model and allowed:
+        ai_status = "failed"
         try:
             payload = build_payload(
                 request.category, request.raw, conditions.tags, conditions.excluded, conditions.maxPrice,
@@ -97,7 +98,7 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
             validation = validate_picks(rerank(rerank_model, payload), allowed, pinned_ids, required, request.result_count,
                                         templates, unliked_names=shown_names - liked_names)
             if validation.ai_count:
-                mode, picks = "rag", validation.picks
+                mode, picks, ai_status = "rag", validation.picks, "used"
                 if issues := validation.summary():
                     errors.append(f"rerank:{issues}")
             else:
@@ -129,6 +130,9 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
             "catalogVersion": catalog_version(public_item(r) for r in reviewed_items(session)),
             "requestId": str(request_id),
             "contextSimilarity": context_vector is not None,
+            # Lets the UI say when the answer came without the AI or without the sentence's meaning.
+            "ai": ai_status,
+            "situational": bool(query_text(request.raw, conditions.tags)),
         },
     }
 

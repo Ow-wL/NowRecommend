@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, apiJson } from './api/client';
-import { recommendBody, validRemoteBatch } from './api/recommend';
+import { qualityOf, recommendBody, validRemoteBatch } from './api/recommend';
 import { items } from './data';
 import { emptyConditions, type Session } from './domain';
 
@@ -48,5 +48,13 @@ describe('recommend request and response', () => {
     expect(validRemoteBatch({ results: [result, result], meta })).toBe(false);
     expect(validRemoteBatch({ results: [{ ...result, item: { ...items[0], tags: 'x' } }], meta })).toBe(false);
     expect(validRemoteBatch({ results: [result], meta: { ...meta, mode: 'magic' } })).toBe(false);
+    expect(validRemoteBatch({ results: [result], meta: { ...meta, ai: 'failed', situational: true, contextSimilarity: false } })).toBe(true);
+    expect(validRemoteBatch({ results: [result], meta: { ...meta, ai: 'maybe' } })).toBe(false);
+  });
+  it('turns server meta into the quality shown on the results screen', () => {
+    const meta = { mode: 'retrieval_only' as const, eligibleCount: 3, newCount: 1, catalogVersion: 'db-1', requestId: 'r' };
+    expect(qualityOf(meta)).toEqual({ ai: 'off', context: true });  // older servers report nothing
+    expect(qualityOf({ ...meta, ai: 'failed', situational: true, contextSimilarity: false })).toEqual({ ai: 'failed', context: false });
+    expect(qualityOf({ ...meta, ai: 'used', situational: false, contextSimilarity: false })).toEqual({ ai: 'used', context: true });  // nothing to embed
   });
 });

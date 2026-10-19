@@ -3,6 +3,7 @@
 Ranking modes, all with the gold conditions so ranking is judged apart from parsing:
   rule        — the browser's recommend() scoring (tag counts), ported below; the pre-R2 baseline
   retrieval   — the R2 pipeline (embeddings + tags + MMR), τ=0, no model
+  no_embedding — retrieval when the query embedding is unavailable (API error, no key): tags + taste
   taste_only  — retrieval without the sentence and wanted tags (hard exclusions/budget kept):
                 the "취향만" arm of the proposal's comparison
   rag         — retrieval + AI rerank (costs one generate call per case; opt-in)
@@ -83,7 +84,8 @@ def run_ranking(session: Session, data: dict, embed_query: Callable | None, mode
                                            conditions={**k, "tags": k["tags"] if situational else []})
                 if mode == "rag" and rag_done and pace:
                     time.sleep(pace)  # free tier: ~5 generate requests/minute
-                response = recommend(session, request, embed_query, QUIET, rerank_model=model if mode == "rag" else None)
+                embed = None if mode == "no_embedding" else embed_query
+                response = recommend(session, request, embed, QUIET, rerank_model=model if mode == "rag" else None)
                 ids, meta = [r["item"]["id"] for r in response["results"]], response["meta"]
                 rag_done += mode == "rag"
             results[mode].per_case[case["id"]] = {"ids": ids, "ms": (time.perf_counter() - started) * 1000,
@@ -146,7 +148,8 @@ def _parse_scores(rows: list[dict], key: str) -> dict | None:
 
 
 def render_markdown(data: dict, ranking: dict[str, ModeResult], parsing: dict, note: str = "") -> str:
-    labels = {"rule": "기존 규칙(브라우저)", "retrieval": "유사도 검색", "taste_only": "취향만", "rag": "유사도+AI 재순위"}
+    labels = {"rule": "기존 규칙(브라우저)", "retrieval": "유사도 검색", "no_embedding": "유사도 검색(문장 임베딩 실패 시)",
+              "taste_only": "취향만", "rag": "유사도+AI 재순위"}
     lines = ["# 지금 추천 — 오프라인 평가 결과", "", note, "",
              f"평가 세트: `server/eval/cases.json` (음식 {sum(c['category'] == 'food' for c in data['cases'])}·음악 {sum(c['category'] == 'music' for c in data['cases'])}개, 정답 조건 사용, τ=0)", ""]
     for category, n in COUNT.items():

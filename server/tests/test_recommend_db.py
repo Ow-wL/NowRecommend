@@ -108,6 +108,7 @@ def test_works_without_and_despite_query_embedding(catalog):
         broken = client.post("/api/recommend", json=body()).json()
     assert len(without["results"]) == len(broken["results"]) == 3
     assert without["meta"]["contextSimilarity"] is broken["meta"]["contextSimilarity"] is False
+    assert without["meta"]["situational"] is True and without["meta"]["ai"] == "off"
     entry = catalog.scalars(select(RecommendationLog).order_by(RecommendationLog.created_at.desc())).first()
     assert entry.error == "query_embedding:TimeoutError"
 

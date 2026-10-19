@@ -5,9 +5,10 @@ import { ArrowLeft, ArrowRight, Check, CheckCheck, ChevronRight, Clock3, Heart, 
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
-import { fetchRecommendations } from './api/recommend';
+import { fetchRecommendations, qualityOf } from './api/recommend';
 import { fetchParse } from './api/parse';
 import { ParseNotice } from './components/ParseNotice';
+import { QualityNotice } from './components/QualityNotice';
 import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, applyParsed, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, applyBatch, replaceCandidate, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset } from './domain';
 import { Comparison } from './components/Comparison';
 import { applyPreset } from './presets';
@@ -156,11 +157,11 @@ export default function App() {
   // Offline (no VITE_API_BASE_URL) or an explicit fallback computes locally and synchronously, exactly as before.
   // With the API server, the request is async: stale answers are dropped via requestCounter and failures offer a retry.
   function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
-    if (!apiEnabled() || local) { done({ ...nextBatch(base, profile), source: local ? 'local' : undefined }); return; }
+    if (!apiEnabled() || local) { done({ ...nextBatch(base, profile), source: local ? 'local' : undefined, quality: undefined }); return; }
     const token = ++requestCounter.current;
     setBusy(true); setRequestError(false);
     fetchRecommendations(base, profile)
-      .then(remote => { if (token === requestCounter.current) done({ ...applyBatch(base, remote.results), source: 'server' }); })
+      .then(remote => { if (token === requestCounter.current) done({ ...applyBatch(base, remote.results), source: 'server', quality: qualityOf(remote.meta) }); })
       .catch(() => { if (token === requestCounter.current) setRequestError('server'); })
       .finally(() => { if (token === requestCounter.current) setBusy(false); });
   }
@@ -224,7 +225,7 @@ export default function App() {
     const base=session,current=results,token=++requestCounter.current;
     setBusy(true);setRequestError(false);
     fetchRecommendations(replacementRequest(base,current),profile,{count:1})
-      .then(remote=>{if(token===requestCounter.current)done(applyReplacement(base,current,id,remote.results));})
+      .then(remote=>{if(token===requestCounter.current){const next=applyReplacement(base,current,id,remote.results);done(next && {...next,source:'server',quality:qualityOf(remote.meta)});}})
       .catch(()=>{if(token===requestCounter.current)setRequestError('server');})
       .finally(()=>{if(token===requestCounter.current)setBusy(false);});
   }
@@ -289,6 +290,7 @@ export default function App() {
           <div className="section-heading result-heading"><h2>{category === 'food' ? '오늘의 메뉴' : '오늘의 플레이리스트'} <span className="count">{results.length}</span></h2><span>{category === 'food' ? '조건에 맞는 후보를 비교해보세요' : '곡을 골라 외부 검색으로 이어가세요'}</span></div>
           {results.length < (category === 'food' ? 3 : 5) && <div className="notice warning"><Info size={18} /><div><strong>{results.length ? '조건에 맞는 후보가 조금 부족해요.' : '지금 조건에 맞는 후보가 없어요.'}</strong><p>등록 데이터에서 필수 제외·장기 비선호·이번 요청 제외·예산을 적용한 후보는 {candidateStatus.count}개예요. {candidateStatus.budgetRemoved > 0 ? `그중 예산 때문에 추가로 빠진 후보는 ${candidateStatus.budgetRemoved}개예요.` : '예산만 변경해서 늘어나는 후보는 없을 수 있어요.'} 필수 제외는 자동으로 완화하지 않아요.</p>{candidateStatus.suggestions.map(s => <button key={s.price} className="text-button" onClick={() => { setSession(current => changeBudget(current, String(s.price))); setStep('confirm'); }}>예산을 {s.price.toLocaleString()}원으로 변경하면 후보 {s.gain}개 추가</button>)}<button className="text-button" onClick={() => setStep('confirm')}>조건 조정하기 <ArrowRight size={14} /></button></div></div>}
           {session.source === 'local' && apiEnabled() && <div className="notice" role="status"><Info size={18} /><div><strong>기본 추천으로 보여드리고 있어요.</strong><p>추천 서버에 연결하지 못해 이 브라우저의 기본 방식으로 골랐어요. 다른 추천 보기를 누르면 서버 추천을 다시 시도해요.</p></div></div>}
+          <QualityNotice session={session} />
           {session.batchNewCount !== undefined && session.batchNewCount < results.length && <div className="notice" role="status"><Info size={18} /><div><strong>{session.batchNewCount === 0 ? '새로운 후보를 모두 살펴봤어요.' : `새 후보 ${session.batchNewCount}개 + 이전 후보 ${results.length - session.batchNewCount}개`}</strong><p>적합도 순서로 이전 후보를 다시 보여드려요. 조건을 바꾸거나 새 요청을 시작할 수 있어요.</p></div></div>}
           <div className={`result-grid ${category}`}>{results.map(r => itemCard(r.item, r))}</div>
           <div className="comparison-toolbar"><span>비교 {session.compareIds?.length || 0}/3 · 고정 {session.pinnedIds?.length || 0}개 (이번 요청만)</span><button className="button secondary" disabled={results.filter(r=>session.compareIds?.includes(r.item.id)).length<2} onClick={()=>setCompareOpen(true)}>선택한 후보 비교</button><button className="text-button" onClick={()=>setSession(s=>({...s,compareIds:[]}))}>비교 선택 비우기</button></div>

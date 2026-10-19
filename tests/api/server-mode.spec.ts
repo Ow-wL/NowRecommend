@@ -139,3 +139,22 @@ test('does not ask the server about an empty sentence', async ({ page }) => {
   await expect(page.getByRole('button', { name: '추천받기', exact: true })).toBeVisible();
   expect(parses).toBe(0);
 });
+
+test('says when the server answered without the AI or the sentence meaning', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  let degraded = true;
+  await page.route(`${API}/api/recommend`, route => {
+    const body = batch(degraded ? ['f02', 'f12', 'f09'] : ['f01', 'f07', 'f10']);
+    return fulfill(route, { ...body, meta: { ...body.meta, ...(degraded ? { ai: 'failed', situational: true, contextSimilarity: false } : { mode: 'rag', ai: 'used', situational: true, contextSimilarity: true }) } });
+  });
+  await requestFood(page);
+  await expect(page.getByText('기본 방식으로 추천했어요.')).toBeVisible();
+  await expect(page.getByText('문장의 의미를 분석하지 못해', { exact: false })).toBeVisible();
+  await expect(page.getByText('AI 설명을 받지 못해', { exact: false })).toBeVisible();
+  await page.reload();  // the notice belongs to the restored cards
+  await expect(page.getByText('기본 방식으로 추천했어요.')).toBeVisible();
+  degraded = false;
+  await page.getByRole('button', { name: '다른 추천 보기' }).click();
+  await expect(page.locator('.result-grid h3').first()).toHaveText(food('f01').name);
+  await expect(page.getByText('기본 방식으로 추천했어요.')).toHaveCount(0);
+});

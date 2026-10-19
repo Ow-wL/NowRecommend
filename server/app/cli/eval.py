@@ -27,7 +27,7 @@ def main() -> None:
     data, model = load_cases(), shared_model() if args.with_ai else None
     if args.with_ai and model is None:
         raise SystemExit("GEMINI_API_KEY is not set")
-    modes = ["rule", "retrieval", "taste_only", *(["rag"] if model else [])]
+    modes = ["rule", "retrieval", "no_embedding", "taste_only", *(["rag"] if model else [])]
     with get_sessionmaker()() as session:
         ranking = run_ranking(session, data, get_query_embedder(), model, modes, args.ai_limit, args.pace)
     parsing = run_parsing(data, get_vocab(), model, args.ai_limit, args.pace)
