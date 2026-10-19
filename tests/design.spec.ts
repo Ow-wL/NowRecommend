@@ -11,7 +11,6 @@ for (const width of [390, 1440]) {
     }
     await page.screenshot({ path: `artifacts/light-home-${width}-default.png`, fullPage: true });
     for (const category of ['food', 'music']) {
-      if (width === 390) await page.getByRole('button', { name: '메뉴 열기' }).click();
       await page.getByRole('button', { name: category === 'food' ? '음식 추천' : '음악 추천', exact: true }).click();
       for (let i = 0; i < 5; i++) await page.locator('.selection-card').nth(i).click();
       await page.getByRole('button', { name: '취향 요약 확인' }).click();

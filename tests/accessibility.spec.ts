@@ -15,14 +15,13 @@ for(const width of [320,360,390,768,1024,1440]){
     await expect(page.locator('h1')).toBeFocused();
     const overflow=()=>expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await overflow();
-    if(width<1024){
-      await expect(page.locator('.sidebar')).toHaveAttribute('inert','');
-      const opener=page.getByRole('button',{name:'메뉴 열기'});await opener.click();
-      await expect(page.getByRole('button',{name:'탐색 메뉴 닫기'})).toBeFocused();
-      await page.keyboard.press('Shift+Tab');await expect(page.locator('.user-panel')).toBeFocused();
-      await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'탐색 메뉴 닫기'})).toBeFocused();
-      await page.keyboard.press('Escape');await expect(opener).toBeFocused();
-      await opener.click();
+    // Below 900px the top navigation becomes a bottom tab bar with the same accessible names.
+    const tabbar=page.getByRole('navigation',{name:'하단 메뉴'}),topnav=page.getByRole('navigation',{name:'주요 메뉴'});
+    if(width<900){
+      await expect(tabbar).toBeVisible();await expect(topnav).toBeHidden();
+      await expect(tabbar.getByRole('button',{name:'홈',exact:true})).toHaveAttribute('aria-current','page');
+    } else {
+      await expect(topnav).toBeVisible();await expect(tabbar).toBeHidden();
     }
     await page.getByRole('button',{name:'음식 추천',exact:true}).click();
     await expect(page.locator('h1')).toBeFocused();
@@ -33,7 +32,7 @@ for(const width of [320,360,390,768,1024,1440]){
     await page.getByRole('button',{name:'추천받기',exact:true}).click();
     await overflow();
     const feedback=page.locator('.feedback-button').first();await feedback.click();
-    await expect(page.locator('.workspace')).toHaveAttribute('inert','');
+    await expect(page.locator('.main-content')).toHaveAttribute('inert','');
     await page.keyboard.press('Shift+Tab');await expect(page.getByRole('button',{name:'취소',exact:true})).toBeFocused();
     await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'닫기',exact:true})).toBeFocused();
     await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:`artifacts/light-feedback-${width}-default.png`,fullPage:true});
@@ -41,7 +40,6 @@ for(const width of [320,360,390,768,1024,1440]){
     await page.getByRole('button',{name:'이걸로 선택',exact:true}).first().click();
     await expect(page.locator('h1')).toBeFocused();await overflow();
     await page.screenshot({path:`artifacts/light-complete-${width}-default.png`,fullPage:true});
-    if(width<1024)await page.getByRole('button',{name:'메뉴 열기'}).click();
     await page.getByRole('button',{name:'즐겨찾기',exact:true}).click();await overflow();
     await page.screenshot({path:`artifacts/light-empty-${width}-favorites.png`,fullPage:true});
   });

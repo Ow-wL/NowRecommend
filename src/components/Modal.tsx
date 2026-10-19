@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { X } from 'lucide-react';
-export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => void, enabled = true, backgroundSelector = '.workspace, .sidebar, .skip-link') {
+export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => void, enabled = true, backgroundSelector = '.appbar, .main-content, .tabbar, .action-bar, .skip-link') {
   const close = useRef(onClose); close.current = onClose;
   useEffect(() => {
     if (!enabled) return;

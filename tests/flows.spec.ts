@@ -155,7 +155,7 @@ test('no eligible candidates, empty collections, and confirmed deletion', async 
 
 test('mobile navigation and layout have no horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/');
-  await page.getByRole('button', { name: '메뉴 열기' }).click();
+  await expect(page.getByRole('navigation', { name: '하단 메뉴' })).toBeVisible();
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await expect(page.getByRole('heading', { name: '평소 좋아하는 음식을 골라주세요.' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
