@@ -30,7 +30,7 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## API 서버와 DB (개발 중)
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R3(프론트엔드 연결)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R4(AI 재순위·설명)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
 
 ### 프론트엔드의 두 가지 모드
 
@@ -67,8 +67,13 @@ curl http://127.0.0.1:8010/api/catalog?category=food
 - `POST /api/recommend`는 다음 순서로 동작합니다.
   1. 필수 제외·예산·비선호·이번 요청 제외·즐겨찾기 범위를 SQL로 거릅니다.
   2. 상황 문장 임베딩, 취향 항목 평균 벡터, 조건 태그 일치를 합쳐 점수를 매깁니다.
-  3. 탐색 온도 `tau`와 MMR로 후보를 고르고, 템플릿 이유와 함께 돌려줍니다(`mode: retrieval_only`).
-  4. 요청마다 `recommendation_logs`에 기록합니다.
+  3. 탐색 온도 `tau`와 MMR로 후보 10개(음악 15곡)를 고릅니다.
+  4. `gemini-3.6-flash`가 그 후보 안에서만 3개/5곡을 고르고 취향·상황 이유를 씁니다(`mode: rag`). 서버가 ID·개수·필수 카드를 검증하고 모자라면 유사도 순서로 채웁니다.
+  5. 모델 오류·10초 초과·한도 초과(429)·과부하(503)·유효한 선택 없음이면 유사도 상위 결과와 템플릿 이유를 돌려줍니다(`mode: retrieval_only`). 429·503 뒤에는 잠시 모델 호출을 건너뜁니다.
+  6. 요청마다 `recommendation_logs`에 기록합니다.
+- 현재 키는 무료 등급이라 생성 요청이 **분당 5회, 하루 20회**로 제한됩니다. 한도를 넘으면 결과가 `retrieval_only`로 나옵니다(plans-rag.md §12 결정 5).
+- 재순위 설정: `LLM_MODEL`(기본 `gemini-3.6-flash`), `RERANK_ENABLED`(기본 true), `RERANK_TIMEOUT_MS`(기본·최소 10000).
+- `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 
 - 호스트 포트 기본값은 DB `5433`, API `8010`입니다. 충돌하면 `DB_PORT`, `API_PORT` 환경 변수로 바꿉니다.

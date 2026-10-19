@@ -10,7 +10,7 @@ from app.db import get_session
 from app.main import create_app
 from app.models import RecommendationLog
 from app.retrieval.filters import eligible_query
-from app.routes.recommend import get_query_embedder
+from app.routes.recommend import get_query_embedder, get_rerank_model
 from app.vocab import get_vocab
 from tests.conftest import FakeEmbedder, needs_db
 
@@ -29,6 +29,7 @@ def catalog(db_session):
 def client_for(session, embedder="fake"):
     app = create_app()
     app.dependency_overrides[get_session] = lambda: session
+    app.dependency_overrides[get_rerank_model] = lambda: None  # retrieval only; rerank has its own tests
     fake = FakeEmbedder()
     app.dependency_overrides[get_query_embedder] = {
         "fake": lambda: (lambda text: fake.embed([text])[0]),

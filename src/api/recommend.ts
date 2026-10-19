@@ -25,6 +25,7 @@ export function recommendBody(session: Session, profile: Profile, count?: number
 }
 
 export function fetchRecommendations(session: Session, profile: Profile, options: { count?: number; base?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {
-  const { count, base = API_BASE_URL, fetchImpl, timeoutMs = 12000 } = options;
+  // Longer than the server's 10s rerank deadline plus the query embedding, so a slow model degrades to retrieval_only first.
+  const { count, base = API_BASE_URL, fetchImpl, timeoutMs = 15000 } = options;
   return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', body: recommendBody(session, profile, count) });
 }

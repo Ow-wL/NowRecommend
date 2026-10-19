@@ -1,7 +1,8 @@
-"""Recommendation pipeline: SQL filter → scores → τ + MMR selection → reasons → log (plans-rag.md §2, §6).
+"""Recommendation pipeline: SQL filter → scores → τ + MMR selection → AI rerank → validation → log
+(plans-rag.md §2, §6).
 
-R2 serves `retrieval_only`: the top candidates with template reasons. R4 adds the AI rerank on top of the
-same candidate pool.
+`rag` mode: the model picked and explained at least one card. `retrieval_only`: no model, a model error,
+or no valid pick — the top retrieval candidates with template reasons.
 """
 import logging
 import time
@@ -15,6 +16,9 @@ from sqlalchemy.orm import Session
 
 from .catalog import catalog_version, public_item, reviewed_items
 from .embeddings import query_text
+from .llm.client import JsonModel
+from .llm.rerank import RerankCandidate, build_payload, rerank
+from .llm.validate import Pick, validate_picks
 from .models import Item, RecommendationLog
 from .retrieval.filters import eligible_query
 from .retrieval.reasons import context_reason, taste_reason
@@ -24,7 +28,7 @@ from .schemas import RecommendRequest
 
 log = logging.getLogger(__name__)
 
-# Candidates handed to the AI rerank from R4 (plans-rag.md §6.5); retrieval_only shows the first `count`.
+# Candidates handed to the AI rerank (plans-rag.md §6.5); retrieval_only shows the first `count`.
 POOL_SIZE = {"food": 10, "music": 15}
 
 
@@ -40,7 +44,8 @@ def as_vector(value) -> np.ndarray | None:
 
 
 def recommend(session: Session, request: RecommendRequest, embed_query: Callable[[str], list[float]] | None,
-              config: PipelineConfig = PipelineConfig(), rng: np.random.Generator | None = None) -> dict:
+              config: PipelineConfig = PipelineConfig(), rng: np.random.Generator | None = None,
+              rerank_model: JsonModel | None = None) -> dict:
     started = time.perf_counter()
     conditions, profile = request.conditions, request.profile
     rows = session.scalars(eligible_query(request.category, conditions.excluded, conditions.maxPrice, profile.disliked,
@@ -62,28 +67,61 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
     selection = SelectionParams(**{**config.selection.__dict__, **({"tau": request.tau} if request.tau is not None else {})})
     pool = select_candidates(scored, {c.id: c.vector for c in candidates}, set(request.seenIds), request.pinnedIds,
                              POOL_SIZE[request.category], selection, rng)
-    result_ids = pool[: request.result_count]
-
     by_id = {r.id: r for r in rows}
     preferred = set(profile.tags).union(*(r.tags for r in liked_rows))
-    results = [{"item": public_item(by_id[i]), "tasteReason": taste_reason(by_id[i].tags, preferred),
-                "contextReason": context_reason(by_id[i].tags, conditions.tags)} for i in result_ids]
+    templates = {i: (taste_reason(by_id[i].tags, preferred), context_reason(by_id[i].tags, conditions.tags)) for i in pool}
+    scores = {s.id: s for s in scored}
+
+    # Same guarantee as retrieval (plans.md U2): while enough unseen candidates remain, the model only sees
+    # those; otherwise every remaining unseen card is required and the rest comes from seen ones.
+    seen, pinned = set(request.seenIds), set(request.pinnedIds)
+    pinned_ids = [i for i in pool if i in pinned]
+    unseen = [i for i in pool if i not in seen and i not in pinned]
+    enough = len(unseen) >= request.result_count - len(pinned_ids)
+    allowed = [*pinned_ids, *unseen] if enough else pool
+    required = [] if enough else unseen
+
+    mode = "retrieval_only"
+    picks = [Pick(i, *templates[i], by_ai=False) for i in pool[: request.result_count]]
+    if rerank_model and allowed:
+        try:
+            payload = build_payload(
+                request.category, request.raw, conditions.tags, conditions.excluded, conditions.maxPrice,
+                [r.name if not r.artist else f"{r.name} - {r.artist}" for r in liked_rows], profile.tags,
+                [RerankCandidate(i, by_id[i].name, by_id[i].artist, by_id[i].description, list(by_id[i].tags),
+                                 list(by_id[i].ingredients), by_id[i].price_label, scores[i].score) for i in allowed],
+                pinned_ids, request.result_count)
+            liked_names = {r.name for r in liked_rows} | {r.artist for r in liked_rows if r.artist}
+            shown_names = {by_id[i].name for i in allowed} | {by_id[i].artist for i in allowed if by_id[i].artist}
+            validation = validate_picks(rerank(rerank_model, payload), allowed, pinned_ids, required, request.result_count,
+                                        templates, unliked_names=shown_names - liked_names)
+            if validation.ai_count:
+                mode, picks = "rag", validation.picks
+                if issues := validation.summary():
+                    errors.append(f"rerank:{issues}")
+            else:
+                errors.append("rerank:no_valid_picks")
+        except Exception as exc:  # Timeouts, 5xx, quota, bad JSON: the user still gets the retrieval result.
+            log.warning("rerank failed: %s", exc)
+            errors.append(f"rerank:{type(exc).__name__}")
+    result_ids = [p.id for p in picks]
+    results = [{"item": public_item(by_id[p.id]), "tasteReason": p.taste_reason, "contextReason": p.context_reason} for p in picks]
 
     request_id = uuid.uuid4()
-    scores = {s.id: s for s in scored}
     latency_ms = round((time.perf_counter() - started) * 1000)
     _write_log(session, RecommendationLog(
         id=request_id, category=request.category, raw_text=request.raw if config.log_raw_text else None,
         conditions=conditions.model_dump(),
         params={"weights": config.weights.__dict__, "selection": selection.__dict__, "contextVector": context_vector is not None,
-                "tasteVector": taste_vector is not None},
+                "tasteVector": taste_vector is not None, "rerankModel": rerank_model.model if rerank_model else None,
+                "aiPicks": sum(p.by_ai for p in picks)},
         candidate_ids=pool, candidate_scores={i: {"score": round(scores[i].score, 4), **scores[i].parts} for i in pool},
-        result_ids=result_ids, mode="retrieval_only", latency_ms=latency_ms, error=";".join(errors) or None,
+        result_ids=result_ids, mode=mode, latency_ms=latency_ms, error=";".join(errors) or None,
     ))
     return {
         "results": results,
         "meta": {
-            "mode": "retrieval_only",
+            "mode": mode,
             "eligibleCount": len(rows),
             "newCount": sum(i not in set(request.seenIds) for i in result_ids),
             "catalogVersion": catalog_version(public_item(r) for r in reviewed_items(session)),
