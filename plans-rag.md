@@ -1,6 +1,6 @@
 # 지금 추천 — DB·유사도 검색·AI 재순위 구현 계획
 
-작성일: 2026-10-19 · 상태: **R0~R7 완료(2026-10-19)** — 남은 일은 §11 끝의 "R7 이후" 참고 · 결정: B 방식(유사도 검색으로 후보를 뽑고, AI는 그 후보 안에서만 고르고 설명)
+작성일: 2026-10-19 · 상태: **R0~R7 완료, 공개 배포 완료(2026-10-19, Cloud Run + Cloud SQL, [DEPLOY.md](./DEPLOY.md))** — 남은 일은 §11 끝의 "R7 이후" 참고 · 결정: B 방식(유사도 검색으로 후보를 뽑고, AI는 그 후보 안에서만 고르고 설명)
 
 이 문서는 이전 주의 [plans.md](./plans.md)(P0·P1·P2, 정적 사이트)에 이어지는 서버·DB·AI 단계의 실행 계획이다. 화면 규칙과 디자인 기준은 계속 plans.md와 [DESIGN.md](./DESIGN.md)를 따른다.
 
@@ -320,14 +320,14 @@ R6 구현에서 정한 세부 규칙 (`server/app/drafting.py`, `app/llm/draft.p
 
 ## 9. 보안·비용·운영
 
-- API 키는 서버 `.env`에만 둔다(`.env*`는 이미 gitignore 대상). 커밋용으로는 `server/.env.example`만 둔다.
-- CORS는 Pages 주소와 `http://127.0.0.1:5173`만 허용한다.
+- API 키는 서버 `.env`에만 둔다(`.env*`는 이미 gitignore 대상). 커밋용으로는 `server/.env.example`만 둔다. 배포 환경에서는 Secret Manager로만 주입한다.
+- CORS는 Pages 주소와 `http://127.0.0.1:5173`만 허용한다. 배포 API는 Pages 주소만 허용한다.
 - 입력 제한(Pydantic): 문장 300자, 선호·비선호·노출 ID 각 200개 이하, ID는 형식 검사. IP당 분당 30회 간단 제한(R7 구현: `app/ratelimit.py`, `RATE_LIMIT_PER_MINUTE`·`TRUST_PROXY`).
 - 초안 생성·검수는 **CLI 전용**으로 두고 HTTP로 열지 않는다. 관리자 화면은 후속 단계에서 만든다.
 - 프롬프트 주입: 사용자 문장은 데이터 필드로만 넣는다. 출력은 스키마와 ID 검증을 거치므로 최악의 경우에도 이상한 설명 문장 수준에 그친다. React가 텍스트를 이스케이프한다.
 - 호출량: 추천 1회당 임베딩 1(캐시 가능) + LLM 1, 해석 1회당 LLM 1. 항목 임베딩은 승인 시 한 번만 계산한다.
 - `recommendation_logs`는 평가용이다. 배포 환경에서 입력 문장 원문을 저장할지는 §12 결정 4를 따른다.
-- 배포: 중간보고는 로컬 Docker로 시연한다. Pages 빌드에 `VITE_API_BASE_URL`이 없으면 오프라인 모드가 되므로 **현재 공개 사이트는 그대로 동작한다.**
+- 배포: 2026-10-19에 API는 Cloud Run, DB는 Cloud SQL(PostgreSQL 17 + pgvector)로 올리고 Pages를 서버 모드로 빌드했다. GCP 무료 크레딧을 쓰며, Gemini는 무료 키를 그대로 쓴다. 저장소 변수 `VITE_API_BASE_URL`을 지우면 공개 사이트는 즉시 오프라인 모드로 돌아간다([DEPLOY.md](./DEPLOY.md) §3).
 
 ## 10. 단계별 작업
 
@@ -386,20 +386,20 @@ R6 구현에서 정한 세부 규칙 (`server/app/drafting.py`, `app/llm/draft.p
   - 서버 모드에서는 이 문장들에 미해석 단어가 남아 AI가 보완한다. 하지만 오프라인 모드나 한도 소진 시에는 새므로 규칙 보강이 필요하다.
 - AI 재순위(`rag`)와 `/api/parse`의 평가는 하루 생성 한도 때문에 이번 실행에서 빠졌다. `--with-ai --ai-limit 8`로 사례 일부를 측정할 수 있다.
 
-서버 CI(`.github/workflows/server-ci.yml`)는 pgvector 서비스 컨테이너로 마이그레이션·`alembic check`·전체 pytest를 돌린다. GitHub에서는 아직 실행해 보지 않았다(push 전). 같은 단계를 깨끗한 Python 3.12 컨테이너에서 재현해 219개 통과를 확인했다.
+서버 CI(`.github/workflows/server-ci.yml`)는 pgvector 서비스 컨테이너로 마이그레이션·`alembic check`·전체 pytest를 돌린다. 같은 단계를 깨끗한 Python 3.12 컨테이너에서 재현해 219개 통과를 확인했고, 2026-10-19 `main` push에서 GitHub Actions로도 [통과](https://github.com/Ow-wL/NowRecommend/actions/runs/39267683527)했다.
 
 ### R7 이후
 
-1. 규칙 파서의 제외 표현 보강: 나열형, "못 먹", 음악 태그 부정("말고"·"빼고"). `shared/parse-cases.json`에 위 실패 문장을 추가한다.
+1. ~~규칙 파서의 제외 표현 보강: 나열형, "못 먹", 음악 태그 부정("말고"·"빼고").~~ — 완료(`e86204e`, `shared/parse-cases.json`에 사례 추가).
 2. 한도가 초기화되면 R4·R5·R6의 실제 모델 확인을 마저 하고, `--with-ai` 평가로 가중치(§6.4)를 조정한다.
-3. 결정 1·2·5에 따라 계정·공개 배포·결제 여부를 정한다([DEPLOY.md](./DEPLOY.md)).
+3. 결정 1·5에 따라 계정과 Gemini 결제 여부를 정한다. 공개 배포(결정 2)는 완료했다([DEPLOY.md](./DEPLOY.md)).
 
 ## 12. 확인이 필요한 결정 (기본값으로 진행)
 
 | # | 결정 | 기본값 | 대안 |
 |---|---|---|---|
 | 1 | 사용자 데이터 위치 | 이번엔 브라우저 유지, 서버는 무상태 | 로그인 + 취향·기록 DB 이전을 함께(약 +12~16h) |
-| 2 | 배포 | 중간보고는 로컬 Docker 시연, 최종 호스팅은 R7에서 결정 | 처음부터 호스팅 API + pgvector 지원 관리형 DB |
+| 2 | 배포 | 중간보고는 로컬 Docker 시연, 최종 호스팅은 R7에서 결정 — **결정(2026-10-19)**: Cloud Run + Cloud SQL, GCP 무료 크레딧 사용, Gemini는 무료 키 유지 | 처음부터 호스팅 API + pgvector 지원 관리형 DB |
 | 3 | 생성 모델 | `gemini-3.6-flash` + 직접 구현한 탐색 온도 τ | `gemini-2.5-flash`로 모델 temperature 직접 사용 |
 | 4 | 입력 문장 로그 | 로컬·평가 환경에서만 원문 저장, 배포 시 저장 안 함 | 배포에서도 기간 한정 저장 |
 | 5 | **Gemini 호출 한도 (R4에서 확인)** | 현재 키는 무료 등급이라 `gemini-3.6-flash` 생성 요청이 **분당 5회, 하루 20회**로 제한된다. 추천 1회에 1회씩 쓰므로 하루 20번째 추천 뒤로는 다음 날까지 유사도 결과(`retrieval_only`)만 나온다. R5 조건 해석까지 붙이면 추천 1회에 2회가 든다. **중간보고 시연 전에 결정 필요** | 결제 등록으로 한도 상향 / 한도가 더 큰 경량 모델로 교체 / 조건 해석은 규칙 파서 우선으로 호출 줄이기 |

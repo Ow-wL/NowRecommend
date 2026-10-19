@@ -1,8 +1,84 @@
 # 지금 추천 — 배포 가이드
 
-[plans-rag.md](./plans-rag.md) §12 결정 2의 정리입니다. 기본값은 **중간보고는 로컬 Docker 시연, 최종 공개 배포는 아래 구성 중 하나**입니다. 호스팅 업체의 요금·무료 범위는 배포 시점에 다시 확인해야 합니다. 이 문서는 특정 업체를 검증한 결과가 아닙니다.
+상태: **공개 배포 완료(2026-10-19)**. 프론트엔드는 GitHub Pages, API와 DB는 Google Cloud(Cloud Run + Cloud SQL)에 있습니다. [plans-rag.md](./plans-rag.md) §12 결정 2의 결과입니다.
 
-## 1. 지금 바로 되는 것: 로컬 시연
+- 사이트: <https://ow-wl.github.io/NowRecommend/>
+- API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
+- 배포 커밋: `852807e`. [Pages 배포](https://github.com/Ow-wL/NowRecommend/actions/runs/39267683523)와 [서버 테스트](https://github.com/Ow-wL/NowRecommend/actions/runs/39267683527) 모두 성공했습니다.
+
+## 1. 현재 구성
+
+GCP 프로젝트는 `harness-recommend`, 리전은 `asia-northeast3`(서울)입니다. gcloud의 기본 프로젝트가 다를 수 있으니 모든 명령에 `--project harness-recommend`를 붙입니다.
+
+| 자원 | 이름 | 설정 |
+|---|---|---|
+| API | Cloud Run 서비스 `nowrecommend-api` | 포트 8000, 메모리 512Mi, CPU 1, 인스턴스 0~1개, 동시 요청 40, 공개 접근 |
+| DB | Cloud SQL `nowrecommend-db` | PostgreSQL 17 + pgvector 0.8.5, `db-f1-micro`(Enterprise), HDD 10GB, 단일 영역, **자동 백업 끔** |
+| 데이터베이스·사용자 | `nowrecommend` / `nowrecommend` | 비밀번호는 무작위 생성 후 아래 비밀 값에만 저장 |
+| 이미지 | Artifact Registry `nowrecommend` | `asia-northeast3-docker.pkg.dev/harness-recommend/nowrecommend/api:<커밋 앞 7자리>` |
+| 비밀 값 | Secret Manager `gemini-api-key`, `database-url` | Cloud Run에 `GEMINI_API_KEY`, `DATABASE_URL`로 주입 |
+| 서비스 계정 | `nowrecommend-api@harness-recommend.iam.gserviceaccount.com` | Cloud SQL 클라이언트, 두 비밀 값 읽기 권한만 |
+| 데이터 작업 | Cloud Run 작업 `nowrecommend-seed` | `alembic upgrade head` → `app.cli.seed` → `app.cli.embed` |
+| 프론트엔드 연결 | 저장소 Actions 변수 `VITE_API_BASE_URL` | 위 API 주소. Pages 빌드가 이 값으로 서버 모드가 됩니다 |
+
+API 환경 변수: `CORS_ORIGINS=["https://ow-wl.github.io"]`, `LOG_RAW_TEXT=false`(입력 문장 원문을 저장하지 않음, 결정 4), `TRUST_PROXY=true`(요청 제한을 실제 사용자 IP 기준으로). 나머지는 기본값입니다.
+
+- `DATABASE_URL`은 Cloud SQL 유닉스 소켓을 씁니다. 형식은 `postgresql+psycopg://nowrecommend:<비밀번호>@/nowrecommend?host=/cloudsql/harness-recommend:asia-northeast3:nowrecommend-db`입니다.
+- API는 **한 인스턴스**만 띄웁니다. 요청 제한·쿨다운·캐시가 프로세스 메모리에 있어서, 여러 인스턴스로 늘리면 인스턴스마다 따로 셉니다.
+- 요청이 없으면 인스턴스가 0개로 줄어서, 한동안 쉰 뒤 첫 요청은 몇 초 더 걸립니다.
+- 카탈로그는 검수 완료 31개(음식 16·음악 15)입니다. 로컬 DB에만 있는 AI 초안은 올리지 않았습니다.
+
+## 2. 다시 배포하기
+
+### 서버 코드를 바꿨을 때
+
+프로젝트 루트에서 실행합니다. 이미지 안에는 `shared/`와 `server/`만 들어가고, `.dockerignore`가 `.env*`를 뺍니다.
+
+```bash
+TAG=$(git rev-parse --short HEAD)
+IMG=asia-northeast3-docker.pkg.dev/harness-recommend/nowrecommend/api:$TAG
+docker build -f server/Dockerfile -t $IMG .
+docker push $IMG
+gcloud run deploy nowrecommend-api --project harness-recommend --region asia-northeast3 --image $IMG
+```
+
+- 컨테이너는 시작할 때 `alembic upgrade head`를 실행하므로 마이그레이션은 따로 하지 않아도 됩니다.
+- 환경 변수·비밀 값·Cloud SQL 연결은 이전 리비전 설정을 그대로 이어받습니다.
+
+### 카탈로그를 바꿨을 때
+
+`server/data/seed_items.json`을 바꿨다면 새 이미지를 만든 뒤 작업 이미지를 바꾸고 다시 실행합니다. 시드와 임베딩은 바뀐 항목만 처리합니다.
+
+```bash
+gcloud run jobs update nowrecommend-seed --project harness-recommend --region asia-northeast3 --image $IMG
+gcloud run jobs execute nowrecommend-seed --project harness-recommend --region asia-northeast3 --wait
+```
+
+### 프론트엔드를 바꿨을 때
+
+`main`에 push하면 `.github/workflows/deploy-pages.yml`이 단위 테스트·빌드·배포를 합니다. 빌드할 때 `VITE_API_BASE_URL` 변수를 읽습니다. `server/`·`shared/`를 바꾸면 `server-ci.yml`도 함께 돕니다.
+
+## 3. 확인과 되돌리기
+
+1. `curl https://nowrecommend-api-183982128363.asia-northeast3.run.app/api/health`가 200이고 `pgvector.installed`와 `llm.configured: true`가 보여야 합니다.
+2. 사이트에서 추천을 한 번 받고, 개발자 도구 Network에 `/api/catalog`·`/api/parse`·`/api/recommend`가 보이는지 확인합니다.
+3. 결과 화면에 "기본 방식으로 추천했어요"가 뜨면 AI 재순위나 문장 임베딩이 실패한 것입니다. 주로 Gemini 한도 때문입니다(§4).
+4. 서버 로그: `gcloud run services logs read nowrecommend-api --project harness-recommend --region asia-northeast3 --limit 50`
+
+되돌리기:
+
+- **사이트를 서버 없이 돌리기**: 저장소 변수 `VITE_API_BASE_URL`을 지우고 Pages 워크플로를 다시 실행하면, 내장 카탈로그와 브라우저 규칙만 쓰는 오프라인 모드로 돌아갑니다.
+- **API만 이전 버전으로**: `gcloud run services update-traffic nowrecommend-api --project harness-recommend --region asia-northeast3 --to-revisions <이전 리비전>=100`
+- **전부 내리기**(비용을 멈출 때): 위처럼 오프라인 모드로 돌린 뒤 Cloud SQL 인스턴스와 Cloud Run 서비스를 삭제합니다. DB 삭제는 되돌릴 수 없지만, 카탈로그는 시드 파일로 다시 만들 수 있습니다.
+
+## 4. 비용과 제한
+
+- **비용**: GCP 무료 크레딧($300)에서 나갑니다. 고정비는 주로 Cloud SQL `db-f1-micro`로 월 약 $10 안팎(추정)입니다. Cloud Run·Artifact Registry·Secret Manager는 지금 사용량이면 무료 범위이거나 아주 적습니다. 실제 금액은 GCP 결제 화면에서 확인합니다.
+- **Gemini 한도**: 무료 등급 키는 생성 요청이 분당 5회, 하루 20회입니다(R4 실측). 한도를 넘으면 결과가 `retrieval_only`(유사도 결과와 템플릿 이유)로 나옵니다. 키가 결제가 켜진 프로젝트에 속해 있으면 무료 한도 대신 요금이 청구될 수 있으니, AI Studio에서 키의 소속 프로젝트를 확인합니다.
+- **백업 없음**: 서버 DB에는 카탈로그와 요청 로그만 있습니다. 사용자 취향·기록은 각 브라우저에 저장됩니다(결정 1).
+- 키가 로그·화면·저장소에 노출되면 즉시 새 키를 만들고 `gcloud secrets versions add gemini-api-key --project harness-recommend --data-file=<파일>`로 바꾼 뒤 서비스를 다시 배포합니다.
+
+## 5. 로컬 시연
 
 ```powershell
 docker compose up -d --build
@@ -12,41 +88,4 @@ $env:VITE_API_BASE_URL = 'http://127.0.0.1:8010'
 try { npm run dev } finally { Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue }
 ```
 
-- 브라우저는 `http://127.0.0.1:5173`으로 엽니다. API의 CORS 허용 주소이기 때문입니다.
-- GitHub Pages 공개 사이트는 지금도 오프라인 모드(내장 카탈로그·브라우저 규칙)로 동작하며, 서버 없이도 시연할 수 있습니다.
-
-## 2. 공개 배포 구성
-
-프론트엔드는 계속 GitHub Pages를 씁니다. API와 DB만 따로 올립니다.
-
-| 구성 | API | DB | 장점 | 주의 |
-|---|---|---|---|---|
-| A. 관리형 | `server/Dockerfile`을 그대로 쓰는 컨테이너 호스팅 | pgvector를 지원하는 관리형 PostgreSQL | 서버 관리가 적고 HTTPS가 기본 제공됨 | 무료 등급은 유휴 후 첫 요청이 느릴 수 있음. pgvector 확장 지원 여부를 먼저 확인 |
-| B. 단일 VM | `docker compose` 그대로 + 리버스 프록시(자동 HTTPS) | 같은 VM의 `pgvector/pgvector:pg17` | 지금 로컬 구성과 같아 옮기기 쉬움 | OS 보안 업데이트·백업을 직접 관리 |
-
-어느 구성이든 API는 **한 인스턴스**로 시작합니다. 요청 제한·쿨다운·캐시가 프로세스 메모리에 있어서, 여러 인스턴스로 늘리면 인스턴스마다 따로 셉니다.
-
-## 3. 배포 체크리스트
-
-1. **API는 HTTPS 주소여야 합니다.** Pages가 https라서 http API 호출은 브라우저가 막습니다(mixed content).
-2. API 환경 변수:
-   - `DATABASE_URL`: 관리형 DB 주소. `postgresql+psycopg://` 형식입니다.
-   - `GEMINI_API_KEY`: 호스팅의 비밀 값으로만 넣습니다. 프론트엔드·저장소에는 넣지 않습니다.
-   - `CORS_ORIGINS='["https://ow-wl.github.io"]'`: origin에는 경로가 없습니다(`/NowRecommend` 제외).
-   - `LOG_RAW_TEXT=false`: 배포 환경에서는 입력 문장 원문을 저장하지 않습니다(결정 4).
-   - `TRUST_PROXY=true`: 프록시·로드밸런서 뒤에 둘 때 설정합니다. 이렇게 해야 요청 제한이 실제 사용자 IP 기준이 됩니다.
-   - `RATE_LIMIT_PER_MINUTE`: 기본 30입니다.
-3. DB 준비: 컨테이너는 시작할 때 `alembic upgrade head`를 실행합니다. 처음 한 번은 `python -m app.cli.seed`와 `python -m app.cli.embed`를 실행합니다.
-4. 상태 확인: `GET /api/health`는 DB와 pgvector가 준비되면 200, 아니면 503을 반환합니다. 호스팅의 health check 경로로 지정합니다.
-5. Pages 연결: 저장소 Settings → Secrets and variables → Actions → **Variables**에 `VITE_API_BASE_URL=https://<API 주소>`를 추가하고 Pages 배포 워크플로를 다시 실행합니다. 비밀 값이 아니라 공개 주소라 Variables에 넣습니다.
-6. 확인 순서:
-   - API `curl https://<API>/api/health`
-   - Pages에서 개발자 도구 Network로 `/api/catalog`·`/api/recommend` 요청 확인
-   - 서버를 끈 상태에서 "기본 추천으로 보기" 동작 확인
-7. 되돌리기: `VITE_API_BASE_URL` 변수를 지우고 다시 배포하면 즉시 오프라인 모드로 돌아갑니다.
-
-## 4. 알아둘 제한
-
-- **Gemini 무료 등급 한도**: 생성 요청이 분당 5회, 하루 20회입니다(R4 실측). 공개 시연에서는 대부분 `retrieval_only`(유사도 결과·템플릿 이유)로 응답하게 됩니다. AI 재순위를 보여주려면 결제 등록이나 모델 변경을 결정해야 합니다(결정 5).
-- 서버 쪽 사용자 계정·기록 저장은 없습니다. 취향·기록은 지금처럼 각 브라우저에 저장됩니다(결정 1).
-- 키가 로그·화면·저장소에 노출되면 즉시 새 키로 교체합니다.
+브라우저는 `http://127.0.0.1:5173`으로 엽니다. 로컬 API의 CORS 허용 주소이기 때문입니다.

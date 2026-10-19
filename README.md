@@ -1,6 +1,8 @@
 # 지금 추천
 
-React·TypeScript·Vite로 만든 음식·음악 추천 앱입니다. 밝고 단정한 기본 화면([DESIGN.md](./DESIGN.md) v2 "클린 라이트")에서 평소 취향과 이번 요청 조건을 분리하고, 추천 이유를 확인한 뒤 최종 선택을 기록합니다. 다크·시스템 테마와 강조색 설정도 제공합니다.
+React·TypeScript·Vite로 만든 음식·음악 추천 앱입니다. 밝고 단정한 기본 화면([DESIGN.md](./DESIGN.md) v2.1 "클린 라이트", 상단 메뉴·모바일 하단 탭)에서 평소 취향과 이번 요청 조건을 분리하고, 추천 이유를 확인한 뒤 최종 선택을 기록합니다. 다크·시스템 테마와 강조색 설정도 제공합니다.
+
+공개 사이트 [지금 추천](https://ow-wl.github.io/NowRecommend/)은 Google Cloud의 추천 API(유사도 검색 + AI 재순위)와 연결되어 있습니다. 배포 구성은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
 ## 실행과 검증
 
@@ -28,16 +30,16 @@ $env:PLAYWRIGHT_PORT = '5187'
 try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction SilentlyContinue }
 ```
 
-## API 서버와 DB (개발 중)
+## API 서버와 DB
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R7(평가·CI·배포 정리)까지 완료된 상태입니다. 공개 배포 방법은 [DEPLOY.md](./DEPLOY.md)에 있습니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. R0~R7을 마쳤고 2026-10-19에 Cloud Run + Cloud SQL로 공개 배포했습니다([DEPLOY.md](./DEPLOY.md)). 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
 
 ### 프론트엔드의 두 가지 모드
 
 | 모드 | 조건 | 동작 |
 |---|---|---|
-| 오프라인 | `VITE_API_BASE_URL` 없음(GitHub Pages 빌드 포함) | 기존과 같이 내장 카탈로그(`src/data.ts`)와 브라우저 규칙으로 즉시 추천 |
-| 서버 | `VITE_API_BASE_URL=http://127.0.0.1:8010` | `/api/catalog`로 카탈로그를 받고, 추천·재추천·피드백 후 다시 채우기·한 장 교체를 `/api/recommend`로 요청 |
+| 오프라인 | `VITE_API_BASE_URL` 없음(기본 `npm run dev`, 저장소 변수를 지운 Pages 빌드) | 기존과 같이 내장 카탈로그(`src/data.ts`)와 브라우저 규칙으로 즉시 추천 |
+| 서버 | `VITE_API_BASE_URL=http://127.0.0.1:8010`(로컬) 또는 배포 API 주소(지금의 Pages 빌드) | `/api/catalog`로 카탈로그를 받고, 추천·재추천·피드백 후 다시 채우기·한 장 교체를 `/api/recommend`로 요청 |
 
 서버 모드로 개발 서버를 띄우려면 아래처럼 실행합니다. API의 CORS 허용 주소가 `127.0.0.1:5173`·`localhost:5173`이므로 포트를 바꾸면 `CORS_ORIGINS`도 함께 바꿔야 합니다.
 
@@ -149,7 +151,7 @@ py -3.14 -m venv .venv
 
 ## 배포
 
-이 폴더가 GitHub 저장소 루트입니다. Settings → Pages → Source에서 GitHub Actions를 사용합니다. `main` 푸시가 `.github/workflows/deploy-pages.yml`의 단위 테스트·빌드·배포를 실행합니다. 저장소 변수 `VITE_API_BASE_URL`이 없으면 Pages는 오프라인 모드로 빌드됩니다. API 서버를 공개 배포하는 방법은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
+이 폴더가 GitHub 저장소 루트입니다. Settings → Pages → Source에서 GitHub Actions를 사용합니다. `main` 푸시가 `.github/workflows/deploy-pages.yml`의 단위 테스트·빌드·배포를 실행합니다. 지금은 저장소 변수 `VITE_API_BASE_URL`에 배포 API 주소가 있어 Pages가 서버 모드로 빌드됩니다. 변수를 지우면 오프라인 모드로 돌아갑니다. API 서버(Cloud Run + Cloud SQL)의 구성·재배포·되돌리기는 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
 실제 사이트: [지금 추천](https://ow-wl.github.io/NowRecommend/).
 
@@ -157,18 +159,25 @@ py -3.14 -m venv .venv
 
 ## 범위와 남은 작업
 
-이번 구현은 plans.md의 P0 및 사용자 승인 P1·P2입니다. P0 기록은 [IMPLEMENTATION.md](./IMPLEMENTATION.md), P1·P2 기능·검증·시연 동선은 [EXTENSIONS.md](./EXTENSIONS.md), P0 검증은 [VERIFICATION.md](./VERIFICATION.md), 디자인 기준은 [DESIGN.md](./DESIGN.md)에 있습니다.
+브라우저 앱은 plans.md의 P0 및 사용자 승인 P1·P2이고, 서버·DB·AI는 plans-rag.md의 R0~R7입니다. P0 기록은 [IMPLEMENTATION.md](./IMPLEMENTATION.md), P1·P2 기능·검증·시연 동선은 [EXTENSIONS.md](./EXTENSIONS.md), P0 검증은 [VERIFICATION.md](./VERIFICATION.md), 디자인 기준은 [DESIGN.md](./DESIGN.md), 서버 계획과 평가는 [plans-rag.md](./plans-rag.md), 배포는 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
-카탈로그는 미검증 샘플 음식 16개·음악 15곡입니다. 가격 범위와 필터용 기준 가격은 다르며 실제 판매 가격·재료를 보증하지 않습니다. 데이터 ID·필드·태그·검색 URL은 자동 검증하지만 실제 곡·아티스트·가격의 운영 검수는 별도입니다.
+카탈로그는 미검증 샘플 음식 16개·음악 15곡입니다. AI 초안 → 사람 검수 경로는 있지만 실제 확장은 아직 하지 않았습니다. 가격 범위와 필터용 기준 가격은 다르며 실제 판매 가격·재료를 보증하지 않습니다. 데이터 ID·필드·태그·검색 URL은 자동 검증하지만 실제 곡·아티스트·가격의 운영 검수는 별도입니다.
 
-F3~F9 및 라이트·시스템·사용자 강조색 설정을 구현했습니다. 실제 로그인·서버·AI·DB·동기화는 다음 주 범위입니다. 사용자 3명의 과제 수행과 실제 모바일 키보드·스크린리더 검증은 별도 진행이 필요합니다.
+F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·AI 재순위와 공개 배포를 마쳤습니다. 남은 일:
+
+- 로그인과 취향·기록의 서버 저장·기기 간 동기화(plans-rag.md §12 결정 1).
+- Gemini 한도가 허락할 때 AI 경로 평가(`--with-ai`)와 점수 가중치 조정, 실제 모델 기준 조건 해석 확인.
+- 사용자 3명의 과제 수행과 실제 모바일 키보드·스크린리더 검증.
 
 ## 코드 구성
 
 - `src/components/`: 공통 카드·모달·기록 상세.
-- `src/styles/tokens.css`, `src/styles.css`: 다크 토큰·레이아웃·상태·반응형.
+- `src/styles/tokens.css`, `src/styles.css`: 라이트 기본·다크 토큰, 상단 바·하단 탭·흐름 화면 레이아웃, 상태·반응형.
 - `src/domain.ts`: 조건 출처·파싱·필터·추천.
 - `src/history.ts`: 회차 스냅샷·최종 선택.
 - `src/navigation.ts`, `src/sessionStorage.ts`: 해시 탐색·현재 요청 복원.
 - `src/storage.ts`: 영구 데이터 검증·v1 변환·저장·손상 원본 보존.
 - `src/data.ts`: 샘플 카탈로그·검토 상태·자동 검증.
+- `src/api/`: 서버 모드의 카탈로그·추천·해석 요청.
+- `server/`: FastAPI·SQLAlchemy·Alembic 추천 서버, CLI(시드·임베딩·초안·검수·평가), pytest.
+- `shared/`: 프론트와 서버가 함께 쓰는 어휘(`vocab.json`)와 공통 사례(`parse-cases.json`, `filter-cases.json`).
