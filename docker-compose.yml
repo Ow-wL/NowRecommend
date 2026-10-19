@@ -31,6 +31,9 @@ services:
       LOG_RAW_TEXT: ${LOG_RAW_TEXT:-true}
     ports:
       - "127.0.0.1:${API_PORT:-8010}:8000"
+    volumes:
+      # Names files and review exports for app.cli.draft / app.cli.review (not committed).
+      - ./server/data/drafts:/srv/server/data/drafts
     depends_on:
       db:
         condition: service_healthy

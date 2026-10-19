@@ -42,6 +42,7 @@ class Item(Base):
     status: Mapped[str] = mapped_column(Text, server_default="draft")
     source: Mapped[str] = mapped_column(Text)
     ai_fields: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
+    review_notes: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")  # warnings for the reviewer
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
     embedding_model: Mapped[str | None] = mapped_column(Text)
     embedding_hash: Mapped[str | None] = mapped_column(Text)

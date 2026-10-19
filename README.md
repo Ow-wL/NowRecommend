@@ -30,7 +30,7 @@ try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction 
 
 ## API 서버와 DB (개발 중)
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R5(AI 조건 해석)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. 현재는 R6(AI 초안 카탈로그)까지 완료된 상태입니다. 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
 
 ### 프론트엔드의 두 가지 모드
 
@@ -77,6 +77,22 @@ curl http://127.0.0.1:8010/api/catalog?category=food
   - 브라우저와 같은 규칙으로 먼저 해석하고, 규칙이 놓친 단어가 있을 때만 LLM에 물어 결과를 합칩니다. 제외는 합집합이고, 예산은 규칙이 먼저입니다.
   - 응답의 `ai`는 `not_needed`·`used`·`unavailable`·`failed` 중 하나입니다. LLM 해석은 `PARSE_ENABLED=false`로 끌 수 있습니다.
   - 해석 규칙은 `shared/parse-cases.json`으로 프론트 `parseConditions`와 서버가 함께 검사합니다.
+
+### 카탈로그 늘리기 (AI 초안 → 사람 검수)
+
+`server/data/drafts/`에 이름 파일을 두고 실행합니다. 음식은 한 줄에 메뉴 하나, 음악은 `제목 - 아티스트` 형식입니다. 이 폴더는 컨테이너와 연결되며 git에 올리지 않습니다.
+
+```powershell
+docker compose exec api python -m app.cli.draft --category food data/drafts/food-names.txt
+docker compose exec api python -m app.cli.review export
+docker compose exec api python -m app.cli.review import
+```
+
+- `draft`: AI가 설명·태그·재료·참고 가격·이모지·색을 채워 `draft` 상태로 저장합니다. 10개씩 묶어 한 번에 요청하고, 이미 있는 이름은 건너뜁니다. 초안은 추천과 `/api/catalog`에 나오지 않습니다.
+- `review export`: `server/data/drafts/review.json`을 만듭니다. 각 항목에 AI가 채운 필드, 경고(알레르기 재료 확인 필요, 모르는 곡, 이름·내용이 비슷한 기존 항목), `decision: pending`이 들어 있습니다.
+- 파일을 고쳐 `decision`을 `approve`·`reject`로 바꿉니다. **음식은 재료를 확인한 뒤 `allergensChecked: true`로 바꿔야 승인됩니다.**
+- `review import`: 승인 항목을 `reviewed`로 바꾸고 임베딩합니다. 오래된 파일로 이미 처리된 항목을 덮어쓰지 않습니다.
+- 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다.
 - `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 
