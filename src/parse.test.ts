@@ -45,7 +45,14 @@ describe('parse response and tab storage', () => {
     let saved: string | null = null;
     vi.stubGlobal('sessionStorage', { getItem: () => saved, setItem: (_: string, text: string) => { saved = text; } });
     const session = applyParsed(typed('기념일 저녁'), '기념일 저녁', server, { raw: '기념일 저녁', source: 'rule+ai', unparsed: ['기념일'] });
-    writeTab({ version: 1, active: true, view: { ...defaultView, page: 'recommend', step: 'confirm' }, session });
+    writeTab({ version: 1, active: true, view: { ...defaultView, page: 'recommend', step: 'input' }, session });
     expect(readTab().session.editor?.ai).toEqual({ raw: '기념일 저녁', source: 'rule+ai', unparsed: ['기념일'] });
+  });
+  it('opens a tab saved on the old confirm step on the merged input screen', () => {
+    let saved: string | null = null;
+    vi.stubGlobal('sessionStorage', { getItem: () => saved, setItem: (_: string, text: string) => { saved = text; } });
+    writeTab({ version: 1, active: true, view: { ...defaultView, page: 'recommend', step: 'input' }, session: typed('기념일 저녁') });
+    saved = saved!.replace('"step":"input"', '"step":"confirm"');
+    expect(readTab().view.step).toBe('input');
   });
 });

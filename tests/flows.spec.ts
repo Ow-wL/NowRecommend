@@ -1,29 +1,22 @@
-import { test, expect, type Page } from '@playwright/test';
-
-async function onboard(page: Page, category: 'food' | 'music' = 'food') {
-  await page.getByRole('button', { name: category === 'food' ? '음식 추천' : '음악 추천', exact: true }).click();
-  const choices = page.locator('.selection-card');
-  for (let i = 0; i < 5; i++) await choices.nth(i).click();
-  await page.getByRole('button', { name: '취향 요약 확인' }).click();
-  await page.getByRole('button', { name: '확인하고 저장' }).click();
-}
+import { test, expect } from '@playwright/test';
+import { excludeCard, onboard, openConditions } from './ui';
 
 test('condition edits preserve manual choices and prevent stale automatic conditions', async ({ page }) => {
   await page.goto('/'); await onboard(page);
   await page.getByLabel('지금의 상황').fill('매운 점심, 이만원 이하');
+  await openConditions(page);
   await page.getByRole('button', { name: '혼자', exact: true }).click();
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await expect(page.getByLabel('참고 예산 상한')).toHaveValue('20000');
   await page.getByLabel('매콤함 조건 삭제').click();
-  await page.getByRole('button', { name: '이전 단계', exact: true }).click();
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  // Submitting the same sentence again must not bring the removed automatic condition back.
+  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await page.getByRole('button', { name: '조건 수정', exact: true }).click();
   await expect(page.getByLabel('매콤함 조건 삭제')).toHaveCount(0);
+  await openConditions(page);
   await page.getByLabel('참고 예산 상한').fill('-1');
   await expect(page.getByRole('button', { name: '추천받기', exact: true })).toBeDisabled();
   await page.getByLabel('참고 예산 상한').fill('8000');
-  await page.getByRole('button', { name: '이전 단계', exact: true }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁, 1만 5천원 이하');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await expect(page.getByLabel('점심 조건 삭제')).toHaveCount(0);
   await expect(page.getByLabel('담백함 조건 삭제')).toBeVisible();
   await expect(page.getByLabel('혼자 조건 삭제')).toBeVisible();
@@ -34,14 +27,12 @@ test('food journey, favorites, history and browser persistence', async ({ page }
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '지금, 어떤 선택이 필요하세요?' })).toBeVisible();
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
-  await expect(page.getByRole('button', { name: '취향 요약 확인' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '저장하고 시작' })).toBeDisabled();
   const choices = page.locator('.selection-card');
   for (let i = 0; i < 5; i++) await choices.nth(i).click();
-  await page.getByRole('button', { name: '취향 요약 확인' }).click();
-  await page.getByRole('button', { name: '확인하고 저장' }).click();
+  await page.getByRole('button', { name: '저장하고 시작' }).click();
   await page.getByLabel('지금의 상황').fill('혼자 먹을 안 매운 저녁, 밀 제외');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
-  await expect(page.getByRole('button', { name: '매콤함', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByLabel('매콤함 제외 조건 삭제')).toBeVisible();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(3);
   await expect(page.locator('.result-grid')).not.toContainText('김치찌개');
@@ -63,27 +54,24 @@ test('food journey, favorites, history and browser persistence', async ({ page }
 test('session exclusion clears while long feedback persists and can be reversed', async ({ page }) => {
   await page.goto('/'); await onboard(page);
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   const first = await page.locator('.result-grid h3').first().textContent();
-  await page.locator('.feedback-button').first().click();
+  await excludeCard(page);
   await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
   await page.getByRole('button', { name: '되돌리기' }).click();
   await expect(page.locator('.result-grid')).toContainText(first!);
-  await page.locator('.feedback-button').first().click();
+  await excludeCard(page);
   await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
   await page.getByRole('button', { name: '새 요청 시작' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid')).toContainText(first!);
-  await page.locator('.feedback-button').first().click();
+  await excludeCard(page);
   await page.getByRole('button', { name: '원래 내 취향이 아님', exact: false }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
   await page.getByRole('button', { name: '새 요청 시작' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
   await page.reload();
@@ -96,7 +84,6 @@ test('session exclusion clears while long feedback persists and can be reversed'
 test('independent music onboarding produces five songs and external links', async ({ page }) => {
   await page.goto('/'); await onboard(page, 'music');
   await page.getByLabel('지금의 상황').fill('과제할 때 보컬 없는 차분한 연주곡');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(5);
   await expect(page.locator('.result-grid')).not.toContainText('아이유');
@@ -111,7 +98,6 @@ test('independent music onboarding produces five songs and external links', asyn
 
 test('request failure allows retry and manual fallback', async ({ page }) => {
   await page.goto('/'); await onboard(page);
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.locator('.help-link').click();
   await page.getByRole('button', { name: '다음 추천 실패 체험하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
@@ -133,14 +119,14 @@ test('no eligible candidates, empty collections, and confirmed deletion', async 
   await onboard(page);
   // Hard exclusions and budget leave one candidate, which can then be temporarily excluded.
   const tags = ['매콤함','소고기','닭고기','생선','밀','유제품','달걀','콩'];
+  await openConditions(page);
   for (const tag of tags) await page.locator('.chip.exclude').filter({ hasText: new RegExp(`^${tag}$`) }).click();
   await page.getByLabel('참고 예산 상한').fill('10000');
   // The vegetable curry remains eligible; verify limited results and visible explanation.
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.notice.warning')).toBeVisible();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(1);
-  await page.locator('.feedback-button').click();
+  await excludeCard(page);
   await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(0);
   await expect(page.locator('.notice.warning')).toContainText('지금 조건에 맞는 후보가 없어요.');
@@ -166,7 +152,6 @@ test('desktop visual preview and no client errors', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('/'); await page.screenshot({ path: 'artifacts/home-desktop.png', fullPage: true, animations: 'disabled' });
   await onboard(page); await page.getByLabel('지금의 상황').fill('혼자 먹을 담백한 저녁');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(3);
   const dismiss = page.getByRole('button', { name: '알림 닫기' });

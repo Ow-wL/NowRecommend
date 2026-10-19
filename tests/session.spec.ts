@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { excludeCard } from './ui';
 test('resuming an unfinished food request does not reuse a music profile draft',async({page})=>{
   await page.goto('/');await page.getByRole('button',{name:'음식 추천',exact:true}).click();
   await page.locator('.selection-card').first().click();
@@ -6,7 +7,9 @@ test('resuming an unfinished food request does not reuse a music profile draft',
   await page.getByRole('button',{name:'등록하기',exact:true}).nth(1).click();
   await page.locator('.selection-card').first().click();
   await page.getByRole('button',{name:'홈',exact:true}).click();
-  await page.getByRole('button',{name:'이어서 추천받기'}).click();
+  // A request with nothing in it is not offered for resuming; starting food again resumes the same scope.
+  await expect(page.getByRole('button',{name:'이어서 추천받기'})).toHaveCount(0);
+  await page.getByRole('button',{name:/음식 추천받기/}).click();
   await expect(page.getByRole('heading',{name:'평소 좋아하는 음식을 골라주세요.'})).toBeVisible();
   await expect(page.locator('.selection-card.selected')).toHaveCount(0);
 });
@@ -14,23 +17,21 @@ test('refresh, browser back, home resume and explicit request end preserve the r
   await page.goto('/');
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   for (let i=0;i<5;i++) await page.locator('.selection-card').nth(i).click();
-  await page.getByRole('button',{name:'취향 요약 확인'}).click();
-  await page.getByRole('button',{name:'확인하고 저장'}).click();
+  await page.getByRole('button',{name:'저장하고 시작'}).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
   await page.reload();
   await expect(page.getByLabel('지금의 상황')).toHaveValue('담백한 저녁');
-  await page.getByRole('button',{name:'조건 확인하기'}).click();
   await page.getByLabel('담백함 조건 삭제').click();
   await page.reload();
   await expect(page.getByLabel('담백함 조건 삭제')).toHaveCount(0);
   await page.getByRole('button',{name:'추천받기',exact:true}).click();
   await expect(page).toHaveURL(/#\/recommend\/food\/results$/);
   await page.goBack();
-  await expect(page.getByRole('heading',{name:'이 조건으로 찾아볼까요?'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'지금, 어떤 한 끼가 필요하세요?'})).toBeVisible();
   await expect(page.getByLabel('담백함 조건 삭제')).toHaveCount(0);
   await page.goForward();
   const excluded = await page.locator('.result-grid h3').first().textContent();
-  await page.locator('.feedback-button').first().click();
+  await excludeCard(page);
   await page.getByRole('button',{name:'이번 요청에서 제외',exact:false}).click();
   await page.reload();
   await expect(page.locator('.result-grid')).not.toContainText(excluded!);
@@ -41,7 +42,6 @@ test('refresh, browser back, home resume and explicit request end preserve the r
   await expect(page.locator('.temporary-exclusions')).toContainText(excluded!);
   await page.getByRole('button',{name:'새 요청 시작',exact:true}).click();
   await expect(page.getByLabel('지금의 상황')).toHaveValue('');
-  await page.getByRole('button',{name:'조건 확인하기'}).click();
   await page.getByRole('button',{name:'추천받기',exact:true}).click();
   await expect(page.locator('.temporary-exclusions')).toHaveCount(0);
   await page.getByRole('button',{name:'요청 종료',exact:true}).click();

@@ -1,35 +1,66 @@
-import { ChevronRight, Columns2, ExternalLink, Heart, Info, Music2, Pin, RefreshCw } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Ban, Columns2, ExternalLink, Heart, Info, MoreHorizontal, Pin, RefreshCw } from 'lucide-react';
 import type { Item } from '../data';
 
-// One clear action (choose) on top; the request tools sit in a quiet row below it (DESIGN.md §6).
-export function RecommendationCard({ item, saved, reasons, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, pinned=false, compared=false, compareDisabled=false, persisted = true }: {
-  item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string };
+// One clear action (choose) per card; saving sits in the header and the request tools live behind "더보기" (DESIGN.md §3).
+export function RecommendationCard({ item, saved, reasons, rank, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, pinned=false, compared=false, compareDisabled=false, persisted = true }: {
+  item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string }; rank?: number;
   onSave: () => void; onExclude: () => void; onSelect?: () => void; onDetails?: () => void; persisted?: boolean;
   onPin?:()=>void;onReplace?:()=>void;onCompare?:()=>void;pinned?:boolean;compared?:boolean;compareDisabled?:boolean;
 }) {
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
-  return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}`}>
+  const youtube = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.subtitle + ' ' + item.name)}`;
+  return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}${reasons ? '' : ' plain'}`}>
     <div className="item-head">
-      <div className="item-art" aria-hidden="true"><span>{item.category === 'food' ? item.emoji : <Music2 size={24} />}</span></div>
+      {rank !== undefined && <span className="item-rank" aria-hidden="true">{rank}</span>}
       <div className="item-title">
         <h3>{item.name}</h3>
         <p className="item-subtitle">{item.subtitle}{item.category === 'food' && <span> · 참고 가격</span>}</p>
       </div>
       {pinned && <span className="pin-badge"><Pin size={12} />고정</span>}
+      <div className="item-quick">
+        {item.category === 'music' && <a className="icon-button" href={youtube} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`} title="YouTube에서 검색"><ExternalLink size={18} /></a>}
+        <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={19} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
+      </div>
     </div>
-    <div className="mini-tags">{item.tags.slice(0, 3).map(t => <span key={t}>{t}</span>)}</div>
-    {reasons ? <div className="reasons"><p><b>평소 취향</b>{reasons.tasteReason}</p><p><b>이번 상황</b>{reasons.contextReason}</p></div> : <p className="item-description">{item.description}</p>}
+    {reasons ? <div className="reasons"><p><b>평소 취향</b>{reasons.tasteReason}</p><p><b>이번 상황</b>{reasons.contextReason}</p></div> : <>
+      <div className="mini-tags">{item.tags.slice(0, 3).map(t => <span key={t}>{t}</span>)}</div>
+      <p className="item-description">{item.description}</p>
+    </>}
     <div className="card-actions">
       {onSelect && <button className="button primary select-button" onClick={onSelect}>이걸로 선택</button>}
-      <div className="card-tools">
-        {onDetails && <button className="tool" aria-label={`${item.name} 상세 보기`} onClick={onDetails}><Info size={18} /><span>상세</span></button>}
-        {onPin && <button className={`tool ${pinned ? 'on' : ''}`} aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={18} /><span>{pinned ? '고정됨' : '고정'}</span></button>}
-        {onReplace && <button className="tool" aria-label={`${item.name} 한 장 교체`} disabled={pinned} onClick={onReplace}><RefreshCw size={18} /><span>교체</span></button>}
-        {onCompare && <button className={`tool ${compared ? 'on' : ''}`} aria-label={`${item.name} 비교 항목`} aria-pressed={compared} disabled={compareDisabled} onClick={onCompare}><Columns2 size={18} /><span>{compared ? '비교 중' : '비교'}</span></button>}
-        <button className={`tool save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} onClick={onSave}><Heart size={18} fill={saved ? 'currentColor' : 'none'} /><span>{saveLabel}</span></button>
-      </div>
-      {item.category === 'music' && <a className="text-button youtube-link" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(item.subtitle + ' ' + item.name)}`} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}>YouTube에서 검색 <ExternalLink size={14} /></a>}
+      {reasons ? <MoreMenu label={`${item.name} 더보기`}>
+        {onDetails && <button aria-label={`${item.name} 상세 보기`} onClick={onDetails}><Info size={17} />상세 보기</button>}
+        {onPin && <button aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={17} />{pinned ? '고정 해제' : '이번 요청 고정'}</button>}
+        {onReplace && <button aria-label={`${item.name} 한 장 교체`} disabled={pinned} onClick={onReplace}><RefreshCw size={17} />다른 후보로 교체</button>}
+        {onCompare && <button aria-label={`${item.name} 비교 항목`} aria-pressed={compared} disabled={compareDisabled} onClick={onCompare}><Columns2 size={17} />{compared ? '비교에서 빼기' : '비교에 담기'}</button>}
+        <button className="feedback-button" onClick={onExclude}><Ban size={17} />추천에서 제외</button>
+      </MoreMenu> : onDetails && <button className="button secondary" aria-label={`${item.name} 상세 보기`} onClick={onDetails}>상세 보기</button>}
     </div>
-    {reasons && <button className="feedback-button" onClick={onExclude}>추천에서 제외 <ChevronRight size={14} /></button>}
   </article>;
+}
+
+// Disclosure menu: a toggle button and a short list of buttons. Escape or a click outside closes it; picking an item closes it too.
+function MoreMenu({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false), [up, setUp] = useState(false);
+  const root = useRef<HTMLDivElement>(null), toggle = useRef<HTMLButtonElement>(null);
+  // Open upward when the list would run under the bottom bars (tab bar, comparison bar) or off the screen.
+  useLayoutEffect(() => {
+    if (!open) { setUp(false); return; }
+    const box = root.current?.querySelector('.more-menu')?.getBoundingClientRect(), toggleBox = toggle.current?.getBoundingClientRect();
+    if (box && toggleBox) setUp(box.bottom > window.innerHeight - 96 && toggleBox.top - box.height - 6 > 64);
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); toggle.current?.focus(); } };
+    document.addEventListener('pointerdown', outside); root.current?.addEventListener('keydown', key);
+    root.current?.querySelector<HTMLButtonElement>('.more-menu button:not(:disabled)')?.focus();
+    const node = root.current;
+    return () => { document.removeEventListener('pointerdown', outside); node?.removeEventListener('keydown', key); };
+  }, [open]);
+  return <div className="more" ref={root}>
+    <button ref={toggle} className="button secondary more-toggle" aria-label={label} aria-expanded={open} onClick={() => setOpen(o => !o)}><MoreHorizontal size={20} /></button>
+    {open && <div className={`more-menu${up ? ' up' : ''}`} onClick={e => { if ((e.target as HTMLElement).closest('button')) { setOpen(false); toggle.current?.focus(); } }}>{children}</div>}
+  </div>;
 }

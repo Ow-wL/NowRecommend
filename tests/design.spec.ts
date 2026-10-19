@@ -13,10 +13,8 @@ for (const width of [390, 1440]) {
     for (const category of ['food', 'music']) {
       await page.getByRole('button', { name: category === 'food' ? '음식 추천' : '음악 추천', exact: true }).click();
       for (let i = 0; i < 5; i++) await page.locator('.selection-card').nth(i).click();
-      await page.getByRole('button', { name: '취향 요약 확인' }).click();
-      await page.getByRole('button', { name: '확인하고 저장' }).click();
+      await page.getByRole('button',{name:'저장하고 시작'}).click();
       await page.getByLabel('지금의 상황').fill(category === 'food' ? '담백한 저녁' : '과제할 때 차분한 연주곡');
-      await page.getByRole('button', { name: '조건 확인하기' }).click();
       await page.getByRole('button', { name: '추천받기', exact: true }).click();
       await expect(page.locator('.result-grid .item-card')).toHaveCount(category === 'food' ? 3 : 5);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

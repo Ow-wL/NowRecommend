@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { items, type Item } from '../../src/data';
+import { cardTool } from '../ui';
 
 // Same origin as VITE_API_BASE_URL of the "api" project's dev server (playwright.config.ts).
 const API = 'http://127.0.0.1:5999';
@@ -24,7 +25,6 @@ async function catalogRoute(page: Page, mode: 'ok' | 'down' = 'ok') {
 }
 async function requestFood(page: Page) {
   await page.goto('/#/recommend/food');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
 }
 const cardNames = (page: Page) => page.locator('.result-grid h3').allTextContents();
@@ -66,7 +66,6 @@ test('shows progress and sends one request for repeated clicks', async ({ page }
     return fulfill(route, batch(['f02', 'f07', 'f12']));
   });
   await page.goto('/#/recommend/food');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
   const submit = page.getByRole('button', { name: '추천받기', exact: true });
   await submit.click();
   const progress = page.getByRole('button', { name: '추천을 고르는 중' });
@@ -85,18 +84,20 @@ test('replaces a single card through the server', async ({ page }) => {
     return fulfill(route, body?.count === 1 ? batch(['f14'], '교체 이유') : batch(['f02', 'f07', 'f12']));
   });
   await requestFood(page);
-  await page.getByRole('button', { name: `${food('f07').name} 한 장 교체` }).click();
+  await cardTool(page, food('f07').name, '한 장 교체');
   await expect(page.locator('.result-grid h3')).toHaveText([food('f02').name, food('f14').name, food('f12').name]);
   expect(bodies[1]).toMatchObject({ count: 1, pinnedIds: [] });
   expect(bodies[1].excludedIds).toEqual(expect.arrayContaining(['f02', 'f07', 'f12']));
 });
 
 const SENTENCE = '속이 안 좋아서 부담 없는 걸로';
-async function confirmSentence(page: Page, text = SENTENCE) {
+// One submit reads the sentence (server parse when the rules missed words) and then recommends.
+async function submitSentence(page: Page, text = SENTENCE) {
   await page.goto('/#/recommend/food');
   await page.locator('#situation').fill(text);
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
+  await page.getByRole('button', { name: '추천받기', exact: true }).click();
 }
+const recommendRoute = (page: Page, sink: any[] = []) => page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sink.push(route.request().postDataJSON()); return fulfill(route, batch(['f02', 'f12', 'f09'])); });
 
 test('reads missed words with the server and keeps the answer for the same sentence', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
@@ -105,41 +106,42 @@ test('reads missed words with the server and keeps the answer for the same sente
     if (route.request().method() === 'POST') parses.push(route.request().postDataJSON());
     return fulfill(route, { conditions: { tags: ['담백함', '따뜻함'], excluded: ['매콤함'], maxPrice: null }, unparsed: ['좋아서'], source: 'rule+ai', ai: 'used' });
   });
-  await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') recommends.push(route.request().postDataJSON()); return fulfill(route, batch(['f02', 'f12', 'f09'])); });
-  await confirmSentence(page);
+  await recommendRoute(page, recommends);
+  await submitSentence(page);
+  await expect(page.locator('.result-grid h3')).toHaveCount(3);
   await expect(page.getByText('AI가 문장을 함께 해석했어요.')).toBeVisible();
   await expect(page.getByText('적용하지 않은 표현: 좋아서')).toBeVisible();
-  await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '매콤함', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect(parses).toEqual([{ category: 'food', text: SENTENCE }]);
+  expect(recommends[0].conditions.tags).toEqual(expect.arrayContaining(['담백함', '따뜻함']));
+  expect(recommends[0].conditions.excluded).toEqual(['매콤함']);
+  await page.getByRole('button', { name: '조건 수정', exact: true }).click();
+  await expect(page.getByRole('button', { name: '매콤함 제외 조건 삭제' })).toBeVisible();
   await page.getByRole('button', { name: '따뜻함 조건 삭제' }).click();
-  await page.getByRole('button', { name: '이전 단계' }).click();
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
-  await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toHaveCount(0); // the removal survives re-confirming
-  expect(parses).toHaveLength(1);
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid h3')).toHaveCount(3);
-  expect(recommends[0].conditions).toEqual({ tags: ['담백함'], excluded: ['매콤함'], maxPrice: null });
+  expect(parses).toHaveLength(1); // the same sentence is not sent again
+  expect(recommends[1].conditions).toEqual({ tags: ['담백함'], excluded: ['매콤함'], maxPrice: null });
+  await page.getByRole('button', { name: '조건 수정', exact: true }).click();
+  await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toHaveCount(0); // the removal survives re-submitting
 });
 
 test('falls back to the browser rules when parsing fails', async ({ page }) => {
-  await seedProfile(page); await catalogRoute(page);
+  await seedProfile(page); await catalogRoute(page); await recommendRoute(page);
   await page.route(`${API}/api/parse`, route => fulfill(route, { detail: 'down' }, 503));
-  await confirmSentence(page);
+  await submitSentence(page);
   await expect(page.getByText('서버에 연결하지 못해 기본 규칙으로 해석했어요.')).toBeVisible();
-  await expect(page.getByRole('button', { name: '담백함 조건 삭제' })).toBeVisible();
+  await expect(page.locator('.result-summary')).toContainText('담백함');
 });
 
 test('does not ask the server about an empty sentence', async ({ page }) => {
-  await seedProfile(page); await catalogRoute(page);
+  await seedProfile(page); await catalogRoute(page); await recommendRoute(page);
   let parses = 0;
   await page.route(`${API}/api/parse`, route => { parses++; return fulfill(route, {}); });
   await page.goto('/#/recommend/food');
-  await page.getByRole('button', { name: '조건 확인하기' }).click();
-  await expect(page.getByRole('button', { name: '추천받기', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await expect(page.locator('.result-grid h3')).toHaveCount(3);
   expect(parses).toBe(0);
 });
-
 test('says when the server answered without the AI or the sentence meaning', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
   let degraded = true;
