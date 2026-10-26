@@ -6,6 +6,10 @@ title alone because the store lists the performer. Results go to src/media.json,
 the track's own Apple Music song page as `link` (the album page as `album`, for the artwork). Songs without a confident
 match are left out and the UI draws a generated cover. The API allows ~20 requests a minute, so this paces itself.
 
+variants: removes song links whose matched track is another version of the song ("(Live)", "(Instrumental)" for a
+song with vocals, remixes): "듣기" would play something else. The entry keeps its album art and the UI offers a search.
+`tracks` applies the same rule. Found by the live check of 2026-10-27 ("Permission to Dance (Live)").
+
 tracks: upgrades entries that still link to an album page (covers before 2026-10-27 cut the track id off the store
 URL, so "듣기" opened the album). It looks the albums up by id and keeps a song link only when the store lists a track
 whose title and artist are exactly the matched ones; otherwise the entry keeps only the album page and the UI offers a
@@ -106,6 +110,33 @@ def lookup_tracks(country: str, collection_ids: list[str]) -> list[dict]:
         return [h for h in json.load(r).get("results", []) if h.get("wrapperType") == "track"]
 
 
+# A version marker in the matched track title: "(Live)", "(Live Version)", "(Instrumental)", "- Remix".
+VARIANT = re.compile(r"(?<![a-z])(live|instrumental|inst\.|remix|karaoke|acoustic|sped up|slowed|demo|cover)(?![a-z])", re.I)
+
+
+def variant_of(entry: dict, item: dict) -> str | None:
+    """The version marker of the matched track that the catalog song does not have, or None for the song itself.
+    An instrumental recording is the song itself only when the catalog lists it as 연주곡."""
+    track = entry.get("match", "").rsplit(" [", 1)[0].rsplit(" - ", 1)[0]
+    for word in VARIANT.findall(track):
+        word = word.lower()
+        if word in item["name"].lower() or word.startswith("inst") and "연주곡" in item.get("tags", []):
+            continue
+        return word
+    return None
+
+
+def drop_variant_links(media: dict, songs: list[dict]) -> list[str]:
+    """Song links that would play another version are removed (the album art stays). Returns the affected ids."""
+    by_id = {s["id"]: s for s in songs}
+    dropped = []
+    for key, entry in media.items():
+        if entry.get("link") and key in by_id and variant_of(entry, by_id[key]):
+            entry.pop("link")
+            dropped.append(key)
+    return dropped
+
+
 def upgrade_tracks(media: dict) -> tuple[int, int]:
     """Album links → song links where the album lists exactly the matched track. Returns (upgraded, album only)."""
     pending = {}
@@ -184,15 +215,20 @@ def main() -> None:
     covers.add_argument("--out", type=Path, default=MEDIA_FILE)
     tracks = commands.add_parser("tracks")
     tracks.add_argument("--out", type=Path, default=MEDIA_FILE)
+    variants = commands.add_parser("variants")
+    variants.add_argument("--out", type=Path, default=MEDIA_FILE)
     args = parser.parse_args()
 
     media = json.loads(args.out.read_text(encoding="utf-8")) if args.out.exists() else {}
-    if args.command == "tracks":
-        upgraded, album_only = upgrade_tracks(media)
-        args.out.write_text(json.dumps(dict(sorted(media.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        print(f"tracks: {upgraded} song links, {album_only} album only (the UI offers a search for those)")
-        return
     songs = [i for i in load_seed(SEED_FILE) + (load_seed(REVIEWED_FILE) if REVIEWED_FILE.exists() else []) if i["category"] == "music"]
+    if args.command in ("tracks", "variants"):
+        if args.command == "tracks":
+            upgraded, album_only = upgrade_tracks(media)
+            print(f"tracks: {upgraded} song links, {album_only} album only (the UI offers a search for those)")
+        dropped = drop_variant_links(media, songs)
+        args.out.write_text(json.dumps(dict(sorted(media.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        print(f"variants: removed {len(dropped)} song links to another version: {', '.join(dropped) or '-'}")
+        return
     only = {s for s in args.only.split(",") if s}
     todo = [s for s in songs if not only or s["id"] in only]
     missing = []
