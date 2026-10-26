@@ -33,9 +33,18 @@ export function updateFeedback(profile: Profile, session: Session, id: string, s
   return { profile: scope === 'long' ? { ...profile, disliked: [...new Set([...profile.disliked, id])] } : profile,
     session: scope === 'session' ? { ...session, excludedIds: [...new Set([...session.excludedIds, id])] } : session };
 }
+// Genres: a whole word, so 기록·연락·락스·록키·팝콘 and "화면 락 걸고" are not music. Mirrored in server/app/parsing/rules.py.
+const GENRE_FOLLOW = '음악|노래|밴드|곡|송|풍|스타일|느낌|장르|계열|위주|으로|이나|이랑|이|은|을|과|도|만|의|에|처럼|같은|하고|랑|가|는|를|로|와|나';
+const genreWord = (words: string) => `(?<![가-힣A-Za-z])(?:${words})(?=$|[^가-힣A-Za-z]|${GENRE_FOLLOW})`;
+const latinWord = (words: string) => `(?<![A-Za-z])(?:${words})(?![A-Za-z])`;
+const ROCK = new RegExp(`${genreWord('록|락(?!\\s*(?:을|이)?\\s*(?:걸|풀|해제))')}|로큰롤|락앤롤|록앤롤|록큰롤|(?:하드|모던|펑크|얼터너티브|브릿|인디)\\s?록|${latinWord('rock')}`, 'i');
+const POP = new RegExp(`${genreWord('팝')}|(?:케이|시티|제이)\\s?팝|${latinWord('k-?pop|j-?pop|pop')}`, 'i');
+const BALLAD = new RegExp(`발라드|${latinWord('ballads?')}`, 'i');
+/** Genres the catalog has no tag for: named before recommending instead of disappearing ("힙합 노래"). */
+const UNSUPPORTED_GENRES = new RegExp(`(?:${genreWord('힙합|랩|클래식|트로트|뽕짝|일렉트로닉|일렉|알앤비|인디|메탈|펑크|레게|컨트리|블루스|디스코|댄스|뉴에이지|로파이|동요|국악|오페라|EDM|R&B|CCM')}|헤비\\s?메탈|전자\\s?음악|${latinWord('hip-?hop|edm|r&b|lo-?fi|classical|metal|reggae|disco')})(?!\\s?[록락])`, 'gi');
 const TAG_RULES: Record<Category, [RegExp, string][]> = {
   food: [[/혼자|혼밥/, '혼자'], [/함께|친구|둘이/, '함께'], [/저녁/, '저녁'], [/점심/, '점심'], [/담백|순한|부담.?없/, '담백함'], [/매콤|매운|칼칼|얼큰/, '매콤함'], [/고소/, '고소함'], [/따뜻|따끈/, '따뜻함'], [/시원|차가운/, '차가움'], [/국물/, '국물'], [/채소|야채/, '채소']],
-  music: [[/과제|공부|집중|작업/, '과제'], [/휴식|쉬|잠|편안/, '휴식'], [/산책|걷/, '산책'], [/운동|달리|러닝/, '운동'], [/잔잔|차분|조용/, '차분함'], [/활기|신나|밝은/, '활기참'], [/적당히|적당한/, '중간 에너지'], [/연주곡|보컬.?없|가사.?없/, '연주곡'], [/재즈/, '재즈'], [/피아노/, '피아노'], [/어쿠스틱/, '어쿠스틱']],
+  music: [[/과제|공부|집중|작업/, '과제'], [/휴식|쉬|잠|편안/, '휴식'], [/산책|걷/, '산책'], [/운동|달리|러닝/, '운동'], [/잔잔|차분|조용/, '차분함'], [/활기|신나|밝은/, '활기참'], [/적당히|적당한/, '중간 에너지'], [/연주곡|보컬.?없|가사.?없/, '연주곡'], [/재즈/, '재즈'], [/피아노/, '피아노'], [/어쿠스틱/, '어쿠스틱'], [ROCK, '록'], [POP, '팝'], [BALLAD, '발라드']],
 };
 // The prototype only maps known phrases. It never calls an AI service.
 export function parseConditions(text: string, category: Category): Conditions {
@@ -164,11 +173,12 @@ function readNegations(text: string, category: Category) {
 }
 
 /** What a sentence asks for that the app cannot check. Shown before recommending and never turned into another condition. */
-export type Unsupported = { kind: 'price' | 'delivery' | 'place' | 'ingredient' | 'trait' | 'exclusion'; text: string };
+export type Unsupported = { kind: 'price' | 'delivery' | 'place' | 'genre' | 'ingredient' | 'trait' | 'exclusion'; text: string };
 export const unsupportedNote: Record<Unsupported['kind'], string> = {
   price: '가격 조건은 지원하지 않아요. 취향과 상황을 기준으로 메뉴를 추천해요.',
   delivery: '배달·포장 가능 여부는 확인하지 않아요. 판매처에서 직접 확인해주세요.',
   place: '주변 식당이나 영업 여부는 확인하지 않아요. 메뉴를 고른 뒤 지도 검색으로 찾아볼 수 있어요.',
+  genre: '이 장르는 곡 정보에 분류가 없어 반영하지 못해요. 분위기·에너지·악기 조건으로 골라주세요.',
   ingredient: '등록된 재료·특징에 없어 이 제외는 반영하지 못해요. 메뉴의 재료를 직접 확인해주세요.',
   trait: '이 특징을 빼는 조건은 아직 지원하지 않아요. 원하는 조건으로도 반영하지 않았어요.',
   exclusion: '이 제외는 지원하지 않아 반영하지 못해요.',
@@ -183,6 +193,9 @@ const UNSUPPORTED_PATTERNS: [Unsupported['kind'], RegExp][] = [
 export function unsupportedConditions(text: string, category: Category): Unsupported[] {
   const found: Unsupported[] = [];
   if (category === 'food') for (const [kind, pattern] of UNSUPPORTED_PATTERNS) for (const m of text.matchAll(pattern)) found.push({ kind, text: m[0].trim() });
+  // "힙합 말고" is reported once, as an exclusion it cannot apply (readNegations).
+  const negated = negatedPhrases(text);
+  if (category === 'music') for (const m of text.matchAll(UNSUPPORTED_GENRES)) if (!negated.some(n => m.index! >= n.start && m.index! < n.end)) found.push({ kind: 'genre', text: m[0].trim() });
   for (const word of listedExclusions(text, category).unsupported) found.push({ kind: 'ingredient', text: `${word} 제외` });
   found.push(...readNegations(text, category).unsupported);
   return found.filter((u, i) => found.findIndex(o => o.kind === u.kind && o.text === u.text) === i);

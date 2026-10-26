@@ -623,7 +623,9 @@
       "category": "music",
       "text": "팝 좋아하는데 록은 싫어",
       "expected": {
-        "tags": [],
+        "tags": [
+          "팝"
+        ],
         "excluded": [
           "록"
         ],
@@ -1349,6 +1351,252 @@
           "유제품",
           "달걀"
         ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "비 오는 날 과제할 때 듣는 신나는 록",
+      "expected": {
+        "tags": [
+          "과제",
+          "활기참",
+          "록"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "락 음악 틀어줘",
+      "expected": {
+        "tags": [
+          "록"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "rock 위주로",
+      "expected": {
+        "tags": [
+          "록"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "Rock 밴드 노래",
+      "expected": {
+        "tags": [
+          "록"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "펑크 록 추천",
+      "expected": {
+        "tags": [
+          "록"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "록 말고 발라드",
+      "expected": {
+        "tags": [
+          "발라드"
+        ],
+        "excluded": [
+          "록"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "락 빼고 신나는 노래",
+      "expected": {
+        "tags": [
+          "활기참"
+        ],
+        "excluded": [
+          "록"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "케이팝 신나는 거",
+      "expected": {
+        "tags": [
+          "활기참",
+          "팝"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "팝송 추천",
+      "expected": {
+        "tags": [
+          "팝"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "힙합 노래 추천해줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "genre",
+            "text": "힙합"
+          }
+        ]
+      }
+    },
+    {
+      "category": "music",
+      "text": "클래식 음악 들으면서 공부",
+      "expected": {
+        "tags": [
+          "과제"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "genre",
+            "text": "클래식"
+          }
+        ]
+      }
+    },
+    {
+      "category": "music",
+      "text": "EDM 같은 신나는 곡",
+      "expected": {
+        "tags": [
+          "활기참"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "genre",
+            "text": "EDM"
+          }
+        ]
+      }
+    },
+    {
+      "category": "music",
+      "text": "힙합 말고 차분한 노래",
+      "expected": {
+        "tags": [
+          "차분함"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "exclusion",
+            "text": "힙합 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "music",
+      "text": "기록 정리하면서 들을 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "친구한테 연락 기다리며 듣는 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "화면 락 걸고 산책할 때 들을 노래",
+      "expected": {
+        "tags": [
+          "산책"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "되도록 조용한 노래",
+      "expected": {
+        "tags": [
+          "차분함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "록키 산 보면서 듣는 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "팝콘 먹으며 듣는 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "랩탑으로 과제할 때",
+      "expected": {
+        "tags": [
+          "과제"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "클래식한 분위기 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
         "unsupported": []
       }
     }

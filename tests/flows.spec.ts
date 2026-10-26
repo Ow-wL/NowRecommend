@@ -215,3 +215,15 @@ test('one taste item is enough, editing can empty it, and liking a result adds t
   await expect(page.locator('.taste-panel').nth(1)).toContainText('아직 좋아하는 항목이 없어요');
 });
 
+// 2026-10-27: "신나는 록" lost 록 without a word. Catalog genres are conditions now; genres without a tag are named.
+test('music genres become conditions or are named as unsupported', async ({ page }) => {
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: '취향 없이 바로 추천받기' }).click();
+  await page.getByLabel('지금의 상황').fill('비 오는 날 과제할 때 듣는 신나는 록');
+  await expect(page.locator('.condition-summary .chip')).toHaveText(['과제', '활기참', '록']);
+  await page.getByLabel('지금의 상황').fill('힙합 노래 추천해줘');
+  await expect(page.locator('.condition-note.unsupported')).toContainText('‘힙합’ 이 장르는 곡 정보에 분류가 없어 반영하지 못해요.');
+  await page.getByLabel('지금의 상황').fill('기록 정리하면서 화면 락 걸고 들을 노래');
+  await expect(page.locator('.condition-summary .chip')).toHaveCount(0);
+  await expect(page.locator('.condition-note.unsupported')).toHaveCount(0);
+});

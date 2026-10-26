@@ -16,10 +16,30 @@ FOOD_RULES = [
     (r"담백|순한|부담.?없", "담백함"), (r"매콤|매운|칼칼|얼큰", "매콤함"), (r"고소", "고소함"),
     (r"따뜻|따끈", "따뜻함"), (r"시원|차가운", "차가움"), (r"국물", "국물"), (r"채소|야채", "채소"),
 ]
+# Genres: a whole word, so 기록·연락·락스·록키·팝콘 and "화면 락 걸고" are not music (genreWord in src/domain.ts).
+GENRE_FOLLOW = "음악|노래|밴드|곡|송|풍|스타일|느낌|장르|계열|위주|으로|이나|이랑|이|은|을|과|도|만|의|에|처럼|같은|하고|랑|가|는|를|로|와|나"
+
+
+def _genre_word(words: str) -> str:
+    return rf"(?<![가-힣A-Za-z])(?:{words})(?=$|[^가-힣A-Za-z]|{GENRE_FOLLOW})"
+
+
+def _latin_word(words: str) -> str:
+    return rf"(?<![A-Za-z])(?i:{words})(?![A-Za-z])"
+
+
+ROCK = rf"{_genre_word(r'록|락(?!\s*(?:을|이)?\s*(?:걸|풀|해제))')}|로큰롤|락앤롤|록앤롤|록큰롤|(?:하드|모던|펑크|얼터너티브|브릿|인디)\s?록|{_latin_word('rock')}"
+POP = rf"{_genre_word('팝')}|(?:케이|시티|제이)\s?팝|{_latin_word('k-?pop|j-?pop|pop')}"
+BALLAD = rf"발라드|{_latin_word('ballads?')}"
+# Genres the catalog has no tag for: named before recommending instead of disappearing ("힙합 노래").
+UNSUPPORTED_GENRES = re.compile(
+    rf"(?:{_genre_word('힙합|랩|클래식|트로트|뽕짝|일렉트로닉|일렉|알앤비|인디|메탈|펑크|레게|컨트리|블루스|디스코|댄스|뉴에이지|로파이|동요|국악|오페라|(?i:EDM|R&B|CCM)')}"
+    rf"|헤비\s?메탈|전자\s?음악|{_latin_word('hip-?hop|edm|r&b|lo-?fi|classical|metal|reggae|disco')})(?!\s?[록락])")
 MUSIC_RULES = [
     (r"과제|공부|집중|작업", "과제"), (r"휴식|쉬|잠|편안", "휴식"), (r"산책|걷", "산책"), (r"운동|달리|러닝", "운동"),
     (r"잔잔|차분|조용", "차분함"), (r"활기|신나|밝은", "활기참"), (r"적당히|적당한", "중간 에너지"),
     (r"연주곡|보컬.?없|가사.?없", "연주곡"), (r"재즈", "재즈"), (r"피아노", "피아노"), (r"어쿠스틱", "어쿠스틱"),
+    (ROCK, "록"), (POP, "팝"), (BALLAD, "발라드"),
 ]
 # "프리" is for "글루텐 프리"; "프리미엄" must not exclude the beef in "소고기 프리미엄 스테이크".
 EXCLUDE = r"제외|빼|피하|싫|없[이는게음고]|말고|못\s*먹|안\s*먹|알레르기|알러지|불내증|금지|안\s*들어|안\s*돼|프리(?!미엄)"
@@ -48,7 +68,7 @@ CLAUSE_MARKS = (".", "!", "?", ";", "·", "\n")
 class RuleParse:
     tags: list[str] = field(default_factory=list)
     excluded: list[str] = field(default_factory=list)
-    unsupported: list[dict] = field(default_factory=list)  # {"kind": price|delivery|place|ingredient|trait|exclusion, "text": ...}
+    unsupported: list[dict] = field(default_factory=list)  # {"kind": price|delivery|place|genre|ingredient|trait|exclusion, "text": ...}
     spans: list[tuple[int, int]] = field(default_factory=list)
     unsupported_spans: list[tuple[int, int]] = field(default_factory=list)
     not_wanted: set[str] = field(default_factory=set)  # tags a negated phrase asked to leave out
@@ -274,6 +294,15 @@ def parse_rules(text: str, category: str) -> RuleParse:
     else:
         if _cover(result, NO_VOCALS, text):
             excluded.add("보컬")
+        # "힙합 말고" is reported once, as an exclusion it cannot apply (read_negations).
+        for match in UNSUPPORTED_GENRES.finditer(text):
+            if any(start <= match.start() < end for start, end in negations.spans):
+                continue
+            result.spans.append(match.span())
+            result.unsupported_spans.append(match.span())
+            entry = {"kind": "genre", "text": match.group().strip()}
+            if entry not in result.unsupported:
+                result.unsupported.append(entry)
         # Music has no price either; an amount is understood (and ignored), so it must not trigger the LLM.
         for match in MONEY.finditer(text):
             result.spans.append(match.span())
@@ -285,7 +314,7 @@ def parse_rules(text: str, category: str) -> RuleParse:
         if entry not in result.unsupported:
             result.unsupported.append(entry)
     # Same order as the frontend: price, delivery, place, then exclusions it cannot apply, as they appear.
-    order = {"price": 0, "delivery": 1, "place": 2, "ingredient": 3, "trait": 3, "exclusion": 3}
+    order = {"price": 0, "delivery": 1, "place": 2, "genre": 2, "ingredient": 3, "trait": 3, "exclusion": 3}
     result.unsupported.sort(key=lambda u: order[u["kind"]])
     return result
 
