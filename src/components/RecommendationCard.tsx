@@ -36,9 +36,9 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
         <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={19} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
       </div>
     </div>
-    {/* A missing tag reads "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits. */}
-    {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}
-      title={c.state === 'untagged' ? `이 ${music ? '곡' : '메뉴'}의 등록 특징에 ‘${c.label}’ 표시가 없어요. 맞지 않는다는 뜻은 아니에요.` : undefined}>
+    {/* A missing tag reads "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits.
+        The meaning is explained once above the list (.check-legend), not in a hover-only title on every card. */}
+    {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>
       {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}
       <span aria-hidden="true">{c.state === 'untagged' ? `${c.label} 미등록` : c.label}</span><span className="sr-only">{checkText(c)}</span></li>)}</ul>}
     {/* Without a registered taste the list says so once above the cards; repeating it on every card is noise. */}

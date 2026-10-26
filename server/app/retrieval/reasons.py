@@ -22,4 +22,4 @@ def context_reason(item_tags: list[str], condition_tags: Sequence[str], excluded
     wanted = set(condition_tags)
     matched = [t for t in item_tags if t in wanted][:2]
     return (f"이번 조건 {' · '.join(matched)}에 맞아요." if matched else "고른 조건과 겹치는 특징은 적어요." if condition_tags
-            else "제외 조건을 지킨 선택이에요." if excluded else "상황 조건 없이 골랐어요.")
+            else "등록 정보 기준으로 제외 조건을 적용했어요." if excluded else "상황 조건 없이 골랐어요.")

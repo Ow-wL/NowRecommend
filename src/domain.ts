@@ -290,7 +290,7 @@ export function templateReasons(item: Item, profile: Profile, preferred: Set<str
     : profile.selected.includes(item.id) ? `내 취향에 등록한 ${category === 'food' ? '메뉴예요' : '곡이에요'}`
     : taste.length ? `좋아하는 ${taste.join(' · ')}에 가까워요` : '평소 취향과 다른 새로운 선택이에요';
   const matched = item.tags.filter(t => conditions.tags.includes(t)).slice(0, 2);
-  const contextReason = matched.length ? `이번 조건 ${matched.join(' · ')}에 맞아요.` : conditions.tags.length ? '고른 조건과 겹치는 특징은 적어요.' : conditions.excluded.length ? '제외 조건을 지킨 선택이에요.' : '상황 조건 없이 골랐어요.';
+  const contextReason = matched.length ? `이번 조건 ${matched.join(' · ')}에 맞아요.` : conditions.tags.length ? '고른 조건과 겹치는 특징은 적어요.' : conditions.excluded.length ? '등록 정보 기준으로 제외 조건을 적용했어요.' : '상황 조건 없이 골랐어요.';
   return { tasteReason, contextReason };
 }
 /** What only this card has among the cards shown with it, from its tags; empty when nothing sets it apart. */
@@ -352,15 +352,16 @@ export function candidateInfo(session: Session, profile: Profile, catalog: Item[
  * - Wanted situations and moods ("want") only rank candidates. "met" means the item's registered tags include it;
  *   "untagged" only means they do not, which is not the same as not fitting: an AI reason may still judge that it fits
  *   from the description ("과제할 때 어울려요" for a song without the 과제 tag, 2026-10-27). No tag is ever inferred here.
- * - Exclusions ("exclude") filter candidates, so they always hold, except a group the data only covers in part
- *   ("해산물"), which stays "partial". */
-export type ConditionCheck = { label: string; kind: 'want' | 'exclude'; state: 'met' | 'untagged' | 'partial' };
+ * - Exclusions ("exclude") filter candidates by the registered ingredients and tags ("met" = applied on that data, not a
+ *   guarantee about the real dish); a group the data only covers in part ("해산물") stays "partial". Exclusions the data
+ *   cannot check at all (국물, 고수) never become conditions; ConditionNotes names them as unsupported. */
+export type ConditionCheck = { label: string; value: string; kind: 'want' | 'exclude'; state: 'met' | 'untagged' | 'partial' };
 export function conditionChecks(item: Item, conditions: Conditions): ConditionCheck[] {
-  return [...conditions.tags.map(t => ({ label: t, kind: 'want' as const, state: item.tags.includes(t) ? 'met' as const : 'untagged' as const })),
-    ...conditions.excluded.map(v => ({ kind: 'exclude' as const, ...exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외`, state: 'met' as const } }))];
+  return [...conditions.tags.map(t => ({ label: t, value: t, kind: 'want' as const, state: item.tags.includes(t) ? 'met' as const : 'untagged' as const })),
+    ...conditions.excluded.map(v => ({ value: v, kind: 'exclude' as const, ...exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외`, state: 'met' as const } }))];
 }
-/** What a check says, for screen readers and the comparison table. */
+/** What a check says, for screen readers and the comparison table. A partial exclusion never reads as applied. */
 export function checkText(c: ConditionCheck): string {
-  if (c.kind === 'exclude') return c.state === 'partial' ? c.label : `${c.label} 적용`;
-  return c.state === 'met' ? `${c.label} 특징 있음` : `${c.label} 특징 미등록`;
+  if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.label}, 등록 정보 기준 적용`;
+  return c.state === 'met' ? `${c.label} 특징 있음` : `${c.label} 특징 미등록(데이터에 표시 없음)`;
 }

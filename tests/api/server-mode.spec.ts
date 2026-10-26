@@ -176,8 +176,7 @@ test('a wanted condition missing from the item tags reads as not registered, not
   const card = page.locator('.item-card').filter({ has: page.getByRole('heading', { name: untagged.name, exact: true }) });
   const check = card.locator('.condition-checks li.untagged');
   await expect(check).toHaveText(/혼자 미등록/);
-  await expect(check.locator('.sr-only')).toHaveText('혼자 특징 미등록');
-  await expect(check).toHaveAttribute('title', /맞지 않는다는 뜻은 아니에요/);
+  await expect(check.locator('.sr-only')).toHaveText('혼자 특징 미등록(데이터에 표시 없음)');
   await expect(card.locator('.reasons')).toContainText('혼자 먹기 좋아요');
   await expect(page.locator('.item-card').filter({ has: page.getByRole('heading', { name: tagged.name, exact: true }) }).locator('.condition-checks li.met .sr-only')).toHaveText('혼자 특징 있음');
   await expect(page.locator('.check-legend')).toContainText('미등록은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요.');

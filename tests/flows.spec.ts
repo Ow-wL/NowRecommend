@@ -33,9 +33,14 @@ test('the reproduction sentence: kept, partial and unsupported conditions before
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   const cards = page.locator('.result-grid .item-card');
   await expect(cards).toHaveCount(3);
+  // Exclusions reach only as far as the registered data: no "always" promise, and a partial one never reads as applied.
+  await expect(page.locator('.check-legend')).toContainText('재료·특징 제외는 등록된 정보를 기준으로 적용하며, 일부 확인·미지원 조건은 따로 표시해요.');
+  await expect(page.locator('main')).not.toContainText('항상 지켜요');
   for (const card of await cards.all()) {
     await expect(card).not.toContainText('원');
     await expect(card.locator('.condition-checks .partial')).toContainText('해산물 일부 확인');
+    await expect(card.locator('.condition-checks .partial .sr-only')).toHaveText('해산물 제외 일부만 확인');
+    await expect(card.locator('.condition-checks li.exclude.met .sr-only')).toHaveText('맵지 않음, 등록 정보 기준 적용');
     await expect(card.getByRole('link', { name: /네이버 지도에서 검색/ })).toHaveAttribute('href', /^https:\/\/map\.naver\.com\/p\/search\//);
   }
   await expect(page.locator('.result-grid')).not.toContainText('평소 취향'); // no taste registered: no taste claim on the cards
@@ -209,3 +214,4 @@ test('one taste item is enough, editing can empty it, and liking a result adds t
   await page.getByRole('button', { name: '저장하기' }).click();
   await expect(page.locator('.taste-panel').nth(1)).toContainText('아직 좋아하는 항목이 없어요');
 });
+
