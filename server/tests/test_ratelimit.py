@@ -49,5 +49,12 @@ def test_forwarded_for_is_used_only_behind_a_trusted_proxy():
         assert client.post("/api/parse", headers={"X-Forwarded-For": "2.2.2.2"}).status_code == expected
 
 
+def test_a_spoofed_forwarded_for_prefix_does_not_reset_the_limit():
+    # The proxy appends the address it saw; whatever the client put in front must not pick the bucket.
+    client = app_with(1, trust_proxy=True)
+    client.post("/api/parse", headers={"X-Forwarded-For": "9.9.9.1, 3.3.3.3"})
+    assert client.post("/api/parse", headers={"X-Forwarded-For": "9.9.9.2, 3.3.3.3"}).status_code == 429
+
+
 def test_app_installs_the_limit_by_default():
     assert any(m.cls is RateLimitMiddleware for m in create_app().user_middleware)

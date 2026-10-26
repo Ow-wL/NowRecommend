@@ -73,7 +73,10 @@ def clean_draft(category: str, source: DraftInput, raw: object, vocab: CategoryV
         return None, [], "모델 응답이 입력과 맞지 않음"
     tags = [t for t in dict.fromkeys(raw.get("tags") or []) if t in vocab.tags]
     description = " ".join(str(raw.get("description") or "").split())[:80]
-    emoji = str(raw.get("emoji") or "").strip()[:4] or ("🍽️" if category == "food" else "🎵")
+    emoji = str(raw.get("emoji") or "").strip()[:4]
+    # Letters are not an emoji: one draft came back with "pad " (review 2026-10-26).
+    if not emoji or any(ch.isascii() and ch.isalnum() for ch in emoji):
+        emoji = "🍽️" if category == "food" else "🎵"
     color = raw.get("color") if isinstance(raw.get("color"), str) and COLOR.match(raw["color"]) else "#e8e4dc"
     if len(tags) < 2 or not description:
         return None, [], "설명 또는 태그 부족"

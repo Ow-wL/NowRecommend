@@ -11,7 +11,7 @@ export type LabMark = 'missing' | 'bad' | 'good';
 export type LabAnswer = { songs: LabSong[]; ms: number; status: 'ok' | 'failed' | 'fallback'; detail?: string; model?: string };
 export type LabVote = 'pool' | 'same' | 'free';
 export type LabEntry = {
-  id: string; date: string; raw: string; conditions: Conditions; likedText: string[]; round: number;
+  id: string; date: string; raw: string; conditions: Conditions; likedText: string[]; round: number; sides?: LabSide[];
   pool?: LabAnswer; free?: LabAnswer; vote?: LabVote; note?: string; marks: Record<string, LabMark>;
 };
 

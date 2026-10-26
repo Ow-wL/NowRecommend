@@ -73,7 +73,8 @@ def _request_with_retry(model: JsonModel, category: str, batch: list[DraftInput]
         try:
             return request_drafts(model, category, batch, vocab)
         except Exception as exc:
-            if attempt == retries or not (isinstance(exc, CoolingDown) or getattr(exc, "code", None) == 503):
+            overloaded = getattr(exc, "code", None) == 503 or (isinstance(exc, CoolingDown) and not exc.quota)
+            if attempt == retries or not overloaded:
                 raise
             sleep(wait)
     return []

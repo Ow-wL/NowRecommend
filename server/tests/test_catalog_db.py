@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 
-from app.catalog import load_seed, published_items, refresh_embeddings, seed_items
+from app.catalog import load_seed, published_items, refresh_embeddings, retire_unpublished, seed_items
 from app.db import get_session
 from app.main import create_app
 from app.models import Item
@@ -101,3 +101,12 @@ def test_published_drafts_round_trip_through_the_seed(db_session):
     assert db_session.get(Item, "m-0000abcd").source == "ai_draft"
     with pytest.raises(ValueError, match="출처"):
         seed_items(db_session, get_vocab(), [{**draft, "source": "web"}])
+
+
+def test_drafts_left_out_of_the_published_file_are_retired(db_session):
+    seed_items(db_session, get_vocab(), load_seed())
+    base = {**load_seed()[16], "artist": "가수", "subtitle": "가수", "source": "ai_draft"}
+    seed_items(db_session, get_vocab(), [{**base, "id": "m-0000aaaa", "name": "남는 곡"}, {**base, "id": "m-0000bbbb", "name": "빠지는 곡"}])
+    assert retire_unpublished(db_session, ["m-0000aaaa"]) == ["m-0000bbbb"]
+    assert db_session.get(Item, "m-0000bbbb").status == "rejected" and db_session.get(Item, "m-0000aaaa").status == "reviewed"
+    assert db_session.get(Item, "m01").status == "reviewed"  # the bundled seed is never retired

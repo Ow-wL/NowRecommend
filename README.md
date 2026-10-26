@@ -100,15 +100,15 @@ docker compose exec api python -m app.cli.review publish
 - 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다. `--batch 20`으로 요청 수를 줄일 수 있고, 이때는 `RERANK_TIMEOUT_MS`를 넉넉히(예: 150000) 줍니다.
 - `python -m app.cli.eval`(server 폴더에서 실행)은 평가 세트 60개(`server/eval/cases.json`)로 기존 규칙·유사도·취향만 방식을 비교하고, 조건 해석 정확도를 잽니다. 결과는 `server/eval/report.md`에 씁니다. `--with-ai`를 주면 AI 경로도 일부 사례에 대해 측정하며, 이때는 생성 한도를 씁니다. 정답 라벨이 기본 시드 31개만 알기 때문에 기본으로 그 안에서만 순위를 매깁니다(`--full-catalog`로 전체).
 - 서버 테스트는 GitHub Actions `server-ci.yml`에서 pgvector 컨테이너와 함께 실행됩니다(`server/`·`shared/` 변경 시).
-- `POST /api/recommend`·`/api/parse`·`/api/lab/music/free`는 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔).
+- `POST /api/recommend`·`/api/parse`·`/api/lab/music/free`는 세 경로를 합쳐 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔). `TRUST_PROXY=true`이면 `X-Forwarded-For`의 **가장 오른쪽** 주소(프록시가 붙인 값)로 클라이언트를 구분합니다. 왼쪽 값은 클라이언트가 마음대로 보낼 수 있습니다.
 
 ### 음악 AI 실험 (`#/lab`)
 
 음악을 DB 곡 목록에서 고르는 방식과 AI가 바로 고르는 방식을 비교하는 실험 페이지입니다([plans-music-ai.md](./plans-music-ai.md)). 서버 모드에서만 홈에 진입 카드가 보입니다.
 
 - A(저장된 곡 목록): 기존 `POST /api/recommend`를 그대로 씁니다.
-- B(AI 자유 추천): `POST /api/lab/music/free`. 등록 취향(곡 ID는 서버가 "제목 - 아티스트"로 바꿈)·조건·직접 적은 좋아하는 곡을 보내면 모델이 아는 곡 중 5곡과 확신도를 돌려줍니다. 서버는 빈 값·중복·이미 본 곡·비선호·취향 곡 자체를 걸러내지만 곡이 실제로 있는지는 확인하지 못합니다. 실패하면 대체 결과 없이 실패를 그대로 돌려줍니다.
-- B 모델은 `LAB_FREE_MODELS`(기본 `["gemini-3.5-flash-lite","gemini-3.6-flash"]`) 중에서 화면에서 고르고, `GET /api/lab/music/models`가 목록을 줍니다. 같은 이름의 모델은 재순위·해석과 429 쿨다운을 공유합니다.
+- B(AI 자유 추천): `POST /api/lab/music/free`. 등록 취향(곡 ID는 서버가 "제목 - 아티스트"로 바꿈)·조건·직접 적은 좋아하는 곡을 보내면 모델이 아는 곡 중 5곡과 확신도를 돌려줍니다. 서버는 빈 값·중복·이미 본 곡·비선호·취향 곡 자체를 걸러내지만, 이름이 글자 그대로 같을 때만 같은 곡으로 봅니다("봄날 - BTS"와 "Spring Day - 방탄소년단"은 다른 곡). 곡이 실제로 있는지도 확인하지 못합니다. 실패하면 대체 결과 없이 실패를 그대로 돌려줍니다.
+- B 모델은 `LAB_FREE_MODELS`(기본 `["gemini-3.5-flash-lite","gemini-3.6-flash"]`) 중에서 화면에서 고르고, `GET /api/lab/music/models`가 목록을 줍니다. 같은 이름의 모델은 재순위·해석과 429 쿨다운을 공유합니다. 첫 번째가 아닌 모델은 하루 `LAB_EXTRA_MODEL_DAILY_LIMIT`회(기본 10)까지만 부릅니다.
 - 비교 평가(A/비슷/B)·곡별 표시(좋아요·별로예요·없는 곡)·메모는 이 브라우저의 `nowrecommend-lab-v1`에만 저장되고, 추천 기록·취향에는 반영하지 않습니다. 실험 기록에서 집계와 JSON 내려받기를 할 수 있습니다.
 - `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.

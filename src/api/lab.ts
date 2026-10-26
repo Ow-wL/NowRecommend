@@ -10,7 +10,8 @@ const text = (v: unknown, max: number) => typeof v === 'string' && v.trim() !== 
 export function validFreeBatch(v: any): v is FreeBatch {
   const m = v?.meta;
   return !!v && Array.isArray(v.results) && v.results.length <= 5
-    && v.results.every((s: any) => text(s?.title, 80) && text(s?.artist, 80) && text(s?.tasteReason, 60) && text(s?.contextReason, 60) && ['high', 'medium', 'low'].includes(s?.confidence))
+    // The server counts code points (80 and 50); JS counts UTF-16 units, so emoji take two here.
+    && v.results.every((s: any) => text(s?.title, 160) && text(s?.artist, 160) && text(s?.tasteReason, 120) && text(s?.contextReason, 120) && ['high', 'medium', 'low'].includes(s?.confidence))
     && !!m && m.mode === 'free' && typeof m.requestId === 'string' && ['used', 'failed', 'off'].includes(m.ai)
     && (m.model === null || typeof m.model === 'string') && (m.issues === null || typeof m.issues === 'string') && Number.isFinite(m.latencyMs);
 }

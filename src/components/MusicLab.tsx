@@ -48,6 +48,8 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
   const conflicts = conditionConflicts(session);
   const working = parsing || busy.pool || busy.free;
   const sides: LabSide[] = view === 'both' ? ['pool', 'free'] : [view];
+  // What the shown round actually ran; the view toggle only decides the next request.
+  const shown: LabSide[] = entry?.sides || (['pool', 'free'] as const).filter(side => entry?.[side]);
   const liked = profile.selected.map(id => items.find(i => i.id === id)?.name).filter(Boolean);
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
       setParsing(false); setSession(base);
       if (conditionConflicts(base).length) return;
       const round: LabEntry = { id: crypto.randomUUID(), date: new Date().toISOString(), raw: base.raw, conditions: structuredClone(base.conditions), likedText: liked,
-        round: again && entry ? entry.round + 1 : 1, marks: {} };
+        round: again && entry ? entry.round + 1 : 1, sides, marks: {} };
       latest.current = round; saveEntry(round);
       setPoolIds([]);
       for (const side of sides) {
@@ -99,7 +101,9 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
           })
           : fetchFreeSongs({ raw: base.raw, conditions: base.conditions, profile, likedText: liked, avoid, model: freeModel || undefined }).then(r => {
             const model = r.meta.model || undefined;
-            return r.meta.ai === 'used' ? { songs: r.results, ms: ms(), status: 'ok', detail: r.meta.issues || undefined, model } : { songs: [], ms: ms(), status: 'failed', detail: r.meta.ai === 'off' ? 'AI 꺼짐' : r.meta.issues || 'AI 응답 없음', model };
+            if (r.meta.ai === 'used') return { songs: r.results, ms: ms(), status: 'ok', detail: r.meta.issues || undefined, model };
+            const detail = r.meta.ai === 'off' ? 'AI 꺼짐' : r.meta.issues === 'daily_limit' ? '오늘 이 모델의 실험 사용량을 다 썼어요' : r.meta.issues || 'AI 응답 없음';
+            return { songs: [], ms: ms(), status: 'failed', detail, model };
           });
         request.catch(error => ({ songs: [], ms: ms(), status: 'failed' as const, detail: error instanceof Error ? error.message : '서버 오류' }))
           .then(answer => { if (t === token.current) land(round.id, side, answer); })
@@ -115,7 +119,9 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
       .catch(() => go(applyParsed(parsed, raw, null, { raw, source: 'local', unparsed: [] })));
   }
 
+  // Clicks read the newest round (latest), not the last render, so they never undo an answer that just landed.
   function mark(side: LabSide, song: LabSong, value: LabMark) {
+    const entry = latest.current;
     if (!entry) return;
     const key = markKey(side, song), marks = { ...entry.marks };
     if (marks[key] === value) delete marks[key]; else marks[key] = value;
@@ -125,7 +131,7 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
     if (side === 'pool' && poolIds[index]) setPoolExcluded(ids => marks[key] === 'bad' ? [...new Set([...ids, poolIds[index]])] : ids.filter(id => id !== poolIds[index]));
     if (side === 'free') setFreeAvoid(list => marks[key] === 'bad' || marks[key] === 'missing' ? [...new Set([...list, songLabel(song)])] : list.filter(l => l !== songLabel(song)));
   }
-  const vote = (value: LabVote) => entry && saveEntry({ ...entry, vote: entry.vote === value ? undefined : value });
+  const vote = (value: LabVote) => { const current = latest.current; if (current) saveEntry({ ...current, vote: current.vote === value ? undefined : value }); };
   function reset() { token.current++; setBusy({ pool: false, free: false }); setParsing(false); setSession(freshSession()); setEntry(null); setPoolIds([]); setPoolSeen([]); setPoolExcluded([]); setFreeAvoid([]); }
 
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
@@ -160,6 +166,7 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
           <div className="lab-meta">{answer.model && <span>{answer.model}</span>}<span>{answer.ms.toLocaleString()}ms</span><span>{answer.songs.length}곡</span>{answer.status === 'ok' && <span>AI 선택</span>}{answer.detail && answer.status === 'ok' && <span title="서버가 걸러낸 항목">정리: {answer.detail}</span>}</div>
           {answer.status === 'fallback' && <div className="notice warning" role="status"><Info size={18} /><div><strong>AI가 답하지 않아 유사도 순서로 보여드려요.</strong><p>{answer.detail}. 한도 초과나 응답 지연일 수 있어요.</p></div></div>}
           {answer.status === 'failed' && <div className="error-box" role="alert"><strong>AI가 곡을 추천하지 못했어요.</strong><p>{answer.detail}. 이 방식은 대체 결과가 없어요.</p></div>}
+          {answer.status === 'ok' && answer.songs.length === 0 && <div className="notice warning" role="status"><Info size={18} /><div><strong>AI가 답했지만 모두 걸러졌어요.</strong><p>이미 본 곡·비선호·취향 곡과 겹쳤어요{answer.detail ? ` (${answer.detail})` : ''}. 새 요청으로 다시 시작할 수 있어요.</p></div></div>}
           {side === 'free' && answer.songs.length > 0 && <p className="lab-caution"><Info size={14} />AI가 직접 고른 곡이에요. 실제로 있는 곡인지 검색으로 확인해주세요.</p>}
           <div className="lab-songs">{answer.songs.map((s, i) => songCard(side, s, i))}</div>
         </>}
@@ -219,12 +226,12 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
         <h2>{entry.raw || '직접 고른 조건'} <span className="count">{entry.round}회차</span></h2>
         <div className="mini-tags">{entry.conditions.tags.map(t => <span key={t}>{t}</span>)}{entry.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}</div>
       </div>
-      <div className={`lab-grid ${sides.length === 1 ? 'single' : ''}`}>{sides.map(column)}</div>
-      {sides.length === 2 && (entry.pool || entry.free) && !working && <section className="panel lab-vote">
+      <div className={`lab-grid ${shown.length === 1 ? 'single' : ''}`}>{shown.map(column)}</div>
+      {shown.length === 2 && (entry.pool || entry.free) && !working && <section className="panel lab-vote">
         <h2>이번 결과는 어느 쪽이 나았나요?</h2>
         <div className="lab-vote-buttons" role="group" aria-label="비교 평가">{([['pool', 'A가 나아요'], ['same', '비슷해요'], ['free', 'B가 나아요']] as const).map(([v, label]) => <button key={v} className={`button ${entry.vote === v ? 'primary' : 'secondary'}`} aria-pressed={entry.vote === v} onClick={() => vote(v)}>{label}</button>)}</div>
         <label className="field-title" htmlFor="lab-note">메모 <small>선택 사항</small></label>
-        <textarea id="lab-note" className="lab-note" maxLength={200} value={entry.note || ''} onChange={e => saveEntry({ ...entry, note: e.target.value })} placeholder="예: B가 더 다양했지만 한 곡은 검색해도 안 나왔어요" />
+        <textarea id="lab-note" className="lab-note" maxLength={200} value={entry.note || ''} onChange={e => { const current = latest.current; if (current) saveEntry({ ...current, note: e.target.value }); }} placeholder="예: B가 더 다양했지만 한 곡은 검색해도 안 나왔어요" />
       </section>}
       <div className="reroll-panel">
         <p>이미 본 곡과 ‘별로예요’·‘없는 곡이에요’로 표시한 곡은 빼고 다시 추천해요.</p>

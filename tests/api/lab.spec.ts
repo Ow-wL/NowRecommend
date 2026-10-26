@@ -87,3 +87,14 @@ test('shows a free-recommendation failure without hiding the pool answer', async
   await expect(page.getByRole('region', { name: 'AI 자유 추천' }).getByRole('alert')).toContainText('AI가 곡을 추천하지 못했어요.');
   await expect(page.getByRole('region', { name: 'AI 자유 추천' })).toContainText('TimeoutError');
 });
+
+test('votes only on rounds that ran both sides, whatever the toggle shows now', async ({ page }) => {
+  await setup(page);
+  await page.goto('/#/lab');
+  await page.getByRole('button', { name: 'A만' }).click();
+  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await expect(page.getByRole('region', { name: '저장된 곡 목록에서' }).locator('h3')).toHaveCount(5);
+  await page.getByRole('button', { name: '둘 다 나란히' }).click();
+  await expect(page.getByRole('region', { name: 'AI 자유 추천' })).toHaveCount(0);
+  await expect(page.getByText('이번 결과는 어느 쪽이 나았나요?')).toHaveCount(0);
+});

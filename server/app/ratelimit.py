@@ -49,5 +49,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def client_key(self, request: Request) -> str:
         forwarded = request.headers.get("x-forwarded-for", "")
         if self.trust_proxy and forwarded:
-            return forwarded.split(",")[0].strip()
+            # The left end is whatever the client sent (a spoofed header bypassed the limit, review 2026-10-26);
+            # the proxy appends the address it saw on the right.
+            return forwarded.split(",")[-1].strip()
         return request.client.host if request.client else "unknown"

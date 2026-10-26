@@ -19,7 +19,8 @@ SYSTEM = """너는 음식·음악 추천 서비스 '지금 추천'의 조건 해
 
 BUDGET_HINT = re.compile(r"[0-9]|원|만|천")
 # Words that ask to leave something out; diets name whole groups without one of them.
-EXCLUSION_HINT = re.compile(rf"{EXCLUDE}|비건|채식|베지")
+# Words that ask to leave something out ("록 말고"); only music needs one before a model exclusion is trusted.
+EXCLUSION_HINT = re.compile(rf"{EXCLUDE}|알러지|불내증|금지|프리|안\s*들어|안\s*돼|비건|채식|베지|할랄")
 
 
 @dataclass
@@ -60,15 +61,19 @@ def ai_parse(model: JsonModel, category: str, sentence: str, vocab: CategoryVoca
     return AiParse(values("wanted", vocab.conditionTags), values("excluded", vocab.exclusions), price if valid_price else None, unparsed)
 
 
-def merge(rule_conditions: dict, ai: AiParse, sentence: str) -> dict:
+def merge(rule_conditions: dict, ai: AiParse, sentence: str, category: str) -> dict:
     """Exclusions: union (excluding more is the safe side). Tags: union, an exclusion wins.
     Budget: the rule parser first (its expressions are regression-tested), the model only fills a gap.
 
-    A model-only exclusion needs a word that asks to leave something out, and must not also be one of the
-    model's wanted tags: 2026-10-26 Lite read "에너지 넘치는 록" as excluding 록, which would hide exactly
-    what was asked for."""
-    asks_out = bool(EXCLUSION_HINT.search(sentence))
-    ai_excluded = [e for e in ai.excluded if asks_out and e not in ai.tags]
+    Food keeps every model exclusion: those are allergies and diets the rules missed ("땅콩 알러지", "글루텐
+    프리"), or a misread the model corrects ("안 매운" read as 매콤함), and excluding more is the safe side.
+    A music exclusion from the model needs a word that asks to leave something out and must not be one of the
+    model's own wanted tags: 2026-10-26 Lite read "에너지 넘치는 록" as excluding 록, which hid exactly what
+    was asked for."""
+    if category == "food":
+        ai_excluded = ai.excluded
+    else:
+        ai_excluded = [e for e in ai.excluded if EXCLUSION_HINT.search(sentence) and e not in ai.tags]
     excluded = list(dict.fromkeys([*rule_conditions["excluded"], *ai_excluded]))
     tags = [t for t in dict.fromkeys([*rule_conditions["tags"], *ai.tags]) if t not in excluded]
     max_price = rule_conditions["maxPrice"] if rule_conditions["maxPrice"] is not None else ai.max_price

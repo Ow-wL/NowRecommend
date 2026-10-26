@@ -98,7 +98,13 @@ def test_overloaded_batches_are_retried_but_spent_quota_is_not():
     model = Model([Overloaded(503), CoolingDown("retry after 9s")])
     assert _request_with_retry(model, "food", [DraftInput("우동", None)], get_vocab().food, 2, 15, waits.append) == []
     assert model.calls == 3 and waits == [15, 15]
-    quota = Model([Overloaded(429)])
-    with pytest.raises(Overloaded):
-        _request_with_retry(quota, "food", [DraftInput("우동", None)], get_vocab().food, 2, 15, waits.append)
-    assert quota.calls == 1
+    for error in (Overloaded(429), CoolingDown("retry after 3600s", quota=True)):
+        quota = Model([error])
+        with pytest.raises(type(error)):
+            _request_with_retry(quota, "food", [DraftInput("우동", None)], get_vocab().food, 2, 15, waits.append)
+        assert quota.calls == 1
+
+
+def test_letters_are_not_accepted_as_emoji():
+    item, _, error = clean_draft("food", DraftInput("팟타이", None), food_answer("팟타이", emoji="pad "), FOOD)
+    assert error is None and item["emoji"] == "🍽️"

@@ -82,6 +82,18 @@ def seed_items(session: Session, vocab: Vocab, items: list[dict]) -> SeedResult:
     return result
 
 
+def retire_unpublished(session: Session, published_ids: Iterable[str]) -> list[str]:
+    """Reviewed non-seed items missing from reviewed_items.json are taken out of the catalog ('rejected'), so
+    removing an item from the published file also removes it from a deployed DB that already has it."""
+    keep = set(published_ids)
+    rows = [r for r in session.scalars(select(Item).where(Item.status == "reviewed", Item.source != "seed")) if r.id not in keep]
+    for row in rows:
+        row.status = "rejected"
+        row.review_notes = [*row.review_notes, "reviewed_items.json에서 빠져 카탈로그에서 내림"]
+    session.commit()
+    return [r.id for r in rows]
+
+
 def refresh_embeddings(session: Session, embedder: Embedder, force: bool = False, dry_run: bool = False) -> list[str]:
     """Embed reviewed items whose text, model or dimension changed. Returns the ids that were (or would be) embedded."""
     rows = session.scalars(select(Item).where(Item.status == "reviewed").order_by(Item.id)).all()

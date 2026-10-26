@@ -2,6 +2,9 @@
 import logging
 import time
 import uuid
+from collections import Counter
+from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -21,7 +24,8 @@ from ..vocab import get_vocab
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-Label = Annotated[str, StringConstraints(min_length=1, max_length=120)]
+# "title - artist" built from names of up to 80 characters each (llm/free.py NAME_LIMIT).
+Label = Annotated[str, StringConstraints(min_length=1, max_length=170)]
 
 
 class FreeRequest(BaseModel):
@@ -57,6 +61,26 @@ def free_models(models: dict[str, JsonModel] = Depends(get_free_models)):
     return {"models": list(models)}
 
 
+class DailyCap:
+    """Per-model call counts for the current UTC day, in process memory (the API runs as one instance)."""
+
+    def __init__(self, today=lambda: datetime.now(timezone.utc).date()):
+        self.today, self.day, self.counts = today, None, Counter()
+
+    def take(self, name: str, limit: int) -> bool:
+        if self.day != self.today():
+            self.day, self.counts = self.today(), Counter()
+        if limit and self.counts[name] >= limit:
+            return False
+        self.counts[name] += 1
+        return True
+
+
+@lru_cache
+def get_daily_cap() -> DailyCap:
+    return DailyCap()
+
+
 def song_labels(session: Session, ids: list[str]) -> list[str]:
     if not ids:
         return []
@@ -66,15 +90,19 @@ def song_labels(session: Session, ids: list[str]) -> list[str]:
 
 
 @router.post("/api/lab/music/free")
-def free_route(request: FreeRequest, session: Session = Depends(get_session), models: dict[str, JsonModel] = Depends(get_free_models)):
+def free_route(request: FreeRequest, session: Session = Depends(get_session), models: dict[str, JsonModel] = Depends(get_free_models),
+               cap: DailyCap = Depends(get_daily_cap)):
     started = time.perf_counter()
     if request.model is not None and models and request.model not in models:
         raise HTTPException(422, f"사용할 수 없는 모델: {request.model}")
-    model = models.get(request.model) if request.model else next(iter(models.values()), None)
+    name = request.model or next(iter(models), None)
+    model = models.get(name) if name else None
     liked, disliked = song_labels(session, request.profile.selected), song_labels(session, request.profile.disliked)
     meta = {"mode": "free", "requestId": str(uuid.uuid4()), "model": model.model if model else None, "ai": "off", "issues": None}
     results: list[dict] = []
-    if model is not None:
+    if model is not None and name != next(iter(models)) and not cap.take(name, get_settings().lab_extra_model_daily_limit):
+        meta["ai"], meta["issues"] = "failed", "daily_limit"
+    elif model is not None:
         meta["ai"] = "failed"
         payload = build_payload(request.raw, request.conditions.tags, request.conditions.excluded, liked, request.profile.tags,
                                 request.likedText, disliked, request.avoid, request.count)
@@ -82,9 +110,8 @@ def free_route(request: FreeRequest, session: Session = Depends(get_session), mo
             validation = validate_free(recommend_free(model, payload), request.count, [*request.avoid, *disliked, *liked])
             results = [{"title": p.title, "artist": p.artist, "tasteReason": p.taste_reason, "contextReason": p.context_reason,
                         "confidence": p.confidence} for p in validation.picks]
-            meta["issues"] = validation.summary()
-            if results:
-                meta["ai"] = "used"
+            # The model answered: "used" even if every pick was filtered out (issues says why).
+            meta["ai"], meta["issues"] = "used", validation.summary()
         except Exception as exc:  # Timeouts, 5xx, quota, bad JSON: the lab shows the failure instead of hiding it.
             log.warning("free recommendation failed: %s", exc)
             meta["issues"] = type(exc).__name__

@@ -5,7 +5,7 @@ from app.catalog import load_seed, seed_items
 from app.db import get_session
 from app.llm.free import song_key, validate_free
 from app.main import create_app
-from app.routes.lab import get_free_models
+from app.routes.lab import DailyCap, get_daily_cap, get_free_models
 from app.vocab import get_vocab
 from tests.conftest import needs_db
 
@@ -115,3 +115,38 @@ def test_free_route_uses_the_requested_lab_model_only(catalog):
         answer = client.post("/api/lab/music/free", json={"count": 1, "model": "flash"}).json()
         assert answer["results"][0]["title"] == "B" and answer["meta"]["model"] == "flash"
         assert client.post("/api/lab/music/free", json={"model": "gpt"}).status_code == 422
+
+
+def test_daily_cap_resets_each_day():
+    day = ["2026-10-26"]
+    cap = DailyCap(today=lambda: day[0])
+    assert [cap.take("flash", 2) for _ in range(3)] == [True, True, False]
+    assert cap.take("lite", 2)
+    day[0] = "2026-10-27"
+    assert cap.take("flash", 2)
+    assert all(cap.take("free", 0) for _ in range(50))
+
+
+@pytest.mark.db
+@needs_db
+def test_extra_lab_models_stop_at_the_daily_cap_and_filtered_answers_count_as_used(catalog):
+    lite, flash = FakeModel({"picks": [pick("밤편지", "아이유")]}), FakeModel({"picks": [pick("B")]})
+    lite.model, flash.model = "lite", "flash"
+    app = create_app()
+    app.dependency_overrides[get_session] = lambda: catalog
+    app.dependency_overrides[get_free_models] = lambda: {"lite": lite, "flash": flash}
+    cap = DailyCap()
+    app.dependency_overrides[get_daily_cap] = lambda: cap
+    with TestClient(app) as client:
+        cap.counts["flash"], cap.day = 10, cap.today()
+        refused = client.post("/api/lab/music/free", json={"count": 1, "model": "flash"}).json()
+        assert refused["meta"]["issues"] == "daily_limit" and refused["results"] == [] and flash.payloads == []
+        # The default model has no cap; an answer whose every pick is blocked is still a model answer.
+        blocked = client.post("/api/lab/music/free", json={"count": 1, "avoid": ["밤편지 - 아이유"]}).json()
+        assert blocked["meta"]["ai"] == "used" and blocked["results"] == [] and "blocked=1" in blocked["meta"]["issues"]
+
+
+def test_long_avoid_labels_fit_the_name_limit():
+    from app.routes.lab import FreeRequest
+    label = f"{'가' * 80} - {'나' * 80}"
+    assert FreeRequest(avoid=[label]).avoid == [label]

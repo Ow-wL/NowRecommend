@@ -45,7 +45,12 @@ class GeminiJsonModel:
 
 
 class CoolingDown(RuntimeError):
-    """Raised instead of calling the model while a 429/503 back-off is in effect."""
+    """Raised instead of calling the model while a 429/503 back-off is in effect. `quota` tells a spent quota
+    (429, long) from an overload (503, seconds), so callers can retry only the latter."""
+
+    def __init__(self, message: str, quota: bool = False):
+        super().__init__(message)
+        self.quota = quota
 
 
 class CooldownModel:
@@ -58,19 +63,19 @@ class CooldownModel:
     def __init__(self, inner: JsonModel, clock=time.monotonic, default_429: float = 30.0, default_503: float = 10.0):
         self.inner, self.clock, self.default_429, self.default_503 = inner, clock, default_429, default_503
         self.model = inner.model
-        self.until = 0.0
+        self.until, self.quota = 0.0, False
 
     def generate_json(self, system: str, payload: dict, schema: dict) -> dict:
         if self.clock() < self.until:
-            raise CoolingDown(f"retry after {self.until - self.clock():.0f}s")
+            raise CoolingDown(f"retry after {self.until - self.clock():.0f}s", quota=self.quota)
         try:
             return self.inner.generate_json(system, payload, schema)
         except Exception as exc:
             code = getattr(exc, "code", None)
             if code == 429:
-                self.until = self.clock() + retry_delay(str(exc), self.default_429)
+                self.until, self.quota = self.clock() + retry_delay(str(exc), self.default_429), True
             elif code == 503:
-                self.until = self.clock() + self.default_503
+                self.until, self.quota = self.clock() + self.default_503, False
             raise
 
 
