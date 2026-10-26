@@ -35,7 +35,7 @@ test('rerolls show unseen menus first, say when they do not match, and only then
     names.forEach(n => seen.add(n));
     if (round < 6) await expect(page.getByText('새로운 후보를 모두 살펴봤어요.', { exact: true })).toHaveCount(0);
     if (round === 2) {
-      await expect(page.locator('.notice').filter({ hasText: '고른 조건(국물)에 맞는 새 후보가 부족해요.' })).toContainText('이번 후보 중 1개는 고른 조건과 겹치지 않아요.');
+      await expect(page.locator('.notice').filter({ hasText: '고른 조건(국물)에 맞는 새 후보가 부족해요.' })).toContainText('이번 후보 중 1개는 등록 특징에 고른 조건이 없어요.');
       await page.screenshot({ path: 'artifacts/review-fix-reroll.png', fullPage: true });
     }
   }

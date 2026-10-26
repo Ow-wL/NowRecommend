@@ -348,10 +348,19 @@ export function replaceCandidate(session:Session,profile:Profile,id:string):Sess
 export function candidateInfo(session: Session, profile: Profile, catalog: Item[] = catalogItems()) {
   return { count: eligibleCandidates(session, profile, catalog).length };
 }
-/** How one card meets each condition of the request, for comparing cards at a glance. Exclusions always hold (they
- * filter candidates), except a group the data only covers in part ("해산물"), which stays "partial". */
-export type ConditionCheck = { label: string; state: 'met' | 'unmet' | 'partial' };
+/** How one card meets each condition of the request, for comparing cards at a glance.
+ * - Wanted situations and moods ("want") only rank candidates. "met" means the item's registered tags include it;
+ *   "untagged" only means they do not, which is not the same as not fitting: an AI reason may still judge that it fits
+ *   from the description ("과제할 때 어울려요" for a song without the 과제 tag, 2026-10-27). No tag is ever inferred here.
+ * - Exclusions ("exclude") filter candidates, so they always hold, except a group the data only covers in part
+ *   ("해산물"), which stays "partial". */
+export type ConditionCheck = { label: string; kind: 'want' | 'exclude'; state: 'met' | 'untagged' | 'partial' };
 export function conditionChecks(item: Item, conditions: Conditions): ConditionCheck[] {
-  return [...conditions.tags.map(t => ({ label: t, state: item.tags.includes(t) ? 'met' as const : 'unmet' as const })),
-    ...conditions.excluded.map(v => exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외`, state: 'met' as const })];
+  return [...conditions.tags.map(t => ({ label: t, kind: 'want' as const, state: item.tags.includes(t) ? 'met' as const : 'untagged' as const })),
+    ...conditions.excluded.map(v => ({ kind: 'exclude' as const, ...exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외`, state: 'met' as const } }))];
+}
+/** What a check says, for screen readers and the comparison table. */
+export function checkText(c: ConditionCheck): string {
+  if (c.kind === 'exclude') return c.state === 'partial' ? c.label : `${c.label} 적용`;
+  return c.state === 'met' ? `${c.label} 특징 있음` : `${c.label} 특징 미등록`;
 }

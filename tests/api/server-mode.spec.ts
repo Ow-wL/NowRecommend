@@ -165,3 +165,22 @@ test('says when the server answered without the AI or the sentence meaning', asy
   await expect(page.locator('.result-grid h3').first()).toHaveText(food('f01').name);
   await expect(page.getByText('기본 방식으로 추천했어요.')).toHaveCount(0);
 });
+
+// 2026-10-27: the AI wrote "과제할 때 어울려요" for a song without the 과제 tag while the card read "– 과제" (해당 없음).
+// A missing tag now reads "미등록" and never "해당 없음"; the reason stays the server's, and no tag is added.
+test('a wanted condition missing from the item tags reads as not registered, not as unmet', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const tagged = items.filter(i => i.category === 'food' && i.tags.includes('혼자'))[0], untagged = items.filter(i => i.category === 'food' && !i.tags.includes('혼자'))[0];
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { ...batch([tagged.id, untagged.id]), results: [tagged, untagged].map(item => ({ item, tasteReason: '좋아하는 맛에 가까워요', contextReason: '혼자 먹기 좋아요' })) }));
+  await submitSentence(page, '혼자 먹을 메뉴');
+  const card = page.locator('.item-card').filter({ has: page.getByRole('heading', { name: untagged.name, exact: true }) });
+  const check = card.locator('.condition-checks li.untagged');
+  await expect(check).toHaveText(/혼자 미등록/);
+  await expect(check.locator('.sr-only')).toHaveText('혼자 특징 미등록');
+  await expect(check).toHaveAttribute('title', /맞지 않는다는 뜻은 아니에요/);
+  await expect(card.locator('.reasons')).toContainText('혼자 먹기 좋아요');
+  await expect(page.locator('.item-card').filter({ has: page.getByRole('heading', { name: tagged.name, exact: true }) }).locator('.condition-checks li.met .sr-only')).toHaveText('혼자 특징 있음');
+  await expect(page.locator('.check-legend')).toContainText('미등록은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요.');
+  await expect(page.getByText('해당 없음')).toHaveCount(0);
+  expect(untagged.tags).not.toContain('혼자');
+});

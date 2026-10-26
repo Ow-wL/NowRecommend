@@ -1,8 +1,8 @@
-import { conditionChecks, type Conditions, type Recommendation } from '../domain';
+import { checkText, conditionChecks, type Conditions, type Recommendation } from '../domain';
 // Side by side on what can be checked: traits, ingredients or artist, how each card meets the request, and the reasons.
 export function Comparison({results,conditions,onChoose}: {results:Recommendation[];conditions?:Conditions;onChoose:(r:Recommendation)=>void}) {
   const food = results[0]?.item.category === 'food';
-  const checks = (r:Recommendation) => conditions ? conditionChecks(r.item,conditions).map(c=>`${c.state==='met'?'✓':c.state==='partial'?'일부 확인':'–'} ${c.label}`).join(' · ') || '조건 없음' : '조건 없음';
+  const checks = (r:Recommendation) => conditions ? conditionChecks(r.item,conditions).map(checkText).join(' · ') || '조건 없음' : '조건 없음';
   const rows:{name:string;value:(r:Recommendation)=>string}[]=[
     {name:'주요 특성',value:r=>r.item.tags.join(' · ') || '미등록'},
     {name:food?'등록 재료':'아티스트',value:r=>food?r.item.ingredients.join(' · ') || '미등록':r.item.subtitle || '미등록'},

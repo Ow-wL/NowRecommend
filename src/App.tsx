@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Columns2, FlaskConical, Headphones, Heart, House, Info, LogOut, MapPin, Music2, Play, RefreshCw, Search, Settings2, SlidersHorizontal, Sparkles, ThumbsUp, Trash2, Utensils, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Columns2, FlaskConical, Headphones, Heart, House, Info, LogOut, MapPin, Music2, Play, RefreshCw, Search, Settings2, SlidersHorizontal, Sparkles, ThumbsUp, Trash2, Utensils, X } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -453,7 +453,8 @@ export default function App() {
           {/* Repeats are judged against what is really left unseen, not by this round's new count alone. */}
           {repeatedCount > 0 && <div className="notice" role="status"><Info size={18} /><div>{unseenLeft === 0 ? <><strong>{session.batchNewCount === 0 ? '새로운 후보를 모두 살펴봤어요.' : `새 후보 ${session.batchNewCount}개 + 이전 후보 ${repeatedCount}개`}</strong><p>조건에 맞는 후보를 모두 보여드려서 이전 후보를 다시 보여드려요. 조건을 바꾸거나 새 요청을 시작할 수 있어요.</p></>
             : <><strong>이전에 본 후보 {repeatedCount}개를 다시 보여드려요.</strong><p>아직 보지 않은 후보가 {unseenLeft}개 남아 있어요. 다른 추천 보기로 이어서 볼 수 있어요.</p></>}</div></div>}
-          {offTopicCount > 0 && <div className="notice" role="status"><Info size={18} /><div><strong>고른 조건({session.conditions.tags.join(' · ')})에 맞는 새 후보가 부족해요.</strong><p>{offTopicCount === results.length ? '이번 후보는 모두' : `이번 후보 중 ${offTopicCount}개는`} 고른 조건과 겹치지 않아요. 카드의 조건 확인에서 차이를 볼 수 있어요.</p></div></div>}
+          {offTopicCount > 0 && <div className="notice" role="status"><Info size={18} /><div><strong>고른 조건({session.conditions.tags.join(' · ')})에 맞는 새 후보가 부족해요.</strong><p>{offTopicCount === results.length ? '이번 후보는 모두' : `이번 후보 중 ${offTopicCount}개는`} 등록 특징에 고른 조건이 없어요. 카드의 조건 확인에서 차이를 볼 수 있어요.</p></div></div>}
+          {session.conditions.tags.length > 0 && results.length > 0 && <p className="check-legend"><Check size={13} strokeWidth={3} aria-hidden="true" /> 확인됨 · <CircleDashed size={13} aria-hidden="true" /> 미등록은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요. 상황·분위기는 순서에 참고하고, 제외 조건은 항상 지켜요.</p>}
           <div className={`result-grid ${category}`}>{results.map((r, index) => itemCard(r.item, r, category === 'music' ? index + 1 : undefined))}</div>
           {requestError && <div className="error-box" role="alert">{requestError === 'server' ? <><strong>추천 서버에 연결하지 못했어요.</strong><p>아래 버튼으로 다시 시도하거나 기본 방식으로 추천받을 수 있어요.</p><button className="text-button" disabled={busy} onClick={() => run(true, true, true)}>기본 추천으로 보기 <ArrowRight size={14} /></button></> : '재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.'}</div>}
           <div className="reroll-panel">
@@ -475,8 +476,8 @@ export default function App() {
         <h1>선택을 기록했어요</h1>
         <p>{chosen.category === 'food' ? '이제 먹으러 가볼까요? 아래 검색은 외부 서비스로 연결돼요.' : '이제 들어볼까요? 외부 서비스에서 열려요.'}</p>
         <section className="panel completion-panel">
-          <ItemArt item={chosen} size="hero" />
-          <div className="item-head"><div className="item-title"><h2>{chosen.name}</h2><p className="item-subtitle">{chosen.subtitle}</p></div></div>
+          {/* Name and next actions come first; a full-width photo pushed them below the fold on a 1280×800 screen. */}
+          <div className={`chosen-summary ${chosen.category}`}><ItemArt item={chosen} size="tile" /><div className="item-title"><h2>{chosen.name}</h2><p className="item-subtitle">{chosen.subtitle}</p></div></div>
           <div className="next-actions" role="group" aria-label="다음 할 일">
             {chosen.category === 'food' ? <>
               <a className="button primary" href={mapSearch(chosen)} target="_blank" rel="noopener noreferrer"><MapPin size={17} />네이버 지도에서 {chosen.name} 검색 (새 탭)</a>

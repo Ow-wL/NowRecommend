@@ -310,7 +310,10 @@ input[type=checkbox] { accent-color: var(--accent-fill); }
 .condition-checks { list-style: none; padding: 0; margin: var(--space-3) 0 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; line-height: 20px; }
 .condition-checks li { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
 .condition-checks li.met svg { color: var(--success); }
-.condition-checks li.unmet { color: var(--text-muted); }
+.condition-checks li.untagged { color: var(--text-muted); }
+.check-legend { margin: 0 0 var(--space-3); font-size: 13px; line-height: 20px; color: var(--text-muted); }
+.check-legend svg { vertical-align: -2px; }
+.check-legend svg:first-child { color: var(--success); }
 .condition-checks li.partial { color: var(--warning); }
 .pin-badge { display: inline-flex; align-items: center; gap: 4px; align-self: center; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--bg-selected); padding: 4px 8px; border-radius: 999px; }
 .reasons { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-3) 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: 14px; background: var(--bg-elevated); }
@@ -392,7 +395,10 @@ input[type=checkbox] { accent-color: var(--accent-fill); }
 .success-badge { display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 24px; background: var(--bg-success); color: var(--success); margin-bottom: var(--space-4); }
 .completion > h1 { margin-bottom: var(--space-2); }
 .completion-panel { margin-top: var(--space-6); text-align: left; }
-.completion-panel .item-head { margin-bottom: var(--space-4); }
+.chosen-summary { display: grid; grid-template-columns: 184px minmax(0, 1fr); gap: var(--space-5); align-items: center; margin-bottom: var(--space-5); }
+.chosen-summary.music { grid-template-columns: 136px minmax(0, 1fr); }
+.chosen-summary .item-title h2 { font-size: 22px; line-height: 30px; }
+.chosen-summary.music .item-art.tile { box-shadow: var(--shadow-raised); }
 .completion-context { font-size: 14px; margin-top: var(--space-2); }
 .completion-panel .card-actions { margin-top: var(--space-5); flex-direction: column; align-items: stretch; }
 .next-actions { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
@@ -744,15 +750,17 @@ input::file-selector-button { min-height: 40px; color: var(--text-primary); back
 .selection-grid .selection-name { padding: 0 6px; }
 .selection-grid .selection-name b, .selection-grid .selection-name small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .selection-grid .selection-card.selected { background: var(--bg-selected); border-color: var(--accent-fill); }
-/* Details and completion lead with the big image. */
+/* Details lead with the big image; completion leads with the name and next actions (.chosen-summary). */
 .details-art { margin: 0 0 var(--space-4); }
 .details-art figcaption { margin-top: var(--space-2); font-size: 12px; color: var(--text-muted); text-align: center; }
 .details-art figcaption a { color: inherit; text-decoration: underline; }
 .listen-links { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin: 0 0 var(--space-4); }
-.completion-panel > .item-art.hero { margin-bottom: var(--space-5); }
 .item-card.lab-song .item-head { gap: var(--space-3); }
 .item-card.lab-song .item-art.thumb { width: 52px; height: 52px; }
 @media (max-width: 639px) {
+  .chosen-summary { grid-template-columns: 112px minmax(0, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+  .chosen-summary.music { grid-template-columns: 96px minmax(0, 1fr); }
+  .chosen-summary .item-title h2 { font-size: 19px; line-height: 26px; }
   .item-card:not(.music) > .item-art, .item-card:not(.music) > .item-art-link { margin: calc(-1 * var(--space-4) - 2px) calc(-1 * var(--space-4) - 2px) var(--space-3); }
   .item-card.music .item-art.thumb { width: 52px; height: 52px; }
   .selection-grid, .selection-grid.music { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }

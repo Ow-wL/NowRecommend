@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { capFamiliar, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session } from './domain';
+import { capFamiliar, checkText, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session } from './domain';
 import { items } from './data';
 const session = (changes: Partial<Session> = {}): Session => ({ category: 'food', raw: '', conditions: emptyConditions(), excludedIds: [], revision: 0, ...changes });
 describe('recommendation invariants', () => {
@@ -67,7 +67,11 @@ describe('discovery and reasons', () => {
   });
   it('marks how a card meets each condition, and 해산물 only in part', () => {
     const dakgomtang = items.find(i => i.id === 'f02')!;
-    expect(conditionChecks(dakgomtang, { tags: ['혼자', '점심'], excluded: ['매콤함', '해산물'] })).toEqual([
-      { label: '혼자', state: 'met' }, { label: '점심', state: 'unmet' }, { label: '맵지 않음', state: 'met' }, { label: '해산물 일부 확인', state: 'partial' }]);
+    const checks = conditionChecks(dakgomtang, { tags: ['혼자', '점심'], excluded: ['매콤함', '해산물'] });
+    expect(checks).toEqual([
+      { label: '혼자', kind: 'want', state: 'met' }, { label: '점심', kind: 'want', state: 'untagged' },
+      { label: '맵지 않음', kind: 'exclude', state: 'met' }, { label: '해산물 일부 확인', kind: 'exclude', state: 'partial' }]);
+    // A missing tag is "not registered", never "does not fit": the reason may still say it fits.
+    expect(checks.map(checkText)).toEqual(['혼자 특징 있음', '점심 특징 미등록', '맵지 않음 적용', '해산물 일부 확인']);
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Ban, Check, Columns2, ExternalLink, Heart, Info, MapPin, Minus, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
+import { AlertTriangle, Ban, Check, CircleDashed, Columns2, ExternalLink, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
 import type { Item } from '../data';
-import { NO_TASTE_REASON, type ConditionCheck } from '../domain';
+import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
 import { mapSearch, mediaFor, songLink, youtubeSearch } from '../media';
 import { ItemArt } from './ItemArt';
 
@@ -36,9 +36,11 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
         <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={19} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
       </div>
     </div>
-    {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={c.state}>
-      {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <Minus size={13} aria-hidden="true" />}
-      <span>{c.label}</span><span className="sr-only">{c.state === 'met' ? ' 충족' : c.state === 'partial' ? ' 일부만 확인' : ' 해당 없음'}</span></li>)}</ul>}
+    {/* A missing tag reads "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits. */}
+    {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}
+      title={c.state === 'untagged' ? `이 ${music ? '곡' : '메뉴'}의 등록 특징에 ‘${c.label}’ 표시가 없어요. 맞지 않는다는 뜻은 아니에요.` : undefined}>
+      {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}
+      <span aria-hidden="true">{c.state === 'untagged' ? `${c.label} 미등록` : c.label}</span><span className="sr-only">{checkText(c)}</span></li>)}</ul>}
     {/* Without a registered taste the list says so once above the cards; repeating it on every card is noise. */}
     {reasons ? <div className="reasons">{reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}<p><b>이번 상황</b>{reasons.contextReason}</p>{reasons.contrast && <p className="contrast"><b>다른 후보와 비교</b>{reasons.contrast}</p>}</div> : <>
       <div className="mini-tags">{item.tags.slice(0, 3).map(t => <span key={t}>{t}</span>)}</div>
