@@ -5,7 +5,8 @@ import type { Item } from './data';
 // iTunes Search API with the track's Apple Music page (server/app/cli/media.py). Images load from those hosts; an
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
-export type Media = { image: string; source: 'itunes' | 'commons'; link?: string; credit?: Credit };
+// `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
+export type Media = { image: string; source: 'itunes' | 'commons'; link?: string; album?: string; credit?: Credit };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;
@@ -23,4 +24,12 @@ export function findSong(items: Item[], title: string, artist: string): Item | u
   return items.find(i => i.category === 'music' && norm(i.name) + '|' + norm(i.subtitle) === key);
 }
 
+/** A song page to listen on, or undefined: then the UI offers a search and never builds a guessed song link. */
+export function songLink(id: string): string | undefined {
+  const link = mediaFor(id)?.link;
+  return link && /^https:\/\/music\.apple\.com\/[a-z]{2}\/song\//.test(link) ? link : undefined;
+}
+// Search pages, not seller integrations: they show what the services list, without availability, price or delivery checks.
+export const mapSearch = (item: Pick<Item, 'name'>) => `https://map.naver.com/p/search/${encodeURIComponent(item.name)}`;
+export const recipeSearch = (item: Pick<Item, 'name'>) => `https://www.10000recipe.com/recipe/list.html?q=${encodeURIComponent(item.name)}`;
 export const youtubeSearch = (item: Pick<Item, 'name' | 'subtitle'>) => `https://www.youtube.com/results?search_query=${encodeURIComponent(item.subtitle + ' ' + item.name)}`;

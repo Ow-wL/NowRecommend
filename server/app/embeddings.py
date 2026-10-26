@@ -21,7 +21,6 @@ class EmbeddableItem(Protocol):
     description: str
     tags: list[str]
     ingredients: list[str]
-    price_label: str | None
 
 
 def document_text(item: EmbeddableItem) -> str:
@@ -30,8 +29,6 @@ def document_text(item: EmbeddableItem) -> str:
         parts = [f"음식. {item.description}", f"맛·특징: {tags}."]
         if item.ingredients:
             parts.append(f"재료: {', '.join(item.ingredients)}.")
-        if item.price_label:
-            parts.append(f"참고 가격: {item.price_label}.")
         return f"title: {item.name} | text: {' '.join(parts)}"
     title = f"{item.name} - {item.artist}" if item.artist else item.name
     return f"title: {title} | text: 음악. {item.description} 분위기·장르: {tags}."

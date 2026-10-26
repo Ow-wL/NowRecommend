@@ -9,5 +9,6 @@ WORKDIR /srv/server
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status == 200 else 1)"
-# Migrations are idempotent, so applying them on every start keeps local stacks current.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Expand migrations only: a contract migration (e.g. 0003 dropping the price columns) would break an older revision
+# still running or kept for rollback, so it waits for `python -m app.cli.migrate --contract` (DEPLOY.md §0).
+CMD ["sh", "-c", "python -m app.cli.migrate && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

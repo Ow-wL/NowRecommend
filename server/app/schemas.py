@@ -10,9 +10,9 @@ Tag = Annotated[str, StringConstraints(min_length=1, max_length=20)]
 
 
 class Conditions(BaseModel):
+    """No budget: price was removed on 2026-10-27. A `maxPrice` from an older client is ignored (extra fields are dropped)."""
     tags: Annotated[list[Tag], Field(max_length=30)] = []
     excluded: Annotated[list[Tag], Field(max_length=30)] = []
-    maxPrice: Annotated[int, Field(ge=100, le=1_000_000)] | None = None
 
 
 class Profile(BaseModel):

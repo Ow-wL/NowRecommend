@@ -10,18 +10,18 @@ from app.vocab import get_vocab
 
 def item(**overrides):
     base = dict(category="food", name="쌀국수", artist=None, description="따뜻한 국물.", tags=["담백함", "국물"],
-                ingredients=["소고기", "밀"], price_label="9,000–12,000원")
+                ingredients=["소고기", "밀"])
     return SimpleNamespace(**{**base, **overrides})
 
 
 def test_food_document_text_carries_features_for_similarity():
     text = document_text(item())
     assert text.startswith("title: 쌀국수 | text: 음식.")
-    assert "담백함, 국물" in text and "소고기, 밀" in text and "9,000–12,000원" in text
+    assert "담백함, 국물" in text and "소고기, 밀" in text and "가격" not in text and "원" not in text
 
 
 def test_music_document_text_names_artist():
-    text = document_text(item(category="music", name="밤편지", artist="아이유", tags=["차분함"], ingredients=[], price_label=None))
+    text = document_text(item(category="music", name="밤편지", artist="아이유", tags=["차분함"], ingredients=[]))
     assert text == "title: 밤편지 - 아이유 | text: 음악. 따뜻한 국물. 분위기·장르: 차분함."
 
 
@@ -70,7 +70,18 @@ def test_seed_file_passes_validation():
     assert [e for i in items for e in validate_item(get_vocab(), i)] == []
 
 
-@pytest.mark.parametrize("change, error", [({"tags": ["없는태그"]}, "태그"), ({"cost": None}, "기준 가격"), ({"category": "drink"}, "분야")])
+def test_every_catalog_ingredient_can_be_excluded():
+    # "참깨는 빼줘" vanished because 참깨 was a recorded ingredient but no exclusion word (review 2026-10-27).
+    from app.catalog import REVIEWED_FILE
+    items = load_seed(SEED_FILE) + load_seed(REVIEWED_FILE)
+    recorded = {i for item in items for i in item["ingredients"]}
+    assert recorded <= set(get_vocab().food.excludableIngredients)
+    assert [e for i in load_seed(REVIEWED_FILE) for e in validate_item(get_vocab(), i)] == []
+    food = next(i for i in items if i["category"] == "food")
+    assert any("제외 어휘에 없는 재료" in e for e in validate_item(get_vocab(), {**food, "ingredients": [*food["ingredients"], "고수"]}))
+
+
+@pytest.mark.parametrize("change, error", [({"tags": ["없는태그"]}, "태그"), ({"name": " "}, "필수 필드"), ({"category": "drink"}, "분야")])
 def test_validation_rejects_bad_items(change, error):
     bad = {**load_seed(SEED_FILE)[0], **change}
     assert any(error in e for e in validate_item(get_vocab(), bad))

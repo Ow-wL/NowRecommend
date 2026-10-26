@@ -68,7 +68,7 @@ def test_catalog_api_matches_frontend_item_shape(db_session):
     assert len(everything["items"]) == 31 and len(food["items"]) == 16 and len(music["items"]) == 15
     assert everything["catalogVersion"] == food["catalogVersion"] == music["catalogVersion"]
     f01 = next(i for i in food["items"] if i["id"] == "f01")
-    assert f01["price"] == seed["f01"]["price_label"] and f01["cost"] == seed["f01"]["cost"]
+    assert "price" not in f01 and "cost" not in f01 and f01["subtitle"] == "담백함 · 따뜻함 · 국물" == seed["f01"]["subtitle"]
     m01 = next(i for i in music["items"] if i["id"] == "m01")
     assert "price" not in m01 and "cost" not in m01 and m01["subtitle"] == "아이유"
     assert "embedding" not in m01 and "status" not in m01

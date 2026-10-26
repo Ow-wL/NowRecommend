@@ -1,5 +1,5 @@
 {
-  "about": "parseConditions(src/domain.ts)와 서버 규칙 파서(server/app/parsing/rules.py)가 함께 검사하는 사례.",
+  "about": "parseConditions·unsupportedConditions(src/domain.ts)와 서버 규칙 파서(server/app/parsing/rules.py)가 함께 검사하는 사례. 가격·배달·주변·미등록 재료는 unsupported로만 알리고 조건으로 바꾸지 않는다.",
   "cases": [
     {
       "category": "food",
@@ -11,7 +11,7 @@
           "담백함"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -23,7 +23,12 @@
           "매콤함"
         ],
         "excluded": [],
-        "maxPrice": 10000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "만원 이하"
+          }
+        ]
       }
     },
     {
@@ -36,7 +41,7 @@
           "국물"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -47,7 +52,12 @@
         "excluded": [
           "매콤함"
         ],
-        "maxPrice": 8000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "8천원 이하"
+          }
+        ]
       }
     },
     {
@@ -60,7 +70,7 @@
         "excluded": [
           "매콤함"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -74,7 +84,7 @@
         "excluded": [
           "매콤함"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -85,7 +95,12 @@
           "저녁"
         ],
         "excluded": [],
-        "maxPrice": 15000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "1만 5천원 이하"
+          }
+        ]
       }
     },
     {
@@ -96,7 +111,12 @@
           "고소함"
         ],
         "excluded": [],
-        "maxPrice": 15000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "15,000원 정도"
+          }
+        ]
       }
     },
     {
@@ -108,7 +128,12 @@
           "저녁"
         ],
         "excluded": [],
-        "maxPrice": 20000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "이만원 이하"
+          }
+        ]
       }
     },
     {
@@ -122,7 +147,7 @@
         "excluded": [
           "밀"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -133,7 +158,7 @@
         "excluded": [
           "땅콩"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -145,7 +170,7 @@
           "소고기",
           "돼지고기"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -158,7 +183,7 @@
         "excluded": [
           "유제품"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -170,7 +195,7 @@
           "버섯",
           "달걀"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -183,7 +208,7 @@
         "excluded": [
           "콩"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -195,7 +220,7 @@
           "국물"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -206,7 +231,7 @@
           "담백함"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -218,7 +243,7 @@
           "차가움"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -229,7 +254,12 @@
           "저녁"
         ],
         "excluded": [],
-        "maxPrice": 30000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "3만원"
+          }
+        ]
       }
     },
     {
@@ -238,7 +268,12 @@
       "expected": {
         "tags": [],
         "excluded": [],
-        "maxPrice": 5000
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "오천원"
+          }
+        ]
       }
     },
     {
@@ -247,7 +282,7 @@
       "expected": {
         "tags": [],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -256,7 +291,7 @@
       "expected": {
         "tags": [],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -271,7 +306,7 @@
           "닭고기",
           "생선"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -284,7 +319,7 @@
           "채소"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -297,7 +332,7 @@
           "중간 에너지"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -312,7 +347,7 @@
         "excluded": [
           "보컬"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -326,7 +361,7 @@
         "excluded": [
           "보컬"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -338,7 +373,7 @@
           "활기참"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -350,7 +385,7 @@
           "활기참"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -362,7 +397,7 @@
           "재즈"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -375,7 +410,7 @@
         "excluded": [
           "보컬"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -386,7 +421,7 @@
           "어쿠스틱"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -395,7 +430,7 @@
       "expected": {
         "tags": [],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -407,7 +442,7 @@
           "차분함"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -418,7 +453,7 @@
           "운동"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -431,7 +466,7 @@
         "excluded": [
           "밀"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -444,7 +479,7 @@
           "돼지고기",
           "닭고기"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -460,7 +495,7 @@
           "유제품",
           "달걀"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -472,7 +507,7 @@
           "소고기",
           "돼지고기"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -484,7 +519,7 @@
           "유제품",
           "달걀"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -495,7 +530,7 @@
         "excluded": [
           "매콤함"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -506,7 +541,7 @@
         "excluded": [
           "버섯"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -517,7 +552,7 @@
         "excluded": [
           "소고기"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -530,7 +565,7 @@
         "excluded": [
           "피아노"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -543,7 +578,7 @@
         "excluded": [
           "팝"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -555,7 +590,7 @@
           "피아노"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -569,7 +604,7 @@
           "록",
           "팝"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -580,7 +615,7 @@
         "excluded": [
           "높은 에너지"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -591,7 +626,7 @@
         "excluded": [
           "록"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -602,7 +637,7 @@
         "excluded": [
           "땅콩"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -613,7 +648,7 @@
         "excluded": [
           "유제품"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -626,7 +661,7 @@
         "excluded": [
           "밀"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -639,7 +674,7 @@
           "돼지고기",
           "닭고기"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -650,7 +685,7 @@
         "excluded": [
           "돼지고기"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -661,7 +696,7 @@
         "excluded": [
           "유제품"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -672,9 +707,9 @@
           "담백함"
         ],
         "excluded": [
-          "생선"
+          "해산물"
         ],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -685,7 +720,7 @@
           "저녁"
         ],
         "excluded": [],
-        "maxPrice": null
+        "unsupported": []
       }
     },
     {
@@ -698,7 +733,551 @@
         "excluded": [
           "보컬"
         ],
-        "maxPrice": null
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "혼자 먹을 만원 이하 저녁, 해산물은 빼고 맵지 않게, 배달 가능한 메뉴",
+      "expected": {
+        "tags": [
+          "혼자",
+          "저녁"
+        ],
+        "excluded": [
+          "매콤함",
+          "해산물"
+        ],
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "만원 이하"
+          },
+          {
+            "kind": "delivery",
+            "text": "배달 가능한"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "만원 이하로 먹고 싶어",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "만원 이하"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "저렴하게 먹을 수 있는 점심",
+      "expected": {
+        "tags": [
+          "점심"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "price",
+            "text": "저렴하게"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "새우 알레르기가 있어요, 따뜻한 국물",
+      "expected": {
+        "tags": [
+          "따뜻함",
+          "국물"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "새우 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "새우랑 해산물 빼고 따뜻한 거",
+      "expected": {
+        "tags": [
+          "따뜻함"
+        ],
+        "excluded": [
+          "해산물"
+        ],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "새우 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "회사 근처에서 포장 가능한 매콤한 거",
+      "expected": {
+        "tags": [
+          "매콤함"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "delivery",
+            "text": "포장 가능한"
+          },
+          {
+            "kind": "place",
+            "text": "근처"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "해물 빼고 담백한 저녁",
+      "expected": {
+        "tags": [
+          "저녁",
+          "담백함"
+        ],
+        "excluded": [
+          "해산물"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "포장마차 분위기 매콤한 안주",
+      "expected": {
+        "tags": [
+          "매콤함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "만원으로 산책할 때 듣는 노래",
+      "expected": {
+        "tags": [
+          "산책"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "혼자 먹을 점심, 참깨는 빼줘",
+      "expected": {
+        "tags": [
+          "혼자",
+          "점심"
+        ],
+        "excluded": [
+          "참깨"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "참기름 알레르기",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "참깨"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "메밀 알러지가 있어요",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "메밀"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "오이랑 고수 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "오이 제외"
+          },
+          {
+            "kind": "ingredient",
+            "text": "고수 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "채소 빼고 따뜻한 거",
+      "expected": {
+        "tags": [
+          "따뜻함"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "채소 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "국물 없는 걸로",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "국물 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "한식 말고 양식",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "한식 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "연어 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "연어 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "맛없는 거 말고 부담 없는 걸로",
+      "expected": {
+        "tags": [
+          "담백함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "트로트 말고 신나는 노래",
+      "expected": {
+        "tags": [
+          "활기참"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "exclusion",
+            "text": "트로트 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "국물 있는 건 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "국물 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "고소한 건 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "고소함 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "혼자 먹을 점심, 고수, 참깨 빼줘",
+      "expected": {
+        "tags": [
+          "혼자",
+          "점심"
+        ],
+        "excluded": [
+          "참깨"
+        ],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "고수 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "매콤한 거 말고 따뜻한 국물",
+      "expected": {
+        "tags": [
+          "따뜻함",
+          "국물"
+        ],
+        "excluded": [
+          "매콤함"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "따뜻한 거 말고 시원한 거",
+      "expected": {
+        "tags": [
+          "차가움"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "따뜻함 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "고기 들어간 거 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "소고기",
+          "돼지고기",
+          "닭고기"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "새우 들어간 거 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "새우 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "라면 같은 거 말고",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "라면 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "기름진 거 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "기름진 거 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "깨 빼주세요",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "참깨"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "파 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "파 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "혼자 먹을 매운 건 빼고 저녁",
+      "expected": {
+        "tags": [
+          "혼자",
+          "저녁"
+        ],
+        "excluded": [
+          "매콤함"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "보컬 있는 노래 말고",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "보컬"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "신나는 거 말고 잔잔한 피아노",
+      "expected": {
+        "tags": [
+          "차분함",
+          "피아노"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "활기참 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "혼자 먹을 점심, 깨는 빼줘",
+      "expected": {
+        "tags": [
+          "혼자",
+          "점심"
+        ],
+        "excluded": [
+          "참깨"
+        ],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "혼자 먹을 점심, 파는 빼줘",
+      "expected": {
+        "tags": [
+          "혼자",
+          "점심"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "파 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "깨랑 파 빼줘",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "참깨"
+        ],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "파 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "떡은 싫어",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "ingredient",
+            "text": "떡 제외"
+          }
+        ]
       }
     }
   ]

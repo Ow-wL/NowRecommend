@@ -36,7 +36,8 @@ def uncovered_words(text: str, spans: list[tuple[int, int]]) -> list[str]:
     for match in WORD.finditer("".join(masked)):
         word = match.group()
         core = strip_ending(word)
-        if len(core) < 2 or word in NEUTRAL or core in NEUTRAL or core.isdigit():
+        # A bare particle left after a matched phrase ("근처|에서") carries no condition either.
+        if len(core) < 2 or word in ENDINGS or word in NEUTRAL or core in NEUTRAL or core.isdigit():
             continue
         remaining.append(text[match.start():match.end()])
     return list(dict.fromkeys(remaining))

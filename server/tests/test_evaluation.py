@@ -24,10 +24,11 @@ def test_eval_cases_are_valid_and_acceptable_items_obey_the_gold_conditions(case
                      profile={"selected": persona["selected"], "tags": persona["tags"]})
     assert all(SEED[i]["category"] == case["category"] for i in [*persona["selected"], *case["acceptable"]])
     k = case["conditions"]
+    assert set(k) == {"tags", "excluded"}  # no budget since 2026-10-27
+    blocked = set(get_vocab().for_category(case["category"]).blocked(k["excluded"]))
     for item_id in case["acceptable"]:
         item = SEED[item_id]
-        assert not set(k["excluded"]) & {*item["tags"], *item["ingredients"]}, item_id
-        assert k["maxPrice"] is None or (item["cost"] or 0) <= k["maxPrice"], item_id
+        assert not blocked & {*item["tags"], *item["ingredients"]}, item_id
 
 
 def test_rule_parser_scores_against_gold():

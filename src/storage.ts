@@ -1,4 +1,5 @@
-import { emptyStore, type Store } from './domain';
+import { cleanConditions, emptyStore, type Recommendation, type Store } from './domain';
+import { normalizeItem } from './data';
 import { validConditions, validRecommendation } from './sessionStorage';
 import { validPreset } from './presets';
 import {validAppearance} from './theme';
@@ -20,8 +21,17 @@ export function decodeStore(text: string): Store | null {
     if (![1,2].includes(v?.version) || typeof v.name !== 'string' || v.name.length > 100 || !['food','music'].every(c => ['selected','tags','disliked'].every(k => strings(v.profiles?.[c]?.[k]))) || !strings(v.favorites) || !Array.isArray(v.history) || v.history.length > 50 || !v.history.every((h:any) => validHistory(h,v.version))) return null;
     if (v.presets !== undefined && (!Array.isArray(v.presets) || v.presets.length > 40 || !v.presets.every(validPreset) || new Set(v.presets.map((p:any)=>p.id)).size !== v.presets.length || ['food','music'].some(c=>v.presets.filter((p:any)=>p.category===c).length > 20))) return null;
     if(v.appearance!==undefined && !validAppearance(v.appearance))return null;
-    return v.version === 2 ? v : { ...v, version:2, history:v.history.map((h:any)=>({id:h.id,date:h.date,category:h.category,raw:h.raw,conditions:h.conditions,resultIds:h.resultIds,rounds:[],legacy:true})) };
+    return withoutBudget(v.version === 2 ? v : { ...v, version:2, history:v.history.map((h:any)=>({id:h.id,date:h.date,category:h.category,raw:h.raw,conditions:h.conditions,resultIds:h.resultIds,rounds:[],legacy:true})) });
   } catch { return null; }
+}
+/** Price and budget were removed on 2026-10-27. Stored budgets (history, rounds, presets) and item prices are dropped
+ * on every read, backups included, so they are neither shown nor applied again; the original sentences are kept. */
+function withoutBudget(store: Store): Store {
+  const result = (r: Recommendation): Recommendation => ({ ...r, item: normalizeItem(r.item) });
+  return { ...store,
+    history: store.history.map(h => ({ ...h, conditions: cleanConditions(h.conditions), rounds: h.rounds.map(r => ({ ...r, conditions: cleanConditions(r.conditions), results: r.results.map(result) })),
+      ...(h.selected ? { selected: { ...h.selected, result: result(h.selected.result) } } : {}) })),
+    ...(store.presets ? { presets: store.presets.map(p => ({ ...p, conditions: cleanConditions(p.conditions) })) } : {}) };
 }
 export type StoreLoad = { store:Store; issue?: 'damaged'|'unavailable'; raw?:string };
 export function readStoreResult(): StoreLoad {

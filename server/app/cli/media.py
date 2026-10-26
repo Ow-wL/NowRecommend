@@ -3,8 +3,13 @@
 covers: album artwork from the iTunes Search API (US store, no key) for every reviewed song. A cover is kept only
 when the title and the artist both match (Korean artists also by their store name); classical pieces match on the
 title alone because the store lists the performer. Results go to src/media.json, which the frontend bundles, with
-the track's Apple Music page as the link Apple's artwork terms expect. Songs without a confident match are left out
-and the UI draws a generated cover. The API allows ~20 requests a minute, so this paces itself.
+the track's own Apple Music song page as `link` (the album page as `album`, for the artwork). Songs without a confident
+match are left out and the UI draws a generated cover. The API allows ~20 requests a minute, so this paces itself.
+
+tracks: upgrades entries that still link to an album page (covers before 2026-10-27 cut the track id off the store
+URL, so "듣기" opened the album). It looks the albums up by id and keeps a song link only when the store lists a track
+whose title and artist are exactly the matched ones; otherwise the entry keeps only the album page and the UI offers a
+search instead of guessing.
 
 Food photos are curated by hand (Wikimedia Commons, with author and license) and written to the same file.
 """
@@ -72,13 +77,66 @@ def search(term: str, country: str = "US") -> list[dict]:
     return []
 
 
+STORE_TRACK = re.compile(r"^https://music\.apple\.com/([a-z]{2})/album/([^/?]+)/(\d+)\?(?:.*&)?i=(\d+)")
+
+
+def song_link(track_view_url: str) -> str | None:
+    """The store's track URL is the album page with ?i=<track id>; Apple Music's song page is /song/<slug>/<track id>."""
+    match = STORE_TRACK.match(track_view_url or "")
+    return f"https://music.apple.com/{match[1]}/song/{match[2]}/{match[4]}" if match else None
+
+
 def cover_from(hit: dict, checked: bool) -> dict | None:
     art = hit.get("artworkUrl100", "")
     if not art:
         return None
-    cover = {"image": art.replace("100x100bb", "600x600bb"), "link": hit.get("trackViewUrl", "").split("?")[0],
+    cover = {"image": art.replace("100x100bb", "600x600bb"), "album": hit.get("trackViewUrl", "").split("?")[0],
              "source": "itunes", "match": f"{hit.get('trackName')} - {hit.get('artistName')} [{hit.get('collectionName')}]"}
+    if link := song_link(hit.get("trackViewUrl", "")):
+        cover["link"] = link
     return cover if checked else {**cover, "check": True}
+
+
+ALBUM = re.compile(r"^https://music\.apple\.com/([a-z]{2})/album/[^/?]+/(\d+)$")
+
+
+def lookup_tracks(country: str, collection_ids: list[str]) -> list[dict]:
+    url = "https://itunes.apple.com/lookup?" + urllib.parse.urlencode({"id": ",".join(collection_ids), "entity": "song", "country": country, "limit": 200})
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "nowrecommend-prototype/0.1"}), timeout=20) as r:
+        return [h for h in json.load(r).get("results", []) if h.get("wrapperType") == "track"]
+
+
+def upgrade_tracks(media: dict) -> tuple[int, int]:
+    """Album links → song links where the album lists exactly the matched track. Returns (upgraded, album only)."""
+    pending = {}
+    for key, entry in media.items():
+        album = entry.get("album") or (entry.get("link") if ALBUM.match(entry.get("link", "")) else None)
+        if entry.get("source") == "itunes" and album and not (entry.get("link") or "").count("/song/"):
+            pending[key] = album
+    by_country: dict[str, list[str]] = {}
+    for album in pending.values():
+        match = ALBUM.match(album)
+        by_country.setdefault(match[1], []).append(match[2])
+    tracks: dict[tuple[str, str], dict] = {}
+    for country, ids in by_country.items():
+        ids = sorted(set(ids))
+        for start in range(0, len(ids), 10):
+            for hit in lookup_tracks(country, ids[start:start + 10]):
+                tracks.setdefault((str(hit.get("collectionId")), f"{hit.get('trackName')} - {hit.get('artistName')}"), hit)
+            time.sleep(3.2)
+    upgraded = 0
+    for key, album in pending.items():
+        entry = media[key]
+        wanted = entry.get("match", "").rsplit(" [", 1)[0]
+        hit = tracks.get((ALBUM.match(album)[2], wanted))
+        link = song_link(hit.get("trackViewUrl", "")) if hit else None
+        entry["album"] = album
+        if link:
+            entry["link"] = link
+            upgraded += 1
+        else:
+            entry.pop("link", None)
+    return upgraded, len(pending) - upgraded
 
 
 # Versions whose artwork is not the song's own release ("Permission to Dance On Stage - LIVE" for Dynamite).
@@ -124,9 +182,16 @@ def main() -> None:
     covers = commands.add_parser("covers")
     covers.add_argument("--only", default="", help="comma-separated item ids")
     covers.add_argument("--out", type=Path, default=MEDIA_FILE)
+    tracks = commands.add_parser("tracks")
+    tracks.add_argument("--out", type=Path, default=MEDIA_FILE)
     args = parser.parse_args()
 
     media = json.loads(args.out.read_text(encoding="utf-8")) if args.out.exists() else {}
+    if args.command == "tracks":
+        upgraded, album_only = upgrade_tracks(media)
+        args.out.write_text(json.dumps(dict(sorted(media.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        print(f"tracks: {upgraded} song links, {album_only} album only (the UI offers a search for those)")
+        return
     songs = [i for i in load_seed(SEED_FILE) + (load_seed(REVIEWED_FILE) if REVIEWED_FILE.exists() else []) if i["category"] == "music"]
     only = {s for s in args.only.split(",") if s}
     todo = [s for s in songs if not only or s["id"] in only]

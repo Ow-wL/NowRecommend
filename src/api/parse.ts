@@ -1,4 +1,4 @@
-import type { Conditions } from '../domain';
+import { cleanConditions, type Conditions } from '../domain';
 import type { Category } from '../data';
 import { validConditions } from '../sessionStorage';
 import { apiJson, API_BASE_URL } from './client';
@@ -14,5 +14,7 @@ export function validRemoteParse(v: any): v is RemoteParse {
 /** The server runs the same rules as parseConditions and asks the model only about words they missed. */
 export function fetchParse(category: Category, text: string, options: { base?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {
   const { base = API_BASE_URL, fetchImpl, timeoutMs = 13000 } = options;
-  return apiJson('/api/parse', validRemoteParse, { base, fetchImpl, timeoutMs, method: 'POST', body: { category, text } });
+  // An older server may still return a budget; it is dropped, never applied.
+  return apiJson('/api/parse', validRemoteParse, { base, fetchImpl, timeoutMs, method: 'POST', body: { category, text } })
+    .then(r => ({ ...r, conditions: cleanConditions(r.conditions) }));
 }

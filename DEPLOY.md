@@ -6,6 +6,42 @@
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
 - 배포 커밋: `48bb706`(2026-10-26, 음악 AI 실험·음악 226곡). API 리비전 `nowrecommend-api-00003-mjt`, 시드 작업 실행 `nowrecommend-seed-wsrvm`(추가 211·임베딩 211). Pages 배포와 서버 테스트 모두 성공했습니다.
 
+## 0. 가격 제거 배포 순서 (2026-10-27, 아직 배포하지 않음)
+
+가격 제거는 **호환 배포**와 **열 삭제**를 나눠서 합니다. 이전 API(배포 커밋 `48bb706`)의 ORM은 `items.price_label`·`cost`를 읽으므로, 그 리비전이 트래픽을 받거나 되돌릴 대상으로 남아 있는 동안에는 열을 지우면 안 됩니다.
+
+- 마이그레이션은 둘로 나뉩니다(`server/app/migrations.py`). 확장(expand) 마이그레이션은 옛 코드가 무시하는 것만 더합니다. 축소(contract) 마이그레이션은 옛 코드가 읽는 것을 지웁니다. 축소 마이그레이션 파일에는 `contract = True`가 있고, 지금은 `0003`(가격 열 삭제)이 그렇습니다.
+- API 컨테이너 시작(`server/Dockerfile`의 `python -m app.cli.migrate`)과 시드 작업(`server/scripts/seed-job.sh`)은 **확장 마이그레이션만** 적용합니다. 대기 중인 축소 마이그레이션이 있으면 그 앞에서 멈추고 로그에 `contract migrations waiting: 0003`을 남깁니다.
+- 열 삭제는 따로 `python -m app.cli.migrate --contract`로만 실행합니다. `0003`은 지우기 전에 값을 `items_price_backup` 표로 옮기고, 되돌리면(`--downgrade 0002`) 열과 값을 복원합니다.
+
+**1단계: 호환 버전 배포 (열은 그대로)**
+
+1. 새 이미지를 만들어 API에 배포합니다(§2의 명령). 시작할 때 `migrate: at 0002; nothing to apply`와 `contract migrations waiting: 0003`이 로그에 찍혀야 합니다.
+2. 시드 작업 명령을 스크립트로 바꾸고(처음 한 번) 새 이미지로 실행합니다. 음식 부제가 가격에서 주요 특성으로 바뀌고, 문서 문장에서 참고 가격이 빠져 음식 16개를 다시 임베딩합니다. 가격 열은 그대로 남습니다.
+   ```bash
+   gcloud run jobs update nowrecommend-seed --project harness-recommend --region asia-northeast3 --image $IMG --command sh --args scripts/seed-job.sh
+   gcloud run jobs execute nowrecommend-seed --project harness-recommend --region asia-northeast3 --wait
+   ```
+3. Pages를 배포합니다. 새 프론트엔드는 옛 API가 주는 가격 필드도 지우고 쓰므로, API와 순서가 바뀌어도 화면에 가격이 나오지 않습니다.
+4. 이 단계에서는 이전 API 리비전으로 언제든 되돌릴 수 있습니다(§3). 열과 값이 그대로이기 때문입니다.
+
+**2단계: 열 삭제 (옛 리비전이 완전히 빠진 뒤)**
+
+1. 확인: `gcloud run services describe nowrecommend-api --project harness-recommend --region asia-northeast3 --format="value(status.traffic)"`에서 트래픽 100%가 호환 리비전이어야 합니다. 또 이전 리비전을 더 이상 되돌릴 대상으로 두지 않기로 정해야 합니다. 서버 로그에서 옛 리비전의 요청이 끝났는지도 확인합니다.
+2. 백업: Cloud SQL 자동 백업이 꺼져 있으므로 직접 만듭니다. `gcloud sql backups create --project harness-recommend --instance nowrecommend-db`
+3. 축소 작업을 만들고(처음 한 번) 실행합니다. 시드 작업과 같은 이미지·비밀 값·Cloud SQL 연결을 씁니다.
+   ```bash
+   gcloud run jobs create nowrecommend-contract --project harness-recommend --region asia-northeast3 --image $IMG \
+     --service-account nowrecommend-api@harness-recommend.iam.gserviceaccount.com --set-cloudsql-instances harness-recommend:asia-northeast3:nowrecommend-db \
+     --set-secrets DATABASE_URL=database-url:latest --command python --args=-m,app.cli.migrate,--contract
+   gcloud run jobs execute nowrecommend-contract --project harness-recommend --region asia-northeast3 --wait
+   ```
+   로그에 `migrate: at 0002; upgraded to 0003`이 보여야 합니다.
+
+`alembic check`(server-ci.yml)는 DB가 head일 때의 검사입니다. 0003이 만든 `items_price_backup`은 모델이 없는 운영용 표라 `app.models.UNMANAGED_TABLES`에 적어 비교에서 뺐습니다(`alembic/env.py`의 `include_object`). 그래서 자동 생성 마이그레이션이 이 표를 지우자고 제안하지도 않습니다. 운영용 표를 더 만들 때는 이 목록에 함께 적습니다. 1단계(DB가 0002)에서는 head가 아니라 `alembic check` 대상이 아닙니다.
+
+이 절차는 로컬에서 검증했습니다. `server/tests/test_migrations_db.py`가 별도 DB에서 0002 → 호환 버전(0003 대기, 옛 조회와 새 시드 동작) → 열 삭제 → 0002 복구를 확인합니다. 로컬 Docker 이미지로도 시작 명령·시드 스크립트·축소·되돌리기를 같은 순서로 실행했습니다. Cloud Run·Cloud SQL에서 위 명령을 실행해 보지는 않았습니다.
+
 ## 1. 현재 구성
 
 GCP 프로젝트는 `harness-recommend`, 리전은 `asia-northeast3`(서울)입니다. gcloud의 기본 프로젝트가 다를 수 있으니 모든 명령에 `--project harness-recommend`를 붙입니다.
@@ -18,7 +54,8 @@ GCP 프로젝트는 `harness-recommend`, 리전은 `asia-northeast3`(서울)입�
 | 이미지 | Artifact Registry `nowrecommend` | `asia-northeast3-docker.pkg.dev/harness-recommend/nowrecommend/api:<커밋 앞 7자리>` |
 | 비밀 값 | Secret Manager `gemini-api-key`, `database-url` | Cloud Run에 `GEMINI_API_KEY`, `DATABASE_URL`로 주입 |
 | 서비스 계정 | `nowrecommend-api@harness-recommend.iam.gserviceaccount.com` | Cloud SQL 클라이언트, 두 비밀 값 읽기 권한만 |
-| 데이터 작업 | Cloud Run 작업 `nowrecommend-seed` | `alembic upgrade head` → `app.cli.seed` → `app.cli.embed` |
+| 데이터 작업 | Cloud Run 작업 `nowrecommend-seed` | `sh scripts/seed-job.sh`: 확장 마이그레이션(`app.cli.migrate`) → `app.cli.seed` → `app.cli.embed`. 가격 제거 전에 만든 작업은 `alembic upgrade head`로 설정돼 있으니 §0 1단계에서 바꿉니다 |
+| 열 삭제 작업 | Cloud Run 작업 `nowrecommend-contract`(§0 2단계에서 만듦) | `python -m app.cli.migrate --contract` |
 | 프론트엔드 연결 | 저장소 Actions 변수 `VITE_API_BASE_URL` | 위 API 주소. Pages 빌드가 이 값으로 서버 모드가 됩니다 |
 
 API 환경 변수: `CORS_ORIGINS=["https://ow-wl.github.io"]`, `LOG_RAW_TEXT=false`(입력 문장 원문을 저장하지 않음, 결정 4), `TRUST_PROXY=true`(요청 제한을 실제 사용자 IP 기준으로), `LLM_MODEL=gemini-3.5-flash-lite`(2026-10-20부터, 아래 §4). 나머지는 기본값입니다.
@@ -43,7 +80,7 @@ docker push $IMG
 gcloud run deploy nowrecommend-api --project harness-recommend --region asia-northeast3 --image $IMG
 ```
 
-- 컨테이너는 시작할 때 `alembic upgrade head`를 실행하므로 마이그레이션은 따로 하지 않아도 됩니다.
+- 컨테이너는 시작할 때 `python -m app.cli.migrate`로 확장 마이그레이션만 적용합니다. 축소 마이그레이션은 §0 2단계처럼 따로 실행합니다.
 - 환경 변수·비밀 값·Cloud SQL 연결은 이전 리비전 설정을 그대로 이어받습니다.
 
 ### 카탈로그를 바꿨을 때
@@ -70,6 +107,12 @@ gcloud run jobs execute nowrecommend-seed --project harness-recommend --region a
 
 - **사이트를 서버 없이 돌리기**: 저장소 변수 `VITE_API_BASE_URL`을 지우고 Pages 워크플로를 다시 실행하면, 내장 카탈로그와 브라우저 규칙만 쓰는 오프라인 모드로 돌아갑니다.
 - **API만 이전 버전으로**: `gcloud run services update-traffic nowrecommend-api --project harness-recommend --region asia-northeast3 --to-revisions <이전 리비전>=100`
+  - 가격 제거 **1단계만 마친 상태**(DB가 0002)라면 어느 리비전으로든 바로 되돌릴 수 있습니다.
+  - **2단계까지 마친 상태**(DB가 0003)라면 바로 되돌려도 되는 대상은 가격 제거 이후 리비전뿐입니다. 이전 리비전(`nowrecommend-api-00003-mjt` 등)의 이미지는 0003을 모르므로 시작할 때 `alembic upgrade head`가 실패합니다. 그 리비전은 가격 열을 읽기도 합니다. 그래서 먼저 스키마를 되돌립니다.
+    1. `gcloud sql backups create --project harness-recommend --instance nowrecommend-db`
+    2. 가격 제거 이후 이미지로 `python -m app.cli.migrate --downgrade 0002`를 실행합니다. 예: `gcloud run jobs execute nowrecommend-contract --project harness-recommend --region asia-northeast3 --args=-m,app.cli.migrate,--downgrade,0002 --wait`. `items_price_backup`의 값으로 `price_label`·`cost`가 돌아옵니다.
+    3. 그다음 위 명령으로 트래픽을 옮깁니다. 시드 작업도 옛 이미지로 돌리려면 작업 명령을 `alembic upgrade head`가 포함된 이전 설정으로 바꿉니다.
+    4. 다시 앞으로 갈 때는 §0의 1·2단계를 처음부터 따릅니다.
 - **전부 내리기**(비용을 멈출 때): 위처럼 오프라인 모드로 돌린 뒤 Cloud SQL 인스턴스와 Cloud Run 서비스를 삭제합니다. DB 삭제는 되돌릴 수 없지만, 카탈로그는 시드 파일로 다시 만들 수 있습니다.
 
 ## 4. 비용과 제한
@@ -83,6 +126,8 @@ gcloud run jobs execute nowrecommend-seed --project harness-recommend --region a
 
 ```powershell
 docker compose up -d --build
+# 컨테이너는 확장 마이그레이션만 적용합니다. 로컬에서 0003(가격 열 삭제)까지 적용하려면 따로 실행합니다.
+docker compose exec api python -m app.cli.migrate --contract
 docker compose exec api python -m app.cli.seed
 docker compose exec api python -m app.cli.embed
 $env:VITE_API_BASE_URL = 'http://127.0.0.1:8010'

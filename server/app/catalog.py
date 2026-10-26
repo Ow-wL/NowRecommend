@@ -11,13 +11,19 @@ from sqlalchemy.orm import Session
 
 from .embeddings import Embedder, document_text, embedding_hash
 from .models import Item
-from .vocab import Vocab
+from .vocab import Vocab, get_vocab
 
 SEED_FILE = Path(__file__).resolve().parents[1] / "data" / "seed_items.json"
 # Approved AI drafts (app.cli.review publish), loaded by app.cli.seed after the bundled seed so a fresh DB gets them too.
 REVIEWED_FILE = Path(__file__).resolve().parents[1] / "data" / "reviewed_items.json"
 SOURCES = ("seed", "ai_draft", "user_request")
-CONTENT_FIELDS = ("category", "name", "artist", "subtitle", "description", "tags", "ingredients", "price_label", "cost", "emoji", "color")
+CONTENT_FIELDS = ("category", "name", "artist", "subtitle", "description", "tags", "ingredients", "emoji", "color")
+# A food item's second line: its checkable traits, never a price (traitSummary in src/data.ts).
+TRAITS = ("매콤함", "담백함", "고소함", "상큼함", "따뜻함", "차가움", "국물", "채소")
+
+
+def trait_summary(tags: list[str], extra_tags: list[str]) -> str:
+    return " · ".join([t for t in TRAITS if t in tags][:3]) or next((t for t in tags if t in extra_tags), "음식")
 
 
 def validate_item(vocab: Vocab, item: dict) -> list[str]:
@@ -32,8 +38,9 @@ def validate_item(vocab: Vocab, item: dict) -> list[str]:
     tags = item.get("tags") or []
     if not tags or set(tags) - vocab.for_category(item["category"]).tags:
         errors.append(f"태그: {label}")
-    if item["category"] == "food" and (not item.get("price_label") or not isinstance(item.get("cost"), int) or item["cost"] <= 0):
-        errors.append(f"기준 가격: {label}")
+    # Every recorded ingredient must be excludable, or "참깨는 빼줘" would match nothing (validateCatalog in src/data.ts).
+    if item["category"] == "food" and (unknown := set(item.get("ingredients") or []) - set(vocab.food.excludableIngredients)):
+        errors.append(f"제외 어휘에 없는 재료 {sorted(unknown)}: {label}")
     if item["category"] == "music" and not item.get("artist"):
         errors.append(f"아티스트: {label}")
     return errors
@@ -120,12 +127,10 @@ def reviewed_items(session: Session, category: str | None = None) -> list[Item]:
 
 
 def public_item(row: Item) -> dict:
-    """The frontend Item shape (src/data.ts). Absent price/cost are omitted, not null."""
+    """The frontend Item shape (src/data.ts). No price: food shows its traits as the subtitle."""
     item = {k: getattr(row, k) for k in ("id", "category", "name", "subtitle", "description", "tags", "ingredients", "emoji", "color")}
-    if row.price_label is not None:
-        item["price"] = row.price_label
-    if row.cost is not None:
-        item["cost"] = row.cost
+    if row.category == "food":
+        item["subtitle"] = trait_summary(list(row.tags), get_vocab().food.extraTags)
     return item
 
 

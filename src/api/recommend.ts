@@ -1,4 +1,5 @@
-import type { Profile, Recommendation, Session } from '../domain';
+import { cleanConditions, type Profile, type Recommendation, type Session } from '../domain';
+import { normalizeItem } from '../data';
 import { validRecommendation } from '../sessionStorage';
 import { apiJson, API_BASE_URL } from './client';
 
@@ -19,7 +20,7 @@ export function validRemoteBatch(v: any): v is RemoteBatch {
 /** Request body for POST /api/recommend (server/app/schemas.py). Only what ranking needs leaves the browser. */
 export function recommendBody(session: Session, profile: Profile, count?: number) {
   return {
-    category: session.category, raw: session.raw, conditions: session.conditions,
+    category: session.category, raw: session.raw, conditions: cleanConditions(session.conditions),
     profile: { selected: profile.selected, tags: profile.tags, disliked: profile.disliked },
     excludedIds: session.excludedIds, seenIds: session.seenIds || [], pinnedIds: session.pinnedIds || [],
     candidateIds: session.candidateScope === 'favorites' ? session.candidateIds || [] : null,
@@ -35,5 +36,6 @@ export function qualityOf(meta: RecommendMeta): NonNullable<Session['quality']> 
 export function fetchRecommendations(session: Session, profile: Profile, options: { count?: number; base?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {
   // Longer than the server's 10s rerank deadline plus the query embedding, so a slow model degrades to retrieval_only first.
   const { count, base = API_BASE_URL, fetchImpl, timeoutMs = 15000 } = options;
-  return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', body: recommendBody(session, profile, count) });
+  return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', body: recommendBody(session, profile, count) })
+    .then(batch => ({ ...batch, results: batch.results.map(r => ({ ...r, item: normalizeItem(r.item) })) }));
 }

@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { changeBudget, changeText, conditionConflicts, createEditor, emptyConditions, parseConditions, toggleCondition, validateBudget, type Session } from './domain';
+import { changeText, conditionConflicts, createEditor, parseConditions, toggleCondition, unsupportedConditions, type Session } from './domain';
 const request = (raw = ''): Session => ({ category: 'food', raw, conditions: parseConditions(raw, 'food'), editor: createEditor(raw, 'food'), excludedIds: [], revision: 0 });
 describe('supported sentence regression cases', () => {
-  const cases: [string, 'food' | 'music', string[], string[], number | null][] = [
-    ['8천원 이하 점심', 'food', ['점심'], [], 8000],
-    ['1만 5천원', 'food', [], [], 15000],
-    ['15,000원 이하', 'food', [], [], 15000],
-    ['이만원 이하', 'food', [], [], 20000],
-    ['만원 이하', 'food', [], [], 10000],
-    ['2만 원 저녁', 'food', ['저녁'], [], 20000],
-    ['삼만원', 'food', [], [], 30000],
-    ['오천원', 'food', [], [], 5000],
+  // Amounts are recognised only to say price is unsupported (`price`); they never become a condition.
+  const cases: [string, 'food' | 'music', string[], string[], string | null][] = [
+    ['8천원 이하 점심', 'food', ['점심'], [], '8천원 이하'],
+    ['1만 5천원', 'food', [], [], '1만 5천원'],
+    ['15,000원 이하', 'food', [], [], '15,000원 이하'],
+    ['이만원 이하', 'food', [], [], '이만원 이하'],
+    ['만원 이하', 'food', [], [], '만원 이하'],
+    ['2만 원 저녁', 'food', ['저녁'], [], '2만 원'],
+    ['삼만원', 'food', [], [], '삼만원'],
+    ['오천원', 'food', [], [], '오천원'],
+    ['가성비 좋은 점심', 'food', ['점심'], [], '가성비'],
+    ['예산 맞춰서 저녁', 'food', ['저녁'], [], '예산'],
     ['혼자 안 매운 저녁', 'food', ['혼자','저녁'], ['매콤함'], null],
     ['맵지 않은 점심', 'food', ['점심'], ['매콤함'], null],
     ['담백한 저녁', 'food', ['저녁','담백함'], [], null],
@@ -32,7 +35,8 @@ describe('supported sentence regression cases', () => {
     const parsed = parseConditions(text, category);
     expect(new Set(parsed.tags)).toEqual(new Set(tags));
     expect(new Set(parsed.excluded)).toEqual(new Set(excluded));
-    expect(parsed.maxPrice).toBe(price);
+    expect(parsed).not.toHaveProperty('maxPrice');
+    expect(unsupportedConditions(text, category).filter(u => u.kind === 'price').map(u => u.text)).toEqual(price ? [price] : []);
   });
 });
 describe('condition provenance and validation', () => {
@@ -49,15 +53,17 @@ describe('condition provenance and validation', () => {
     const restored = JSON.parse(JSON.stringify(dismissed)) as Session;
     expect(changeText(restored, restored.raw).conditions.tags).toEqual(['점심']);
   });
-  it('preserves direct budget over changing text and supports explicitly clearing it', () => {
-    const direct = changeBudget(request('이만원 이하'), '8000');
-    expect(changeText(direct, '1만 5천원 이하').conditions.maxPrice).toBe(8000);
-    expect(changeBudget(direct, '').conditions.maxPrice).toBeNull();
-    expect(changeText(changeBudget(direct,''), '만원').conditions.maxPrice).toBeNull();
+  it('keeps the other conditions of a sentence that also asks for a price, and adds no budget', () => {
+    const next = changeText(request(), '혼자 먹을 만원 이하 저녁, 해산물은 빼고 맵지 않게, 배달 가능한 메뉴');
+    expect(next.conditions).toEqual({ tags: ['혼자', '저녁'], excluded: ['매콤함', '해산물'] });
+    expect(unsupportedConditions(next.raw, 'food').map(u => u.kind)).toEqual(['price', 'delivery']);
   });
-  it.each(['-1','hello','1000001','0','1.5','NaN'])('rejects invalid direct budget %s', input => {
-    expect(validateBudget(input)).not.toBeNull();
-    expect(changeBudget(request(), input).conditions.maxPrice).toBeNull();
+  it('turns a price-only sentence into no condition at all', () => {
+    expect(changeText(request(), '만원 이하로 먹고 싶어').conditions).toEqual({ tags: [], excluded: [] });
+  });
+  it('drops a budget left in a restored editor', () => {
+    const legacy = JSON.parse(JSON.stringify({ ...request('만원 이하'), conditions: { tags: [], excluded: [], maxPrice: 10000 }, editor: undefined })) as Session;
+    expect(toggleCondition(legacy, '혼자').conditions).toEqual({ tags: ['혼자'], excluded: [] });
   });
   it('shows conflicts instead of silently deleting direct user intent', () => {
     const next = changeText(toggleCondition(request(), '매콤함'), '안 매운 저녁');

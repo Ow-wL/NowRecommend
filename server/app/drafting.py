@@ -16,14 +16,14 @@ import numpy as np
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .catalog import refresh_embeddings, validate_item
+from .catalog import refresh_embeddings, trait_summary, validate_item
 from .embeddings import Embedder, document_text, embedding_hash
 from .llm.client import CoolingDown, JsonModel
 from .llm.draft import DraftInput, clean_draft, request_drafts
 from .models import Item
 from .vocab import Vocab
 
-AI_FIELDS = {"food": ["description", "tags", "ingredients", "price_label", "cost", "emoji", "color"],
+AI_FIELDS = {"food": ["description", "tags", "ingredients", "emoji", "color"],
              "music": ["description", "tags", "emoji", "color"]}
 # Measured in R6 with gemini-embedding-2/768 (plans-rag.md §7): true duplicates 0.91–0.98
 # (Spring Day ↔ 봄날 0.912, 닭 곰탕 ↔ 닭곰탕 0.984), different-but-related items ≤ 0.866
@@ -157,11 +157,11 @@ def export_review(session: Session, category: str | None = None, threshold: floa
                  "tags": list(row.tags), "emoji": row.emoji, "color": row.color, "aiFields": list(row.ai_fields),
                  "notes": [*row.review_notes, *similar_items(row, everything, threshold)], "decision": "pending"}
         if row.category == "food":
-            entry |= {"ingredients": list(row.ingredients), "priceLabel": row.price_label, "cost": row.cost, "allergensChecked": False}
+            entry |= {"ingredients": list(row.ingredients), "allergensChecked": False}
         entries.append(entry)
     return {"exportedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "instructions": ["decision을 approve(승인)·reject(제외)·pending(보류) 중 하나로 바꿔요.",
-                             "설명·태그·재료·가격·이모지·색은 고쳐도 돼요. 태그는 shared/vocab.json 어휘만 쓸 수 있어요.",
+                             "설명·태그·재료·이모지·색은 고쳐도 돼요. 태그는 shared/vocab.json 어휘만 쓸 수 있어요.",
                              ALLERGEN_RULE, "notes의 경고(비슷한 항목, 모르는 곡)를 확인해요. 경고만으로 막지는 않아요."],
             "items": entries}
 
@@ -207,12 +207,10 @@ def _approve(session: Session, vocab: Vocab, row: Item, entry: dict) -> str | No
         return ALLERGEN_RULE
     fields = {"category": row.category, "name": entry.get("name"), "artist": entry.get("artist") if row.category == "music" else None,
               "description": entry.get("description"), "tags": entry.get("tags"), "emoji": entry.get("emoji"), "color": entry.get("color"),
-              "ingredients": (entry.get("ingredients") or []) if row.category == "food" else [],
-              "price_label": entry.get("priceLabel") if row.category == "food" else None,
-              "cost": entry.get("cost") if row.category == "food" else None}
+              "ingredients": (entry.get("ingredients") or []) if row.category == "food" else []}
     if not isinstance(fields["tags"], list) or not isinstance(fields["ingredients"], list):
         return "tags·ingredients는 목록이어야 해요"
-    fields["subtitle"] = fields["price_label"] if row.category == "food" else fields["artist"]
+    fields["subtitle"] = trait_summary(fields["tags"], vocab.food.extraTags) if row.category == "food" else fields["artist"]
     if errors := validate_item(vocab, {**fields, "id": row.id}):
         return ", ".join(errors)
     key = (normalize(fields["name"]), normalize(fields["artist"]))

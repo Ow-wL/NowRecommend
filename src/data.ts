@@ -1,27 +1,31 @@
 import vocab from '../shared/vocab.json' with { type: 'json' };
 export type Category = 'food' | 'music';
 export const CATALOG_META = { version: '2026-10-26-sample-2', status: 'sample-unverified', source: '기존 프로토타입 카탈로그', reviewed: false } as const;
-export type Item = { id: string; category: Category; name: string; subtitle: string; description: string; tags: string[]; ingredients: string[]; emoji: string; color: string; price?: string; cost?: number };
-const food = (id: string, name: string, emoji: string, description: string, tags: string[], ingredients: string[], price: string, cost: number, color = '#f4e9d9'): Item => ({ id, category: 'food', name, subtitle: price, description, tags, ingredients, emoji, color, price, cost });
+// No price: there is no seller data, so the app never shows, filters or ranks by price (2026-10-27).
+export type Item = { id: string; category: Category; name: string; subtitle: string; description: string; tags: string[]; ingredients: string[]; emoji: string; color: string };
+// A food card's second line: the checkable traits (taste, temperature, form), never a price.
+const TRAITS = ['매콤함', '담백함', '고소함', '상큼함', '따뜻함', '차가움', '국물', '채소'];
+export const traitSummary = (tags: string[]) => TRAITS.filter(t => tags.includes(t)).slice(0, 3).join(' · ') || tags.find(t => vocab.food.extraTags.includes(t)) || '음식';
+const food = (id: string, name: string, emoji: string, description: string, tags: string[], ingredients: string[], color = '#f4e9d9'): Item => ({ id, category: 'food', name, subtitle: traitSummary(tags), description, tags, ingredients, emoji, color });
 const music = (id: string, name: string, artist: string, emoji: string, tags: string[], color: string): Item => ({ id, category: 'music', name, subtitle: artist, description: `${tags.slice(0, 2).join(' · ')} 분위기의 곡`, tags, ingredients: [], emoji, color });
 // 2026-10-26: added allergens hidden in sauces and condiments (간장·고추장·젓갈·쯔유·카레 루·치즈·햄).
 export const items: Item[] = [
-  food('f01', '쌀국수', '🍜', '따뜻한 국물과 부드러운 면, 가볍게 즐기는 한 그릇.', ['담백함', '따뜻함', '혼자', '저녁', '점심', '국물'], ['소고기', '밀', '생선', '콩'], '9,000–12,000원', 10000),
-  food('f02', '닭곰탕', '🥣', '푹 고아낸 맑은 국물로 속까지 편안한 한 끼.', ['담백함', '따뜻함', '혼자', '저녁', '국물'], ['닭고기'], '9,000–11,000원', 10000, '#e9efdf'),
-  food('f03', '버섯 리조토', '🍄', '버섯의 풍미와 크리미한 밥이 만나는 작은 휴식.', ['담백함', '따뜻함', '고소함', '저녁', '양식'], ['버섯', '유제품'], '13,000–17,000원', 15000, '#eee5db'),
-  food('f04', '김치찌개', '🍲', '익숙해서 더 좋은, 칼칼하고 든든한 집밥.', ['매콤함', '따뜻함', '국물', '저녁', '한식'], ['돼지고기', '생선', '콩'], '8,000–10,000원', 9000, '#fae5d9'),
-  food('f05', '연어 초밥', '🍣', '부드러운 연어와 산뜻한 밥의 균형.', ['담백함', '차가움', '점심', '혼자', '일식'], ['생선', '콩', '밀'], '14,000–18,000원', 16000, '#f7e5e1'),
-  food('f06', '토마토 파스타', '🍝', '새콤한 토마토 소스로 기분까지 산뜻하게.', ['상큼함', '따뜻함', '양식', '저녁'], ['밀', '토마토', '유제품'], '12,000–16,000원', 14000, '#f6e1d3'),
-  food('f07', '비빔밥', '🥗', '다채로운 채소를 한 그릇에 담은 든든한 선택.', ['고소함', '점심', '한식', '채소', '혼자'], ['달걀', '참깨', '소고기', '콩', '밀'], '8,000–11,000원', 9500, '#e4ecda'),
-  food('f08', '마라탕', '🌶️', '얼얼하고 매콤한 국물로 오늘의 스트레스를 훌훌.', ['매콤함', '따뜻함', '국물', '저녁'], ['땅콩', '소고기', '밀', '콩', '생선'], '10,000–15,000원', 12000, '#f7deda'),
-  food('f09', '우동', '🍥', '탱글한 면과 은은한 국물, 부담 없는 한 끼.', ['담백함', '따뜻함', '국물', '혼자', '점심', '일식'], ['밀', '생선', '콩'], '7,000–10,000원', 8500, '#f0e9d6'),
-  food('f10', '샌드위치', '🥪', '바쁜 날에도 가볍고 알차게 챙기는 한 끼.', ['담백함', '차가움', '점심', '혼자', '채소'], ['밀', '달걀', '유제품', '돼지고기'], '6,000–9,000원', 7500, '#e8edda'),
-  food('f11', '떡볶이', '🍢', '달콤하고 매콤한 소스에 쫀득한 떡을 푹.', ['매콤함', '따뜻함', '분식', '간식'], ['밀', '생선', '콩'], '5,000–8,000원', 6500, '#f5ddd3'),
-  food('f12', '두부 덮밥', '🍚', '노릇한 두부와 채소로 채우는 편안한 저녁.', ['담백함', '따뜻함', '고소함', '혼자', '저녁', '채소'], ['콩', '밀'], '8,000–11,000원', 9500, '#ecebd8'),
-  food('f13', '치킨', '🍗', '바삭한 한 입, 함께 먹으면 더 즐거운 메뉴.', ['고소함', '따뜻함', '함께', '저녁'], ['닭고기', '밀', '달걀', '콩'], '18,000–23,000원', 20000, '#f7e5c8'),
-  food('f14', '채소 카레', '🍛', '향긋한 향신료와 부드러운 채소가 어우러진 한 그릇.', ['따뜻함', '채소', '점심', '혼자'], ['감자', '당근', '밀', '유제품'], '8,000–12,000원', 10000, '#f3e6c6'),
-  food('f15', '메밀국수', '🥢', '시원한 국물에 깔끔하게 즐기는 면 요리.', ['담백함', '차가움', '점심', '혼자', '일식'], ['메밀', '생선', '밀', '콩'], '8,000–11,000원', 9500, '#e4e9e2'),
-  food('f16', '소고기 스테이크', '🥩', '여유로운 저녁에 즐기는 풍부한 고기 맛.', ['고소함', '따뜻함', '함께', '저녁', '양식'], ['소고기', '유제품'], '25,000–35,000원', 30000, '#eee0d8'),
+  food('f01', '쌀국수', '🍜', '따뜻한 국물과 부드러운 면, 가볍게 즐기는 한 그릇.', ['담백함', '따뜻함', '혼자', '저녁', '점심', '국물'], ['소고기', '밀', '생선', '콩']),
+  food('f02', '닭곰탕', '🥣', '푹 고아낸 맑은 국물로 속까지 편안한 한 끼.', ['담백함', '따뜻함', '혼자', '저녁', '국물'], ['닭고기'], '#e9efdf'),
+  food('f03', '버섯 리조토', '🍄', '버섯의 풍미와 크리미한 밥이 만나는 작은 휴식.', ['담백함', '따뜻함', '고소함', '저녁', '양식'], ['버섯', '유제품'], '#eee5db'),
+  food('f04', '김치찌개', '🍲', '익숙해서 더 좋은, 칼칼하고 든든한 집밥.', ['매콤함', '따뜻함', '국물', '저녁', '한식'], ['돼지고기', '생선', '콩'], '#fae5d9'),
+  food('f05', '연어 초밥', '🍣', '부드러운 연어와 산뜻한 밥의 균형.', ['담백함', '차가움', '점심', '혼자', '일식'], ['생선', '콩', '밀'], '#f7e5e1'),
+  food('f06', '토마토 파스타', '🍝', '새콤한 토마토 소스로 기분까지 산뜻하게.', ['상큼함', '따뜻함', '양식', '저녁'], ['밀', '토마토', '유제품'], '#f6e1d3'),
+  food('f07', '비빔밥', '🥗', '다채로운 채소를 한 그릇에 담은 든든한 선택.', ['고소함', '점심', '한식', '채소', '혼자'], ['달걀', '참깨', '소고기', '콩', '밀'], '#e4ecda'),
+  food('f08', '마라탕', '🌶️', '얼얼하고 매콤한 국물로 오늘의 스트레스를 훌훌.', ['매콤함', '따뜻함', '국물', '저녁'], ['땅콩', '소고기', '밀', '콩', '생선'], '#f7deda'),
+  food('f09', '우동', '🍥', '탱글한 면과 은은한 국물, 부담 없는 한 끼.', ['담백함', '따뜻함', '국물', '혼자', '점심', '일식'], ['밀', '생선', '콩'], '#f0e9d6'),
+  food('f10', '샌드위치', '🥪', '바쁜 날에도 가볍고 알차게 챙기는 한 끼.', ['담백함', '차가움', '점심', '혼자', '채소'], ['밀', '달걀', '유제품', '돼지고기'], '#e8edda'),
+  food('f11', '떡볶이', '🍢', '달콤하고 매콤한 소스에 쫀득한 떡을 푹.', ['매콤함', '따뜻함', '분식', '간식'], ['밀', '생선', '콩'], '#f5ddd3'),
+  food('f12', '두부 덮밥', '🍚', '노릇한 두부와 채소로 채우는 편안한 저녁.', ['담백함', '따뜻함', '고소함', '혼자', '저녁', '채소'], ['콩', '밀'], '#ecebd8'),
+  food('f13', '치킨', '🍗', '바삭한 한 입, 함께 먹으면 더 즐거운 메뉴.', ['고소함', '따뜻함', '함께', '저녁'], ['닭고기', '밀', '달걀', '콩'], '#f7e5c8'),
+  food('f14', '채소 카레', '🍛', '향긋한 향신료와 부드러운 채소가 어우러진 한 그릇.', ['따뜻함', '채소', '점심', '혼자'], ['감자', '당근', '밀', '유제품'], '#f3e6c6'),
+  food('f15', '메밀국수', '🥢', '시원한 국물에 깔끔하게 즐기는 면 요리.', ['담백함', '차가움', '점심', '혼자', '일식'], ['메밀', '생선', '밀', '콩'], '#e4e9e2'),
+  food('f16', '소고기 스테이크', '🥩', '여유로운 저녁에 즐기는 풍부한 고기 맛.', ['고소함', '따뜻함', '함께', '저녁', '양식'], ['소고기', '유제품'], '#eee0d8'),
   music('m01', '밤편지', '아이유', '🌙', ['차분함', '휴식', '보컬', '발라드', '낮은 에너지'], '#dfe5ed'),
   music('m02', '사건의 지평선', '윤하', '🌅', ['활기참', '산책', '보컬', '록', '높은 에너지'], '#eddbc9'),
   music('m03', 'Hype Boy', 'NewJeans', '🫧', ['활기참', '운동', '보컬', '팝', '높은 에너지'], '#dce8ee'),
@@ -44,6 +48,21 @@ export const options: Record<Category, string[]> = { food: vocab.food.conditionT
 export const exclusions: Record<Category, string[]> = { food: vocab.food.exclusions, music: vocab.music.exclusions };
 export const excludableIngredients: string[] = vocab.food.excludableIngredients;
 export const exclusionAliases: Record<Category, Record<string, string[]>> = { food: vocab.food.exclusionAliases, music: vocab.music.exclusionAliases };
+/** Broad exclusions ("해산물") that the ingredient data covers only in part: `covers` is what can be filtered. */
+export const exclusionGroups: Record<string, { covers: string[]; uncovered: string }> = { ...vocab.food.exclusionGroups, ...vocab.music.exclusionGroups };
+/** Ingredients people ask to avoid that the catalog does not record at all ("새우"): reported, never applied. */
+export const unsupportedExclusions: Record<Category, string[]> = { food: vocab.food.unsupportedExclusions, music: vocab.music.unsupportedExclusions };
+/** Words before "빼고/말고/없는…" that are not something to leave out ("건", "부담", "점심"): never reported as exclusions. */
+export const exclusionStopWords: string[] = vocab.exclusionStopWords;
+/** "건", "거", "음식": the head of a negated phrase ("고소한 건 빼줘"); short ingredient words that are still nouns ("깨"). */
+export const exclusionHeadNouns: string[] = vocab.exclusionHeadNouns;
+export const exclusionShortWords: Record<string, string[]> = vocab.exclusionShortWords;
+export const tagLabels: Record<Category, string[]> = { food: [...vocab.food.conditionTags, ...vocab.food.extraTags], music: [...vocab.music.conditionTags, ...vocab.music.extraTags] };
+/** Items from older servers, caches, history and backups may still carry price fields; they are dropped here. */
+export function normalizeItem<T extends Item>(item: T): Item {
+  const { price: _price, cost: _cost, ...rest } = item as T & { price?: unknown; cost?: unknown };
+  return rest.category === 'food' ? { ...rest, subtitle: traitSummary(rest.tags) } : rest;
+}
 export function validateCatalog(catalog: Item[] = items): string[] {
   const errors: string[] = [], ids = new Set<string>();
   const allowed = { food: new Set([...options.food,...vocab.food.extraTags]), music: new Set([...options.music,...vocab.music.extraTags]) };
@@ -51,7 +70,9 @@ export function validateCatalog(catalog: Item[] = items): string[] {
     if (ids.has(item.id)) errors.push(`중복 ID: ${item.id}`); ids.add(item.id);
     if (!item.id || !item.name || !item.subtitle || !item.description || !item.tags.length) errors.push(`필수 필드: ${item.id}`);
     if (!['food','music'].includes(item.category) || item.tags.some(t=>!allowed[item.category]?.has(t))) errors.push(`태그/분야: ${item.id}`);
-    if (item.category === 'food' && (!item.price || typeof item.cost !== 'number' || item.cost <= 0)) errors.push(`기준 가격: ${item.id}`);
+    if ('price' in item || 'cost' in item) errors.push(`가격 필드: ${item.id}`);
+    // Every recorded ingredient must be excludable, or "참깨는 빼줘" would match nothing and vanish (review 2026-10-27).
+    if (item.category === 'food' && item.ingredients.some(i => !excludableIngredients.includes(i))) errors.push(`제외할 수 없는 재료: ${item.id}`);
     if (item.category === 'music' && new URL(`https://www.youtube.com/results?search_query=${encodeURIComponent(item.subtitle+' '+item.name)}`).hostname !== 'www.youtube.com') errors.push(`검색 링크: ${item.id}`);
   }
   return errors;

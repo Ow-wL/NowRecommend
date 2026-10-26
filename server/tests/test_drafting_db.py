@@ -37,7 +37,7 @@ class DraftModel:
                               "emoji": "🎵", "color": "#e6e3df", "known": True})
             else:
                 items.append({"input": label, "description": f"{label} 한 그릇.", "tags": ["따뜻함", "국물", "점심"], "ingredients": ["밀", "생선"],
-                              "priceLabel": "8,000–10,000원", "cost": 9000, "emoji": "🍜", "color": "#f0e9d6"})
+                              "emoji": "🍜", "color": "#f0e9d6"})
         items.append({"input": "목록에 없던 메뉴", "description": "지어낸 메뉴", "tags": ["국물", "점심"]})
         return {"items": items}
 
@@ -62,7 +62,7 @@ def test_drafts_are_created_in_batches_and_never_recommended(catalog):
     rows = drafts(catalog)
     assert sorted(r.name for r in rows) == sorted(["가케우동", "김치 볶음밥", "냉면"])  # the invented extra answer is ignored
     assert all(r.id.startswith("f-") and r.source == "ai_draft" and r.embedding is not None for r in rows)
-    assert {tuple(r.ai_fields) for r in rows} == {("description", "tags", "ingredients", "price_label", "cost", "emoji", "color")}
+    assert {tuple(r.ai_fields) for r in rows} == {("description", "tags", "ingredients", "emoji", "color")}
     with TestClient(_app(catalog)) as client:
         ids = {i["id"] for i in client.get("/api/catalog").json()["items"]}
     assert not ids & {r.id for r in rows}

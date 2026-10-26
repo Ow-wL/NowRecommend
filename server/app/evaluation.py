@@ -4,7 +4,7 @@ Ranking modes, all with the gold conditions so ranking is judged apart from pars
   rule        — the browser's recommend() scoring (tag counts), ported below; the pre-R2 baseline
   retrieval   — the R2 pipeline (embeddings + tags + MMR), τ=0, no model
   no_embedding — retrieval when the query embedding is unavailable (API error, no key): tags + taste
-  taste_only  — retrieval without the sentence and wanted tags (hard exclusions/budget kept):
+  taste_only  — retrieval without the sentence and wanted tags (hard exclusions kept):
                 the "취향만" arm of the proposal's comparison
   rag         — retrieval + AI rerank (costs one generate call per case; opt-in)
 Metrics: precision@N (results that are acceptable), hit@N (≥1 acceptable), hard-filter violations,
@@ -26,7 +26,7 @@ from .parsing.service import ParseService
 from .recommend import PipelineConfig, recommend
 from .retrieval.filters import eligible_query
 from .schemas import RecommendRequest
-from .vocab import Vocab
+from .vocab import Vocab, get_vocab
 
 CASES_FILE = Path(__file__).resolve().parents[1] / "eval" / "cases.json"
 COUNT = {"food": 3, "music": 5}
@@ -40,7 +40,7 @@ def load_cases(path: Path = CASES_FILE) -> dict:
 def rule_baseline(session: Session, case: dict, persona: dict, catalog_ids: list[str] | None = None) -> list[str]:
     """Port of recommend() in src/domain.ts for a fresh request (no seen/pinned)."""
     k = case["conditions"]
-    rows = session.scalars(eligible_query(case["category"], k["excluded"], k["maxPrice"], [], [], catalog_ids)).all()
+    rows = session.scalars(eligible_query(case["category"], k["excluded"], [], [], catalog_ids)).all()
     liked = session.scalars(select(Item).where(Item.id.in_(persona["selected"]))).all()
     preferred = set(persona["tags"]).union(*(r.tags for r in liked))
     score = lambda r: sum(t in preferred for t in r.tags) + 2 * sum(t in k["tags"] for t in r.tags)  # noqa: E731
@@ -49,11 +49,11 @@ def rule_baseline(session: Session, case: dict, persona: dict, catalog_ids: list
 
 def violations(session: Session, case: dict, ids: list[str]) -> int:
     k = case["conditions"]
+    blocked_values = set(get_vocab().for_category(case["category"]).blocked(k["excluded"]))
     count = 0
     for row in session.scalars(select(Item).where(Item.id.in_(ids))):
-        blocked = set(k["excluded"]) & {*row.tags, *row.ingredients}
-        over_budget = k["maxPrice"] is not None and (row.cost is None or row.cost > k["maxPrice"])
-        count += bool(blocked or over_budget or row.category != case["category"])
+        blocked = blocked_values & {*row.tags, *row.ingredients}
+        count += bool(blocked or row.category != case["category"])
     return count
 
 
@@ -135,7 +135,7 @@ def run_parsing(data: dict, vocab: Vocab, model: JsonModel | None = None, limit:
 def _parse_scores(rows: list[dict], key: str) -> dict | None:
     if not rows:
         return None
-    tp = fp = fn = ex_hit = ex_total = budget_ok = exact = 0
+    tp = fp = fn = ex_hit = ex_total = exact = 0
     for row in rows:
         gold, got = row["gold"], row[key]
         tp += len(set(gold["tags"]) & set(got["tags"]))
@@ -143,10 +143,9 @@ def _parse_scores(rows: list[dict], key: str) -> dict | None:
         fn += len(set(gold["tags"]) - set(got["tags"]))
         ex_total += len(gold["excluded"])
         ex_hit += len(set(gold["excluded"]) & set(got["excluded"]))
-        budget_ok += gold["maxPrice"] == got["maxPrice"]
-        exact += set(gold["tags"]) == set(got["tags"]) and set(gold["excluded"]) == set(got["excluded"]) and gold["maxPrice"] == got["maxPrice"]
+        exact += set(gold["tags"]) == set(got["tags"]) and set(gold["excluded"]) == set(got["excluded"])
     return {"cases": len(rows), "tag_precision": tp / (tp + fp) if tp + fp else 1.0, "tag_recall": tp / (tp + fn) if tp + fn else 1.0,
-            "exclusion_recall": ex_hit / ex_total if ex_total else 1.0, "budget_accuracy": budget_ok / len(rows), "exact": exact / len(rows)}
+            "exclusion_recall": ex_hit / ex_total if ex_total else 1.0, "exact": exact / len(rows)}
 
 
 def render_markdown(data: dict, ranking: dict[str, ModeResult], parsing: dict, note: str = "") -> str:
@@ -161,10 +160,10 @@ def render_markdown(data: dict, ranking: dict[str, ModeResult], parsing: dict, n
             if m := ranking_metrics(data, result, category):
                 lines.append(f"| {labels[mode]} | {m['cases']} | {m['precision']:.2f} | {m['hit']:.2f} | {m['violations']} | {m['p50_ms']:.0f}ms | {m['p95_ms']:.0f}ms | {m['fallbacks'] if mode == 'rag' else '-'} |")
         lines.append("")
-    lines += ["## 조건 해석 (정답 조건 대비)", "", "| 해석기 | 사례 | 태그 정밀도 | 태그 재현율 | 제외 재현율 | 예산 정확도 | 완전 일치 |", "|---|---|---|---|---|---|---|"]
+    lines += ["## 조건 해석 (정답 조건 대비)", "", "| 해석기 | 사례 | 태그 정밀도 | 태그 재현율 | 제외 재현율 | 완전 일치 |", "|---|---|---|---|---|---|"]
     for key, label in (("rule", "규칙 파서"), ("service", "/api/parse (규칙+AI)")):
         if s := parsing[key]:
-            lines.append(f"| {label} | {s['cases']} | {s['tag_precision']:.2f} | {s['tag_recall']:.2f} | {s['exclusion_recall']:.2f} | {s['budget_accuracy']:.2f} | {s['exact']:.2f} |")
+            lines.append(f"| {label} | {s['cases']} | {s['tag_precision']:.2f} | {s['tag_recall']:.2f} | {s['exclusion_recall']:.2f} | {s['exact']:.2f} |")
     misses = [r for r in parsing["rows"] if set(r["gold"]["excluded"]) - set(r["rule"]["excluded"])]
     if misses:
         lines += ["", "규칙 파서가 놓친 필수 제외:", ""] + [f"- {r['id']}: {sorted(set(r['gold']['excluded']) - set(r['rule']['excluded']))}" for r in misses]

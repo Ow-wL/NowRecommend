@@ -7,7 +7,7 @@ from app.config import PROJECT_ROOT
 from app.main import create_app
 from app.parsing.ai import AiParse, ai_parse, merge
 from app.parsing.coverage import uncovered_words
-from app.parsing.rules import parse_rules
+from app.parsing.rules import parse_rules, situation_text
 from app.parsing.service import ParseService
 from app.routes.parse import get_parse_model, get_parse_service
 from app.vocab import get_vocab
@@ -17,15 +17,24 @@ CASES = json.loads((PROJECT_ROOT / "shared" / "parse-cases.json").read_text(enco
 
 @pytest.mark.parametrize("case", CASES, ids=[f"{c['category']}:{c['text'] or '-'}" for c in CASES])
 def test_rules_match_the_frontend_parser(case):
-    assert parse_rules(case["text"], case["category"]).conditions() == case["expected"]
+    result = parse_rules(case["text"], case["category"])
+    assert result.conditions() == {"tags": case["expected"]["tags"], "excluded": case["expected"]["excluded"]}
+    assert result.unsupported == case["expected"]["unsupported"]
+
+
+def test_unsupported_phrases_never_steer_ranking():
+    sentence = "혼자 먹을 만원 이하 저녁, 해산물은 빼고 맵지 않게, 배달 가능한 메뉴"
+    assert situation_text(sentence, "food") == "혼자 먹을 저녁, 해산물은 빼고 맵지 않게, 메뉴"
+    assert situation_text("공부할 때 차분한 거, 만원", "music") == "공부할 때 차분한 거,"
 
 
 @pytest.mark.parametrize("text, category, expected", [
     ("혼자 먹을 담백한 저녁이 먹고 싶어", "food", []),
     ("과제하면서 들을 적당히 활기찬 음악을 추천해줘", "music", []),
     ("유제품 없이 담백하게", "food", []),
-    ("1만 5천원 이하로 저녁", "food", []),
-    ("공부할 때 차분한 거, 만원", "music", []),  # music ignores budgets, so the amount is not "missed"
+    ("1만 5천원 이하로 저녁", "food", []),  # price is unsupported: understood (to say so), never sent to the model
+    ("배달 가능한 매콤한 거, 근처에서", "food", []),
+    ("공부할 때 차분한 거, 만원", "music", []),  # music has no price either, so the amount is not "missed"
     ("그냥 아무거나", "food", []),
     ("속이 안 좋아서 부담 없는 걸로", "food", ["좋아서"]),
     ("3만원으로 기념일 저녁", "food", ["기념일"]),
@@ -55,32 +64,30 @@ class Model:
 def test_ai_answers_are_limited_to_the_vocabulary_and_the_sentence():
     vocab = get_vocab().food
     model = Model({"wanted": ["따뜻함", "따뜻함", "없는태그", "한식"], "excluded": ["매콤함", "새우"], "maxPrice": 9000,
-                   "unparsed": ["속이 안 좋아서", "지어낸 표현", "  ", "속이 안 좋아서"]})
-    result = ai_parse(model, "food", "속이 안 좋아서 부담 없는 걸로", vocab, {"tags": [], "excluded": [], "maxPrice": None}, ["좋아서"])
-    assert result == AiParse(["따뜻함"], ["매콤함"], None, ["속이 안 좋아서"])  # no amount in the sentence → no budget
+                   "unparsed": ["속이 안 좋아서", "지어낸 표현", "  ", "속이 안 좋아서"]})  # a stray budget is ignored
+    result = ai_parse(model, "food", "속이 안 좋아서 부담 없는 걸로", vocab, {"tags": [], "excluded": []}, ["좋아서"])
+    assert result == AiParse(["따뜻함"], ["매콤함"], ["속이 안 좋아서"])
     assert model.calls[0]["wordsRulesMissed"] == ["좋아서"] and model.calls[0]["allowedTags"] == vocab.conditionTags
 
 
-def test_ai_budget_needs_food_and_an_amount_in_the_sentence():
-    answer = {"wanted": [], "excluded": [], "maxPrice": 12000, "unparsed": []}
-    assert ai_parse(Model(answer), "food", "만 이천원 정도로 기념일", get_vocab().food, {"tags": [], "excluded": [], "maxPrice": None}, ["기념일"]).max_price == 12000
-    assert ai_parse(Model(answer), "music", "만 이천원", get_vocab().music, {"tags": [], "excluded": [], "maxPrice": None}, ["x"]).max_price is None
-    assert ai_parse(Model({**answer, "maxPrice": 0}), "food", "3만원", get_vocab().food, {"tags": [], "excluded": [], "maxPrice": None}, ["x"]).max_price is None
+def test_the_model_is_told_price_and_delivery_are_unsupported():
+    from app.parsing.ai import SYSTEM, response_schema
+    assert "maxPrice" not in response_schema(get_vocab().food)["properties"]
+    assert "가격·예산·배달" in SYSTEM
 
 
-def test_merge_unions_exclusions_and_keeps_the_rule_budget():
-    rule = {"tags": ["점심", "매콤함"], "excluded": ["밀"], "maxPrice": 10000}
-    merged = merge(rule, AiParse(["채소", "점심"], ["매콤함"], 20000, []), "밀 빼고 안 매운 점심", "food")
-    assert merged == {"tags": ["점심", "채소"], "excluded": ["밀", "매콤함"], "maxPrice": 10000}
-    assert merge({**rule, "maxPrice": None}, AiParse([], [], 20000, []), "2만원", "food")["maxPrice"] == 20000
+def test_merge_unions_exclusions_and_has_no_budget():
+    rule = {"tags": ["점심", "매콤함"], "excluded": ["밀"]}
+    merged = merge(rule, AiParse(["채소", "점심"], ["매콤함"], []), "밀 빼고 안 매운 점심", "food")
+    assert merged == {"tags": ["점심", "채소"], "excluded": ["밀", "매콤함"]}
 
 
 def test_merge_drops_music_exclusions_the_sentence_does_not_ask_for():
-    rule = {"tags": ["활기참"], "excluded": [], "maxPrice": None}
+    rule = {"tags": ["활기참"], "excluded": []}
     # Lite once excluded the genre that was asked for.
-    assert merge(rule, AiParse(["높은 에너지"], ["록"], None, []), "에너지 넘치는 록", "music")["excluded"] == []
-    assert merge(rule, AiParse(["록"], ["록"], None, []), "록 말고 신나는 거", "music")["excluded"] == []
-    assert merge(rule, AiParse([], ["피아노"], None, []), "신나는 거, 피아노 말고", "music")["excluded"] == ["피아노"]
+    assert merge(rule, AiParse(["높은 에너지"], ["록"], []), "에너지 넘치는 록", "music")["excluded"] == []
+    assert merge(rule, AiParse(["록"], ["록"], []), "록 말고 신나는 거", "music")["excluded"] == []
+    assert merge(rule, AiParse([], ["피아노"], []), "신나는 거, 피아노 말고", "music")["excluded"] == ["피아노"]
 
 
 @pytest.mark.parametrize("sentence, excluded", [
@@ -89,17 +96,17 @@ def test_merge_drops_music_exclusions_the_sentence_does_not_ask_for():
 ])
 def test_merge_keeps_food_exclusions_the_rules_missed(sentence, excluded):
     # An allergy or diet the model caught must never be dropped (review 2026-10-26 found this regression).
-    empty = {"tags": [], "excluded": [], "maxPrice": None}
-    assert merge(empty, AiParse([], excluded, None, []), sentence, "food")["excluded"] == excluded
+    empty = {"tags": [], "excluded": []}
+    assert merge(empty, AiParse([], excluded, []), sentence, "food")["excluded"] == excluded
 
 
 def test_merge_lets_a_food_exclusion_win_over_a_wanted_tag():
-    rule = {"tags": ["매콤함"], "excluded": [], "maxPrice": None}
-    assert merge(rule, AiParse([], ["매콤함"], None, []), "맵지 않은 거", "food") == {"tags": [], "excluded": ["매콤함"], "maxPrice": None}
+    rule = {"tags": ["매콤함"], "excluded": []}
+    assert merge(rule, AiParse([], ["매콤함"], []), "맵지 않은 거", "food") == {"tags": [], "excluded": ["매콤함"]}
 
 
 def test_service_calls_the_model_only_for_missed_words_and_caches():
-    service, model = ParseService(), Model({"wanted": ["따뜻함"], "excluded": [], "maxPrice": 0, "unparsed": []})
+    service, model = ParseService(), Model({"wanted": ["따뜻함"], "excluded": [], "unparsed": []})
     covered = service.parse("food", "혼자 먹을 담백한 저녁", get_vocab(), model)
     assert covered["source"] == "rule" and covered["ai"] == "not_needed" and model.calls == []
     first = service.parse("food", "속이 안 좋아서 부담 없는 걸로", get_vocab(), model)
@@ -112,7 +119,8 @@ def test_service_failures_keep_rules_and_are_retried():
     service = ParseService()
     failing = Model(error=TimeoutError("slow"))
     first = service.parse("food", "3만원으로 기념일 저녁", get_vocab(), failing)
-    assert first == {"conditions": {"tags": ["저녁"], "excluded": [], "maxPrice": 30000}, "unparsed": ["기념일"], "source": "rule", "ai": "failed"}
+    assert first == {"conditions": {"tags": ["저녁"], "excluded": []}, "unparsed": ["기념일"], "unsupported": [{"kind": "price", "text": "3만원"}],
+                     "source": "rule", "ai": "failed"}
     service.parse("food", "3만원으로 기념일 저녁", get_vocab(), failing)
     assert len(failing.calls) == 2
     assert service.parse("music", "비 오는 밤 혼자", get_vocab(), None)["ai"] == "unavailable"
@@ -120,11 +128,33 @@ def test_service_failures_keep_rules_and_are_retried():
 
 def test_parse_route():
     app = create_app()
-    model = Model({"wanted": ["차분함", "휴식"], "excluded": [], "maxPrice": 0, "unparsed": []})
+    model = Model({"wanted": ["차분함", "휴식"], "excluded": [], "unparsed": []})
     app.dependency_overrides[get_parse_model] = lambda: model
     app.dependency_overrides[get_parse_service] = ParseService
     with TestClient(app) as client:
         ok = client.post("/api/parse", json={"category": "music", "text": "비 오는 밤 혼자 듣기 좋은 노래"})
         assert client.post("/api/parse", json={"category": "drink", "text": "x"}).status_code == 422
         assert client.post("/api/parse", json={"category": "food", "text": "가" * 301}).status_code == 422
-    assert ok.json() == {"conditions": {"tags": ["차분함", "휴식"], "excluded": [], "maxPrice": None}, "unparsed": [], "source": "rule+ai", "ai": "used"}
+    assert ok.json() == {"conditions": {"tags": ["차분함", "휴식"], "excluded": []}, "unparsed": [], "unsupported": [], "source": "rule+ai", "ai": "used"}
+
+
+def test_the_model_cannot_bring_back_a_tag_the_sentence_left_out():
+    # "국물 있는 건 빼줘" must not become a wanted 국물, even when other words send the sentence to the model.
+    service, model = ParseService(), Model({"wanted": ["국물", "따뜻함"], "excluded": [], "unparsed": []})
+    answer = service.parse("food", "어제 과음해서 국물 있는 건 빼줘", get_vocab(), model)
+    assert answer["ai"] == "used" and answer["conditions"]["tags"] == ["따뜻함"]
+    assert answer["unsupported"] == [{"kind": "trait", "text": "국물 제외"}]
+
+
+def test_model_only_food_exclusions_need_a_diet_or_allergy_statement():
+    everything = AiParse([], list(get_vocab().food.exclusions), [])
+    # 2026-10-27 Lite: all 17 values for a hangover sentence, which would have left no candidate.
+    assert merge({"tags": [], "excluded": []}, everything, "어제 과음해서 고소한 건 빼고 속 편한 걸로", "food")["excluded"] == []
+    assert merge({"tags": [], "excluded": []}, AiParse([], ["매콤함"], []), "비 오는 날 국물 있는 건 빼줘", "food")["excluded"] == []
+    assert merge({"tags": [], "excluded": []}, AiParse([], ["소고기", "유제품"], []), "비건이라 가볍게", "food")["excluded"] == ["소고기", "유제품"]
+
+
+def test_a_fully_read_negation_does_not_call_the_model():
+    model = Model({"wanted": ["국물"], "excluded": [], "unparsed": []})
+    answer = ParseService().parse("food", "국물 있는 건 빼줘", get_vocab(), model)
+    assert answer["ai"] == "not_needed" and model.calls == [] and answer["conditions"] == {"tags": [], "excluded": []}

@@ -26,16 +26,18 @@ class ParseService:
             return self._cache[key]
         rules = parse_rules(text, category)
         conditions, uncovered = rules.conditions(), uncovered_words(text, rules.spans)
+        # Phrases the app does not support (price, delivery, nearby, unknown ingredients) are reported, never applied.
+        unsupported = rules.unsupported
         if not uncovered:
-            return self._store(key, {"conditions": conditions, "unparsed": [], "source": "rule", "ai": "not_needed"})
+            return self._store(key, {"conditions": conditions, "unparsed": [], "unsupported": unsupported, "source": "rule", "ai": "not_needed"})
         if model is None:
-            return self._store(key, {"conditions": conditions, "unparsed": uncovered, "source": "rule", "ai": "unavailable"})
+            return self._store(key, {"conditions": conditions, "unparsed": uncovered, "unsupported": unsupported, "source": "rule", "ai": "unavailable"})
         try:
             ai = ai_parse(model, category, text, vocab.for_category(category), conditions, uncovered)
         except Exception as exc:  # Quota, overload, timeout, bad JSON: the rule result still stands.
             log.warning("parse model failed: %s", exc)
-            return {"conditions": conditions, "unparsed": uncovered, "source": "rule", "ai": "failed"}
-        return self._store(key, {"conditions": merge(conditions, ai, text, category), "unparsed": ai.unparsed, "source": "rule+ai", "ai": "used"})
+            return {"conditions": conditions, "unparsed": uncovered, "unsupported": unsupported, "source": "rule", "ai": "failed"}
+        return self._store(key, {"conditions": merge(conditions, ai, text, category, rules.not_wanted), "unparsed": ai.unparsed, "unsupported": unsupported, "source": "rule+ai", "ai": "used"})
 
     def _store(self, key: tuple[str, str], value: dict) -> dict:
         self._cache[key] = value

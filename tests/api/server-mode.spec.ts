@@ -86,6 +86,11 @@ test('replaces a single card through the server', async ({ page }) => {
   await requestFood(page);
   await cardTool(page, food('f07').name, '한 장 교체');
   await expect(page.locator('.result-grid h3')).toHaveText([food('f02').name, food('f14').name, food('f12').name]);
+  // The server returned one card; the comparison of the cards kept is redone for the new set (mocked API, not real AI).
+  const kept = page.locator('.item-card').filter({ hasText: food('f12').name }).locator('.contrast');
+  await expect(kept).toHaveText('다른 후보와 비교추천 중 유일하게 고소한 메뉴예요.'); // 비빔밥, also 고소함, has left
+  await expect(page.locator('.item-card').filter({ hasText: food('f02').name }).locator('.contrast')).toHaveText('다른 후보와 비교추천 중 유일하게 국물 있는 메뉴예요.');
+  await expect(page.getByText(/이전에 본 후보/)).toHaveCount(0); // a replacement is not a repeat
   expect(bodies[1]).toMatchObject({ count: 1, pinnedIds: [] });
   expect(bodies[1].excludedIds).toEqual(expect.arrayContaining(['f02', 'f07', 'f12']));
 });
@@ -120,7 +125,7 @@ test('reads missed words with the server and keeps the answer for the same sente
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid h3')).toHaveCount(3);
   expect(parses).toHaveLength(1); // the same sentence is not sent again
-  expect(recommends[1].conditions).toEqual({ tags: ['담백함'], excluded: ['매콤함'], maxPrice: null });
+  expect(recommends[1].conditions).toEqual({ tags: ['담백함'], excluded: ['매콤함'] }); // no budget is ever sent
   await page.getByRole('button', { name: '조건 수정', exact: true }).click();
   await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toHaveCount(0); // the removal survives re-submitting
 });

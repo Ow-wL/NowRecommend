@@ -11,22 +11,30 @@ MUSIC = get_vocab().music
 
 def food_answer(label="가케우동", **overrides):
     return {"input": label, "description": "따뜻한 국물에 굵은 면을 담은 한 그릇.", "tags": ["따뜻함", "국물", "일식", "없는태그"],
-            "ingredients": ["밀", "생선", "파"], "priceLabel": "8,000–10,000원", "cost": 9000, "emoji": "🍜", "color": "#f0e9d6", **overrides}
+            "ingredients": ["밀", "생선", "파"], "emoji": "🍜", "color": "#f0e9d6", **overrides}
 
 
 def test_food_draft_keeps_input_name_and_flags_allergens_for_review():
     item, notes, error = clean_draft("food", DraftInput("가케우동"), food_answer(), FOOD)
-    assert error is None and item["name"] == "가케우동" and item["subtitle"] == "8,000–10,000원"
+    assert error is None and item["name"] == "가케우동" and item["subtitle"] == "따뜻함 · 국물" and "price_label" not in item
     assert item["tags"] == ["따뜻함", "국물", "일식"]  # unknown tag dropped
     assert notes == ["AI 추정 재료 — 알레르기 재료 확인 필요 (현재 표시: 밀, 생선)"]
 
 
 @pytest.mark.parametrize("change, error", [
-    ({"input": "다른 메뉴"}, "입력과 맞지 않음"), ({"priceLabel": "싸요"}, "가격"), ({"cost": 50}, "가격"),
+    ({"input": "다른 메뉴"}, "입력과 맞지 않음"),
     ({"tags": ["없는태그"]}, "태그 부족"), ({"description": " "}, "태그 부족"),
 ])
 def test_food_draft_rejects_bad_answers(change, error):
     assert error in clean_draft("food", DraftInput("가케우동"), food_answer(**change), FOOD)[2]
+
+
+def test_food_draft_never_keeps_a_price_and_does_not_ask_for_one():
+    from app.llm.draft import FOOD_SYSTEM
+    item, _, error = clean_draft("food", DraftInput("가케우동"), food_answer(priceLabel="8,000–10,000원", cost=9000), FOOD)
+    assert error is None and not {"price_label", "cost", "priceLabel"} & set(item)
+    assert "priceLabel" not in response_schema("food", FOOD)["properties"]["items"]["items"]["properties"]
+    assert "가격은 쓰지 않는다" in FOOD_SYSTEM
 
 
 def test_music_draft_never_takes_title_or_artist_from_the_model():

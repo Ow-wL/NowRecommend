@@ -6,7 +6,7 @@
       "category": "food",
       "name": "쌀국수",
       "artist": null,
-      "subtitle": "9,000–12,000원",
+      "subtitle": "담백함 · 따뜻함 · 국물",
       "description": "따뜻한 국물과 부드러운 면, 가볍게 즐기는 한 그릇.",
       "tags": [
         "담백함",
@@ -22,8 +22,6 @@
         "생선",
         "콩"
       ],
-      "price_label": "9,000–12,000원",
-      "cost": 10000,
       "emoji": "🍜",
       "color": "#f4e9d9"
     },
@@ -32,7 +30,7 @@
       "category": "food",
       "name": "닭곰탕",
       "artist": null,
-      "subtitle": "9,000–11,000원",
+      "subtitle": "담백함 · 따뜻함 · 국물",
       "description": "푹 고아낸 맑은 국물로 속까지 편안한 한 끼.",
       "tags": [
         "담백함",
@@ -44,8 +42,6 @@
       "ingredients": [
         "닭고기"
       ],
-      "price_label": "9,000–11,000원",
-      "cost": 10000,
       "emoji": "🥣",
       "color": "#e9efdf"
     },
@@ -54,7 +50,7 @@
       "category": "food",
       "name": "버섯 리조토",
       "artist": null,
-      "subtitle": "13,000–17,000원",
+      "subtitle": "담백함 · 고소함 · 따뜻함",
       "description": "버섯의 풍미와 크리미한 밥이 만나는 작은 휴식.",
       "tags": [
         "담백함",
@@ -67,8 +63,6 @@
         "버섯",
         "유제품"
       ],
-      "price_label": "13,000–17,000원",
-      "cost": 15000,
       "emoji": "🍄",
       "color": "#eee5db"
     },
@@ -77,7 +71,7 @@
       "category": "food",
       "name": "김치찌개",
       "artist": null,
-      "subtitle": "8,000–10,000원",
+      "subtitle": "매콤함 · 따뜻함 · 국물",
       "description": "익숙해서 더 좋은, 칼칼하고 든든한 집밥.",
       "tags": [
         "매콤함",
@@ -91,8 +85,6 @@
         "생선",
         "콩"
       ],
-      "price_label": "8,000–10,000원",
-      "cost": 9000,
       "emoji": "🍲",
       "color": "#fae5d9"
     },
@@ -101,7 +93,7 @@
       "category": "food",
       "name": "연어 초밥",
       "artist": null,
-      "subtitle": "14,000–18,000원",
+      "subtitle": "담백함 · 차가움",
       "description": "부드러운 연어와 산뜻한 밥의 균형.",
       "tags": [
         "담백함",
@@ -115,8 +107,6 @@
         "콩",
         "밀"
       ],
-      "price_label": "14,000–18,000원",
-      "cost": 16000,
       "emoji": "🍣",
       "color": "#f7e5e1"
     },
@@ -125,7 +115,7 @@
       "category": "food",
       "name": "토마토 파스타",
       "artist": null,
-      "subtitle": "12,000–16,000원",
+      "subtitle": "상큼함 · 따뜻함",
       "description": "새콤한 토마토 소스로 기분까지 산뜻하게.",
       "tags": [
         "상큼함",
@@ -138,8 +128,6 @@
         "토마토",
         "유제품"
       ],
-      "price_label": "12,000–16,000원",
-      "cost": 14000,
       "emoji": "🍝",
       "color": "#f6e1d3"
     },
@@ -148,7 +136,7 @@
       "category": "food",
       "name": "비빔밥",
       "artist": null,
-      "subtitle": "8,000–11,000원",
+      "subtitle": "고소함 · 채소",
       "description": "다채로운 채소를 한 그릇에 담은 든든한 선택.",
       "tags": [
         "고소함",
@@ -164,8 +152,6 @@
         "콩",
         "밀"
       ],
-      "price_label": "8,000–11,000원",
-      "cost": 9500,
       "emoji": "🥗",
       "color": "#e4ecda"
     },
@@ -174,7 +160,7 @@
       "category": "food",
       "name": "마라탕",
       "artist": null,
-      "subtitle": "10,000–15,000원",
+      "subtitle": "매콤함 · 따뜻함 · 국물",
       "description": "얼얼하고 매콤한 국물로 오늘의 스트레스를 훌훌.",
       "tags": [
         "매콤함",
@@ -189,8 +175,6 @@
         "콩",
         "생선"
       ],
-      "price_label": "10,000–15,000원",
-      "cost": 12000,
       "emoji": "🌶️",
       "color": "#f7deda"
     },
@@ -199,7 +183,7 @@
       "category": "food",
       "name": "우동",
       "artist": null,
-      "subtitle": "7,000–10,000원",
+      "subtitle": "담백함 · 따뜻함 · 국물",
       "description": "탱글한 면과 은은한 국물, 부담 없는 한 끼.",
       "tags": [
         "담백함",
@@ -214,8 +198,6 @@
         "생선",
         "콩"
       ],
-      "price_label": "7,000–10,000원",
-      "cost": 8500,
       "emoji": "🍥",
       "color": "#f0e9d6"
     },
@@ -224,7 +206,7 @@
       "category": "food",
       "name": "샌드위치",
       "artist": null,
-      "subtitle": "6,000–9,000원",
+      "subtitle": "담백함 · 차가움 · 채소",
       "description": "바쁜 날에도 가볍고 알차게 챙기는 한 끼.",
       "tags": [
         "담백함",
@@ -239,8 +221,6 @@
         "유제품",
         "돼지고기"
       ],
-      "price_label": "6,000–9,000원",
-      "cost": 7500,
       "emoji": "🥪",
       "color": "#e8edda"
     },
@@ -249,7 +229,7 @@
       "category": "food",
       "name": "떡볶이",
       "artist": null,
-      "subtitle": "5,000–8,000원",
+      "subtitle": "매콤함 · 따뜻함",
       "description": "달콤하고 매콤한 소스에 쫀득한 떡을 푹.",
       "tags": [
         "매콤함",
@@ -262,8 +242,6 @@
         "생선",
         "콩"
       ],
-      "price_label": "5,000–8,000원",
-      "cost": 6500,
       "emoji": "🍢",
       "color": "#f5ddd3"
     },
@@ -272,7 +250,7 @@
       "category": "food",
       "name": "두부 덮밥",
       "artist": null,
-      "subtitle": "8,000–11,000원",
+      "subtitle": "담백함 · 고소함 · 따뜻함",
       "description": "노릇한 두부와 채소로 채우는 편안한 저녁.",
       "tags": [
         "담백함",
@@ -286,8 +264,6 @@
         "콩",
         "밀"
       ],
-      "price_label": "8,000–11,000원",
-      "cost": 9500,
       "emoji": "🍚",
       "color": "#ecebd8"
     },
@@ -296,7 +272,7 @@
       "category": "food",
       "name": "치킨",
       "artist": null,
-      "subtitle": "18,000–23,000원",
+      "subtitle": "고소함 · 따뜻함",
       "description": "바삭한 한 입, 함께 먹으면 더 즐거운 메뉴.",
       "tags": [
         "고소함",
@@ -310,8 +286,6 @@
         "달걀",
         "콩"
       ],
-      "price_label": "18,000–23,000원",
-      "cost": 20000,
       "emoji": "🍗",
       "color": "#f7e5c8"
     },
@@ -320,7 +294,7 @@
       "category": "food",
       "name": "채소 카레",
       "artist": null,
-      "subtitle": "8,000–12,000원",
+      "subtitle": "따뜻함 · 채소",
       "description": "향긋한 향신료와 부드러운 채소가 어우러진 한 그릇.",
       "tags": [
         "따뜻함",
@@ -334,8 +308,6 @@
         "밀",
         "유제품"
       ],
-      "price_label": "8,000–12,000원",
-      "cost": 10000,
       "emoji": "🍛",
       "color": "#f3e6c6"
     },
@@ -344,7 +316,7 @@
       "category": "food",
       "name": "메밀국수",
       "artist": null,
-      "subtitle": "8,000–11,000원",
+      "subtitle": "담백함 · 차가움",
       "description": "시원한 국물에 깔끔하게 즐기는 면 요리.",
       "tags": [
         "담백함",
@@ -359,8 +331,6 @@
         "밀",
         "콩"
       ],
-      "price_label": "8,000–11,000원",
-      "cost": 9500,
       "emoji": "🥢",
       "color": "#e4e9e2"
     },
@@ -369,7 +339,7 @@
       "category": "food",
       "name": "소고기 스테이크",
       "artist": null,
-      "subtitle": "25,000–35,000원",
+      "subtitle": "고소함 · 따뜻함",
       "description": "여유로운 저녁에 즐기는 풍부한 고기 맛.",
       "tags": [
         "고소함",
@@ -382,8 +352,6 @@
         "소고기",
         "유제품"
       ],
-      "price_label": "25,000–35,000원",
-      "cost": 30000,
       "emoji": "🥩",
       "color": "#eee0d8"
     },
@@ -402,8 +370,6 @@
         "낮은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🌙",
       "color": "#dfe5ed"
     },
@@ -422,8 +388,6 @@
         "높은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🌅",
       "color": "#eddbc9"
     },
@@ -442,8 +406,6 @@
         "높은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🫧",
       "color": "#dce8ee"
     },
@@ -462,8 +424,6 @@
         "높은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🪩",
       "color": "#e6dfef"
     },
@@ -482,8 +442,6 @@
         "중간 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🌸",
       "color": "#f0dfe5"
     },
@@ -502,8 +460,6 @@
         "낮은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🎹",
       "color": "#e0e8de"
     },
@@ -523,8 +479,6 @@
         "낮은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🌧️",
       "color": "#dfe6ed"
     },
@@ -543,8 +497,6 @@
         "중간 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🌿",
       "color": "#e4ead7"
     },
@@ -563,8 +515,6 @@
         "중간 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "☀️",
       "color": "#f0e6c8"
     },
@@ -583,8 +533,6 @@
         "중간 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🎷",
       "color": "#eadbcf"
     },
@@ -603,8 +551,6 @@
         "낮은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "💧",
       "color": "#dde5e8"
     },
@@ -624,8 +570,6 @@
         "낮은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "✨",
       "color": "#e6e0ee"
     },
@@ -644,8 +588,6 @@
         "높은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🌼",
       "color": "#efead2"
     },
@@ -664,8 +606,6 @@
         "중간 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🍃",
       "color": "#dfebdd"
     },
@@ -684,8 +624,6 @@
         "낮은 에너지"
       ],
       "ingredients": [],
-      "price_label": null,
-      "cost": null,
       "emoji": "🕊️",
       "color": "#e6e3df"
     }

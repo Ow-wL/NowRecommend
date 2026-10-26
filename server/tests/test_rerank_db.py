@@ -49,7 +49,7 @@ def client_for(session, model):
 
 
 def body(**overrides):
-    return {"category": "food", "raw": "비 오는 날 얼큰한 국물", "conditions": {"tags": ["국물"], "excluded": ["밀"], "maxPrice": None},
+    return {"category": "food", "raw": "비 오는 날 얼큰한 국물", "conditions": {"tags": ["국물"], "excluded": ["밀"]},
             "profile": {"selected": ["f04", "f08"], "tags": [], "disliked": []}, "tau": 0, **overrides}
 
 
@@ -135,9 +135,25 @@ def test_taste_claims_about_unpicked_artists_are_replaced(catalog):
     def claim(payload):
         first = payload["candidates"][0]
         return {"picks": [{"id": first["id"], "tasteReason": "평소 좋아하는 BTS 곡 스타일이에요", "contextReason": "AI 상황"}]}
-    request = {"category": "music", "raw": "신나게 달리기", "conditions": {"tags": ["운동"], "excluded": [], "maxPrice": None},
+    request = {"category": "music", "raw": "신나게 달리기", "conditions": {"tags": ["운동"], "excluded": []},
                "profile": {"selected": ["m06", "m07", "m10", "m11", "m12"], "tags": [], "disliked": []}, "tau": 0}
     with client_for(catalog, FakeModel(claim)) as client:
         response = client.post("/api/recommend", json=request).json()
     assert "BTS" not in response["results"][0]["tasteReason"] and response["results"][0]["contextReason"] == "AI 상황"
     assert "taste_claim=1" in log_for(catalog, response).error
+
+
+def test_the_model_never_sees_prices_or_price_words(catalog):
+    model = FakeModel(reverse_order)
+    response = post(catalog, model, raw="만원 이하로 얼큰한 국물, 배달 가능한 곳")
+    payload = model.payloads[0]
+    assert payload["situation"] == "로 얼큰한 국물, 곳" and "maxPrice" not in payload
+    assert all("price" not in c for c in payload["candidates"])
+    assert response["meta"]["mode"] == "rag"
+
+
+def test_extra_registered_items_are_kept_from_the_model(catalog):
+    model = FakeModel(reverse_order)
+    post(catalog, model, conditions={"tags": [], "excluded": []}, profile={"selected": ["f02", "f03", "f04", "f16", "f01"], "tags": [], "disliked": []})
+    shown = [c["id"] for c in model.payloads[0]["candidates"]]
+    assert len([i for i in shown if i in {"f02", "f03", "f04", "f16", "f01"}]) <= 1

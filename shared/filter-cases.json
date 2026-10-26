@@ -6,8 +6,7 @@
       "category": "food",
       "conditions": {
         "tags": [],
-        "excluded": [],
-        "maxPrice": null
+        "excluded": []
       },
       "disliked": [],
       "excludedIds": [],
@@ -38,8 +37,7 @@
         "tags": [],
         "excluded": [
           "밀"
-        ],
-        "maxPrice": null
+        ]
       },
       "disliked": [],
       "excludedIds": [],
@@ -59,8 +57,7 @@
         "excluded": [
           "매콤함",
           "생선"
-        ],
-        "maxPrice": null
+        ]
       },
       "disliked": [],
       "excludedIds": [],
@@ -78,7 +75,7 @@
       ]
     },
     {
-      "name": "예산 9,000원",
+      "name": "예전 기록의 예산 값은 무시",
       "category": "food",
       "conditions": {
         "tags": [],
@@ -89,14 +86,26 @@
       "excludedIds": [],
       "candidateIds": null,
       "expectedIds": [
+        "f01",
+        "f02",
+        "f03",
         "f04",
+        "f05",
+        "f06",
+        "f07",
+        "f08",
         "f09",
         "f10",
-        "f11"
+        "f11",
+        "f12",
+        "f13",
+        "f14",
+        "f15",
+        "f16"
       ]
     },
     {
-      "name": "예산 10,000원 + 밀 제외, 원하는 태그는 필터가 아님",
+      "name": "밀 제외, 원하는 태그는 필터가 아님",
       "category": "food",
       "conditions": {
         "tags": [
@@ -104,15 +113,16 @@
         ],
         "excluded": [
           "밀"
-        ],
-        "maxPrice": 10000
+        ]
       },
       "disliked": [],
       "excludedIds": [],
       "candidateIds": null,
       "expectedIds": [
         "f02",
-        "f04"
+        "f03",
+        "f04",
+        "f16"
       ]
     },
     {
@@ -120,8 +130,7 @@
       "category": "food",
       "conditions": {
         "tags": [],
-        "excluded": [],
-        "maxPrice": null
+        "excluded": []
       },
       "disliked": [
         "f01",
@@ -154,8 +163,7 @@
         "tags": [],
         "excluded": [
           "생선"
-        ],
-        "maxPrice": null
+        ]
       },
       "candidateIds": [
         "f01",
@@ -177,8 +185,7 @@
         "tags": [],
         "excluded": [
           "보컬"
-        ],
-        "maxPrice": null
+        ]
       },
       "disliked": [],
       "excludedIds": [],
@@ -201,8 +208,7 @@
         "excluded": [
           "피아노",
           "높은 에너지"
-        ],
-        "maxPrice": null
+        ]
       },
       "disliked": [],
       "excludedIds": [],
@@ -217,7 +223,7 @@
       ]
     },
     {
-      "name": "음악에 예산을 걸면 가격 없는 곡은 모두 빠짐",
+      "name": "음악도 예전 예산 값은 무시",
       "category": "music",
       "conditions": {
         "tags": [],
@@ -227,7 +233,47 @@
       "disliked": [],
       "excludedIds": [],
       "candidateIds": null,
-      "expectedIds": []
+      "expectedIds": [
+        "m01",
+        "m02",
+        "m03",
+        "m04",
+        "m05",
+        "m06",
+        "m07",
+        "m08",
+        "m09",
+        "m10",
+        "m11",
+        "m12",
+        "m13",
+        "m14",
+        "m15"
+      ]
+    },
+    {
+      "name": "해산물 제외는 등록된 생선 재료를 거름",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "해산물"
+        ]
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f02",
+        "f03",
+        "f06",
+        "f07",
+        "f10",
+        "f12",
+        "f13",
+        "f14",
+        "f16"
+      ]
     }
   ]
 }

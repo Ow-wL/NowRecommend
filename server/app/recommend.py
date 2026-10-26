@@ -8,7 +8,7 @@ import logging
 import time
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 from sqlalchemy import select
@@ -20,10 +20,11 @@ from .llm.client import JsonModel
 from .llm.rerank import RerankCandidate, build_payload, rerank
 from .llm.validate import Pick, validate_picks
 from .models import Item, RecommendationLog
+from .parsing.rules import situation_text
 from .retrieval.filters import eligible_query
-from .retrieval.reasons import context_reason, taste_reason
+from .retrieval.reasons import NO_TASTE_REASON, context_reason, taste_reason
 from .retrieval.scoring import Candidate, Weights, mean_vector, score_candidates
-from .retrieval.select import SelectionParams, select_candidates
+from .retrieval.select import SelectionParams, cap_familiar, select_candidates
 from .schemas import RecommendRequest
 
 log = logging.getLogger(__name__)
@@ -49,13 +50,15 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
               rerank_model: JsonModel | None = None) -> dict:
     started = time.perf_counter()
     conditions, profile = request.conditions, request.profile
-    rows = session.scalars(eligible_query(request.category, conditions.excluded, conditions.maxPrice, profile.disliked,
+    rows = session.scalars(eligible_query(request.category, conditions.excluded, profile.disliked,
                                           request.excludedIds, request.candidateIds)).all()
     liked_rows = session.scalars(select(Item).where(Item.id.in_(profile.selected), Item.category == request.category)).all() if profile.selected else []
 
     errors: list[str] = []
     context_vector = None
-    if embed_query and (text := query_text(request.raw, conditions.tags)):
+    # Price, delivery and nearby phrases are unsupported; they must not steer the embedding or the model.
+    situation = situation_text(request.raw, request.category)
+    if embed_query and (text := query_text(situation, conditions.tags)):
         try:
             context_vector = as_vector(embed_query(text))
         except Exception as exc:  # The pipeline still ranks by taste and tags without the sentence.
@@ -69,8 +72,14 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
     pool = select_candidates(scored, {c.id: c.vector for c in candidates}, set(request.seenIds), request.pinnedIds,
                              POOL_SIZE[request.category], selection, rng)
     by_id = {r.id: r for r in rows}
+    liked_ids, wanted = set(profile.selected), set(conditions.tags)
+    pool, held_back = cap_familiar(pool, liked_ids, set(request.pinnedIds), lambda i: not wanted or bool(wanted & set(by_id[i].tags)),
+                                   set(request.seenIds))
     preferred = set(profile.tags).union(*(r.tags for r in liked_rows))
-    templates = {i: (taste_reason(by_id[i].tags, preferred), context_reason(by_id[i].tags, conditions.tags)) for i in pool}
+    has_taste = bool(profile.selected or profile.tags)
+
+    templates = {i: (taste_reason(i, list(by_id[i].tags), preferred, liked_ids, has_taste, request.category),
+                     context_reason(list(by_id[i].tags), conditions.tags, conditions.excluded)) for i in pool}
     scores = {s.id: s for s in scored}
 
     # Same guarantee as retrieval (plans.md U2): while enough unseen candidates remain, the model only sees
@@ -81,6 +90,9 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
     enough = len(unseen) >= request.result_count - len(pinned_ids)
     allowed = [*pinned_ids, *unseen] if enough else pool
     required = [] if enough else unseen
+    # Liked items held back by cap_familiar stay out of the model's choice while enough others remain.
+    if len(trimmed := [i for i in allowed if i not in held_back or i in required]) >= request.result_count:
+        allowed = trimmed
 
     mode, ai_status = "retrieval_only", "off"  # ai: off (no model) | failed (tried, unusable) | used
     picks = [Pick(i, *templates[i], by_ai=False) for i in pool[: request.result_count]]
@@ -88,10 +100,10 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
         ai_status = "failed"
         try:
             payload = build_payload(
-                request.category, request.raw, conditions.tags, conditions.excluded, conditions.maxPrice,
+                request.category, situation, conditions.tags, conditions.excluded,
                 [r.name if not r.artist else f"{r.name} - {r.artist}" for r in liked_rows], profile.tags,
                 [RerankCandidate(i, by_id[i].name, by_id[i].artist, by_id[i].description, list(by_id[i].tags),
-                                 list(by_id[i].ingredients), by_id[i].price_label, scores[i].score) for i in allowed],
+                                 list(by_id[i].ingredients), scores[i].score) for i in allowed],
                 pinned_ids, request.result_count)
             liked_names = {r.name for r in liked_rows} | {r.artist for r in liked_rows if r.artist}
             shown_names = {by_id[i].name for i in allowed} | {by_id[i].artist for i in allowed if by_id[i].artist}
@@ -107,6 +119,9 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
             log.warning("rerank failed: %s", exc)
             errors.append(f"rerank:{type(exc).__name__}")
     result_ids = [p.id for p in picks]
+    # No registered taste means no taste claim, whoever wrote the reason.
+    if not has_taste:
+        picks = [replace(p, taste_reason=NO_TASTE_REASON) for p in picks]
     results = [{"item": public_item(by_id[p.id]), "tasteReason": p.taste_reason, "contextReason": p.context_reason} for p in picks]
 
     request_id = uuid.uuid4()
@@ -132,7 +147,7 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
             "contextSimilarity": context_vector is not None,
             # Lets the UI say when the answer came without the AI or without the sentence's meaning.
             "ai": ai_status,
-            "situational": bool(query_text(request.raw, conditions.tags)),
+            "situational": bool(query_text(situation, conditions.tags)),
         },
     }
 

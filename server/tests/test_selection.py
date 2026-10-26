@@ -96,3 +96,15 @@ def test_missing_sentence_vector_hands_its_weight_to_the_tags():
     assert result["a"].score == pytest.approx((w.tag + w.context) / (w.tag + w.context + w.taste))
     assert result["b"].score == pytest.approx(w.taste / (w.tag + w.context + w.taste))
     assert result["a"].score > result["b"].score
+
+
+def test_unseen_candidates_come_before_repeats_even_when_off_topic():
+    # Review 2026-10-27: a seen 국물 card was shown again while 11 unseen menus remained.
+    from app.retrieval.select import cap_familiar
+    ordered = ["c", "d", "a", "b"]  # select_candidates' tiers: unseen c, d, then seen a, b
+    relevant = {"a", "b", "c"}.__contains__
+    assert cap_familiar(ordered, set(), set(), relevant, {"a", "b"}) == (["c", "d", "a", "b"], set())
+    # Inside the unseen tier: matching first, one favourite, the other favourites, then off-topic ones.
+    order, held = cap_familiar(["l1", "l2", "x", "n"], {"l1", "l2"}, set(), lambda i: i != "n", set())
+    assert order == ["l1", "x", "l2", "n"] and held == {"l2"}
+    assert cap_familiar(["c", "p"], set(), {"p"}, relevant, set())[0] == ["p", "c"]  # pinned first

@@ -17,7 +17,7 @@ export function importIssue(store:Store):string|null {
   }
   if(!unique(store.favorites)||store.favorites.some(id=>!ids.has(id)))return '즐겨찾기 항목 ID가 올바르지 않아요.';
   if(!unique(store.history.map(h=>h.id)))return '기록 ID가 중복돼요.';
-  const conditions=(v:any,c:Category)=>v.tags.length<=30 && v.excluded.length<=30 && unique(v.tags) && unique(v.excluded) && v.tags.every((t:string)=>[...options[c],...getCatalog().items.filter(i=>i.category===c).flatMap(i=>i.tags)].includes(t)) && v.excluded.every((t:string)=>exclusions[c].includes(t)) && (v.maxPrice===null || c==='food' && Number.isInteger(v.maxPrice));
+  const conditions=(v:any,c:Category)=>v.tags.length<=30 && v.excluded.length<=30 && unique(v.tags) && unique(v.excluded) && v.tags.every((t:string)=>[...options[c],...getCatalog().items.filter(i=>i.category===c).flatMap(i=>i.tags)].includes(t)) && v.excluded.every((t:string)=>exclusions[c].includes(t));
   for(const h of store.history){
     if(!h.id || h.id.length>100 || h.raw.length>300 || !conditions(h.conditions,h.category) || !unique(h.resultIds)||h.resultIds.some(id=>ids.get(id)!==h.category)||!unique(h.rounds.map(r=>r.id)))return '기록 ID·분야·조건이 올바르지 않아요.';
     for(const r of h.rounds){

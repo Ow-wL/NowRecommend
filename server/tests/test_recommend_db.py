@@ -40,14 +40,14 @@ def client_for(session, embedder="fake"):
 
 
 def body(category="food", **overrides):
-    return {"category": category, "raw": "혼자 먹을 담백한 저녁", "conditions": {"tags": [], "excluded": [], "maxPrice": None},
+    return {"category": category, "raw": "혼자 먹을 담백한 저녁", "conditions": {"tags": [], "excluded": []},
             "profile": {"selected": TASTE[category], "tags": [], "disliked": []}, "tau": 0, **overrides}
 
 
 @pytest.mark.parametrize("case", FILTER_CASES, ids=[c["name"] for c in FILTER_CASES])
 def test_sql_filter_matches_frontend_cases(catalog, case):
     k = case["conditions"]
-    query = eligible_query(case["category"], k["excluded"], k["maxPrice"], case["disliked"], case["excludedIds"], case["candidateIds"])
+    query = eligible_query(case["category"], k["excluded"], case["disliked"], case["excludedIds"], case["candidateIds"])
     assert sorted(r.id for r in catalog.scalars(query)) == case["expectedIds"]
 
 
@@ -64,7 +64,7 @@ def test_recommendations_never_break_hard_filters(catalog, case):
 
 def test_response_shape_and_template_reasons(catalog):
     with client_for(catalog) as client:
-        food = client.post("/api/recommend", json=body(conditions={"tags": ["국물"], "excluded": [], "maxPrice": None})).json()
+        food = client.post("/api/recommend", json=body(conditions={"tags": ["국물"], "excluded": []})).json()
         music = client.post("/api/recommend", json=body("music", raw="")).json()
     assert len(food["results"]) == 3 and len(music["results"]) == 5
     assert food["meta"]["mode"] == "retrieval_only" and food["meta"]["contextSimilarity"] is True
@@ -72,7 +72,7 @@ def test_response_shape_and_template_reasons(catalog):
     first = food["results"][0]
     assert set(first) == {"item", "tasteReason", "contextReason"} and "embedding" not in first["item"]
     for r in food["results"]:
-        assert r["tasteReason"].endswith("가까워요") or r["tasteReason"] == "새로운 취향을 발견해보세요"
+        assert r["tasteReason"].endswith("가까워요") or r["tasteReason"] in ("평소 취향과 다른 새로운 선택이에요", "내 취향에 등록한 메뉴예요")
         assert ("국물" in r["contextReason"]) == ("국물" in r["item"]["tags"])
     assert all("price" not in r["item"] for r in music["results"])
 
@@ -124,11 +124,52 @@ def test_each_request_is_logged(catalog):
 
 
 @pytest.mark.parametrize("change", [
-    {"conditions": {"tags": ["없는태그"], "excluded": [], "maxPrice": None}},
-    {"conditions": {"tags": [], "excluded": ["보컬"], "maxPrice": None}},  # music-only exclusion on food
-    {"conditions": {"tags": [], "excluded": [], "maxPrice": 50}},
+    {"conditions": {"tags": ["없는태그"], "excluded": []}},
+    {"conditions": {"tags": [], "excluded": ["보컬"]}},  # music-only exclusion on food
+    {"conditions": {"tags": [], "excluded": ["새우"]}},  # unsupported ingredient: reported by the parser, never sent as a condition
     {"count": 6}, {"raw": "가" * 301}, {"excludedIds": ["../etc"]}, {"tau": 2},
 ])
 def test_invalid_requests_are_rejected(catalog, change):
     with client_for(catalog) as client:
         assert client.post("/api/recommend", json=body(**change)).status_code == 422
+
+
+def test_a_stored_budget_is_ignored_and_price_words_do_not_reach_ranking(catalog):
+    with client_for(catalog) as client:
+        legacy = client.post("/api/recommend", json=body(conditions={"tags": [], "excluded": [], "maxPrice": 100})).json()
+        plain = client.post("/api/recommend", json=body()).json()
+        priced = client.post("/api/recommend", json=body(raw="혼자 먹을 만원 이하 담백한 저녁, 배달 가능한")).json()
+        unpriced = client.post("/api/recommend", json=body(raw="혼자 먹을 담백한 저녁,")).json()
+    assert legacy["meta"]["eligibleCount"] == plain["meta"]["eligibleCount"] == 16
+    assert [r["item"]["id"] for r in legacy["results"]] == [r["item"]["id"] for r in plain["results"]]
+    # "만원 이하" and "배달 가능한" are removed before the sentence is embedded, so they cannot steer the order.
+    assert [r["item"]["id"] for r in priced["results"]] == [r["item"]["id"] for r in unpriced["results"]]
+    assert all("price" not in r["item"] and "cost" not in r["item"] for r in priced["results"])
+
+
+def test_registered_items_do_not_fill_the_list_and_no_taste_is_never_claimed(catalog):
+    with client_for(catalog) as client:
+        songs = client.post("/api/recommend", json=body("music", raw="")).json()
+        fresh = client.post("/api/recommend", json=body(profile={"selected": [], "tags": [], "disliked": []})).json()
+    liked = [r for r in songs["results"] if r["item"]["id"] in TASTE["music"]]
+    assert len(songs["results"]) == 5 and len(liked) <= 1
+    assert all(r["tasteReason"] == "내 취향에 등록한 곡이에요" for r in liked)
+    assert {r["tasteReason"] for r in fresh["results"]} == {"등록된 취향이 없어 취향은 반영하지 않았어요"}
+
+
+def test_rerolls_show_every_unseen_candidate_before_repeating(catalog):
+    seen: list[str] = []
+    request = {"raw": "국물", "conditions": {"tags": ["국물"], "excluded": []}, "profile": {"selected": [], "tags": [], "disliked": []}}
+    with client_for(catalog) as client:
+        for _ in range(6):
+            results = client.post("/api/recommend", json=body(**request, seenIds=seen)).json()["results"]
+            ids = [r["item"]["id"] for r in results]
+            new = [i for i in ids if i not in seen]
+            assert len(new) == min(3, 16 - len(seen))  # never a repeat while unseen menus remain
+            if len(new) == 3:  # inside a round of new cards, ones matching 국물 come first
+                matching = ["국물" in r["item"]["tags"] for r in results]
+                assert matching == sorted(matching, reverse=True)
+            # Comparisons depend on the final set, so the browser writes them; the server reasons never compare.
+            assert not any("유일" in r["contextReason"] for r in results)
+            seen += new
+    assert len(seen) == 16

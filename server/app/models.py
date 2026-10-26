@@ -8,6 +8,10 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Fixed by the migration (vector(768)); settings.embedding_dim must match.
 EMBEDDING_DIM = 768
+# Tables migrations create for operations, not for the app, so they have no model: autogenerate and `alembic check`
+# (server-ci.yml) skip them instead of proposing to drop them (alembic/env.py). items_price_backup: the price values
+# 0003 removed, kept so `app.cli.migrate --downgrade 0002` can restore them.
+UNMANAGED_TABLES = frozenset({"items_price_backup"})
 
 
 class Base(DeclarativeBase):
@@ -20,7 +24,6 @@ class Item(Base):
         CheckConstraint("category IN ('food','music')", name="items_category"),
         CheckConstraint("status IN ('draft','reviewed','rejected')", name="items_status"),
         CheckConstraint("source IN ('seed','ai_draft','user_request')", name="items_source"),
-        CheckConstraint("cost IS NULL OR cost > 0", name="items_cost"),
         Index("items_unique_name", "category", text("lower(name)"), text("coalesce(lower(artist), '')"), unique=True),
         Index("items_ingredients", "ingredients", postgresql_using="gin"),
         Index("items_tags", "tags", postgresql_using="gin"),
@@ -35,8 +38,6 @@ class Item(Base):
     description: Mapped[str] = mapped_column(Text)
     tags: Mapped[list[str]] = mapped_column(ARRAY(Text))
     ingredients: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
-    price_label: Mapped[str | None] = mapped_column(Text)
-    cost: Mapped[int | None] = mapped_column(Integer)
     emoji: Mapped[str] = mapped_column(Text)
     color: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, server_default="draft")

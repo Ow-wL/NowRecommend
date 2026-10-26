@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { CATALOG_META, items as bundledItems, type Item } from './data';
+import { CATALOG_META, items as bundledItems, normalizeItem, type Item } from './data';
 import { apiEnabled, apiJson, API_BASE_URL } from './api/client';
 
 // The catalog the app recommends from: the bundled sample until the API catalog arrives (plans-rag.md §8).
@@ -35,11 +35,12 @@ export async function loadCatalog({ base = API_BASE_URL, fetchImpl, storage = ta
   if (!apiEnabled(base)) return false;
   try {
     const cached = JSON.parse(storage?.getItem(CACHE_KEY) || 'null');
-    if (validCatalogResponse(cached) && current.source === 'bundled') setCatalog({ items: cached.items, version: cached.catalogVersion, source: 'server' });
+    if (validCatalogResponse(cached) && current.source === 'bundled') setCatalog({ items: cached.items.map(normalizeItem), version: cached.catalogVersion, source: 'server' });
   } catch { /* A broken cache only costs the faster start. */ }
   try {
     const fresh = await apiJson('/api/catalog', validCatalogResponse, { base, fetchImpl, timeoutMs: 8000 });
-    if (fresh.catalogVersion !== current.version || current.source !== 'server') setCatalog({ items: fresh.items, version: fresh.catalogVersion, source: 'server' });
+    // Servers deployed before the price removal still send price/cost and a price subtitle; normalizeItem drops them.
+    if (fresh.catalogVersion !== current.version || current.source !== 'server') setCatalog({ items: fresh.items.map(normalizeItem), version: fresh.catalogVersion, source: 'server' });
     try { storage?.setItem(CACHE_KEY, JSON.stringify(fresh)); } catch { /* Quota or privacy mode: keep the in-memory copy. */ }
     return true;
   } catch {

@@ -5,7 +5,7 @@ import { defaultView } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
 
 const typed = (raw: string): Session => changeText({ ...newSession('food') }, raw);
-const server = { tags: ['담백함', '따뜻함'], excluded: ['매콤함'], maxPrice: null };
+const server = { tags: ['담백함', '따뜻함'], excluded: ['매콤함'] };
 afterEach(() => vi.unstubAllGlobals());
 
 describe('applyParsed', () => {
@@ -22,7 +22,7 @@ describe('applyParsed', () => {
     let s = typed('담백한 저녁');
     s = toggleCondition(s, '국물');           // manual add
     s = toggleCondition(s, '저녁');           // remove an automatic tag
-    s = applyParsed(s, '담백한 저녁', { tags: ['담백함', '저녁', '따뜻함'], excluded: [], maxPrice: null }, { raw: '담백한 저녁', source: 'rule+ai', unparsed: [] });
+    s = applyParsed(s, '담백한 저녁', { tags: ['담백함', '저녁', '따뜻함'], excluded: [] }, { raw: '담백한 저녁', source: 'rule+ai', unparsed: [] });
     expect(s.conditions.tags).toEqual(['담백함', '따뜻함', '국물']);
   });
   it('records a local fallback without touching conditions', () => {
@@ -38,7 +38,9 @@ describe('parse response and tab storage', () => {
     const ok = { conditions: server, unparsed: ['기념일'], source: 'rule+ai', ai: 'used' };
     expect(validRemoteParse(ok)).toBe(true);
     expect(validRemoteParse({ ...ok, source: 'magic' })).toBe(false);
-    expect(validRemoteParse({ ...ok, conditions: { ...server, maxPrice: 5 } })).toBe(false);
+    // An older server's budget is tolerated in the answer (and dropped by fetchParse), not an error.
+    expect(validRemoteParse({ ...ok, conditions: { ...server, maxPrice: 5 } })).toBe(true);
+    expect(validRemoteParse({ ...ok, conditions: { tags: 'x', excluded: [] } })).toBe(false);
     expect(validRemoteParse({ ...ok, unparsed: [3] })).toBe(false);
   });
   it('restores the interpretation after a reload', () => {
@@ -54,5 +56,21 @@ describe('parse response and tab storage', () => {
     writeTab({ version: 1, active: true, view: { ...defaultView, page: 'recommend', step: 'input' }, session: typed('기념일 저녁') });
     saved = saved!.replace('"step":"input"', '"step":"confirm"');
     expect(readTab().view.step).toBe('input');
+  });
+  it('drops a budget, budget input and item prices from a tab saved before the removal', () => {
+    let saved: string | null = null;
+    vi.stubGlobal('sessionStorage', { getItem: () => saved, setItem: (_: string, text: string) => { saved = text; } });
+    const session = typed('혼자 먹을 만원 이하 저녁');
+    writeTab({ version: 1, active: true, view: { ...defaultView, page: 'recommend', step: 'input' }, session });
+    const legacy = JSON.parse(saved!);
+    legacy.session.conditions.maxPrice = 10000; legacy.session.editor.automatic.maxPrice = 10000; legacy.session.editor.manual.maxPrice = null; legacy.session.editor.budgetInput = '10000';
+    legacy.session.snapshot = [{ item: { id: 'f01', category: 'food', name: '쌀국수', subtitle: '9,000–12,000원', description: 'x', tags: ['담백함', '따뜻함', '국물'], ingredients: [], emoji: '', color: '#fff', price: '9,000–12,000원', cost: 10000 }, tasteReason: 'a', contextReason: 'b' }];
+    saved = JSON.stringify(legacy);
+    const restored = readTab().session;
+    expect(restored.conditions).toEqual({ tags: ['혼자', '저녁'], excluded: [] });
+    expect(restored.editor).not.toHaveProperty('budgetInput');
+    expect(restored.editor?.automatic).toEqual({ tags: ['혼자', '저녁'], excluded: [] });
+    expect(restored.snapshot?.[0].item).not.toHaveProperty('price');
+    expect(restored.snapshot?.[0].item.subtitle).toBe('담백함 · 따뜻함 · 국물');
   });
 });

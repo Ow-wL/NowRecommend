@@ -17,19 +17,18 @@ it('reports partial new batches and exhaustion without rotating ranking', () => 
 });
 it('never relaxes required exclusions or dislikes during rerolls', () => {
   const profile = {...emptyProfile(),disliked:['f14']};
-  let session: Session = {...request(),conditions:{tags:[],excluded:['밀','생선'],maxPrice:10000},excludedIds:['f02']};
+  let session: Session = {...request(),conditions:{tags:[],excluded:['밀','해산물']},excludedIds:['f02']};
   for(let i=0;i<10;i++) {
     session=nextBatch(session,profile);
-    recommend(session,profile).forEach(r=>{expect(r.item.ingredients).not.toContain('밀');expect(r.item.ingredients).not.toContain('생선');expect(r.item.cost).toBeLessThanOrEqual(10000);expect(['f14','f02']).not.toContain(r.item.id);});
+    recommend(session,profile).forEach(r=>{expect(r.item.ingredients).not.toContain('밀');expect(r.item.ingredients).not.toContain('생선');expect(['f14','f02']).not.toContain(r.item.id);});
   }
 });
-it('computes each budget suggestion as the actual total candidate difference', () => {
-  const session={...request(),conditions:{tags:[],excluded:['밀'],maxPrice:8000}};const profile=emptyProfile();
-  const info=candidateInfo(session,profile);
-  for(const suggestion of info.suggestions) expect(suggestion.gain).toBe(eligibleCandidates({...session,conditions:{...session.conditions,maxPrice:suggestion.price}},profile).length-info.count);
-  expect(info.suggestions.length).toBeGreaterThan(0);
+it('ignores a budget left in old conditions: price never filters', () => {
+  const legacy={...request(),conditions:{tags:[],excluded:[],maxPrice:100} as Session['conditions']};
+  expect(candidateInfo(legacy,emptyProfile()).count).toBe(eligibleCandidates(request(),emptyProfile()).length);
 });
 it('keeps a zero-candidate request empty through repeated batches', () => {
-  const session=nextBatch({...request(),conditions:{...emptyConditions(),maxPrice:100}},emptyProfile());
-  expect(session.currentIds).toEqual([]);expect(candidateInfo(session,emptyProfile()).count).toBe(0);
+  const profile={...emptyProfile(),disliked:['f02','f03','f16']};
+  const session=nextBatch({...request(),conditions:{...emptyConditions(),excluded:['밀','생선','매콤함']}},profile);
+  expect(session.currentIds).toEqual([]);expect(candidateInfo(session,profile).count).toBe(0);
 });

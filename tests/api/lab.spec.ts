@@ -42,7 +42,10 @@ async function setup(page: Page, opts: { freeFails?: boolean } = {}) {
 test('compares the stored pool and free AI picks side by side and records a verdict', async ({ page }) => {
   const bodies = await setup(page);
   await page.goto('/#/home');
-  await page.getByRole('button', { name: /음악 AI 실험/ }).click();
+  // The lab is off the main flow: not on the home screen, reachable from 내 취향.
+  await expect(page.getByRole('button', { name: /음악 AI 실험|실험실/ })).toHaveCount(0);
+  await page.getByRole('button', { name: '내 취향', exact: true }).first().click();
+  await page.getByRole('button', { name: /실험실/ }).click();
   await expect(page).toHaveURL(/#\/lab$/);
   await page.getByLabel('지금의 상황').fill('비 오는 밤 잔잔하게');
   await page.getByLabel('목록에 없는 좋아하는 곡·아티스트').fill('검정치마, 잔나비');

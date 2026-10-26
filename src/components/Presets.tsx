@@ -3,7 +3,7 @@ import { categoryLabel, type Category } from '../data';
 import type { Conditions, Preset } from '../domain';
 import { defaultPresets } from '../presets';
 export function ConditionsSummary({conditions}: {conditions:Conditions}) {
-  return <div className="mini-tags">{conditions.tags.map(t=><span key={t}>{t}</span>)}{conditions.excluded.map(t=><span key={t} className="excluded-tag">{t} 제외</span>)}{conditions.maxPrice !== null && <span>{conditions.maxPrice.toLocaleString()}원 이하</span>}{!conditions.tags.length && !conditions.excluded.length && conditions.maxPrice === null && <span>조건 없음 · 평소 취향 기준</span>}</div>;
+  return <div className="mini-tags">{conditions.tags.map(t=><span key={t}>{t}</span>)}{conditions.excluded.map(t=><span key={t} className="excluded-tag">{t} 제외</span>)}{!conditions.tags.length && !conditions.excluded.length && <span>조건 없음 · 평소 취향 기준</span>}</div>;
 }
 export function Presets({category, presets, onPreview, onRename, onDelete}: {category:Category;presets:Preset[];onPreview:(p:Preset)=>void;onRename:(id:string,name:string)=>void;onDelete:(id:string)=>void}) {
   const [editing,setEditing]=useState(''),[name,setName]=useState('');

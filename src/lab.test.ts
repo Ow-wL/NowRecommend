@@ -3,7 +3,7 @@ import { fetchFreeSongs, validFreeBatch } from './api/lab';
 import { markKey, readLab, tally, upsertEntry, writeLab, type LabEntry } from './lab';
 
 const song = (title: string) => ({ title, artist: '가수', tasteReason: '취향', contextReason: '상황' });
-const entry = (id: string, extra: Partial<LabEntry> = {}): LabEntry => ({ id, date: '2026-10-26T00:00:00Z', raw: '산책', conditions: { tags: [], excluded: [], maxPrice: null }, likedText: [], round: 1, marks: {}, ...extra });
+const entry = (id: string, extra: Partial<LabEntry> = {}): LabEntry => ({ id, date: '2026-10-26T00:00:00Z', raw: '산책', conditions: { tags: [], excluded: [] }, likedText: [], round: 1, marks: {}, ...extra });
 const memory = () => { const data = new Map<string, string>(); return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v); } }; };
 
 describe('lab log', () => {
@@ -51,7 +51,7 @@ describe('free recommendation API', () => {
     let sent: any;
     const fetchImpl = (async (_: string, init: RequestInit) => { sent = JSON.parse(String(init.body)); return new Response(JSON.stringify(ok)); }) as typeof fetch;
     const avoid = Array.from({ length: 70 }, (_, i) => `곡${i} - 가수`);
-    await fetchFreeSongs({ raw: '산책', conditions: { tags: ['산책'], excluded: ['보컬'], maxPrice: null }, profile: { selected: ['m01'], tags: [], disliked: [] },
+    await fetchFreeSongs({ raw: '산책', conditions: { tags: ['산책'], excluded: ['보컬'] }, profile: { selected: ['m01'], tags: [], disliked: [] },
       likedText: Array.from({ length: 12 }, (_, i) => `가수${i}`), avoid, model: 'm' }, { base: 'http://api.test', fetchImpl });
     expect(sent.conditions).toEqual({ tags: ['산책'], excluded: ['보컬'] });
     expect(sent.likedText).toHaveLength(10);
