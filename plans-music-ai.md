@@ -83,3 +83,20 @@
 - B는 **필수 제외를 어긴다**: 보컬 제외인데 "Going Home - 김동률", "First Love - 우효" 같은 보컬 곡을 냈다. A는 SQL로 제외하므로 위반이 없다.
 - Lite가 제목에 HTML 엔티티(`Gymnop&eacute;die`)를 섞어 보내 서버에서 풀도록 고쳤다.
 - 응답 시간은 B(약 2~3.5초)가 A(약 2~3.5초, 임베딩+재순위)와 비슷하다.
+
+### 풀 확장 뒤 다시 비교 (음악 226곡, 같은 취향·Lite)
+
+| 상황 | A 저장된 곡 목록 | B AI 자유 추천(Lite) |
+|---|---|---|
+| 과제하면서 들을 잔잔한 피아노 | River Flows in You · One Summer's Day · Clair de lune · Lake Louise · Nocturne Op. 9 No. 2 (AI 응답 없음 → 유사도 순서) | 실패(500 ServerError) |
+| 신나게 달리기 | Dynamite · 에잇 · Don't Stop Me Now · CHEER UP · ETA | Butter · Dynamite · Permission to Dance · Ah Poom(아이유) · Energetic(Wanna One) |
+| 비 오는 밤 혼자 듣기 좋은 노래 | 밤편지 · 우산(에픽하이) · 봄날 · Kiss the Rain · 좋은 밤 좋은 꿈 | 우리가 헤어질 때(원모어찬스) · 혜화동 (또는 지나간 거리)(동물원) · 처음엔 사랑이란게 · 사랑한다는 말(김동률) · 숨(박효신) |
+| 집중해야 하는데 가사 없는 걸로(보컬 제외) | Clair de lune · River Flows in You · Blue in Green · Cello Suite No. 1 Prelude · Kiss the Rain | River Flows In You · Merry-Go-Round of Life · Letter(Daydream) · One Summer's Day · May Be |
+| 주말 아침 카페에서 | 밤편지 · Don't Know Why · Here Comes the Sun · instagram · Gymnopédie No. 1 (유사도 순서) | 어떻게 이별까지 사랑하겠어… · 너를 만나 · 사건의 지평선 · 모든 날, 모든 순간 · 취중고백 |
+
+- 풀이 커지자 A가 반복을 벗어나 상황에 맞게 다양해졌다(달리기: Queen·TWICE, 카페: Norah Jones·The Beatles).
+- B는 실제 곡 비율이 올라갔지만 여전히 의심스러운 조합("Letter - Daydream", 제목이 바뀐 "혜화동")이 반복해서 나온다.
+- 이 시점 Lite 응답이 느려져(대부분 6~9초) A도 2건은 10초 제한에 걸려 유사도 순서로 대체됐고, B는 1건 실패했다. 같은 날 평가(`server/eval/report.md`)에서도 AI 재순위 p50이 약 10초로, 오전 실행(약 6초)보다 크게 느렸다.
+- 가중치 조정 뒤에는 유사도 검색만으로도 정밀도가 AI 재순위와 거의 같다(음식 0.72 대 0.74, 음악 0.59 대 0.60). AI 재순위의 몫은 순위보다 **설명 문장**에 가깝다.
+
+판단은 사용자가 실험 페이지에서 직접 써본 뒤 내린다.
