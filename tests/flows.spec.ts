@@ -118,7 +118,8 @@ test('no eligible candidates, empty collections, and confirmed deletion', async 
   await expect(page.locator('.empty-state')).toBeVisible();
   await onboard(page);
   // Hard exclusions and budget leave one candidate, which can then be temporarily excluded.
-  const tags = ['매콤함','소고기','닭고기','생선','밀','유제품','달걀','콩'];
+  // 밀·유제품 are left out: the curry roux has both since the 2026-10-26 allergen review.
+  const tags = ['매콤함','소고기','닭고기','생선','달걀','콩'];
   await openConditions(page);
   for (const tag of tags) await page.locator('.chip.exclude').filter({ hasText: new RegExp(`^${tag}$`) }).click();
   await page.getByLabel('참고 예산 상한').fill('10000');

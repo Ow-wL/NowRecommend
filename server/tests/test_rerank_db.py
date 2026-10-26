@@ -110,7 +110,7 @@ def test_partial_answers_are_filled_and_logged(catalog):
 
 
 def test_model_only_sees_unseen_candidates_while_enough_remain(catalog):
-    seen = ["f02", "f03", "f04", "f05", "f07", "f08"]
+    seen = ["f02"]  # without 밀 only f02·f03·f04·f16 are eligible, so three unseen remain
     model = FakeModel(reverse_order)
     response = post(catalog, model, seenIds=seen)
     assert not {c["id"] for c in model.payloads[0]["candidates"]} & set(seen)
@@ -118,7 +118,7 @@ def test_model_only_sees_unseen_candidates_while_enough_remain(catalog):
 
 
 def test_remaining_unseen_cards_are_required_when_too_few(catalog):
-    eligible_without_wheat = ["f02", "f03", "f04", "f05", "f07", "f08", "f12", "f14", "f15", "f16"]
+    eligible_without_wheat = ["f02", "f03", "f04", "f16"]
     seen = eligible_without_wheat[:-1]  # only f16 is unseen
     model = FakeModel(lambda p: {"picks": [{"id": i, "tasteReason": "AI", "contextReason": "AI"} for i in ["f02", "f03", "f04"]]})
     response = post(catalog, model, seenIds=seen)
@@ -127,8 +127,8 @@ def test_remaining_unseen_cards_are_required_when_too_few(catalog):
 
 
 def test_pinned_card_stays_first_with_the_model(catalog):
-    response = post(catalog, FakeModel(reverse_order), pinnedIds=["f12"])
-    assert ids(response)[0] == "f12" and response["meta"]["mode"] == "rag"
+    response = post(catalog, FakeModel(reverse_order), pinnedIds=["f16"])
+    assert ids(response)[0] == "f16" and response["meta"]["mode"] == "rag"
 
 
 def test_taste_claims_about_unpicked_artists_are_replaced(catalog):

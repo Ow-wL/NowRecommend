@@ -48,12 +48,6 @@
         "f02",
         "f03",
         "f04",
-        "f05",
-        "f07",
-        "f08",
-        "f12",
-        "f14",
-        "f15",
         "f16"
       ]
     },
@@ -72,7 +66,6 @@
       "excludedIds": [],
       "candidateIds": null,
       "expectedIds": [
-        "f01",
         "f02",
         "f03",
         "f06",
@@ -119,11 +112,7 @@
       "candidateIds": null,
       "expectedIds": [
         "f02",
-        "f04",
-        "f07",
-        "f12",
-        "f14",
-        "f15"
+        "f04"
       ]
     },
     {
@@ -178,7 +167,6 @@
       "disliked": [],
       "excludedIds": [],
       "expectedIds": [
-        "f01",
         "f12"
       ]
     },
