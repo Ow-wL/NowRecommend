@@ -274,6 +274,28 @@
         "f14",
         "f16"
       ]
+    },
+    {
+      "name": "비건 식단: 동물성 7개 그룹 제외",
+      "category": "food",
+      "conditions": {
+        "tags": [],
+        "excluded": [
+          "소고기",
+          "돼지고기",
+          "닭고기",
+          "생선",
+          "해산물",
+          "유제품",
+          "달걀"
+        ]
+      },
+      "disliked": [],
+      "excludedIds": [],
+      "candidateIds": null,
+      "expectedIds": [
+        "f12"
+      ]
     }
   ]
 }

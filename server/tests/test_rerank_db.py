@@ -166,3 +166,17 @@ def test_traits_the_sentence_left_out_reach_the_model_as_avoid(catalog):
     assert model.payloads[0]["avoid"] == ["국물"] and model.payloads[0]["wanted"] == []
     post(catalog, model, raw="매콤한 거 말고", conditions={"tags": [], "excluded": ["매콤함"]})
     assert model.payloads[1]["avoid"] == []  # applied as an exclusion, nothing left to avoid
+
+
+def test_vegan_is_a_hard_filter_before_the_model(catalog):
+    # 비건 comes from the rules (dietExclusions) as ordinary exclusions, so SQL filters before the model sees anything;
+    # the model cannot bring an animal dish back, and nothing is left for the soft "avoid" instruction.
+    from app.parsing.rules import parse_rules
+    raw = "비건이라서 동물성 재료 없이 따뜻한 저녁 먹고 싶어"
+    conditions = parse_rules(raw, "food").conditions()
+    model = FakeModel(lambda payload: {"picks": [{"id": i, "tasteReason": "취향", "contextReason": "상황"} for i in ("f02", "f16", "f12")]})
+    response = post(catalog, model, raw=raw, conditions=conditions, profile={"selected": [], "tags": [], "disliked": []})
+    assert conditions["excluded"] == ["소고기", "돼지고기", "닭고기", "생선", "해산물", "유제품", "달걀"]
+    assert [c["id"] for c in model.payloads[0]["candidates"]] == ["f12"] and model.payloads[0]["avoid"] == []
+    assert ids(response) == ["f12"] and response["meta"]["eligibleCount"] == 1
+    assert "unknown_id=2" in log_for(catalog, response).error
