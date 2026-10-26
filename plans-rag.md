@@ -402,6 +402,6 @@ R6 구현에서 정한 세부 규칙 (`server/app/drafting.py`, `app/llm/draft.p
 | 2 | 배포 | 중간보고는 로컬 Docker 시연, 최종 호스팅은 R7에서 결정 — **결정(2026-10-19)**: Cloud Run + Cloud SQL, GCP 무료 크레딧 사용, Gemini는 무료 키 유지 | 처음부터 호스팅 API + pgvector 지원 관리형 DB |
 | 3 | 생성 모델 | `gemini-3.6-flash` + 직접 구현한 탐색 온도 τ | `gemini-2.5-flash`로 모델 temperature 직접 사용 |
 | 4 | 입력 문장 로그 | 로컬·평가 환경에서만 원문 저장, 배포 시 저장 안 함 | 배포에서도 기간 한정 저장 |
-| 5 | **Gemini 호출 한도 (R4에서 확인)** | 현재 키는 무료 등급이라 `gemini-3.6-flash` 생성 요청이 **분당 5회, 하루 20회**로 제한된다. 추천 1회에 1회씩 쓰므로 하루 20번째 추천 뒤로는 다음 날까지 유사도 결과(`retrieval_only`)만 나온다. R5 조건 해석까지 붙이면 추천 1회에 2회가 든다. **중간보고 시연 전에 결정 필요** | 결제 등록으로 한도 상향 / 한도가 더 큰 경량 모델로 교체 / 조건 해석은 규칙 파서 우선으로 호출 줄이기 |
+| 5 | **Gemini 호출 한도 (R4에서 확인)** | 현재 키는 무료 등급이라 `gemini-3.6-flash` 생성 요청이 **분당 5회, 하루 20회**로 제한된다. 추천 1회에 1회씩 쓰므로 하루 20번째 추천 뒤로는 다음 날까지 유사도 결과(`retrieval_only`)만 나온다. R5 조건 해석까지 붙이면 추천 1회에 2회가 든다. — **결정(2026-10-20)**: 무료 키는 유지하고 배포 서버만 `LLM_MODEL=gemini-3.5-flash-lite`로 교체. 대표 10건 중 9건 검증 통과(1건 504), 고른 항목은 3.6과 비슷하나 취향 이유가 약하고 조건 해석이 더 보수적([DEPLOY.md](./DEPLOY.md) §4). 코드 기본값은 3.6 유지 | 결제 등록으로 한도 상향 / 한도가 더 큰 경량 모델로 교체 / 조건 해석은 규칙 파서 우선으로 호출 줄이기 |
 
 참고: [Gemini Embeddings](https://ai.google.dev/gemini-api/docs/embeddings) · [gemini-embedding-2](https://ai.google.dev/gemini-api/docs/models/gemini-embedding-2) · [Gemini 3.6 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash) · [Gemini 3.6 변경 사항](https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.6) · [구조화 출력](https://ai.google.dev/gemini-api/docs/structured-output)

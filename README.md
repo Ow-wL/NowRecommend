@@ -74,7 +74,7 @@ curl http://127.0.0.1:8010/api/catalog?category=food
   4. `gemini-3.6-flash`가 그 후보 안에서만 3개/5곡을 고르고 취향·상황 이유를 씁니다(`mode: rag`). 서버가 ID·개수·필수 카드를 검증하고 모자라면 유사도 순서로 채웁니다.
   5. 모델 오류·10초 초과·한도 초과(429)·과부하(503)·유효한 선택 없음이면 유사도 상위 결과와 템플릿 이유를 돌려줍니다(`mode: retrieval_only`). 429·503 뒤에는 잠시 모델 호출을 건너뜁니다.
   6. 요청마다 `recommendation_logs`에 기록합니다.
-- 현재 키는 무료 등급이라 생성 요청이 **분당 5회, 하루 20회**로 제한됩니다. 한도를 넘으면 결과가 `retrieval_only`로 나옵니다(plans-rag.md §12 결정 5).
+- 현재 키는 무료 등급이라 `gemini-3.6-flash` 생성 요청이 **분당 5회, 하루 20회**로 제한됩니다. 그래서 배포 서버는 2026-10-20부터 `LLM_MODEL=gemini-3.5-flash-lite`를 씁니다(DEPLOY.md §4). 한도를 넘으면 결과가 `retrieval_only`로 나옵니다(plans-rag.md §12 결정 5).
 - 재순위 설정: `LLM_MODEL`(기본 `gemini-3.6-flash`), `RERANK_ENABLED`(기본 true), `RERANK_TIMEOUT_MS`(기본·최소 10000).
 - `POST /api/parse`는 `{category, text}`를 받습니다.
   - 브라우저와 같은 규칙으로 먼저 해석하고, 규칙이 놓친 단어가 있을 때만 LLM에 물어 결과를 합칩니다. 제외는 합집합이고, 예산은 규칙이 먼저입니다.
