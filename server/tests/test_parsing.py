@@ -70,9 +70,19 @@ def test_ai_budget_needs_food_and_an_amount_in_the_sentence():
 
 def test_merge_unions_exclusions_and_keeps_the_rule_budget():
     rule = {"tags": ["점심", "매콤함"], "excluded": ["밀"], "maxPrice": 10000}
-    merged = merge(rule, AiParse(["채소", "점심"], ["매콤함"], 20000, []))
+    merged = merge(rule, AiParse(["채소", "점심"], ["매콤함"], 20000, []), "밀 빼고 안 매운 점심")
     assert merged == {"tags": ["점심", "채소"], "excluded": ["밀", "매콤함"], "maxPrice": 10000}
-    assert merge({**rule, "maxPrice": None}, AiParse([], [], 20000, []))["maxPrice"] == 20000
+    assert merge({**rule, "maxPrice": None}, AiParse([], [], 20000, []), "2만원")["maxPrice"] == 20000
+
+
+def test_merge_drops_model_exclusions_the_sentence_does_not_ask_for():
+    rule = {"tags": ["활기참"], "excluded": [], "maxPrice": None}
+    # Lite once excluded the genre that was asked for.
+    assert merge(rule, AiParse(["높은 에너지"], ["록"], None, []), "에너지 넘치는 록")["excluded"] == []
+    assert merge(rule, AiParse(["록"], ["록"], None, []), "록 말고 신나는 거")["excluded"] == []
+    assert merge(rule, AiParse([], ["피아노"], None, []), "신나는 거, 피아노 말고")["excluded"] == ["피아노"]
+    vegan = {"tags": [], "excluded": [], "maxPrice": None}
+    assert merge(vegan, AiParse([], ["소고기"], None, []), "비건 메뉴")["excluded"] == ["소고기"]
 
 
 def test_service_calls_the_model_only_for_missed_words_and_caches():

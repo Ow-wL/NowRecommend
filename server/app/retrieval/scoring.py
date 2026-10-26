@@ -13,9 +13,11 @@ import numpy as np
 
 @dataclass(frozen=True)
 class Weights:
+    # 2026-10-26 grid on eval/cases.json: taste 0.35 → 0.20 lifted precision (food 0.56 → 0.72, music 0.53 → 0.59).
+    # Lower taste scored higher still, but those labels judge the situation only, so taste keeps a real share.
     context: float = 0.45
-    taste: float = 0.35
-    tag: float = 0.20
+    taste: float = 0.20
+    tag: float = 0.35
 
 
 @dataclass

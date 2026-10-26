@@ -35,7 +35,7 @@ class ParseService:
         except Exception as exc:  # Quota, overload, timeout, bad JSON: the rule result still stands.
             log.warning("parse model failed: %s", exc)
             return {"conditions": conditions, "unparsed": uncovered, "source": "rule", "ai": "failed"}
-        return self._store(key, {"conditions": merge(conditions, ai), "unparsed": ai.unparsed, "source": "rule+ai", "ai": "used"})
+        return self._store(key, {"conditions": merge(conditions, ai, text), "unparsed": ai.unparsed, "source": "rule+ai", "ai": "used"})
 
     def _store(self, key: tuple[str, str], value: dict) -> dict:
         self._cache[key] = value
