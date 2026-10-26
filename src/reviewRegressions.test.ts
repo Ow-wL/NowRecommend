@@ -124,3 +124,12 @@ describe('one-letter ingredients keep working with a particle (third review)', (
     expect(unsupportedConditions('혼자 먹을 점심, 파는 빼줘', 'food')).toEqual([{ kind: 'ingredient', text: '파 제외' }]);
   });
 });
+
+describe('diets hold without the AI (live check 2026-10-27)', () => {
+  it('applies a vegan statement offline and keeps only menus without animal ingredients', () => {
+    const raw = '비건이라서 동물성 재료 없이 따뜻한 저녁 먹고 싶어', conditions = parseConditions(raw, 'food');
+    expect(conditions.excluded).toEqual(['소고기', '돼지고기', '닭고기', '생선', '해산물', '유제품', '달걀']);
+    expect(unsupportedConditions(raw, 'food')).toEqual([]); // "재료" heads the phrase; it is not an unknown ingredient
+    expect(recommend(request({ raw, conditions }), emptyProfile()).map(r => r.item.name)).toEqual(['두부 덮밥']);
+  });
+});

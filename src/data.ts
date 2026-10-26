@@ -52,6 +52,8 @@ export const exclusionAliases: Record<Category, Record<string, string[]>> = { fo
 export const exclusionGroups: Record<string, { covers: string[]; uncovered: string }> = { ...vocab.food.exclusionGroups, ...vocab.music.exclusionGroups };
 /** Ingredients people ask to avoid that the catalog does not record at all ("새우"): reported, never applied. */
 export const unsupportedExclusions: Record<Category, string[]> = { food: vocab.food.unsupportedExclusions, music: vocab.music.unsupportedExclusions };
+/** Diet statements that name whole groups anywhere in the sentence ("비건이라서"): applied by the rules, so they hold offline too. */
+export const dietExclusions: Record<Category, Record<string, string[]>> = { food: vocab.food.dietExclusions, music: vocab.music.dietExclusions };
 /** Words before "빼고/말고/없는…" that are not something to leave out ("건", "부담", "점심"): never reported as exclusions. */
 export const exclusionStopWords: string[] = vocab.exclusionStopWords;
 /** "건", "거", "음식": the head of a negated phrase ("고소한 건 빼줘"); short ingredient words that are still nouns ("깨"). */

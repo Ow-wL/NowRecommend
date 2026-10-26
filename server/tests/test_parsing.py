@@ -41,7 +41,7 @@ def test_unsupported_phrases_never_steer_ranking():
     ("비 오는 밤 혼자 듣기 좋은 노래", "music", ["혼자"]),  # 혼자 is a food tag only
     ("밀가루 못 먹어요, 점심 추천", "food", []),
     ("고기 없이 먹고 싶어, 소고기 돼지고기 닭고기 다 빼고", "food", []),  # the whole listed span is covered
-    ("비건이라 고기 생선 달걀 유제품 다 빼줘", "food", ["비건이라"]),
+    ("비건이라 고기 생선 달걀 유제품 다 빼줘", "food", []),  # 비건 is a diet rule now (dietExclusions); "이라" is no condition
     ("팝 말고 차분한 노래", "music", []),
 ])
 def test_uncovered_words(text, category, expected):

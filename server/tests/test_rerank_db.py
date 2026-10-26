@@ -157,3 +157,12 @@ def test_extra_registered_items_are_kept_from_the_model(catalog):
     post(catalog, model, conditions={"tags": [], "excluded": []}, profile={"selected": ["f02", "f03", "f04", "f16", "f01"], "tags": [], "disliked": []})
     shown = [c["id"] for c in model.payloads[0]["candidates"]]
     assert len([i for i in shown if i in {"f02", "f03", "f04", "f16", "f01"}]) <= 1
+
+
+def test_traits_the_sentence_left_out_reach_the_model_as_avoid(catalog):
+    # Live check 2026-10-27: for "국물 있는 건 빼줘" the model sold 메밀국수 with "시원한 국물".
+    model = FakeModel(reverse_order)
+    post(catalog, model, raw="국물 있는 건 빼줘", conditions={"tags": [], "excluded": []})
+    assert model.payloads[0]["avoid"] == ["국물"] and model.payloads[0]["wanted"] == []
+    post(catalog, model, raw="매콤한 거 말고", conditions={"tags": [], "excluded": ["매콤함"]})
+    assert model.payloads[1]["avoid"] == []  # applied as an exclusion, nothing left to avoid

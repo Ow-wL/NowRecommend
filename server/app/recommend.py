@@ -20,7 +20,7 @@ from .llm.client import JsonModel
 from .llm.rerank import RerankCandidate, build_payload, rerank
 from .llm.validate import Pick, validate_picks
 from .models import Item, RecommendationLog
-from .parsing.rules import situation_text
+from .parsing.rules import parse_rules, situation_text
 from .retrieval.filters import eligible_query
 from .retrieval.reasons import NO_TASTE_REASON, context_reason, taste_reason
 from .retrieval.scoring import Candidate, Weights, mean_vector, score_candidates
@@ -58,6 +58,8 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
     context_vector = None
     # Price, delivery and nearby phrases are unsupported; they must not steer the embedding or the model.
     situation = situation_text(request.raw, request.category)
+    # Traits the sentence asked to leave out but no filter can apply ("국물 있는 건 빼줘"): the model may not sell them.
+    avoid = sorted(parse_rules(request.raw, request.category).not_wanted - set(conditions.excluded))
     if embed_query and (text := query_text(situation, conditions.tags)):
         try:
             context_vector = as_vector(embed_query(text))
@@ -104,7 +106,7 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
                 [r.name if not r.artist else f"{r.name} - {r.artist}" for r in liked_rows], profile.tags,
                 [RerankCandidate(i, by_id[i].name, by_id[i].artist, by_id[i].description, list(by_id[i].tags),
                                  list(by_id[i].ingredients), scores[i].score) for i in allowed],
-                pinned_ids, request.result_count)
+                pinned_ids, request.result_count, avoid)
             liked_names = {r.name for r in liked_rows} | {r.artist for r in liked_rows if r.artist}
             shown_names = {by_id[i].name for i in allowed} | {by_id[i].artist for i in allowed if by_id[i].artist}
             validation = validate_picks(rerank(rerank_model, payload), allowed, pinned_ids, required, request.result_count,

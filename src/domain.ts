@@ -1,4 +1,4 @@
-import { exclusionAliases, exclusionGroups, exclusionHeadNouns, exclusionShortWords, exclusionStopWords, exclusions, excludableIngredients, tagLabels, unsupportedExclusions, type Category, type Item } from './data';
+import { dietExclusions, exclusionAliases, exclusionGroups, exclusionHeadNouns, exclusionShortWords, exclusionStopWords, exclusions, excludableIngredients, tagLabels, unsupportedExclusions, type Category, type Item } from './data';
 import { getCatalog } from './catalog';
 
 const catalogItems = () => getCatalog().items;
@@ -44,6 +44,9 @@ export function parseConditions(text: string, category: Category): Conditions {
   const negations = readNegations(text, category);
   for (const [pattern, value] of TAG_RULES[category]) if (pattern.test(negations.masked) && !negations.notWanted.has(value)) condition.tags.push(value);
   const excluded = new Set([...listedExclusions(text, category).found, ...negations.excluded]);
+  // "비건이라서 …": a diet names its groups without any trigger word; the live AI check (2026-10-27) found it applied only
+  // when the model was reachable.
+  for (const [word, values] of Object.entries(dietExclusions[category])) if (new RegExp(`(?<![가-힣])${word}`).test(text)) values.forEach(v => excluded.add(v));
   if (category === 'food') {
     if (new RegExp(`안\\s*매운|맵지\\s*않|매운.{0,5}(${EXCLUDE})`).test(text)) excluded.add('매콤함');
   } else if (/보컬.?없|가사.?없|보컬.{0,5}(제외|싫)/.test(text)) excluded.add('보컬');

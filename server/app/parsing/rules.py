@@ -264,6 +264,10 @@ def parse_rules(text: str, category: str) -> RuleParse:
                 if entry not in result.unsupported:
                     result.unsupported.append(entry)
     excluded = _listed_exclusions(result, text, category) | negations.excluded
+    # "비건이라서 …": a diet names its groups without any trigger word (dietExclusions, also in src/domain.ts).
+    for word, values in get_vocab().for_category(category).dietExclusions.items():
+        if _cover(result, rf"(?<![가-힣]){re.escape(word)}", text):
+            excluded.update(values)
     if category == "food":
         if _cover(result, NOT_SPICY, text):
             excluded.add("매콤함")
