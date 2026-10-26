@@ -87,8 +87,9 @@ test('independent music onboarding produces five songs and external links', asyn
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(5);
   await expect(page.locator('.result-grid')).not.toContainText('아이유');
-  const links = page.locator('.result-grid a'); await expect(links).toHaveCount(5);
-  await expect(links.first()).toHaveAttribute('target', '_blank');
+  // One YouTube search per song; covers found on Apple Music add their own link. Every external link opens a new tab.
+  await expect(page.locator('.result-grid a[aria-label$="YouTube에서 검색 (새 탭)"]')).toHaveCount(5);
+  for (const link of await page.locator('.result-grid a').all()) await expect(link).toHaveAttribute('target', '_blank');
   await page.getByRole('button', { name: '이걸로 선택', exact: true }).first().click();
   await expect(page.getByRole('heading', { name: '오늘의 선택을 남겼어요' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'YouTube에서 검색 (새 탭)' })).toHaveAttribute('target', '_blank');

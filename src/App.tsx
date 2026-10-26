@@ -12,6 +12,8 @@ import { QualityNotice } from './components/QualityNotice';
 import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, applyParsed, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, applyBatch, replaceCandidate, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset } from './domain';
 import { Comparison } from './components/Comparison';
 import { MusicLab } from './components/MusicLab';
+import { ItemArt } from './components/ItemArt';
+import { mediaFor } from './media';
 import { applyPreset } from './presets';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
@@ -252,6 +254,10 @@ export default function App() {
   const conditionCount = session.conditions.tags.length + session.conditions.excluded.length + (session.conditions.maxPrice !== null ? 1 : 0);
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
+  // Home cards show three real photos or covers (DESIGN.md v3 §2); favourites first, then any item with an image.
+  const showcase = (c: Category) => { const prefer = c === 'food' ? ['f07', 'f01', 'f13'] : ['m05', 'm03', 'm06'];
+    const withArt = items.filter(i => i.category === c && mediaFor(i.id));
+    return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt].filter((i, n, all) => all.indexOf(i) === n).slice(0, 3); };
   const visibleChoices = categoryItems.filter(i => (!selectedOnly || draftProfile.selected.includes(i.id)) && `${i.name} ${i.subtitle}`.toLowerCase().includes(query.toLowerCase()));
 
   return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''}`}>
@@ -283,7 +289,7 @@ export default function App() {
           <div className="resume-actions"><button className="text-button" onClick={endRequest}>요청 종료</button><button className="button primary" onClick={() => start(session.category)}>이어서 추천받기 <ArrowRight size={16} /></button></div>
         </section>}
         <section className="category-grid" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <button key={c} className={`category-card ${c}-category`} onClick={() => start(c)}>
-          <span className="category-icon">{c === 'food' ? <Utensils size={26} /> : <Headphones size={26} />}</span>
+          <span className="category-art" aria-hidden="true">{showcase(c).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</span>
           <span className="category-copy">
             <small>{store.profiles[c].selected.length >= 5 ? '평소 취향 등록됨' : '취향 5개를 골라 시작해요'}</small>
             <h2>{c === 'food' ? '오늘 뭐 먹지?' : '지금 뭐 듣지?'}</h2>
@@ -303,7 +309,7 @@ export default function App() {
         <section className="home-section">
           <div className="section-heading"><h2>최근 선택</h2>{store.history.some(h => h.selected) && <button className="text-button" onClick={() => navigate('history')}>전체 기록 <ChevronRight size={15} /></button>}</div>
           <div className="list-card">{store.history.some(h=>h.selected) ? store.history.filter(h=>h.selected).slice(0,3).map(h => <button className="list-row recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
-            <span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={17} /> : <Headphones size={17} />}</span>
+            <ItemArt item={h.selected!.result.item} size="thumb" />
             <span className="list-copy"><b>{h.selected!.result.item.name}</b><small>{categoryLabel[h.category]} · {h.raw}</small></span>
             <ChevronRight size={18} />
           </button>) : <div className="list-empty"><p>아직 선택한 항목이 없어요.</p><button className="text-button" onClick={() => start('food')}>추천 시작하기 <ArrowRight size={16} /></button></div>}</div>
@@ -325,7 +331,7 @@ export default function App() {
               <label className="search-field"><Search size={18} /><input aria-label="취향 항목 검색" placeholder={category === 'food' ? '메뉴 이름 검색' : '곡명 또는 아티스트 검색'} value={query} onChange={e => setQuery(e.target.value)} /></label>
               <label className="selected-filter"><input type="checkbox" checked={selectedOnly} onChange={e => setSelectedOnly(e.target.checked)} />선택한 항목만 보기</label>
             </div>}
-            <div className={`selection-grid ${category}`}>{visibleChoices.map(i => { const on = draftProfile.selected.includes(i.id); return <button key={i.id} className={`selection-card ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setDraftProfile(p => ({ ...p, selected: toggle(p.selected, i.id), disliked: p.disliked.filter(id => id !== i.id) }))}><span className="selection-check" aria-hidden="true">{on && <Check size={14} strokeWidth={3} />}</span><span className="selection-name"><b>{i.name}</b>{category === 'music' && <small>{i.subtitle}</small>}</span></button>; })}</div>
+            <div className={`selection-grid ${category}`}>{visibleChoices.map(i => { const on = draftProfile.selected.includes(i.id); return <button key={i.id} className={`selection-card ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setDraftProfile(p => ({ ...p, selected: toggle(p.selected, i.id), disliked: p.disliked.filter(id => id !== i.id) }))}><ItemArt item={i} size="tile" /><span className="selection-check" aria-hidden="true">{on && <Check size={14} strokeWidth={3} />}</span><span className="selection-name"><b>{i.name}</b>{category === 'music' && <small>{i.subtitle}</small>}</span></button>; })}</div>
             {!visibleChoices.length && <p className="empty-small">일치하는 항목이 없어요. <button className="text-button" onClick={() => { setQuery(''); setSelectedOnly(false); }}>검색·필터 초기화</button></p>}
           </section>
           <section className="panel taste-tags">
@@ -436,6 +442,7 @@ export default function App() {
         <h1>오늘의 선택을 남겼어요</h1>
         <p>추천 기록에서 언제든 다시 볼 수 있어요.</p>
         <section className="panel completion-panel">
+          <ItemArt item={completed.selected.result.item} size="hero" />
           <div className="item-head"><div className="item-title"><h2>{completed.selected.result.item.name}</h2><p className="item-subtitle">{completed.selected.result.item.subtitle}</p></div></div>
           <div className="reasons"><p><b>평소 취향</b>{completed.selected.result.tasteReason}</p><p><b>이번 상황</b>{completed.selected.result.contextReason}</p></div>
           <p className="completion-context">당시 상황: {completed.raw}</p>
@@ -451,7 +458,7 @@ export default function App() {
         <div className="page-heading"><h1>그날의 선택, 그때의 취향.</h1><p>지난 추천의 조건과 결과를 확인하고 같은 상황으로 다시 시작해보세요.</p></div>
         {tabFilter}
         <div className="history-list list-card">{store.history.filter(h => filter === 'all' || h.category === filter).map(h => <article className="history-row" key={h.id}>
-          <span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={18} /> : <Headphones size={18} />}</span>
+          {(() => { const shown = h.selected?.result.item || h.rounds.at(-1)?.results[0]?.item; return shown ? <ItemArt item={shown} size="thumb" /> : <span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={18} /> : <Headphones size={18} />}</span>; })()}
           <div className="history-content">
             <span>{categoryLabel[h.category]} 추천 · {new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(h.date))}</span>
             <button className="history-title" onClick={() => setHistoryPreview(h)}>{h.raw}</button>

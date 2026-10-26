@@ -1,0 +1,150 @@
+"""Item images for the prototype design: python -m app.cli.media covers [--only m01,m02]
+
+covers: album artwork from the iTunes Search API (US store, no key) for every reviewed song. A cover is kept only
+when the title and the artist both match (Korean artists also by their store name); classical pieces match on the
+title alone because the store lists the performer. Results go to src/media.json, which the frontend bundles, with
+the track's Apple Music page as the link Apple's artwork terms expect. Songs without a confident match are left out
+and the UI draws a generated cover. The API allows ~20 requests a minute, so this paces itself.
+
+Food photos are curated by hand (Wikimedia Commons, with author and license) and written to the same file.
+"""
+import argparse
+import json
+import re
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+from ..catalog import REVIEWED_FILE, SEED_FILE, load_seed
+from ..config import PROJECT_ROOT
+
+MEDIA_FILE = PROJECT_ROOT / "src" / "media.json"
+COMPOSERS = {"Frédéric Chopin", "Johann Sebastian Bach", "Ludwig van Beethoven", "Johann Pachelbel", "Wolfgang Amadeus Mozart",
+             "Antonio Vivaldi", "Claude Debussy", "Maurice Ravel", "Franz Liszt", "Erik Satie"}
+# Store names of artists the catalog writes in Hangul (or differently).
+ALIASES = {
+    "아이유": ["IU"], "성시경": ["Sung Si Kyung"], "김광석": ["Kim Kwang Seok", "Kim Kwang-seok"], "이문세": ["Lee Moon Sae", "Lee Moon-sae"],
+    "유재하": ["Yoo Jae Ha"], "전람회": ["Exhibition"], "김동률": ["Kim Dong Ryul"], "폴킴": ["Paul Kim"], "잔나비": ["JANNABI"],
+    "검정치마": ["The Black Skirts"], "혁오": ["HYUKOH"], "새소년": ["SE SO NEON"], "장범준": ["Jang Beom June"], "버스커 버스커": ["Busker Busker"],
+    "악뮤": ["AKMU", "AKDONG MUSICIAN"], "볼빨간사춘기": ["BOL4", "Bolbbalgan4"], "멜로망스": ["MeloMance"], "백예린": ["Yerin Baek"],
+    "적재": ["Jukjae"], "윤하": ["YOUNHA"], "이소라": ["Lee Sora"], "박효신": ["Park Hyo Shin"], "임재범": ["Yim Jae Beom"], "이적": ["Lee Juck"],
+    "전인권": ["Jeon In Kwon"], "크러쉬": ["Crush"], "자이언티": ["Zion.T"], "에픽하이": ["Epik High"], "다비치": ["DAVICHI"], "거미": ["Gummy"],
+    "태연": ["TAEYEON"], "너드커넥션": ["Nerd Connection"], "이하이": ["LEE HI"], "비투비": ["BTOB"], "정승환": ["Jung Seung Hwan"],
+    "김건모": ["Kim Gun Mo"], "쿨": ["COOL"], "듀스": ["DEUX"], "조용필": ["Cho Yong Pil"], "들국화": ["Deulgukhwa"], "넬": ["NELL"],
+    "자우림": ["Jaurim"], "크라잉넛": ["Crying Nut"], "실리카겔": ["Silica Gel"], "데이브레이크": ["Daybreak"], "에일리": ["Ailee"],
+    "백지영": ["Baek Ji Young"], "김범수": ["Kim Bum Soo"], "지코": ["ZICO"], "싸이": ["PSY"], "청하": ["CHUNG HA"], "선미": ["SUNMI"],
+    "마마무": ["MAMAMOO"], "오마이걸": ["OH MY GIRL"], "여자친구": ["GFRIEND"], "로제": ["ROSÉ"], "지수": ["JISOO"], "태양": ["TAEYANG"],
+    "소녀시대": ["Girls' Generation"], "(여자)아이들": ["(G)I-DLE", "i-dle"], "이루마": ["Yiruma"], "히사이시 조": ["Joe Hisaishi"],
+    "유키 구라모토": ["Yuhki Kuramoto"], "사카모토 류이치": ["Ryuichi Sakamoto"], "정재일": ["Jung Jae Il"], "YB": ["Yoon Do Hyun"],
+}
+
+
+# Store titles for Korean songs whose English name the store search does not surface on its own.
+TITLE_ALIASES = {"에잇": "eight", "가끔": "Sometimes", "피 땀 눈물": "Blood Sweat & Tears", "나는 나비": "A Flying Butterfly"}
+
+
+def norm(text: str | None) -> str:
+    return re.sub(r"[\W_]+", "", (text or "").casefold())
+
+
+def title_matches(want: str, got: str) -> bool:
+    a, b = norm(want), norm(re.sub(r"\s*[\(\[].*?[\)\]]", "", got))  # store titles add "(feat. …)", "[Remastered]"
+    core = norm(re.sub(r"\s*[\(\[].*?[\)\]]", "", want))
+    return bool(core) and (a == norm(got) or core == b or (len(core) >= 4 and (b.startswith(core) or core.startswith(b) and len(b) >= 4)))
+
+
+def artist_matches(want: str, got: str) -> bool:
+    names = [want, *ALIASES.get(want, [])]
+    return any(norm(n) and (norm(n) in norm(got)) for n in names)
+
+
+def search(term: str, country: str = "US") -> list[dict]:
+    url = "https://itunes.apple.com/search?" + urllib.parse.urlencode({"term": term, "country": country, "entity": "song", "limit": 10})
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "nowrecommend-prototype/0.1"}), timeout=15) as r:
+                return json.load(r).get("results", [])
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt == 3:
+                raise
+            time.sleep(30)  # the store asks callers to slow down
+    return []
+
+
+def cover_from(hit: dict, checked: bool) -> dict | None:
+    art = hit.get("artworkUrl100", "")
+    if not art:
+        return None
+    cover = {"image": art.replace("100x100bb", "600x600bb"), "link": hit.get("trackViewUrl", "").split("?")[0],
+             "source": "itunes", "match": f"{hit.get('trackName')} - {hit.get('artistName')} [{hit.get('collectionName')}]"}
+    return cover if checked else {**cover, "check": True}
+
+
+# Versions whose artwork is not the song's own release ("Permission to Dance On Stage - LIVE" for Dynamite).
+NOT_ORIGINAL = re.compile(r"(?<![a-z])live(?![a-z])|karaoke|tribute|(?<![a-z])cover|remix|lullaby|music box|8-bit|made famous|originally performed|in the style of", re.I)
+
+
+def original_first(hits: list[dict]) -> list[dict]:
+    """Studio releases before live/karaoke/cover versions, then the earliest release (the original single or album)."""
+    tagged = lambda h: bool(NOT_ORIGINAL.search(f"{h.get('collectionName', '')} {h.get('trackName', '')} {h.get('artistName', '')}"))  # noqa: E731
+    return sorted(hits, key=lambda h: (tagged(h), h.get("releaseDate") or "9999"))
+
+
+def find_cover(item: dict) -> dict | None:
+    """A title and artist match is final. Stores list Korean songs under English titles ("밤편지" → "Through the
+    Night"), so for a Hangul title the first hit by the right artist is kept with check=True for a person to confirm;
+    the UI ignores entries that still carry it."""
+    title, artist = item["name"], item["artist"]
+    english = TITLE_ALIASES.get(title)
+    if english:  # a known store title can be matched exactly, so it is no guess
+        for hit in original_first([h for h in search(f"{ALIASES.get(artist, [artist])[0]} {english}") if artist_matches(artist, h.get("artistName", ""))
+                                   and title_matches(english, h.get("trackName", ""))]):
+            return cover_from(hit, True)
+        time.sleep(3.2)
+    terms = [f"{artist} {title}", *(f"{alias} {title}" for alias in ALIASES.get(artist, [])[:1])]
+    guess = None
+    for term in terms:
+        hits = [h for h in search(term, "SG" if re.search("[가-힣]", title) else "US")
+                if artist in COMPOSERS or artist_matches(artist, h.get("artistName", ""))]
+        matched = [h for h in hits if title_matches(title, h.get("trackName", ""))]
+        if matched:
+            return cover_from(original_first(matched)[0], True)
+        # Hangul title listed in English: keep the store's own ranking (the best text match), originals first.
+        if guess is None and re.search("[가-힣]", title):
+            first = next((h for h in hits if not NOT_ORIGINAL.search(f"{h.get('collectionName', '')} {h.get('trackName', '')}")), None)
+            guess = cover_from(first, False) if first else None
+        time.sleep(3.2)
+    return guess
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    commands = parser.add_subparsers(dest="command", required=True)
+    covers = commands.add_parser("covers")
+    covers.add_argument("--only", default="", help="comma-separated item ids")
+    covers.add_argument("--out", type=Path, default=MEDIA_FILE)
+    args = parser.parse_args()
+
+    media = json.loads(args.out.read_text(encoding="utf-8")) if args.out.exists() else {}
+    songs = [i for i in load_seed(SEED_FILE) + (load_seed(REVIEWED_FILE) if REVIEWED_FILE.exists() else []) if i["category"] == "music"]
+    only = {s for s in args.only.split(",") if s}
+    todo = [s for s in songs if not only or s["id"] in only]
+    missing = []
+    for index, item in enumerate(todo):
+        cover = find_cover(item)
+        if cover:
+            media[item["id"]] = cover
+        else:
+            media.pop(item["id"], None)
+            missing.append(f"{item['name']} - {item['artist']}")
+        mark = "-" if not cover else "?" if cover.get("check") else "O"
+        print(f"{index + 1:3} {mark} {item['id']} {item['name']} - {item['artist']}" + (f"  ← {cover['match']}" if cover else ""), flush=True)
+        args.out.write_text(json.dumps(dict(sorted(media.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        time.sleep(3.2)
+    checks = sum(bool(media.get(i["id"], {}).get("check")) for i in todo)
+    print(f"covers: {len(todo) - len(missing)} found ({checks} to check by hand), {len(missing)} left to generated covers")
+
+
+if __name__ == "__main__":
+    main()

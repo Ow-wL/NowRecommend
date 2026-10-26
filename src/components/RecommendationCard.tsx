@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Ban, Columns2, ExternalLink, Heart, Info, MoreHorizontal, Pin, RefreshCw } from 'lucide-react';
 import type { Item } from '../data';
+import { mediaFor, youtubeSearch } from '../media';
+import { ItemArt } from './ItemArt';
 
 // One clear action (choose) per card; saving sits in the header and the request tools live behind "더보기" (DESIGN.md §3).
 export function RecommendationCard({ item, saved, reasons, rank, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, pinned=false, compared=false, compareDisabled=false, persisted = true }: {
@@ -9,8 +11,14 @@ export function RecommendationCard({ item, saved, reasons, rank, onSave, onExclu
   onPin?:()=>void;onReplace?:()=>void;onCompare?:()=>void;pinned?:boolean;compared?:boolean;compareDisabled?:boolean;
 }) {
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
-  const youtube = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.subtitle + ' ' + item.name)}`;
+  const youtube = youtubeSearch(item);
+  const apple = item.category === 'music' ? mediaFor(item.id)?.link : undefined;
+  // Album artwork links to the track's Apple Music page (the artwork terms); food photos open the details.
+  const art = apple ? <a className="item-art-link" href={apple} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><ItemArt item={item} size="thumb" /></a>
+    : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 사진 크게 보기`} tabIndex={-1}><ItemArt item={item} size={item.category === 'music' ? 'thumb' : 'card'} /></button>
+    : <ItemArt item={item} size={item.category === 'music' ? 'thumb' : 'card'} />;
   return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}${reasons ? '' : ' plain'}`}>
+    {art}
     <div className="item-head">
       {rank !== undefined && <span className="item-rank" aria-hidden="true">{rank}</span>}
       <div className="item-title">

@@ -9,6 +9,8 @@ import { applyParsed, changeText, conditionConflicts, createEditor, toggleCondit
 import { newSession } from '../sessionStorage';
 import { downloadLab, markKey, readLab, tally, upsertEntry, writeLab, type LabAnswer, type LabEntry, type LabMark, type LabSide, type LabSong, type LabVote } from '../lab';
 import { ParseNotice } from './ParseNotice';
+import { ItemArt } from './ItemArt';
+import { findSong, mediaFor } from '../media';
 
 type ViewMode = 'both' | LabSide;
 type TabState = { raw: string; session: Session; likedText: string; view: ViewMode; freeModel?: string; entry: LabEntry | null; poolIds: string[]; poolSeen: string[]; poolExcluded: string[]; freeAvoid: string[] };
@@ -139,9 +141,13 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
   const songCard = (side: LabSide, song: LabSong, index: number) => {
     const key = markKey(side, song), current = entry?.marks[key];
     const youtube = `https://www.youtube.com/results?search_query=${encodeURIComponent(song.artist + ' ' + song.title)}`;
+    // A song that is in the catalog shows its cover (linked to Apple Music); a song only the AI knows gets a generated one.
+    const known = findSong(items, song.title, song.artist), apple = known && mediaFor(known.id)?.link;
+    const art = <ItemArt item={known || { category: 'music', name: song.title, subtitle: song.artist }} size="thumb" />;
     return <article className="item-card lab-song" key={key}>
       <div className="item-head">
         <span className="item-rank" aria-hidden="true">{index + 1}</span>
+        {apple ? <a className="item-art-link" href={apple} target="_blank" rel="noopener noreferrer" aria-label={`${song.title} Apple Music에서 듣기 (새 탭)`}>{art}</a> : art}
         <div className="item-title"><h3>{song.title}</h3><p className="item-subtitle">{song.artist}</p></div>
         {song.confidence && <span className={`lab-confidence ${song.confidence}`}>{confidenceLabel[song.confidence]}</span>}
         <a className="icon-button" href={youtube} target="_blank" rel="noopener noreferrer" aria-label={`${song.title} YouTube에서 검색 (새 탭)`} title="YouTube에서 검색"><ExternalLink size={18} /></a>

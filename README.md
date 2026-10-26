@@ -192,5 +192,6 @@ F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·A
 - `src/data.ts`: 샘플 카탈로그·검토 상태·자동 검증.
 - `src/api/`: 서버 모드의 카탈로그·추천·해석·실험 요청.
 - `src/components/MusicLab.tsx`, `src/lab.ts`: 음악 AI 실험 화면과 브라우저 실험 기록.
+- `src/media.json`, `src/media.ts`, `src/components/ItemArt.tsx`: 항목 사진·앨범 커버와 생성 커버(DESIGN.md v3). 앨범 커버는 `python -m app.cli.media covers`(iTunes Search API, 약 15분)로 다시 받고, 영어 제목 후보(`check`)는 사람이 확인한 뒤 표시합니다. 음식 사진은 Wikimedia Commons에서 메뉴별로 골라 촬영자·라이선스와 함께 적습니다.
 - `server/`: FastAPI·SQLAlchemy·Alembic 추천 서버, CLI(시드·임베딩·초안·검수·평가), pytest.
 - `shared/`: 프론트와 서버가 함께 쓰는 어휘(`vocab.json`)와 공통 사례(`parse-cases.json`, `filter-cases.json`).
