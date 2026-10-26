@@ -44,7 +44,9 @@ def test_database_url():
     os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
     get_settings.cache_clear()
     try:
-        command.upgrade(Config(str(Path(__file__).resolve().parents[1] / "alembic.ini")), "head")
+        config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
+        config.attributes["allow_contract"] = True  # the test database is a fresh one at head
+        command.upgrade(config, "head")
     finally:
         if previous is None:
             os.environ.pop("DATABASE_URL", None)

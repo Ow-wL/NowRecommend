@@ -80,6 +80,11 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
     assert len(food) == 16 and all("price" not in i and "원" not in i["subtitle"] for i in food)
     assert old_api_query(migration_db) == ("f01", "9,000–12,000원", 10000)  # seeding never touches the old columns
 
+    # The old seed job command (`alembic upgrade head`) on the new image stops at 0003 without changing anything.
+    with pytest.raises(RuntimeError, match="contract migration"):
+        command.upgrade(alembic_config(), "head")
+    assert current_revision() == "0002" and {"price_label", "cost"} <= columns(migration_db)
+
     # 3. Contract, once no old revision runs: columns gone, values kept aside.
     assert plan(include_contract=True).target == "0003"
     migrate(include_contract=True)

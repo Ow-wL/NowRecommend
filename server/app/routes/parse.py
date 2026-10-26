@@ -30,4 +30,8 @@ def get_parse_model() -> JsonModel | None:
 
 @router.post("/api/parse")
 def parse_route(request: ParseRequest, service: ParseService = Depends(get_parse_service), model=Depends(get_parse_model)):
-    return service.parse(request.category, request.text, get_vocab(), model)
+    answer = service.parse(request.category, request.text, get_vocab(), model)
+    # Deploy compatibility, not a feature: Pages builds from before the price removal reject a parse answer without
+    # `maxPrice` and then claim the server is unreachable (DEPLOY.md §0). It is always null and never read; current
+    # builds drop it (cleanConditions). Remove once those builds are gone (after phase 2).
+    return {**answer, "conditions": {**answer["conditions"], "maxPrice": None}}

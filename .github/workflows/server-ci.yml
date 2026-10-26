@@ -44,6 +44,9 @@ jobs:
       - name: Install server
         run: pip install -e ".[dev]"
       - name: Apply migrations
+        # A fresh CI database goes to head, contract migrations included (0003 refuses a plain upgrade otherwise).
+        env:
+          NOWREC_ALLOW_CONTRACT: '1'
         run: alembic upgrade head
       - name: Models match migrations
         run: alembic check

@@ -9,8 +9,10 @@ Revision ID: 0003
 Revises: 0002
 Create Date: 2026-10-27
 """
+import os
+
 import sqlalchemy as sa
-from alembic import op
+from alembic import context, op
 
 revision = "0003"
 down_revision = "0002"
@@ -22,6 +24,12 @@ BACKUP = "items_price_backup"  # listed in app.models.UNMANAGED_TABLES, so `alem
 
 
 def upgrade() -> None:
+    # A plain `alembic upgrade head` (e.g. the seed job's command from before the price removal, run on a new image)
+    # must not drop the columns: only `app.cli.migrate --contract` (or NOWREC_ALLOW_CONTRACT=1, as in CI) may.
+    if not (context.config.attributes.get("allow_contract") or os.environ.get("NOWREC_ALLOW_CONTRACT") == "1"):
+        raise RuntimeError("0003 drops items.price_label/cost (contract migration). Run `python -m app.cli.migrate --contract` "
+                           "once no API revision from before the price removal serves traffic or remains a rollback target "
+                           "(DEPLOY.md §0). Nothing was changed.")
     op.execute(f"CREATE TABLE {BACKUP} AS SELECT id, price_label, cost FROM items WHERE price_label IS NOT NULL OR cost IS NOT NULL")
     op.drop_constraint("items_cost", "items", type_="check")
     op.drop_column("items", "cost")

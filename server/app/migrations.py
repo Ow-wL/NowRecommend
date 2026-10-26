@@ -61,7 +61,9 @@ def plan(include_contract: bool = False) -> Plan:
 def migrate(include_contract: bool = False) -> Plan:
     result = plan(include_contract)
     if result.target:
-        command.upgrade(alembic_config(), result.target)
+        config = alembic_config()
+        config.attributes["allow_contract"] = include_contract  # read by contract migrations (0003)
+        command.upgrade(config, result.target)
     return result
 
 
