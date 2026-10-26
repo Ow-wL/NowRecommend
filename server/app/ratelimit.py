@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-LIMITED_PATHS = {"/api/recommend", "/api/parse"}
+LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free"}
 MAX_CLIENTS = 10_000
 
 

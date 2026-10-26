@@ -26,6 +26,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-gemini-3.6-flash}
       RERANK_ENABLED: ${RERANK_ENABLED:-true}
+      LAB_FREE_MODELS: '${LAB_FREE_MODELS:-["gemini-3.5-flash-lite","gemini-3.6-flash"]}'
       PARSE_ENABLED: ${PARSE_ENABLED:-true}
       RERANK_TIMEOUT_MS: ${RERANK_TIMEOUT_MS:-10000}
       LOG_RAW_TEXT: ${LOG_RAW_TEXT:-true}

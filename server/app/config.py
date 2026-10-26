@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     embedding_model: str = "gemini-embedding-2"
     embedding_dim: int = 768  # must equal the vector(768) column
     llm_model: str = "gemini-3.6-flash"
+    # Models the music lab may use for free recommendations (plans-music-ai.md); the first is the default.
+    lab_free_models: list[str] = ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
     rerank_enabled: bool = True
     parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).

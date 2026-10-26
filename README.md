@@ -89,16 +89,27 @@ curl http://127.0.0.1:8010/api/catalog?category=food
 docker compose exec api python -m app.cli.draft --category food data/drafts/food-names.txt
 docker compose exec api python -m app.cli.review export
 docker compose exec api python -m app.cli.review import
+docker compose exec api python -m app.cli.review publish
 ```
 
 - `draft`: AI가 설명·태그·재료·참고 가격·이모지·색을 채워 `draft` 상태로 저장합니다. 10개씩 묶어 한 번에 요청하고, 이미 있는 이름은 건너뜁니다. 초안은 추천과 `/api/catalog`에 나오지 않습니다.
 - `review export`: `server/data/drafts/review.json`을 만듭니다. 각 항목에 AI가 채운 필드, 경고(알레르기 재료 확인 필요, 모르는 곡, 이름·내용이 비슷한 기존 항목), `decision: pending`이 들어 있습니다.
 - 파일을 고쳐 `decision`을 `approve`·`reject`로 바꿉니다. **음식은 재료를 확인한 뒤 `allergensChecked: true`로 바꿔야 승인됩니다.**
 - `review import`: 승인 항목을 `reviewed`로 바꾸고 임베딩합니다. 오래된 파일로 이미 처리된 항목을 덮어쓰지 않습니다.
-- 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다.
-- `python -m app.cli.eval`(server 폴더에서 실행)은 평가 세트 60개(`server/eval/cases.json`)로 기존 규칙·유사도·취향만 방식을 비교하고, 조건 해석 정확도를 잽니다. 결과는 `server/eval/report.md`에 씁니다. `--with-ai`를 주면 AI 경로도 일부 사례에 대해 측정하며, 이때는 생성 한도를 씁니다.
+- `review publish`: 승인된 AI 항목을 `server/data/reviewed_items.json`으로 내보냅니다. 이 파일을 커밋하면 `app.cli.seed`(배포의 시드 작업 포함)가 기본 시드 다음에 함께 넣으므로, 새로 만든 DB에도 같은 카탈로그가 들어갑니다.
+- 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다. `--batch 20`으로 요청 수를 줄일 수 있고, 이때는 `RERANK_TIMEOUT_MS`를 넉넉히(예: 150000) 줍니다.
+- `python -m app.cli.eval`(server 폴더에서 실행)은 평가 세트 60개(`server/eval/cases.json`)로 기존 규칙·유사도·취향만 방식을 비교하고, 조건 해석 정확도를 잽니다. 결과는 `server/eval/report.md`에 씁니다. `--with-ai`를 주면 AI 경로도 일부 사례에 대해 측정하며, 이때는 생성 한도를 씁니다. 정답 라벨이 기본 시드 31개만 알기 때문에 기본으로 그 안에서만 순위를 매깁니다(`--full-catalog`로 전체).
 - 서버 테스트는 GitHub Actions `server-ci.yml`에서 pgvector 컨테이너와 함께 실행됩니다(`server/`·`shared/` 변경 시).
-- `POST /api/recommend`·`/api/parse`는 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔).
+- `POST /api/recommend`·`/api/parse`·`/api/lab/music/free`는 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔).
+
+### 음악 AI 실험 (`#/lab`)
+
+음악을 DB 곡 목록에서 고르는 방식과 AI가 바로 고르는 방식을 비교하는 실험 페이지입니다([plans-music-ai.md](./plans-music-ai.md)). 서버 모드에서만 홈에 진입 카드가 보입니다.
+
+- A(저장된 곡 목록): 기존 `POST /api/recommend`를 그대로 씁니다.
+- B(AI 자유 추천): `POST /api/lab/music/free`. 등록 취향(곡 ID는 서버가 "제목 - 아티스트"로 바꿈)·조건·직접 적은 좋아하는 곡을 보내면 모델이 아는 곡 중 5곡과 확신도를 돌려줍니다. 서버는 빈 값·중복·이미 본 곡·비선호·취향 곡 자체를 걸러내지만 곡이 실제로 있는지는 확인하지 못합니다. 실패하면 대체 결과 없이 실패를 그대로 돌려줍니다.
+- B 모델은 `LAB_FREE_MODELS`(기본 `["gemini-3.5-flash-lite","gemini-3.6-flash"]`) 중에서 화면에서 고르고, `GET /api/lab/music/models`가 목록을 줍니다. 같은 이름의 모델은 재순위·해석과 429 쿨다운을 공유합니다.
+- 비교 평가(A/비슷/B)·곡별 표시(좋아요·별로예요·없는 곡)·메모는 이 브라우저의 `nowrecommend-lab-v1`에만 저장되고, 추천 기록·취향에는 반영하지 않습니다. 실험 기록에서 집계와 JSON 내려받기를 할 수 있습니다.
 - `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 
@@ -178,6 +189,7 @@ F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·A
 - `src/navigation.ts`, `src/sessionStorage.ts`: 해시 탐색·현재 요청 복원.
 - `src/storage.ts`: 영구 데이터 검증·v1 변환·저장·손상 원본 보존.
 - `src/data.ts`: 샘플 카탈로그·검토 상태·자동 검증.
-- `src/api/`: 서버 모드의 카탈로그·추천·해석 요청.
+- `src/api/`: 서버 모드의 카탈로그·추천·해석·실험 요청.
+- `src/components/MusicLab.tsx`, `src/lab.ts`: 음악 AI 실험 화면과 브라우저 실험 기록.
 - `server/`: FastAPI·SQLAlchemy·Alembic 추천 서버, CLI(시드·임베딩·초안·검수·평가), pytest.
 - `shared/`: 프론트와 서버가 함께 쓰는 어휘(`vocab.json`)와 공통 사례(`parse-cases.json`, `filter-cases.json`).

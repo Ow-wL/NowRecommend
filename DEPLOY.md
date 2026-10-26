@@ -47,7 +47,7 @@ gcloud run deploy nowrecommend-api --project harness-recommend --region asia-nor
 
 ### 카탈로그를 바꿨을 때
 
-`server/data/seed_items.json`을 바꿨다면 새 이미지를 만든 뒤 작업 이미지를 바꾸고 다시 실행합니다. 시드와 임베딩은 바뀐 항목만 처리합니다.
+`server/data/seed_items.json`을 바꿨거나, 승인한 AI 초안을 `python -m app.cli.review publish`로 `server/data/reviewed_items.json`에 내보내 커밋했다면 새 이미지를 만든 뒤 작업 이미지를 바꾸고 다시 실행합니다. 시드 작업은 두 파일을 차례로 넣고, 시드와 임베딩은 바뀐 항목만 처리합니다.
 
 ```bash
 gcloud run jobs update nowrecommend-seed --project harness-recommend --region asia-northeast3 --image $IMG

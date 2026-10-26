@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Columns2, Headphones, Heart, House, Info, LogOut, Music2, RefreshCw, Search, Settings2, SlidersHorizontal, Sparkles, Trash2, Utensils, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Columns2, FlaskConical, Headphones, Heart, House, Info, LogOut, Music2, RefreshCw, Search, Settings2, SlidersHorizontal, Sparkles, Trash2, Utensils, X } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -11,6 +11,7 @@ import { ParseNotice } from './components/ParseNotice';
 import { QualityNotice } from './components/QualityNotice';
 import { emptyConditions, emptyStore, parseConditions, createEditor, changeText, applyParsed, toggleCondition, changeBudget, validateBudget, conditionConflicts, recommend, nextBatch, applyBatch, replaceCandidate, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset } from './domain';
 import { Comparison } from './components/Comparison';
+import { MusicLab } from './components/MusicLab';
 import { applyPreset } from './presets';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
@@ -230,7 +231,7 @@ export default function App() {
   }
   const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} onPreview={setPresetPreview} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
 
-  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료' };
+  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', lab: '음악 AI 실험' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
   const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
@@ -290,6 +291,11 @@ export default function App() {
           </span>
           <span className="category-link">{categoryLabel[c]} 추천받기 <ArrowRight size={16} /></span>
         </button>)}</section>
+        {apiEnabled() && <button className="lab-entry panel" onClick={() => navigate('lab')}>
+          <span className="small-icon music"><FlaskConical size={18} /></span>
+          <span className="lab-entry-copy"><b>음악 AI 실험</b><small>저장된 곡 목록과 AI 자유 추천을 나란히 비교해요.</small></span>
+          <ChevronRight size={18} />
+        </button>}
         <section className="home-section">
           <div className="section-heading"><h2>빠른 시작</h2><span>자주 쓰는 상황을 한 번에 불러와요</span></div>
           <div className="preset-home">{(['food','music'] as Category[]).map(c => <div className="panel" key={c}>{presetList(c)}</div>)}</div>
@@ -439,6 +445,7 @@ export default function App() {
         </section>
       </div>}
 
+      {page === 'lab' && <MusicLab profile={store.profiles.music} items={items} onEditTaste={() => editTaste('music')} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
       {page === 'history' && <>
         <div className="page-heading"><h1>그날의 선택, 그때의 취향.</h1><p>지난 추천의 조건과 결과를 확인하고 같은 상황으로 다시 시작해보세요.</p></div>
