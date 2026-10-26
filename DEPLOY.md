@@ -4,7 +4,7 @@
 
 - 사이트: <https://ow-wl.github.io/NowRecommend/>
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- 배포 커밋: `852807e`. [Pages 배포](https://github.com/Ow-wL/NowRecommend/actions/runs/39267683523)와 [서버 테스트](https://github.com/Ow-wL/NowRecommend/actions/runs/39267683527) 모두 성공했습니다.
+- 배포 커밋: `48bb706`(2026-10-26, 음악 AI 실험·음악 226곡). API 리비전 `nowrecommend-api-00003-mjt`, 시드 작업 실행 `nowrecommend-seed-wsrvm`(추가 211·임베딩 211). Pages 배포와 서버 테스트 모두 성공했습니다.
 
 ## 1. 현재 구성
 
@@ -26,7 +26,8 @@ API 환경 변수: `CORS_ORIGINS=["https://ow-wl.github.io"]`, `LOG_RAW_TEXT=fal
 - `DATABASE_URL`은 Cloud SQL 유닉스 소켓을 씁니다. 형식은 `postgresql+psycopg://nowrecommend:<비밀번호>@/nowrecommend?host=/cloudsql/harness-recommend:asia-northeast3:nowrecommend-db`입니다.
 - API는 **한 인스턴스**만 띄웁니다. 요청 제한·쿨다운·캐시가 프로세스 메모리에 있어서, 여러 인스턴스로 늘리면 인스턴스마다 따로 셉니다.
 - 요청이 없으면 인스턴스가 0개로 줄어서, 한동안 쉰 뒤 첫 요청은 몇 초 더 걸립니다.
-- 카탈로그는 검수 완료 31개(음식 16·음악 15)입니다. 로컬 DB에만 있는 AI 초안은 올리지 않았습니다.
+- 카탈로그는 음식 16개·음악 226곡입니다(음악 211곡은 `server/data/reviewed_items.json`의 1차 검수 AI 초안). 음식 초안 86개는 검수 전이라 로컬 DB에만 있습니다.
+- 음악 AI 실험(`#/lab`)의 B 방식은 `POST /api/lab/music/free`를 쓰며 같은 Gemini 키·한도를 씁니다.
 
 ## 2. 다시 배포하기
 
