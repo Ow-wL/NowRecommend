@@ -593,6 +593,113 @@
         ],
         "maxPrice": null
       }
+    },
+    {
+      "category": "food",
+      "text": "땅콩 알러지 있어",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "땅콩"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "유당불내증 있어요",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "유제품"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "글루텐 프리로 점심",
+      "expected": {
+        "tags": [
+          "점심"
+        ],
+        "excluded": [
+          "밀"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "고기 안 들어간 걸로",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "소고기",
+          "돼지고기",
+          "닭고기"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "돼지고기 금지",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "돼지고기"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "우유 들어가면 안 돼",
+      "expected": {
+        "tags": [],
+        "excluded": [
+          "유제품"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "해산물 알러지 있어서 담백한 거",
+      "expected": {
+        "tags": [
+          "담백함"
+        ],
+        "excluded": [
+          "생선"
+        ],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "food",
+      "text": "소고기 프리미엄 스테이크로 저녁",
+      "expected": {
+        "tags": [
+          "저녁"
+        ],
+        "excluded": [],
+        "maxPrice": null
+      }
+    },
+    {
+      "category": "music",
+      "text": "보컬 금지, 잔잔하게",
+      "expected": {
+        "tags": [
+          "차분함"
+        ],
+        "excluded": [
+          "보컬"
+        ],
+        "maxPrice": null
+      }
     }
   ]
 }

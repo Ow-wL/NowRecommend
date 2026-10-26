@@ -43,7 +43,8 @@ export function parseConditions(text: string, category: Category): Conditions {
   condition.tags = condition.tags.filter(t => !excluded.has(t));
   return condition;
 }
-const EXCLUDE = /제외|빼|피하|싫|없[이는게음고]|말고|못\s*먹|안\s*먹|알레르기/.source;
+// "프리" is for "글루텐 프리"; "프리미엄" must not exclude the beef in "소고기 프리미엄 스테이크".
+const EXCLUDE = /제외|빼|피하|싫|없[이는게음고]|말고|못\s*먹|안\s*먹|알레르기|알러지|불내증|금지|안\s*들어|안\s*돼|프리(?!미엄)/.source;
 // Items joined by spaces, commas or particles: "고기 생선 달걀 다 빼줘", "소고기와 돼지고기는 제외".
 const JOINER = /[\s,]*(?:이랑|하고|이나|과|와|랑|및|나|도)?[\s,]*/.source;
 /** Every listed word before an exclusion trigger, mapped to vocabulary values via exclusionAliases (shared/vocab.json). */
