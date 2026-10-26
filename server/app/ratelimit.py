@@ -3,6 +3,7 @@
 In-memory and per process: enough for one small deployment. Behind a reverse proxy set TRUST_PROXY=true
 so the client address comes from X-Forwarded-For instead of the proxy's own address.
 """
+import logging
 import time
 from collections import deque
 
@@ -10,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+log = logging.getLogger(__name__)
 LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free"}
 MAX_CLIENTS = 10_000
 
@@ -37,7 +39,7 @@ class SlidingWindow:
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, per_minute: int, trust_proxy: bool = False, clock=time.monotonic):
         super().__init__(app)
-        self.window, self.trust_proxy = SlidingWindow(per_minute, clock), trust_proxy
+        self.window, self.trust_proxy, self.logged_shape = SlidingWindow(per_minute, clock), trust_proxy, False
 
     async def dispatch(self, request: Request, call_next):
         if request.method == "POST" and request.url.path in LIMITED_PATHS:
@@ -49,6 +51,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def client_key(self, request: Request) -> str:
         forwarded = request.headers.get("x-forwarded-for", "")
         if self.trust_proxy and forwarded:
+            if not self.logged_shape:  # once per process: confirms the proxy adds one address (no addresses logged)
+                self.logged_shape = True
+                log.warning("rate limit: X-Forwarded-For carries %d address(es)", len(forwarded.split(",")))
             # The left end is whatever the client sent (a spoofed header bypassed the limit, review 2026-10-26);
             # the proxy appends the address it saw on the right.
             return forwarded.split(",")[-1].strip()
