@@ -21,6 +21,7 @@ def main() -> None:
     parser.add_argument("names", type=Path)
     parser.add_argument("--category", choices=["food", "music"], required=True)
     parser.add_argument("--batch", type=int, default=10, help="names per model request")
+    parser.add_argument("--retries", type=int, default=2, help="retries per batch after a 503 overload or its cooldown")
     parser.add_argument("--dry-run", action="store_true", help="only list what would be drafted")
     args = parser.parse_args()
     inputs = read_inputs(args.names, args.category)
@@ -32,7 +33,7 @@ def main() -> None:
         sys.exit("GEMINI_API_KEY is not set")
     embedder = GeminiEmbedder(settings.gemini_api_key, settings.embedding_model, settings.embedding_dim)
     with get_sessionmaker()() as session:
-        report = draft_items(session, model, embedder, get_vocab(), args.category, inputs, args.batch)
+        report = draft_items(session, model, embedder, get_vocab(), args.category, inputs, args.batch, retries=args.retries)
     print(f"drafted {len(report.created)} items" + ("" if report.embedded or not report.created else " (embedding failed: duplicates checked by name only)"))
     for label, reason in report.skipped:
         print(f"  skipped {label}: {reason}")

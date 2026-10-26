@@ -14,6 +14,9 @@ from .models import Item
 from .vocab import Vocab
 
 SEED_FILE = Path(__file__).resolve().parents[1] / "data" / "seed_items.json"
+# Approved AI drafts (app.cli.review publish), loaded by app.cli.seed after the bundled seed so a fresh DB gets them too.
+REVIEWED_FILE = Path(__file__).resolve().parents[1] / "data" / "reviewed_items.json"
+SOURCES = ("seed", "ai_draft", "user_request")
 CONTENT_FIELDS = ("category", "name", "artist", "subtitle", "description", "tags", "ingredients", "price_label", "cost", "emoji", "color")
 
 
@@ -40,6 +43,12 @@ def load_seed(path: Path = SEED_FILE) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))["items"]
 
 
+def published_items(session: Session) -> dict:
+    """Reviewed items that did not come from the bundled seed, in the seed file shape plus their source."""
+    rows = session.scalars(select(Item).where(Item.status == "reviewed", Item.source != "seed").order_by(Item.category, Item.id))
+    return {"items": [{"id": r.id, **{k: getattr(r, k) for k in CONTENT_FIELDS}, "source": r.source} for r in rows]}
+
+
 @dataclass
 class SeedResult:
     inserted: int = 0
@@ -49,6 +58,7 @@ class SeedResult:
 
 def seed_items(session: Session, vocab: Vocab, items: list[dict]) -> SeedResult:
     errors = [e for item in items for e in validate_item(vocab, item)]
+    errors += [f"출처: {i.get('id')}" for i in items if i.get("source", "seed") not in SOURCES]
     if errors:
         raise ValueError("시드 검증 실패: " + ", ".join(errors))
     existing = {row.id: row for row in session.scalars(select(Item).where(Item.id.in_([i["id"] for i in items])))}
@@ -59,7 +69,7 @@ def seed_items(session: Session, vocab: Vocab, items: list[dict]) -> SeedResult:
         if old is not None and old.status == "reviewed" and all(getattr(old, k) == v for k, v in values.items()):
             result.unchanged += 1
             continue
-        statement = insert(Item).values(id=item["id"], status="reviewed", source="seed", reviewed_at=func.now(), **values)
+        statement = insert(Item).values(id=item["id"], status="reviewed", source=item.get("source", "seed"), reviewed_at=func.now(), **values)
         session.execute(statement.on_conflict_do_update(
             index_elements=[Item.id],
             set_={**values, "status": "reviewed", "reviewed_at": func.now(), "updated_at": func.now()},

@@ -1,4 +1,7 @@
-"""Offline evaluation: python -m app.cli.eval [--with-ai --ai-limit 10] [--out eval/report.md]
+"""Offline evaluation: python -m app.cli.eval [--with-ai --ai-limit 10] [--out eval/report.md] [--full-catalog]
+
+By default every mode only sees the bundled seed items (server/data/seed_items.json), because the gold
+labels in eval/cases.json only know those; --full-catalog uses every reviewed item.
 
 Without --with-ai only query embeddings are called (no generate quota). --with-ai adds the AI
 rerank and /api/parse paths for up to --ai-limit cases each, paced for the free tier.
@@ -9,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 from ..db import get_sessionmaker
+from ..catalog import load_seed
 from ..evaluation import load_cases, ranking_metrics, render_markdown, run_parsing, run_ranking
 from ..llm.provider import shared_model
 from ..routes.recommend import get_query_embedder
@@ -22,6 +26,7 @@ def main() -> None:
     parser.add_argument("--pace", type=float, default=13.0, help="seconds between AI calls")
     parser.add_argument("--out", type=Path, help="write a markdown report")
     parser.add_argument("--json", type=Path, help="write per-case results")
+    parser.add_argument("--full-catalog", action="store_true", help="rank over every reviewed item, not just the labelled seed")
     args = parser.parse_args()
 
     data, model = load_cases(), shared_model() if args.with_ai else None
@@ -29,9 +34,10 @@ def main() -> None:
         raise SystemExit("GEMINI_API_KEY is not set")
     modes = ["rule", "retrieval", "no_embedding", "taste_only", *(["rag"] if model else [])]
     with get_sessionmaker()() as session:
-        ranking = run_ranking(session, data, get_query_embedder(), model, modes, args.ai_limit, args.pace)
+        catalog_ids = None if args.full_catalog else [i["id"] for i in load_seed()]
+        ranking = run_ranking(session, data, get_query_embedder(), model, modes, args.ai_limit, args.pace, catalog_ids)
     parsing = run_parsing(data, get_vocab(), model, args.ai_limit, args.pace)
-    note = f"실행일 {date.today().isoformat()} · " + ("AI 경로 포함(사례 최대 %d개)" % args.ai_limit if model else "AI 경로 제외(생성 한도 사용 안 함)")
+    note = f"실행일 {date.today().isoformat()} · " + ("전체 카탈로그 · " if args.full_catalog else "시드 31개 안에서 · ") + ("AI 경로 포함(사례 최대 %d개)" % args.ai_limit if model else "AI 경로 제외(생성 한도 사용 안 함)")
     report = render_markdown(data, ranking, parsing, note)
     print(report)
     if args.out:

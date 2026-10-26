@@ -2,6 +2,7 @@
 
   python -m app.cli.review export [--category food] [--out data/drafts/review.json]
   python -m app.cli.review import data/drafts/review.json [--no-embed]
+  python -m app.cli.review publish        # approved drafts → data/reviewed_items.json (commit it; the seed job loads it)
 
 Edit the exported file: set decision to approve / reject / pending, fix fields if needed, and for food
 set allergensChecked to true only after checking the ingredients. Approved items are embedded and
@@ -13,6 +14,7 @@ from pathlib import Path
 
 from ..config import get_settings
 from ..db import get_sessionmaker
+from ..catalog import REVIEWED_FILE, published_items
 from ..drafting import DUPLICATE_THRESHOLD, export_review, import_review
 from ..embeddings import GeminiEmbedder
 from ..vocab import get_vocab
@@ -30,9 +32,16 @@ def main() -> None:
     load = commands.add_parser("import")
     load.add_argument("file", type=Path, nargs="?", default=DEFAULT_FILE)
     load.add_argument("--no-embed", action="store_true")
+    publish = commands.add_parser("publish")
+    publish.add_argument("--out", type=Path, default=REVIEWED_FILE)
     args = parser.parse_args()
 
     with get_sessionmaker()() as session:
+        if args.command == "publish":
+            data = published_items(session)
+            args.out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(f"published {len(data['items'])} reviewed drafts to {args.out}")
+            return
         if args.command == "export":
             data = export_review(session, args.category, args.threshold)
             args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -5,6 +5,7 @@ names file → draft_items (AI fills fields, status 'draft') → export_review (
 Only 'reviewed' items are ever recommended or listed by /api/catalog.
 """
 import csv
+import time
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -17,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from .catalog import refresh_embeddings, validate_item
 from .embeddings import Embedder, document_text, embedding_hash
-from .llm.client import JsonModel
+from .llm.client import CoolingDown, JsonModel
 from .llm.draft import DraftInput, clean_draft, request_drafts
 from .models import Item
 from .vocab import Vocab
@@ -65,8 +66,21 @@ class DraftReport:
     embedded: bool = False
 
 
+def _request_with_retry(model: JsonModel, category: str, batch: list[DraftInput], vocab, retries: int, wait: float, sleep=time.sleep) -> list:
+    """An overloaded model (503) or its cooldown is usually over in seconds; a spent quota (429) is not, so only
+    the former is retried. Without this one 503 also skipped the next batches while the cooldown lasted (R6 rerun)."""
+    for attempt in range(retries + 1):
+        try:
+            return request_drafts(model, category, batch, vocab)
+        except Exception as exc:
+            if attempt == retries or not (isinstance(exc, CoolingDown) or getattr(exc, "code", None) == 503):
+                raise
+            sleep(wait)
+    return []
+
+
 def draft_items(session: Session, model: JsonModel, embedder: Embedder | None, vocab: Vocab, category: str,
-                inputs: list[DraftInput], batch_size: int = 10) -> DraftReport:
+                inputs: list[DraftInput], batch_size: int = 10, retries: int = 0, retry_wait: float = 15.0) -> DraftReport:
     report = DraftReport()
     existing = {(normalize(r.name), normalize(r.artist)) for r in session.scalars(select(Item).where(Item.category == category))}
     todo = []
@@ -80,7 +94,7 @@ def draft_items(session: Session, model: JsonModel, embedder: Embedder | None, v
     for start in range(0, len(todo), batch_size):
         batch = todo[start:start + batch_size]
         try:
-            answers = request_drafts(model, category, batch, category_vocab)
+            answers = _request_with_retry(model, category, batch, category_vocab, retries, retry_wait)
         except Exception as exc:  # quota, overload, timeout: report and keep going with the next batch
             code = getattr(exc, "code", None)  # 429 = quota spent (free tier ~20/day), 503 = overloaded
             reason = f"모델 오류: {type(exc).__name__}" + (f" {code}" if code else "")

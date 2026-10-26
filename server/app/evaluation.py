@@ -37,10 +37,10 @@ def load_cases(path: Path = CASES_FILE) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def rule_baseline(session: Session, case: dict, persona: dict) -> list[str]:
+def rule_baseline(session: Session, case: dict, persona: dict, catalog_ids: list[str] | None = None) -> list[str]:
     """Port of recommend() in src/domain.ts for a fresh request (no seen/pinned)."""
     k = case["conditions"]
-    rows = session.scalars(eligible_query(case["category"], k["excluded"], k["maxPrice"], [], [], None)).all()
+    rows = session.scalars(eligible_query(case["category"], k["excluded"], k["maxPrice"], [], [], catalog_ids)).all()
     liked = session.scalars(select(Item).where(Item.id.in_(persona["selected"]))).all()
     preferred = set(persona["tags"]).union(*(r.tags for r in liked))
     score = lambda r: sum(t in preferred for t in r.tags) + 2 * sum(t in k["tags"] for t in r.tags)  # noqa: E731
@@ -64,7 +64,9 @@ class ModeResult:
 
 
 def run_ranking(session: Session, data: dict, embed_query: Callable | None, model: JsonModel | None,
-                modes: list[str], rag_limit: int | None = None, pace: float = 0.0) -> dict[str, ModeResult]:
+                modes: list[str], rag_limit: int | None = None, pace: float = 0.0, catalog_ids: list[str] | None = None) -> dict[str, ModeResult]:
+    """`catalog_ids` limits every mode to those items: the gold labels only know the bundled seed, so a grown
+    catalog would otherwise look worse just because its new items are unlabelled."""
     personas, results = data["personas"], {m: ModeResult(m) for m in modes}
     rag_done = 0
     for case in data["cases"]:
@@ -76,12 +78,12 @@ def run_ranking(session: Session, data: dict, embed_query: Callable | None, mode
             started = time.perf_counter()
             meta = {}
             if mode == "rule":
-                ids = rule_baseline(session, case, persona)
+                ids = rule_baseline(session, case, persona, catalog_ids)
             else:
                 k = case["conditions"]
                 situational = mode != "taste_only"
                 request = RecommendRequest(category=case["category"], raw=case["text"] if situational else "", tau=0, profile=profile,
-                                           conditions={**k, "tags": k["tags"] if situational else []})
+                                           conditions={**k, "tags": k["tags"] if situational else []}, candidateIds=catalog_ids)
                 if mode == "rag" and rag_done and pace:
                     time.sleep(pace)  # free tier: ~5 generate requests/minute
                 embed = None if mode == "no_embedding" else embed_query

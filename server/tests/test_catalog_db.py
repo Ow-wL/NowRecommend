@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
-from app.catalog import load_seed, refresh_embeddings, seed_items
+from app.catalog import load_seed, published_items, refresh_embeddings, seed_items
 from app.db import get_session
 from app.main import create_app
 from app.models import Item
@@ -87,3 +87,17 @@ def test_catalog_hides_drafts_and_version_follows_content(db_session):
         after_edit = client.get("/api/catalog").json()["catalogVersion"]
     assert "f-draft01" not in {i["id"] for i in after_draft["items"]}
     assert after_draft["catalogVersion"] == before != after_edit
+
+
+def test_published_drafts_round_trip_through_the_seed(db_session):
+    seed_items(db_session, get_vocab(), load_seed())
+    draft = {**load_seed()[16], "id": "m-0000abcd", "name": "새 곡", "artist": "새 가수", "subtitle": "새 가수", "source": "ai_draft"}
+    seed_items(db_session, get_vocab(), [draft])
+    published = published_items(db_session)["items"]
+    assert [i["id"] for i in published] == ["m-0000abcd"] and published[0]["source"] == "ai_draft"
+    db_session.execute(text("TRUNCATE items"))
+    result = seed_items(db_session, get_vocab(), load_seed() + published)
+    assert result.inserted == len(load_seed()) + 1
+    assert db_session.get(Item, "m-0000abcd").source == "ai_draft"
+    with pytest.raises(ValueError, match="출처"):
+        seed_items(db_session, get_vocab(), [{**draft, "source": "web"}])

@@ -70,3 +70,35 @@ def test_similar_items_by_name_and_embedding():
     warnings = similar_items(draft, others, threshold=0.95)
     assert warnings[0].startswith("이름이 비슷한 항목: 우동 (f09")
     assert warnings[1].startswith("내용이 비슷한 항목: 닭곰탕 (f02") and len(warnings) == 2  # rejected items are ignored
+
+
+class Overloaded(Exception):
+    def __init__(self, code):
+        super().__init__(f"HTTP {code}")
+        self.code = code
+
+
+def test_overloaded_batches_are_retried_but_spent_quota_is_not():
+    from app.drafting import _request_with_retry
+    from app.llm.client import CoolingDown
+
+    class Model:
+        model = "fake"
+
+        def __init__(self, errors):
+            self.errors, self.calls = list(errors), 0
+
+        def generate_json(self, system, payload, schema):
+            self.calls += 1
+            if self.errors:
+                raise self.errors.pop(0)
+            return {"items": []}
+
+    waits = []
+    model = Model([Overloaded(503), CoolingDown("retry after 9s")])
+    assert _request_with_retry(model, "food", [DraftInput("우동", None)], get_vocab().food, 2, 15, waits.append) == []
+    assert model.calls == 3 and waits == [15, 15]
+    quota = Model([Overloaded(429)])
+    with pytest.raises(Overloaded):
+        _request_with_retry(quota, "food", [DraftInput("우동", None)], get_vocab().food, 2, 15, waits.append)
+    assert quota.calls == 1
