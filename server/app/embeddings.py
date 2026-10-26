@@ -10,6 +10,7 @@ from collections import OrderedDict
 from collections.abc import Sequence
 from typing import Protocol
 
+from .llm.client import retry_delay
 from .models import EMBEDDING_DIM
 
 
@@ -94,10 +95,11 @@ class GeminiEmbedder:
                     config=types.EmbedContentConfig(output_dimensionality=self.dim),
                 )
                 break
-            except Exception:
+            except Exception as exc:
                 if attempt == attempts - 1:
                     raise
-                time.sleep(2 ** attempt)
+                # The free tier counts every text as a request (100/min); a 429 says how long to wait.
+                time.sleep(min(retry_delay(str(exc), 2 ** attempt), 70.0) if getattr(exc, "code", None) == 429 else 2 ** attempt)
         embeddings = response.embeddings or []
         # One vector per input; a merged multimodal embedding would silently mislabel items.
         if len(embeddings) != len(batch):
