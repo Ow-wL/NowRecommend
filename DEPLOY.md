@@ -4,9 +4,9 @@
 
 - 사이트: <https://ow-wl.github.io/NowRecommend/>
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- 운영 중(2026-10-27 읽기 전용 점검): 가격 제거 **1단계 배포 완료, 2단계(가격 열 삭제) 미실행**. API와 프론트엔드의 기준 커밋이 다릅니다.
-  - API·시드 작업: 이미지 `api:f015d7b`, 리비전 `nowrecommend-api-00007-z6v`(트래픽 100%)
-  - Pages: `113ac0b`
+- 운영 중(2026-10-27 장르 규칙 배포 뒤): 가격 제거 **1단계 배포 완료, 2단계(가격 열 삭제) 미실행**. API와 프론트엔드가 같은 커밋 `8e27ded`입니다.
+  - API·시드 작업: 이미지 `api:8e27ded`, 리비전 `nowrecommend-api-00008-f97`(트래픽 100%)
+  - Pages: `8e27ded`
   - DB: 마이그레이션 `0002`. `0003`은 대기 중입니다.
   - 자세한 상태는 §0-1에 있습니다.
 
@@ -19,21 +19,30 @@
 - **열 삭제는 따로만**: `0003`은 `python -m app.cli.migrate --contract`로만 실행됩니다. 그냥 `alembic upgrade head`를 실행하면 아무것도 바꾸지 않고 실패합니다. 예를 들어 지금 시드 작업 명령을 그대로 둔 채 이미지만 바꾸는 경우가 그렇습니다(CI만 `NOWREC_ALLOW_CONTRACT=1`로 허용).
 - **값 보존과 복원**: `0003`은 지우기 전에 값을 `items_price_backup` 표로 옮깁니다. `--downgrade 0002`는 열과 값을 되돌립니다.
 
-### 0-1. 지금 운영 상태 (1단계 배포 뒤, 2026-10-27 읽기 전용 점검)
+### 0-1. 지금 운영 상태 (장르 규칙 배포 뒤, 2026-10-27)
 
-gcloud로 서비스·작업·백업 설정을 읽어 확인했고, 아무것도 바꾸지 않았습니다.
+2026-10-27 16시(KST)에 `8e27ded`(제외 문구 정리, 록·발라드·팝 장르 규칙, 선택 완료 화면 버튼)를 API와 Pages에 배포했습니다. 스키마 변경은 없고, DB는 0002 그대로입니다.
 
 | 항목 | 상태 |
 |---|---|
-| API 서비스 | `nowrecommend-api`, 트래픽 100% `nowrecommend-api-00007-z6v`(2026-10-26 21:44 UTC 생성)<br>이미지 `api:f015d7b`(인덱스 `sha256:d6d73b98…`, 실행 중인 amd64 매니페스트 `sha256:2ca2fc17…`)<br>시작 로그: `migrate: at 0002; nothing to apply`, `contract migrations waiting: 0003` |
-| 프론트엔드(Pages) | `113ac0b`로 빌드됨(워크플로 실행 40408266997, 번들 `index-BTqr2f0d.js`)<br>`VITE_API_BASE_URL=https://nowrecommend-api-183982128363.asia-northeast3.run.app` |
-| API와 Pages의 차이 | `f015d7b..113ac0b`는 `src/media.json`(음악 듣기 링크 8개 제거)과 `server/app/cli/media.py`·테스트만 바꿨습니다. 둘 다 서버 실행 코드가 아니라서 API·시드 이미지는 `f015d7b` 그대로 둡니다. 다음에 서버를 다시 배포하면 두 기준이 같아집니다 |
-| 시드 작업 | `nowrecommend-seed`, 이미지 `api:f015d7b`, 명령 `sh scripts/seed-job.sh`(확장 마이그레이션 → 시드 → 임베딩). `alembic upgrade head`는 남아 있지 않습니다<br>마지막 실행 `nowrecommend-seed-7jhw2` 성공: 0002 유지, 0003 대기, 16개 갱신, 226개 그대로, 16개 임베딩 |
-| 마이그레이션 확인 작업 | `nowrecommend-migrate-plan`(1단계 배포 때 만듦), 이미지 `api:f015d7b`, 명령 `python -m app.cli.migrate --dry-run`<br>DB를 바꾸지 않고 현재 버전과 대기 중인 마이그레이션만 출력합니다. 마지막 실행 `nowrecommend-migrate-plan-jf8qq`: `migrate: at 0002; nothing to apply`, `contract migrations waiting: 0003`<br>서비스 계정·Cloud SQL 연결·`DATABASE_URL` 비밀 값은 API와 같습니다 |
+| API 서비스 | `nowrecommend-api`, 트래픽 100% `nowrecommend-api-00008-f97`(2026-10-27 07:01 UTC 생성)<br>이미지 `api:8e27ded`(인덱스 `sha256:ed56332c…`, 실행 중인 amd64 매니페스트 `sha256:155edae1…`)<br>시작 로그: `migrate: at 0002; nothing to apply`, `contract migrations waiting: 0003` |
+| 프론트엔드(Pages) | `8e27ded`로 빌드됨(워크플로 실행 40465251727, 번들 `index-VC7wcAhz.js`). 같은 push의 서버 테스트 40465251739도 성공<br>`VITE_API_BASE_URL=https://nowrecommend-api-183982128363.asia-northeast3.run.app` |
+| 시드 작업 | `nowrecommend-seed`, 이미지 `api:8e27ded`, 명령 `sh scripts/seed-job.sh`(확장 마이그레이션 → 시드 → 임베딩)<br>이번 배포에서는 **이미지만 바꾸고 실행하지 않았습니다.** `f015d7b..8e27ded`에 `server/data` 변경이 없고, 시드 검사는 `conditionTags ∪ extraTags` 합집합으로 해서 록·발라드를 옮겨도 결과가 같기 때문입니다<br>마지막 실행은 `nowrecommend-seed-7jhw2`(`f015d7b`) 성공: 0002 유지, 0003 대기, 16개 갱신, 226개 그대로, 16개 임베딩 |
+| 마이그레이션 확인 작업 | `nowrecommend-migrate-plan`, 이미지 `api:8e27ded`, 명령 `python -m app.cli.migrate --dry-run`<br>DB를 바꾸지 않고 현재 버전과 대기 중인 마이그레이션만 출력합니다. 마지막 실행 `nowrecommend-migrate-plan-prxqq`: `migrate: at 0002; nothing to apply`, `contract migrations waiting: 0003`<br>서비스 계정·Cloud SQL 연결·`DATABASE_URL` 비밀 값은 API와 같습니다 |
 | DB 마이그레이션 | **0002**(위 확인 작업으로 조회). **0003(가격 열 삭제)은 실행하지 않았습니다.** 가격 열과 값은 그대로 있습니다 |
-| 코드 롤백 대상 | `nowrecommend-api-00006-hnk`(이미지 `api:c114929`, 매니페스트 `sha256:6e8ad5d3…`, 1단계 직전 운영)<br>`nowrecommend-api-00005-l25`(이미지 `api:daedd31`, 매니페스트 `sha256:4e11d7ef…`)<br>둘 다 가격 제거 전 코드이고, DB가 0002인 동안에는 그대로 돌아갈 수 있습니다 |
-| 백업 | 수동 백업 `1793050877375`(ON_DEMAND, SUCCESSFUL, 2026-10-26 21:41 UTC, 1단계 직전, DB 0002)<br>Cloud SQL 자동 백업은 **꺼져 있습니다** |
+| 코드 롤백 대상 | `nowrecommend-api-00007-z6v`(이미지 `api:f015d7b`, 매니페스트 `sha256:2ca2fc17…`, 이번 배포 직전 운영, 가격 제거 1단계 코드). 장르 규칙만 빠집니다<br>`nowrecommend-api-00006-hnk`(이미지 `api:c114929`, 매니페스트 `sha256:6e8ad5d3…`, 1단계 직전 운영)<br>`nowrecommend-api-00005-l25`(이미지 `api:daedd31`, 매니페스트 `sha256:4e11d7ef…`)<br>`00006-hnk`·`00005-l25`는 가격 제거 전 코드이고, DB가 0002인 동안에는 그대로 돌아갈 수 있습니다 |
+| 백업 | 수동 백업 `1793084373805`(ON_DEMAND, SUCCESSFUL, 2026-10-27 06:59 UTC, 장르 규칙 배포 직전, DB 0002)<br>수동 백업 `1793050877375`(ON_DEMAND, SUCCESSFUL, 2026-10-26 21:41 UTC, 1단계 직전, DB 0002)<br>Cloud SQL 자동 백업은 **꺼져 있습니다** |
 | 열 삭제 작업 | `nowrecommend-contract` 없음(2단계에서 만듭니다) |
+
+**장르 규칙 배포 되돌리기 (코드 롤백, DB 그대로).**
+
+1. API: `gcloud run services update-traffic nowrecommend-api $P $R --to-revisions nowrecommend-api-00007-z6v=100`
+2. 화면: `gh run rerun 40408266997 -R Ow-wL/NowRecommend`로 `113ac0b` 화면을 다시 배포합니다.
+3. 시드·확인 작업은 `api:8e27ded` 그대로 둬도 됩니다. 데이터와 마이그레이션이 `f015d7b`와 같습니다. 맞추고 싶으면 `--image …/api:f015d7b`로 바꿉니다.
+
+API와 화면은 어느 쪽을 먼저 되돌려도 됩니다. 서버는 `conditionTags ∪ extraTags`에 있는 태그를 받는데, 록·발라드는 두 버전 모두 이 합집합에 있습니다. 옛 API에 새 화면이 붙으면 '록'은 해석 단계에서 빠지고, 힙합 같은 미지원 장르 안내는 그대로 나옵니다.
+
+장르 규칙 배포 직전의 상태는 다음과 같았습니다. API `00007-z6v`(`f015d7b`), 시드·확인 작업 `api:f015d7b`, Pages `113ac0b`(워크플로 실행 40408266997, 번들 `index-BTqr2f0d.js`), 백업 `1793050877375` 하나.
 
 1단계 직전의 상태는 다음과 같았습니다(되돌릴 때 참고). API `00006-hnk`(`c114929`), 시드 작업 `api:c114929` + `sh -c "alembic upgrade head && python -m app.cli.seed && python -m app.cli.embed"`, Pages `7bc6a41`(워크플로 실행 40356928449), 백업 0개.
 
@@ -146,7 +155,7 @@ gh run list -R Ow-wL/NowRecommend --limit 2      # 두 워크플로가 success�
    - 트래픽만 옮기므로 몇 초 안에 끝나고, 다시 `00007-z6v=100`으로 돌아올 수도 있습니다.
 2. 화면: `gh run rerun 40356928449 -R Ow-wL/NowRecommend`로 `7bc6a41` 화면을 다시 배포합니다.
    - 가격 제거 뒤 화면만 남기고 링크 수정만 빼려면 `40407266557`(`f015d7b`)을 다시 실행합니다.
-3. 시드 작업은 **바꾸지 않아도 됩니다.** 지금 설정(`f015d7b`, `seed-job.sh`)은 0002 DB에서 확장 마이그레이션만 적용합니다.
+3. 시드 작업은 **바꾸지 않아도 됩니다.** 지금 설정(`api:8e27ded`, `seed-job.sh`)은 0002 DB에서 확장 마이그레이션만 적용합니다.
    - 옛 설정으로 돌릴 이유가 있을 때만 다음을 실행합니다. `gcloud run jobs update nowrecommend-seed $P $R --image asia-northeast3-docker.pkg.dev/harness-recommend/nowrecommend/api:c114929 --command sh --args=-c,"alembic upgrade head && python -m app.cli.seed && python -m app.cli.embed"`
    - 옛 이미지로 시드를 다시 실행하면 음식 부제와 임베딩도 옛 값이 됩니다. 이 방법은 DB에 행 단위로 덮어쓰기만 하고 요청 로그는 그대로 둡니다.
 
@@ -165,7 +174,7 @@ gh run list -R Ow-wL/NowRecommend --limit 2      # 두 워크플로가 success�
 
 - 호환 리비전이 트래픽 100%를 충분한 기간 받았어야 합니다.
 - `nowrecommend-api-00005-l25`·`00006-hnk`로 되돌리지 않기로 정했어야 합니다.
-- `$IMG`는 가격 제거 이후 이미지(지금은 `api:f015d7b`)입니다.
+- `$IMG`는 가격 제거 이후 이미지(지금은 `api:8e27ded`)입니다.
 - `gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.revision_name="nowrecommend-api-00006-hnk"' $P --freshness 1h --limit 1`이 비어 있어야 합니다.
 
 ```bash
@@ -213,6 +222,13 @@ gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=
 - 운영 API로 실제 AI 해석·임베딩·재순위 10개 상황을 확인했습니다.
 - 운영 사이트를 데스크톱과 모바일 폭에서 확인했습니다.
 
+**운영에서 실행한 것 (2026-10-27, 장르 규칙 `8e27ded`)**
+
+- 백업 `1793084373805`, `8e27ded` 이미지, API 리비전 `00008-f97`, 시드·확인 작업 이미지 변경(시드는 실행하지 않음, §0-1), `main` push.
+- 운영 `/api/parse`: '록'·'락'·'rock'은 `록`, '발라드'는 `발라드`, '팝송'은 `팝` 조건으로 남았습니다. '록 말고'는 `excluded: ["록"]`, '힙합'은 `unsupported: [{kind: genre}]`로 나왔습니다. '기록'·'화면 락 걸고'는 장르로 읽지 않았습니다.
+- 운영 `/api/recommend`(문장 없이 태그만): `활기참`만이면 상위 5곡 중 록 1곡, `활기참·록`이면 5곡이었습니다. `차분함`만이면 록 0곡, `차분함·록`이면 5곡이었습니다. 장르는 순위 가중치이고 필터가 아닙니다. 예를 들어 `활기참·발라드`의 상위 5곡 중 발라드는 2곡이었습니다.
+- 참깨 제외, 비건(등록 재료 기준), 가격·배달 미지원 안내, 선택 완료 화면 버튼, 음악 '미등록' 범례를 운영 사이트의 데스크톱과 모바일(375×812)에서 확인했습니다.
+
 **하지 않은 것**
 
 - 2단계(`nowrecommend-contract` 생성, 0003 실행)
@@ -227,12 +243,12 @@ GCP 프로젝트는 `harness-recommend`, 리전은 `asia-northeast3`(서울)입�
 | 자원 | 이름 | 설정 |
 |---|---|---|
 | API | Cloud Run 서비스 `nowrecommend-api` | 포트 8000, 메모리 512Mi, CPU 1, 인스턴스 0~1개, 동시 요청 40, 공개 접근 |
-| DB | Cloud SQL `nowrecommend-db` | PostgreSQL 17 + pgvector 0.8.5, `db-f1-micro`(Enterprise), HDD 10GB, 단일 영역, **자동 백업 끔**(수동 백업 `1793050877375` 하나) |
+| DB | Cloud SQL `nowrecommend-db` | PostgreSQL 17 + pgvector 0.8.5, `db-f1-micro`(Enterprise), HDD 10GB, 단일 영역, **자동 백업 끔**(수동 백업 `1793084373805`·`1793050877375` 두 개) |
 | 데이터베이스·사용자 | `nowrecommend` / `nowrecommend` | 비밀번호는 무작위 생성 후 아래 비밀 값에만 저장 |
 | 이미지 | Artifact Registry `nowrecommend` | `asia-northeast3-docker.pkg.dev/harness-recommend/nowrecommend/api:<커밋 앞 7자리>` |
 | 비밀 값 | Secret Manager `gemini-api-key`, `database-url` | Cloud Run에 `GEMINI_API_KEY`, `DATABASE_URL`로 주입 |
 | 서비스 계정 | `nowrecommend-api@harness-recommend.iam.gserviceaccount.com` | Cloud SQL 클라이언트, 두 비밀 값 읽기 권한만 |
-| 데이터 작업 | Cloud Run 작업 `nowrecommend-seed` | `sh scripts/seed-job.sh`(확장 마이그레이션 → `app.cli.seed` → `app.cli.embed`), 이미지 `api:f015d7b` |
+| 데이터 작업 | Cloud Run 작업 `nowrecommend-seed` | `sh scripts/seed-job.sh`(확장 마이그레이션 → `app.cli.seed` → `app.cli.embed`), 이미지 `api:8e27ded` |
 | 마이그레이션 확인 작업 | Cloud Run 작업 `nowrecommend-migrate-plan` | `python -m app.cli.migrate --dry-run`. DB를 바꾸지 않고 버전과 대기 목록만 출력합니다 |
 | 열 삭제 작업 | Cloud Run 작업 `nowrecommend-contract`(§0 2단계에서 만듦, 아직 없음) | `python -m app.cli.migrate --contract` |
 | 프론트엔드 연결 | 저장소 Actions 변수 `VITE_API_BASE_URL` | 위 API 주소. Pages 빌드가 이 값으로 서버 모드가 됩니다 |
@@ -303,7 +319,7 @@ gcloud run jobs execute nowrecommend-seed --project harness-recommend --region a
 
 - **비용**: GCP 무료 크레딧($300)에서 나갑니다. 고정비는 주로 Cloud SQL `db-f1-micro`로 월 약 $10 안팎(추정)입니다. Cloud Run·Artifact Registry·Secret Manager는 지금 사용량이면 무료 범위이거나 아주 적습니다. 실제 금액은 GCP 결제 화면에서 확인합니다.
 - **Gemini 모델과 한도**: 코드 기본값 `gemini-3.6-flash`는 무료 등급에서 생성 요청이 분당 5회, 하루 20회라(R4 실측) 공개 시연에서는 금방 소진됩니다. 그래서 배포 서버는 `LLM_MODEL=gemini-3.5-flash-lite`를 씁니다. 2026-10-20 대표 10건 비교에서 Lite는 9건이 검증을 통과했고(1건 504), 고른 항목은 3.6과 비슷했지만 "평소 취향" 이유가 "새로운 취향" 위주로 약하고 조건 해석은 더 보수적이었습니다. 되돌리려면 `gcloud run services update nowrecommend-api --project harness-recommend --region asia-northeast3 --update-env-vars LLM_MODEL=gemini-3.6-flash`. 한도를 넘거나 모델이 10초 안에 답하지 않으면 결과가 `retrieval_only`(유사도 결과와 템플릿 이유)로 나옵니다. 키가 결제가 켜진 프로젝트에 속해 있으면 무료 한도 대신 요금이 청구될 수 있으니, AI Studio에서 키의 소속 프로젝트를 확인합니다.
-- **자동 백업 없음**: 서버 DB에는 카탈로그와 요청 로그만 있습니다. 사용자 취향·기록은 각 브라우저에 저장됩니다(결정 1). 자동 백업은 꺼 두고, 스키마를 바꾸기 전에만 수동 백업을 만듭니다. 지금 있는 수동 백업은 `1793050877375`(1단계 직전) 하나입니다.
+- **자동 백업 없음**: 서버 DB에는 카탈로그와 요청 로그만 있습니다. 사용자 취향·기록은 각 브라우저에 저장됩니다(결정 1). 자동 백업은 꺼 두고, 스키마를 바꾸기 전에만 수동 백업을 만듭니다. 지금 있는 수동 백업은 `1793084373805`(장르 규칙 배포 직전)와 `1793050877375`(1단계 직전) 두 개입니다.
 - 키가 로그·화면·저장소에 노출되면 즉시 새 키를 만들고 `gcloud secrets versions add gemini-api-key --project harness-recommend --data-file=<파일>`로 바꾼 뒤 서비스를 다시 배포합니다.
 
 ## 5. 로컬 시연
