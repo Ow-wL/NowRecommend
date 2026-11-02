@@ -1,43 +1,52 @@
-/* Design tokens — "clean light" (DESIGN.md §3). Light is the default; dark keeps the same roles.
-   Contrast floors checked by tests: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1. */
+/* Design tokens — v4 "aurora glass" (DESIGN.md §0.0). Light is the default; dark keeps the same roles.
+   Contrast floors checked by tests: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1.
+   The canvas colour is a solid; the aurora gradient is drawn on body::before (styles.css) so the floors stay simple. */
 :root {
   color-scheme: light;
-  --bg-canvas: #F2F4F6; --bg-sidebar: #FFFFFF; --bg-surface: #FFFFFF;
-  --bg-elevated: #F9FAFB; --bg-hover: #F2F4F6; --bg-pressed: #E5E8EB; --bg-tonal: #F2F4F6;
-  --border-subtle: #E5E8EB; --border-control: #868E96;
-  --text-primary: #191F28; --text-secondary: #4E5968; --text-muted: #636E79;
-  --accent: #1B64DA; --accent-fill: #1F6FE5; --accent-hover: #1B64DA; --accent-pressed: #1957C2;
-  --text-on-accent: #FFFFFF; --bg-selected: #E8F3FF;
-  --food: #C2410C; --bg-food: #FFF1EA; --music: #5B3FD9; --bg-music: #F1EEFF;
+  --bg-canvas: #F5F4FA; --bg-sidebar: #FFFFFF; --bg-surface: #FFFFFF;
+  --bg-elevated: #F7F6FB; --bg-hover: #EFEDF8; --bg-pressed: #E4E1F2; --bg-tonal: #EFEDF8;
+  --border-subtle: #E6E3F2; --border-control: #8A88A6;
+  --text-primary: #17162B; --text-secondary: #4B4A66; --text-muted: #5E5D78;
+  --accent: #4B3FBF; --accent-fill: #5A47E0; --accent-fill-2: #7C3AED; --accent-hover: #4F3DD9; --accent-pressed: #4338CA;
+  --text-on-accent: #FFFFFF; --bg-selected: #ECE9FF;
+  --food: #C2410C; --food-2: #E0712A; --bg-food: #FFF1EA; --music: #6D28D9; --music-2: #C026D3; --bg-music: #F1EEFF;
+  /* Filled category buttons (white text): the same in both themes, since the dark --food/--music are light tints. */
+  --food-fill: #C2410C; --food-fill-2: #CC4B12; --music-fill: #6D28D9; --music-fill-2: #7C3AED;
   --success: #0A7A4B; --bg-success: #E6F7EF;
   --warning: #8A5A00; --bg-warning: #FFF6E0;
   --danger: #D22030; --bg-danger: #FFEEEE;
-  --focus: #3182F6; --overlay: rgb(0 0 0 / 40%);
-  --bg-inverse: #191F28; --text-inverse: #FFFFFF;
-  --shadow-card: 0 1px 2px rgb(0 27 55 / 4%);
-  --shadow-raised: 0 8px 24px rgb(0 27 55 / 8%);
-  --shadow-dialog: 0 24px 64px rgb(0 27 55 / 18%);
+  --focus: #5A47E0; --overlay: rgb(23 22 43 / 45%);
+  --bg-inverse: #17162B; --text-inverse: #FFFFFF;
+  --glass: rgb(255 255 255 / 78%); --glass-line: rgb(255 255 255 / 90%);
+  --aurora-1: rgb(124 58 237 / 22%); --aurora-2: rgb(255 122 90 / 20%); --aurora-3: rgb(56 189 248 / 18%);
+  --shadow-card: 0 10px 30px rgb(72 52 160 / 8%), 0 1px 2px rgb(23 22 43 / 4%);
+  --shadow-raised: 0 18px 44px rgb(72 52 160 / 16%);
+  --shadow-dialog: 0 30px 80px rgb(23 22 43 / 24%);
+  --shadow-accent: 0 10px 24px rgb(90 71 224 / 28%);
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
-  --radius-control: 12px; --radius-card: 20px; --radius-dialog: 24px; --radius-small: 8px;
+  --radius-control: 14px; --radius-card: 24px; --radius-dialog: 28px; --radius-small: 10px;
   --content-max: 1080px; --sidebar-width: 248px; --header-height: 60px;
-  --motion-fast: 120ms; --motion-normal: 200ms; --ease-standard: cubic-bezier(.2,0,0,1);
+  --motion-fast: 120ms; --motion-normal: 220ms; --ease-standard: cubic-bezier(.2,0,0,1);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-canvas: #131417; --bg-sidebar: #17181C; --bg-surface: #1E1F24;
-  --bg-elevated: #2A2B31; --bg-hover: #2F3037; --bg-pressed: #3A3B43; --bg-tonal: #2A2B31;
-  --border-subtle: #2C2D33; --border-control: #737B87;
-  --text-primary: #F2F4F6; --text-secondary: #B0B8C1; --text-muted: #9AA3AE;
-  --accent: #6BA6FF; --accent-fill: #1F6FE5; --accent-hover: #1B64DA; --accent-pressed: #1957C2;
-  --text-on-accent: #FFFFFF; --bg-selected: #1B2A44;
-  --food: #FF9F6E; --bg-food: #33231B; --music: #B4A6FF; --bg-music: #272240;
+  --bg-canvas: #0F1020; --bg-sidebar: #15162A; --bg-surface: #1A1B2E;
+  --bg-elevated: #262742; --bg-hover: #2B2C4A; --bg-pressed: #353660; --bg-tonal: #262742;
+  --border-subtle: #2F3052; --border-control: #8886AA;
+  --text-primary: #F3F2FA; --text-secondary: #B9B7D1; --text-muted: #A3A1BD;
+  --accent: #9D8FFF; --accent-fill: #5A47E0; --accent-fill-2: #7C3AED; --accent-hover: #4F3DD9; --accent-pressed: #4338CA;
+  --text-on-accent: #FFFFFF; --bg-selected: #2A2550;
+  --food: #FF9F6E; --food-2: #FFC27A; --bg-food: #33231B; --music: #C4B5FD; --music-2: #F0ABFC; --bg-music: #272240;
   --success: #5BD39A; --bg-success: #1B2E25;
   --warning: #F5C451; --bg-warning: #30291A;
   --danger: #FF8A93; --bg-danger: #3A2125;
-  --focus: #6BA6FF; --overlay: rgb(0 0 0 / 60%);
-  --bg-inverse: #F2F4F6; --text-inverse: #191F28;
-  --shadow-card: none;
-  --shadow-raised: 0 8px 24px rgb(0 0 0 / 32%);
-  --shadow-dialog: 0 24px 64px rgb(0 0 0 / 50%);
+  --focus: #9D8FFF; --overlay: rgb(0 0 0 / 62%);
+  --bg-inverse: #F3F2FA; --text-inverse: #17162B;
+  --glass: rgb(26 27 46 / 82%); --glass-line: rgb(255 255 255 / 6%);
+  --aurora-1: rgb(124 58 237 / 26%); --aurora-2: rgb(255 122 90 / 14%); --aurora-3: rgb(56 189 248 / 14%);
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 28%);
+  --shadow-raised: 0 18px 44px rgb(0 0 0 / 42%);
+  --shadow-dialog: 0 30px 80px rgb(0 0 0 / 60%);
+  --shadow-accent: 0 10px 24px rgb(90 71 224 / 40%);
 }

@@ -10,7 +10,7 @@ async function startWithoutTaste(page: Page, sentence: string) {
 test('an explicit sesame exclusion is applied, and an unknown one is reported before recommending', async ({ page }) => {
   await startWithoutTaste(page, '혼자 먹을 점심, 참깨는 빼줘');
   await expect(page.locator('.condition-summary .chip')).toHaveText(['혼자', '점심', '참깨 제외']);
-  await expect(page.locator('.condition-summary')).toContainText('문장에서 알아본 표현만 조건으로 바꿔요.');
+  await expect(page.locator('.condition-summary')).toContainText('문장에서 알아본 표현만 조건이 돼요.');
   await page.getByRole('button', { name: '추천받기', exact: true }).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(3);
   await expect(page.locator('.result-grid')).not.toContainText('비빔밥');

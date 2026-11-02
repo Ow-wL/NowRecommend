@@ -4,7 +4,7 @@ for (const width of [390, 1440]) {
   test(`light home and both result layouts at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await page.goto('/');
-    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(242, 244, 246)');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 244, 250)');
     for (const name of ['음식 추천받기', '음악 추천받기']) {
       const box = await page.getByRole('button', { name: new RegExp(name) }).boundingBox();
       expect(box!.y + box!.height).toBeLessThan(844);

@@ -351,7 +351,7 @@ export default function App() {
         <section className="home-hero">
           <span className="eyebrow">{greeting}, {store.name}님</span>
           <h1>지금, 어떤 선택이 필요하세요?</h1>
-          <p>평소 취향에 오늘의 상황을 더해 골라보세요.</p>
+          <p>{apiEnabled() ? '평소 취향에 오늘의 상황을 더하면 AI가 지금 딱 맞는 걸 골라드려요.' : '평소 취향에 오늘의 상황을 더해 골라보세요.'}</p>
         </section>
         {active && requestHasContent && <section className="resume-banner">
           <span className={`small-icon ${session.category}`}>{session.category === 'food' ? <Utensils size={18} /> : <Headphones size={18} />}</span>
@@ -361,9 +361,9 @@ export default function App() {
         <section className="category-grid" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <button key={c} className={`category-card ${c}-category`} onClick={() => start(c)}>
           <span className="category-art" aria-hidden="true">{showcase(c).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</span>
           <span className="category-copy">
-            <small>{hasTaste(store.profiles[c]) ? '평소 취향 등록됨' : '취향 없이도 바로 시작할 수 있어요'}</small>
+            <small>{hasTaste(store.profiles[c]) ? '내 취향 반영' : '취향 없이도 바로'}{apiEnabled() && c === 'music' ? ' · AI 추천' : ''}</small>
             <h2>{c === 'food' ? '오늘 뭐 먹지?' : '지금 뭐 듣지?'}</h2>
-            <span>{c === 'food' ? '입맛과 상황에 맞는 한 끼를 찾아요.' : '지금의 기분에 어울리는 음악을 찾아요.'}</span>
+            <span>{c === 'food' ? '입맛과 상황에 맞는 한 끼.' : '지금 기분에 어울리는 음악.'}</span>
           </span>
           <span className="category-link">{categoryLabel[c]} 추천받기 <ArrowRight size={16} /></span>
         </button>)}</section>
@@ -450,7 +450,7 @@ export default function App() {
                   {session.conditions.tags.map(t => <button className="chip selected" key={t} onClick={() => conditionTag(t)} aria-label={`${t} 조건 삭제`}>{t}<X size={13} /></button>)}
                   {session.conditions.excluded.map(t => <button className="chip exclude selected" key={t} onClick={() => conditionTag(t, true)} aria-label={`${t} 제외 조건 삭제`}>{t} 제외<X size={13} /></button>)}
                 </div> : <p className="muted small">{session.raw.trim() ? '문장에서 반영할 조건을 찾지 못했어요. 아래에서 직접 고를 수 있어요.' : '문장을 적거나 아래에서 골라주세요.'} {basisNote}</p>}
-                {session.raw.trim() && <p className="condition-caveat">문장에서 알아본 표현만 조건으로 바꿔요. 빠진 조건은 아래 ‘조건 직접 고르기’에서 고르고, 잘못 읽은 조건은 눌러서 지워주세요.</p>}
+                {session.raw.trim() && <p className="condition-caveat">문장에서 알아본 표현만 조건이 돼요. 빠진 건 아래에서 고르고, 잘못 읽은 건 눌러서 지워주세요.</p>}
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} />
                 <ParseNotice ai={session.editor?.ai} raw={session.raw} />
               </div>

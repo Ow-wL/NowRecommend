@@ -10,15 +10,16 @@ function readable(color:string,backgrounds:string[],towards:string):string {
 }
 export function accentTokens(color:string,theme:'dark'|'light'):Record<string,string> {
   // Surfaces from styles/tokens.css: the accent must stay readable on cards, hover fills and its own tint.
-  const selected=mix(theme==='dark'?'#1e1f24':'#ffffff',color,.12);
-  const foreground=readable(color,theme==='dark'?['#2f3037','#1e1f24',selected]:['#f2f4f6','#ffffff',selected],theme==='dark'?'#ffffff':'#000000');
+  const selected=mix(theme==='dark'?'#1a1b2e':'#ffffff',color,.12);
+  const foreground=readable(color,theme==='dark'?['#2b2c4a','#1a1b2e',selected]:['#efedf8','#ffffff',selected],theme==='dark'?'#ffffff':'#000000');
   const text=contrast(color,'#000000')>=contrast(color,'#ffffff')?'#000000':'#ffffff';
-  return {'--accent':foreground,'--accent-fill':color,'--accent-hover':readable(mix(color,'#ffffff',.1),[text],text==='#000000'?'#ffffff':'#000000'),'--accent-pressed':readable(mix(color,'#000000',.12),[text],text==='#000000'?'#ffffff':'#000000'),'--text-on-accent':text,'--bg-selected':selected};
+  // A custom accent is one colour: the gradient's second stop follows it so buttons turn solid.
+  return {'--accent':foreground,'--accent-fill':color,'--accent-fill-2':color,'--accent-hover':readable(mix(color,'#ffffff',.1),[text],text==='#000000'?'#ffffff':'#000000'),'--accent-pressed':readable(mix(color,'#000000',.12),[text],text==='#000000'?'#ffffff':'#000000'),'--text-on-accent':text,'--bg-selected':selected};
 }
 export function applyAppearance(appearance?:Appearance) {
   const mode=appearance?.mode || 'light',theme=mode==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):mode;
   const root=document.documentElement;root.dataset.theme=theme;
-  const keys=['--accent','--accent-fill','--accent-hover','--accent-pressed','--text-on-accent','--bg-selected'];
+  const keys=['--accent','--accent-fill','--accent-fill-2','--accent-hover','--accent-pressed','--text-on-accent','--bg-selected'];
   keys.forEach(key=>root.style.removeProperty(key));if(appearance?.accent)Object.entries(accentTokens(appearance.accent,theme)).forEach(([key,value])=>root.style.setProperty(key,value));
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#131417':'#f2f4f6');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#0f1020':'#f5f4fa');
 }
