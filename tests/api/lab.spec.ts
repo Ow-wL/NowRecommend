@@ -53,10 +53,11 @@ test('compares the stored pool and free AI picks side by side and records a verd
   await page.getByRole('button', { name: '음악 실험', exact: true }).click();
   await page.getByLabel('지금의 상황').fill('비 오는 밤 잔잔하게');
   await page.getByLabel('목록에 없는 좋아하는 곡·아티스트').fill('검정치마, 잔나비');
+  await page.getByText('고급 설정').click();
   await page.getByLabel('B 모델').selectOption('flash');
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
 
-  const columnA = page.getByRole('region', { name: '저장된 곡 목록에서' }), columnB = page.getByRole('region', { name: 'AI 자유 추천' });
+  const columnA = page.getByRole('region', { name: '등록된 후보에서 추천' }), columnB = page.getByRole('region', { name: '새로운 후보 발견' });
   await expect(columnA.locator('h3')).toHaveText(['밤편지', '봄날', 'River Flows in You', 'Kiss the Rain', 'One Summer’s Day']);
   await expect(columnB.locator('h3')).toHaveText(['첫 곡', '둘째 곡']);
   await expect(columnB.getByText('확신 높음').first()).toBeVisible();
@@ -69,7 +70,7 @@ test('compares the stored pool and free AI picks side by side and records a verd
   await page.getByRole('button', { name: 'B가 나아요' }).click();
   await expect(page.getByRole('button', { name: 'B가 나아요' })).toHaveAttribute('aria-pressed', 'true');
 
-  await page.getByRole('button', { name: '다른 추천 보기' }).click();
+  await page.getByRole('button', { name: '같은 조건으로 다시 추천' }).click();
   await expect(columnB.locator('h3')).toHaveText(['셋째 곡']);
   await expect(columnA.getByText('AI가 답하지 않아 유사도 순서로 보여드려요.')).toBeVisible();
   expect(bodies.pool[1].seenIds).toEqual(['m01', 'm05', 'm06', 'm07', 'm08']);
@@ -92,41 +93,41 @@ test('runs the same comparison for food with three dishes a side and its own wor
   await expect(page.getByRole('button', { name: '음식 실험', exact: true })).toHaveAttribute('aria-pressed', 'true');  // food is the default
   await page.getByLabel('지금의 상황').fill('더운 날 가볍게');
   await page.getByLabel('목록에 없는 좋아하는 메뉴·식당 종류').fill('평양냉면');
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
-  const columnA = page.getByRole('region', { name: '등록된 메뉴 목록에서' }), columnB = page.getByRole('region', { name: 'AI 자유 추천' });
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  const columnA = page.getByRole('region', { name: '등록된 후보에서 추천' }), columnB = page.getByRole('region', { name: '새로운 후보 발견' });
   await expect(columnA.locator('h3')).toHaveText(['쌀국수', items.find(i => i.id === 'f03')!.name, items.find(i => i.id === 'f05')!.name]);
   await expect(columnB.locator('h3')).toHaveText(['들기름 막국수', '콩국수', '초계국수']);
   await expect(columnB.getByText('재료·알레르기 제외는 AI의 판단이라 꼭 확인해주세요.')).toBeVisible();
-  await expect(columnB.getByRole('link', { name: /네이버 지도에서 검색/ }).first()).toHaveAttribute('href', /map\.naver\.com/);
+  await expect(columnB.getByRole('link', { name: /네이버 지도에서 찾기/ }).first()).toHaveAttribute('href', /map\.naver\.com/);
   expect(bodies.pool[0]).toMatchObject({ category: 'food', engine: 'catalog', profile: { selected: ['f01', 'f02'] } });
   expect(bodies.free[0]).toMatchObject({ category: 'food', likedText: ['평양냉면'], count: 3 });
   await columnB.getByRole('button', { name: '조건에 안 맞아요' }).first().click();
-  await page.getByRole('button', { name: '다른 추천 보기' }).click();
+  await page.getByRole('button', { name: '같은 조건으로 다시 추천' }).click();
   expect(bodies.free[1].avoid).toEqual(['들기름 막국수 - 한식 · 국물', '콩국수 - 한식 · 국물', '초계국수 - 한식 · 국물']);  // every shown dish, the flagged one included
   // Switching the category keeps each lab's own round.
   await page.getByRole('button', { name: '음악 실험', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'AI 자유 추천' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '새로운 후보 발견' })).toHaveCount(0);
   await page.getByRole('button', { name: '음식 실험', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'AI 자유 추천' }).locator('h3')).toHaveCount(3);
+  await expect(page.getByRole('region', { name: '새로운 후보 발견' }).locator('h3')).toHaveCount(3);
 });
 
 test('shows a free-recommendation failure without hiding the pool answer', async ({ page }) => {
   await setup(page, { freeFails: true });
   await page.goto('/#/lab');
   await page.getByRole('button', { name: '음악 실험', exact: true }).click();
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
-  await expect(page.getByRole('region', { name: '저장된 곡 목록에서' }).locator('h3')).toHaveCount(5);
-  await expect(page.getByRole('region', { name: 'AI 자유 추천' }).getByRole('alert')).toContainText('AI가 곡을 추천하지 못했어요.');
-  await expect(page.getByRole('region', { name: 'AI 자유 추천' })).toContainText('TimeoutError');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.getByRole('region', { name: '등록된 후보에서 추천' }).locator('h3')).toHaveCount(5);
+  await expect(page.getByRole('region', { name: '새로운 후보 발견' }).getByRole('alert')).toContainText('AI가 곡을 추천하지 못했어요.');
+  await expect(page.getByRole('region', { name: '새로운 후보 발견' })).toContainText('TimeoutError');
 });
 
 test('votes only on rounds that ran both sides, whatever the toggle shows now', async ({ page }) => {
   await setup(page);
   await page.goto('/#/lab');
-  await page.getByRole('button', { name: 'A만' }).click();
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
-  await expect(page.getByRole('region', { name: '등록된 메뉴 목록에서' }).locator('h3')).toHaveCount(3);
+  await page.getByRole('button', { name: '등록된 후보만' }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.getByRole('region', { name: '등록된 후보에서 추천' }).locator('h3')).toHaveCount(3);
   await page.getByRole('button', { name: '둘 다 나란히' }).click();
-  await expect(page.getByRole('region', { name: 'AI 자유 추천' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '새로운 후보 발견' })).toHaveCount(0);
   await expect(page.getByText('이번 결과는 어느 쪽이 나았나요?')).toHaveCount(0);
 });

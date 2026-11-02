@@ -20,8 +20,8 @@ type TabState = { version: 2; category: Category; raw: string; session: Session;
 const TAB_KEY = 'nowrecommend-lab-tab-v2';
 const COUNT: Record<Category, number> = { food: 3, music: 5 };
 const SIDE = (c: Category): Record<LabSide, { label: string; title: string; about: string }> => ({
-  pool: { label: 'A', title: c === 'food' ? '등록된 메뉴 목록에서' : '저장된 곡 목록에서', about: c === 'food' ? '검수한 메뉴 중 상황·취향에 가까운 10개를 찾고, AI가 그 안에서 3개를 골라요. 재료 제외는 등록 정보로 보장돼요.' : 'DB에 등록된 곡 중 상황·취향에 가까운 15곡을 찾고, AI가 그 안에서 5곡을 골라요.' },
-  free: { label: 'B', title: 'AI 자유 추천', about: c === 'food' ? '목록 없이 AI가 아는 메뉴 중에서 바로 3개를 골라요. 재료·알레르기 제외는 AI의 판단이라 보장되지 않아요.' : '목록 없이 AI가 아는 곡 중에서 바로 5곡을 골라요. 실제로 있는 곡인지는 검색으로 확인해주세요.' },
+  pool: { label: 'A', title: '등록된 후보에서 추천', about: c === 'food' ? '검수한 메뉴 중 상황·취향에 가까운 10개를 찾고, AI가 그 안에서 3개를 골라요. 재료 제외는 등록 정보로 보장돼요.' : 'DB에 등록된 곡 중 상황·취향에 가까운 15곡을 찾고, AI가 그 안에서 5곡을 골라요.' },
+  free: { label: 'B', title: '새로운 후보 발견', about: c === 'food' ? '목록 없이 AI가 아는 메뉴 중에서 바로 3개를 골라요. 재료·알레르기 제외는 AI의 판단이라 보장되지 않아요.' : '목록 없이 AI가 아는 곡 중에서 바로 5곡을 골라요. 실제로 있는 곡인지는 검색으로 확인해주세요.' },
 });
 const confidenceLabel = { high: '확신 높음', medium: '확신 보통', low: '확신 낮음' } as const;
 const markLabel = (c: Category): Record<LabMark, string> => ({ good: '좋아요', bad: '별로예요', missing: c === 'food' ? '조건에 안 맞아요' : '없는 곡이에요' });
@@ -156,7 +156,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
         {apple ? <a className="item-art-link" href={apple} target="_blank" rel="noopener noreferrer" aria-label={`${pick.name} Apple Music에서 듣기 (새 탭)`}>{art}</a> : art}
         <div className="item-title"><h3>{pick.name}</h3><p className="item-subtitle">{pick.detail}</p></div>
         {pick.confidence && <span className={`lab-confidence ${pick.confidence}`}>{confidenceLabel[pick.confidence]}</span>}
-        <a className="icon-button" href={search} target="_blank" rel="noopener noreferrer" aria-label={`${pick.name} ${category === 'music' ? 'YouTube에서 검색' : '네이버 지도에서 검색'} (새 탭)`} title={category === 'music' ? 'YouTube에서 검색' : '네이버 지도에서 검색'}><ExternalLink size={18} /></a>
+        <a className="icon-button" href={search} target="_blank" rel="noopener noreferrer" aria-label={`${pick.name} ${category === 'music' ? 'YouTube에서 찾기' : '네이버 지도에서 찾기'} (새 탭)`} title={category === 'music' ? 'YouTube에서 찾기' : '네이버 지도에서 찾기'}><ExternalLink size={18} /></a>
       </div>
       {pick.tags && pick.tags.length > 0 && <div className="mini-tags">{pick.tags.map(t => <span key={t}>{t}</span>)}</div>}
       <div className="reasons"><p><b>평소 취향</b>{pick.tasteReason}</p><p><b>이번 상황</b>{pick.contextReason}</p></div>
@@ -193,7 +193,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
     <div className="flow-head">
       <button className="back-link" onClick={onHome}><ArrowLeft size={16} /> 홈으로</button>
       <h1>AI 실험실</h1>
-      <p>같은 상황으로 A({side.pool.title})와 B(AI 자유 추천)를 나란히 받아 비교해요. 기록과 취향에는 반영하지 않아요.</p>
+      <p>같은 상황으로 두 가지 방식의 추천을 나란히 비교해요. 기록과 취향에는 반영하지 않아요.</p>
       <div className="filter-tabs lab-category" role="group" aria-label="실험 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => onCategory(c)}>{categoryLabel[c]} 실험</button>)}</div>
       <div className="taste-strip">
                 <span className="taste-strip-items">{[...liked, ...profile.tags].join(' · ') || `등록된 ${categoryLabel[category]} 취향 없음`}</span>
@@ -201,7 +201,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
       </div>
     </div>
     {!online && <div className="notice warning" role="status"><Info size={18} /><div><strong>추천 서버가 연결된 사이트에서만 쓸 수 있어요.</strong><p>두 방식 모두 서버의 AI를 사용해요. 지금은 이 브라우저만으로 동작하는 모드예요.</p></div></div>}
-    {online && profile.selected.length < 5 && <div className="notice" role="status"><Info size={18} /><div><strong>{categoryLabel[category]} 취향을 5개 이상 등록하면 더 공정하게 비교할 수 있어요.</strong><p>등록한 취향은 두 방식에 똑같이 보내요.</p><button className="text-button" onClick={onEditTaste}>{categoryLabel[category]} 취향 등록하기</button></div></div>}
+    {online && profile.selected.length === 0 && <div className="notice" role="status"><Info size={18} /><div><strong>{categoryLabel[category]} 취향을 등록하면 두 방식 모두 더 잘 맞아요.</strong><p>등록한 취향은 두 방식에 똑같이 보내요.</p><button className="text-button" onClick={onEditTaste}>{categoryLabel[category]} 취향 등록하기</button></div></div>}
 
     <div className="flow-body composer lab-composer">
       <section className="compose-panel">
@@ -229,8 +229,8 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
       </details>
       {conflicts.length > 0 && <div className="error-box" role="alert">함께 적용할 수 없는 조건이 있어요: {conflicts.join(', ')}. 조건을 해제한 뒤 진행해주세요.</div>}
       <div className="lab-actions">
-        <div className="filter-tabs" role="group" aria-label="비교 방식">{(['both', 'pool', 'free'] as const).map(v => <button key={v} aria-pressed={view === v} className={view === v ? 'active' : ''} onClick={() => setView(v)}>{v === 'both' ? '둘 다 나란히' : `${side[v].label}만`}</button>)}</div>
-        {models.length > 1 && view !== 'pool' && <label className="lab-model">B 모델<select value={freeModel} onChange={e => setFreeModel(e.target.value)}>{models.map(m => <option key={m} value={m}>{m}</option>)}</select></label>}
+        <div className="filter-tabs" role="group" aria-label="비교 방식">{(['both', 'pool', 'free'] as const).map(v => <button key={v} aria-pressed={view === v} className={view === v ? 'active' : ''} onClick={() => setView(v)}>{v === 'both' ? '둘 다 나란히' : v === 'pool' ? '등록된 후보만' : '새로운 후보만'}</button>)}</div>
+        {models.length > 1 && view !== 'pool' && <details className="lab-advanced"><summary>고급 설정</summary><label className="lab-model">B 모델<select value={freeModel} onChange={e => setFreeModel(e.target.value)}>{models.map(m => <option key={m} value={m}>{m}</option>)}</select></label></details>}
         <button className="button primary" disabled={!online || working || conflicts.length > 0} onClick={() => run(false)}>{working && <span className="spinner" />}{parsing ? '조건을 해석하는 중' : working ? '추천을 고르는 중' : '추천받기'}</button>
       </div>
     </div>
@@ -249,7 +249,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
       </section>}
       <div className="reroll-panel">
         <p>이미 본 항목과 ‘별로예요’·‘{marks.missing}’로 표시한 항목은 빼고 다시 추천해요.</p>
-        <div className="lab-reroll-actions"><button className="text-button" onClick={reset}>새 요청</button><button className="button secondary" disabled={working} onClick={() => run(true)}>{working ? <span className="spinner" /> : <RefreshCw size={16} />}다른 추천 보기</button></div>
+        <div className="lab-reroll-actions"><button className="text-button" onClick={reset}>새 요청</button><button className="button secondary" disabled={working} onClick={() => run(true)}>{working ? <span className="spinner" /> : <RefreshCw size={16} />}같은 조건으로 다시 추천</button></div>
       </div>
     </>}
 

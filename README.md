@@ -1,6 +1,6 @@
 # 지금 추천
 
-React·TypeScript·Vite로 만든 음식·음악 추천 앱입니다. 둥근 카드와 사진 중심의 화면([DESIGN.md](./DESIGN.md) v6)에서 평소 취향과 이번 요청 조건을 분리하고, 추천 이유를 확인한 뒤 최종 선택을 기록합니다. 다크·시스템 테마와 강조색 설정, 로그인(계정 동기화), AI 음악 추천과 음식·음악 AI 실험실을 제공합니다.
+React·TypeScript·Vite로 만든 음식·음악 추천 앱입니다. 둥근 카드와 사진 중심의 화면([DESIGN.md](./DESIGN.md) v6.1)에서 평소 취향과 이번 요청 조건을 분리하고, 추천 이유를 확인한 뒤 최종 선택을 기록합니다. 다크·시스템 테마와 강조색 설정, 로그인(계정 동기화), AI 음악 추천과 음식·음악 AI 실험실을 제공합니다.
 
 공개 사이트 [지금 추천](https://ow-wl.github.io/NowRecommend/)은 Google Cloud의 추천 API(유사도 검색 + AI 재순위)와 연결되어 있습니다. 배포 구성은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
@@ -229,7 +229,8 @@ F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·A
 - `src/data.ts`: 샘플 카탈로그·검토 상태·자동 검증.
 - `src/api/`: 서버 모드의 카탈로그·추천·해석·실험 요청.
 - `src/components/MusicLab.tsx`, `src/lab.ts`: 음악 AI 실험 화면과 브라우저 실험 기록.
-- `src/styles/tokens.css`, `src/styles.css`: 색·간격 토큰과 v6 스타일시트.
+- `src/styles/tokens.css`, `src/styles.css`: 색·간격 토큰과 v6.1 스타일시트.
+- `src/songCheck.ts`: AI가 고른 곡을 Apple 검색으로 확인하고 커버와 곡 링크를 붙여요.
 - `src/account.ts`, `src/api/auth.ts`, `src/components/AuthPanel.tsx`: 로그인·회원가입과 계정 동기화. `src/knownItems.ts`: 카탈로그 밖 AI 추천 항목의 브라우저 기억. `src/components/Lab.tsx`, `src/lab.ts`, `src/api/lab.ts`: AI 실험실.
 - `src/media.json`, `src/media.ts`, `src/components/ItemArt.tsx`: 항목 사진·앨범 커버와 생성 커버(DESIGN.md v3). 앨범 커버는 `python -m app.cli.media covers`(iTunes Search API, 약 15분)로 다시 받고, 영어 제목 후보(`check`)는 사람이 확인한 뒤 표시합니다. 음식 사진은 Wikimedia Commons에서 메뉴별로 골라 촬영자·라이선스와 함께 적습니다.
 - `server/`: FastAPI·SQLAlchemy·Alembic 추천 서버, CLI(시드·임베딩·초안·검수·평가), pytest.

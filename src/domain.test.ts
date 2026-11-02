@@ -73,7 +73,7 @@ describe('discovery and reasons', () => {
       { label: '맵지 않음', value: '매콤함', kind: 'exclude', state: 'met' }, { label: '해산물 일부 확인', value: '해산물', kind: 'exclude', state: 'partial' }]);
     // A missing tag is "not registered", never "does not fit": the reason may still say it fits. An exclusion is applied
     // on the registered data only, and a partial one never reads as applied.
-    expect(checks.map(checkText)).toEqual(['혼자 특징 있음', '점심 특징 미등록(데이터에 표시 없음)', '맵지 않음, 등록 정보 기준 적용', '해산물 제외 일부만 확인']);
+    expect(checks.map(checkText)).toEqual(['혼자 맞음', '점심 정보 없음(데이터에 표시 없음)', '맵지 않음, 등록 정보 기준 적용', '해산물 제외 일부만 확인']);
     expect(checkText(checks[3])).not.toContain('적용');
   });
 });

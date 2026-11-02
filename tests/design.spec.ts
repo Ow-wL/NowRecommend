@@ -12,16 +12,17 @@ for (const width of [390, 1440]) {
     await page.screenshot({ path: `artifacts/light-home-${width}-default.png`, fullPage: true });
     for (const category of ['food', 'music']) {
       await page.getByRole('button', { name: category === 'food' ? '음식 추천' : '음악 추천', exact: true }).click();
+      await page.getByRole('button', { name: '취향 추가', exact: true }).click();
       for (let i = 0; i < 5; i++) await page.locator('.selection-card').nth(i).click();
       await page.getByRole('button',{name:'저장하고 시작'}).click();
       await page.getByLabel('지금의 상황').fill(category === 'food' ? '담백한 저녁' : '과제할 때 차분한 연주곡');
-      await page.getByRole('button', { name: '추천받기', exact: true }).click();
+      await page.getByRole('button', { name: /추천받기$/ }).click();
       await expect(page.locator('.result-grid .item-card')).toHaveCount(category === 'food' ? 3 : 5);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       const cards = await page.locator('.result-grid .item-card').evaluateAll(nodes => nodes.map(n => { const b = n.getBoundingClientRect(); return { x: b.x, y: b.y }; }));
-      // Food: three across on a wide screen, stacked on a phone. Music: the first pick is a wide feature above a shelf of covers.
-      if (category === 'food') expect(new Set(cards.map(b => width === 1440 ? b.y : b.x)).size).toBe(1);
-      else expect(new Set(cards.slice(1).map(b => b.x)).size).toBe(width === 1440 ? 4 : 2);
+      // Food: three across on a wide screen, stacked on a phone. Music: always a list of rows.
+      if (category === 'food' && width === 1440) expect(new Set(cards.map(b => b.y)).size).toBe(1);
+      else expect(new Set(cards.map(b => b.x)).size).toBe(1);
       const dismiss = page.getByRole('button', { name: '알림 닫기' });
       if (await dismiss.isVisible()) await dismiss.click();
       await page.screenshot({ path: `artifacts/light-${category}-${width}-results.png`, fullPage: true });

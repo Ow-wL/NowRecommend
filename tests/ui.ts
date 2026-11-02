@@ -1,8 +1,9 @@
 import type { Page } from '@playwright/test';
 
-// Taste setup is one screen: pick five, then save.
+// A request starts at the composer; taste is an optional step opened from there.
 export async function onboard(page: Page, category: 'food' | 'music' = 'food') {
   await page.getByRole('button', { name: category === 'food' ? '음식 추천' : '음악 추천', exact: true }).click();
+  await page.getByRole('button', { name: '취향 추가', exact: true }).click();
   await pickFive(page);
   await page.getByRole('button', { name: '저장하고 시작' }).click();
 }

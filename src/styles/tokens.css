@@ -2,41 +2,40 @@
    Floors checked by tests: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1. */
 :root {
   color-scheme: light;
-  --bg-canvas: #F7F5F0; --bg-surface: #FFFFFF; --bg-elevated: #F3F0EA; --bg-hover: #EEEAE2; --bg-pressed: #E4DFD5; --bg-selected: #FFEDE4;
+  --bg-canvas: #F7F5F0; --bg-surface: #FFFFFF; --bg-elevated: #F3F0EA; --bg-hover: #EEEAE2; --bg-pressed: #E4DFD5; --bg-selected: #EEEAE2;
   --line: #E9E5DC; --border-subtle: #E9E5DC; --border-control: #8F8A80;
   --text-primary: #1D1B18; --text-secondary: #4E4A43; --text-muted: #6C675E;
-  /* Tomato is the brand and the food colour; .cat-music swaps these for cobalt (a custom accent replaces both). */
-  --accent: #B8360F; --accent-fill: #D4411A; --accent-hover: #BD3813; --accent-pressed: #A5300F; --text-on-accent: #FFFFFF; --bg-soft: #FFEDE4;
+  /* Pages that belong to no category act in ink. A food or music screen (.cat-*) acts in its colour. */
+  --accent: #1D1B18; --accent-fill: #1D1B18; --accent-hover: #38342E; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #EEEAE2;
   --food: #D4411A; --food-soft: #FFEDE4; --food-ink: #B8360F;
   --music: #2B46D6; --music-soft: #E9EDFF; --music-ink: #2338B0;
   --sun: #F6B73C; --sun-soft: #FFF4D6; --sun-ink: #6B4A00;
   --success: #0B6B45; --warning: #7A5200; --bg-warning: #FFF4D6; --danger: #C2161F; --bg-danger: #FDECEC;
   --focus: #1D1B18; --overlay: rgb(29 27 24 / 50%);
   --bg-inverse: #1D1B18; --text-inverse: #FFFFFF;
-  --shadow-card: 0 1px 2px rgb(60 40 20 / 4%), 0 10px 30px rgb(60 40 20 / 7%);
   --shadow-raised: 0 16px 44px rgb(60 40 20 / 14%);
   --shadow-dialog: 0 28px 72px rgb(30 20 10 / 26%);
   --gutter: 40px; --page-max: 1200px; --flow-max: 760px;
-  --radius: 14px; --radius-card: 24px; --radius-large: 32px; --radius-art: 18px;
+  --radius: 12px; --radius-card: 20px; --radius-large: 28px; --radius-art: 14px;
   --appbar-height: 72px; --tabbar-height: 64px;
   --fast: 120ms; --normal: 240ms; --ease: cubic-bezier(.2, 0, 0, 1);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-canvas: #14120F; --bg-surface: #1F1C18; --bg-elevated: #29251F; --bg-hover: #332E27; --bg-pressed: #3E382F; --bg-selected: #3A2218;
+  --bg-canvas: #14120F; --bg-surface: #1F1C18; --bg-elevated: #29251F; --bg-hover: #332E27; --bg-pressed: #3E382F; --bg-selected: #332E27;
   --line: #37322A; --border-subtle: #37322A; --border-control: #8A8478;
   --text-primary: #F5F1EA; --text-secondary: #CFC9BD; --text-muted: #ABA598;
-  --accent: #FF9470; --bg-soft: #3A2218;
+  --accent: #F5F1EA; --accent-fill: #F5F1EA; --accent-hover: #FFFFFF; --accent-pressed: #D9D4C9; --text-on-accent: #1D1B18; --bg-soft: #332E27;
   --food-soft: #3A2218; --food-ink: #FF9470;
   --music: #3B57E8; --music-soft: #1E2550; --music-ink: #A5B4FF;
   --sun-soft: #33290F; --sun-ink: #F6CF7E;
   --success: #5BD39A; --warning: #F0C25A; --bg-warning: #33290F; --danger: #FF8A8F; --bg-danger: #3A2022;
   --focus: #F5F1EA; --overlay: rgb(0 0 0 / 66%);
   --bg-inverse: #F5F1EA; --text-inverse: #1D1B18;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 30px rgb(0 0 0 / 28%);
   --shadow-raised: 0 16px 44px rgb(0 0 0 / 44%);
   --shadow-dialog: 0 28px 72px rgb(0 0 0 / 66%);
 }
-/* A music screen wears cobalt. A colour the person picked in settings stays. */
-:root:not([data-custom-accent]) .cat-music { --accent: var(--music-ink); --accent-fill: #2B46D6; --accent-hover: #2339BB; --accent-pressed: #1C2F9E; --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
-:root[data-theme="dark"]:not([data-custom-accent]) .cat-music { --accent-fill: #3B57E8; --accent-hover: #2F49CF; --accent-pressed: #2840B8; }
+/* Category scope: a screen, a nav link or a saved card. A colour the person picked in settings wins everywhere. */
+:root:not([data-custom-accent]) .cat-food, :root:not([data-custom-accent]) .item-card.food { --accent: var(--food-ink); --accent-fill: #D4411A; --accent-hover: #BD3813; --accent-pressed: #A5300F; --text-on-accent: #FFFFFF; --bg-soft: var(--food-soft); --bg-selected: var(--food-soft); }
+:root:not([data-custom-accent]) .cat-music, :root:not([data-custom-accent]) .item-card.music { --accent: var(--music-ink); --accent-fill: #2B46D6; --accent-hover: #2339BB; --accent-pressed: #1C2F9E; --text-on-accent: #FFFFFF; --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
+:root[data-theme="dark"]:not([data-custom-accent]) .cat-music, :root[data-theme="dark"]:not([data-custom-accent]) .item-card.music { --accent-fill: #3B57E8; --accent-hover: #2F49CF; --accent-pressed: #2840B8; }

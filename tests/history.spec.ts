@@ -1,16 +1,16 @@
 import { test,expect } from '@playwright/test';
 test('selection completion, refresh, change, cancel and historical snapshots',async({page})=>{
   test.setTimeout(60000);
-  await page.goto('/');await page.getByRole('button',{name:'음식 추천',exact:true}).click();
+  await page.goto('/');await page.getByRole('button',{name:'음식 추천',exact:true}).click();await page.getByRole('button',{name:'취향 추가',exact:true}).click();
   for(let i=0;i<5;i++) await page.locator('.selection-card').nth(i).click();
   await page.getByRole('button',{name:'저장하고 시작'}).click();
-  await page.getByLabel('지금의 상황').fill('담백한 저녁');await page.getByRole('button',{name:'추천받기',exact:true}).click();
-  await page.getByRole('button',{name:'다른 추천 보기',exact:true}).click();
+  await page.getByLabel('지금의 상황').fill('담백한 저녁');await page.getByRole('button',{name:/추천받기$/}).click();
+  await page.getByRole('button',{name:'같은 조건으로 다시 추천',exact:true}).click();
   const name=await page.locator('.result-grid h3').first().textContent();
   await page.locator('.result-grid .select-button').first().dblclick();
   await expect(page.getByRole('heading',{name:'선택을 기록했어요'})).toBeVisible();
   await page.reload();await expect(page.locator('.completion-panel')).toContainText(name!);
-  await page.getByRole('button',{name:'지금 추천 홈',exact:true}).click();await expect(page.getByRole('button',{name:'이어서 추천받기'})).toHaveCount(0);
+  await page.getByRole('button',{name:'지금 추천 홈',exact:true}).click();await expect(page.getByRole('button',{name:'이어서 보기'})).toHaveCount(0);
   await expect(page.locator('.recent-choice')).toContainText(name!);
   await page.getByRole('button',{name:'추천 기록',exact:true}).click();await expect(page.locator('.history-row')).toHaveCount(1);
   await page.locator('.history-title').click();await expect(page.locator('.history-round')).toHaveCount(2);
@@ -53,7 +53,7 @@ test('a request saved with a budget re-recommends without it and shows no price 
   await dialog.getByRole('button',{name:'같은 조건으로 다시 추천'}).click();
   await expect(page.locator('.condition-summary .chip')).toHaveText(['혼자','저녁']);
   await expect(page.locator('.condition-note.unsupported')).toContainText('‘만원 이하’ 가격 조건은 지원하지 않아요.');
-  await page.getByRole('button',{name:'추천받기',exact:true}).click();
+  await page.getByRole('button',{name:/추천받기$/}).click();
   await expect(page.locator('.result-grid .item-card')).toHaveCount(3);
   await expect(page.locator('main')).not.toContainText('참고 가격');
   const stored=await page.evaluate(()=>localStorage.getItem('nowrecommend-prototype-v1')!);

@@ -3,27 +3,32 @@ import { AlertTriangle, Ban, Check, CircleDashed, Columns2, ExternalLink, Heart,
 import type { Item } from '../data';
 import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
 import { mapSearch, mediaFor, songLink, youtubeSearch } from '../media';
+import { useSongCheck } from '../songCheck';
 import { ItemArt } from './ItemArt';
 
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
-export function RecommendationCard({ item, saved, reasons, rank, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
-  item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string; contrast?: string }; rank?: number; checks?: ConditionCheck[]; familiar?: boolean;
+export function RecommendationCard({ item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+  item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string; contrast?: string }; checks?: ConditionCheck[]; familiar?: boolean;
   onSave: () => void; onExclude: () => void; onSelect?: () => void; onDetails?: () => void; persisted?: boolean;
   onPin?:()=>void;onReplace?:()=>void;onCompare?:()=>void;onLike?:()=>void;pinned?:boolean;compared?:boolean;compareDisabled?:boolean;
   /** AI engine picks: the model's own confidence that the item exists as named (shown as a badge). */
   confidence?: 'high' | 'medium' | 'low'; aiPick?: boolean;
 }) {
-  // Nearly every AI pick is "high", so only the doubtful ones are worth a word on the card.
-  const doubt = confidence && confidence !== 'high' ? confidence : undefined;
-  const confidenceLabel = { medium: 'AI 확신 보통', low: 'AI 확신 낮음' } as const;
+  // What the person should do about a pick we could not confirm: a song the store does not list, or a doubtful AI answer.
+  const songStatus = useSongCheck(item);
+  const needsCheck = item.category === 'music' ? songStatus === 'missing' : !!confidence && confidence !== 'high';
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
   const music = item.category === 'music';
+  const saveButton = <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={20} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>;
+  // The template sentence reads the same on every card, so the dish's own line says more about why this one.
+  const templated = !!reasons && /^(이번 조건|고른 조건|등록 정보)/.test(reasons.contextReason);
+  const lead = reasons && (templated && item.description && !music ? item.description : reasons.contextReason);
   const song = music ? songLink(item.id) : undefined;
   const album = music ? mediaFor(item.id)?.album || mediaFor(item.id)?.link : undefined;
   const listen = music && (song
-    ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={20} fill="currentColor" /><span className="listen-label">Apple Music에서 듣기</span></a>
-    : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}><Search size={20} /><span className="listen-label">YouTube에서 검색</span></a>);
+    ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={15} fill="currentColor" />Apple Music에서 듣기</a>
+    : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><Search size={16} />YouTube에서 찾기</a>);
   // Album artwork links to Apple Music (the artwork terms); it is never the only way to listen.
   const art = album ? <a className="item-art-link" href={song || album} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><ItemArt item={item} size="tile" /></a>
     : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 사진 크게 보기`} tabIndex={-1}><ItemArt item={item} size={music ? 'tile' : 'card'} /></button>
@@ -31,9 +36,7 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
   return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}${reasons ? '' : ' plain'}${aiPick ? ' ai-pick' : ''}`}>
     <div className="art-frame">
       {art}
-      {rank !== undefined && <span className="item-rank" aria-hidden="true">{rank}</span>}
-      <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={20} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
-      {listen}
+      {!music && saveButton}
     </div>
     <div className="item-body">
     <div className="item-head">
@@ -41,16 +44,18 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
         <h3>{item.name}</h3>
         <p className="item-subtitle">{item.subtitle}</p>
       </div>
-      {(pinned || familiar || doubt) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubt && <span className={`confidence-badge ${doubt}`} title="AI가 밝힌, 이 항목이 실제로 있다는 확신">{confidenceLabel[doubt]}</span>}</span>}
+      {music && saveButton}
+      {(pinned || familiar || needsCheck) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{needsCheck && <span className="check-badge" title={music ? 'Apple Music에서 같은 곡을 찾지 못했어요' : 'AI가 확신하지 못한 항목이에요'}>{music ? '곡 정보 확인 필요' : '정보 확인 필요'}</span>}</span>}
     </div>
     {/* One line of why on the card; the rest opens on demand so the picture stays the main thing. A missing tag reads
         "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits. */}
     {reasons ? <div className="reasons">
-      <p className="lead">{reasons.contextReason}</p>
-      {(checks.length > 0 || reasons.tasteReason !== NO_TASTE_REASON || reasons.contrast) && <details className="why"><summary>추천 이유</summary><div className="why-body">
+      <p className="lead">{lead}</p>
+      {(checks.length > 0 || reasons.tasteReason !== NO_TASTE_REASON || reasons.contrast || lead !== reasons.contextReason) && <details className="why"><summary>자세한 이유</summary><div className="why-body">
         {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>
           {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}
           <span aria-hidden="true">{c.state === 'untagged' ? `${c.label} 미등록` : c.label}</span><span className="sr-only">{checkText(c)}</span></li>)}</ul>}
+        {lead !== reasons.contextReason && <p><b>이번 상황</b>{reasons.contextReason}</p>}
         {reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}
         {reasons.contrast && <p className="contrast"><b>다른 후보와 비교</b>{reasons.contrast}</p>}
       </div></details>}
@@ -59,11 +64,12 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
       <p className="item-description">{item.description}</p>
     </>}
     <div className="card-actions">
-      {onSelect && <button className={`button ${music ? 'secondary' : 'primary'} select-button`} aria-label={`${item.name} 선택하고 기록`} onClick={onSelect}>선택하고 기록</button>}
-      {!music && reasons && <a className="button secondary map-button" href={mapSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} 네이버 지도에서 검색 (새 탭)`}><MapPin size={19} /><span className="map-label">지도 검색</span></a>}
+      {music && listen}
+      {onSelect && <button className={`button ${music ? 'secondary' : 'primary'} select-button`} aria-label={`${item.name} ${music ? '이 곡으로' : '오늘은 이걸로'}`} onClick={onSelect}>{music ? '이 곡으로' : '오늘은 이걸로'}</button>}
+      {!music && reasons && <a className="button secondary map-button" href={mapSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} 네이버 지도에서 찾기 (새 탭)`}><MapPin size={17} />지도에서 찾기</a>}
       {reasons ? <MoreMenu label={`${item.name} 더보기`}>
         {onDetails && <button aria-label={`${item.name} 상세 보기`} onClick={onDetails}><Info size={17} />상세 보기</button>}
-        {song && <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}><ExternalLink size={17} />YouTube에서 검색</a>}
+        {song && <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><ExternalLink size={17} />YouTube에서 찾기</a>}
         {onLike && <button aria-label={`${item.name} 내 취향에 추가`} onClick={onLike}><ThumbsUp size={17} />내 취향에 추가</button>}
         {onPin && <button aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={17} />{pinned ? '고정 해제' : '이번 요청 고정'}</button>}
         {onReplace && <button aria-label={`${item.name} 한 장 교체`} disabled={pinned} onClick={onReplace}><RefreshCw size={17} />다른 후보로 교체</button>}

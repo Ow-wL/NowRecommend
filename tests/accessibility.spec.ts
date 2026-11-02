@@ -29,7 +29,7 @@ for(const width of [320,360,390,768,1024,1440]){
     await page.getByLabel('지금의 상황').fill('담백한 저녁, 15,000원 이하로');
     await overflow();
     await page.screenshot({path:`artifacts/light-input-${width}-default.png`,fullPage:true});
-    await page.getByRole('button',{name:'추천받기',exact:true}).click();await expect(page.locator('h1')).toBeFocused();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+    await page.getByRole('button',{name:/추천받기$/}).click();await expect(page.locator('h1')).toBeFocused();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
     await overflow();
     // The exclude action lives in the card's menu; closing the dialog returns focus to the menu button.
     const feedback=page.locator('.result-grid .more-toggle').first();await feedback.click();
@@ -52,7 +52,7 @@ test('200 percent text, long names, minimum controls and actual contrast',async(
   await page.addInitScript(value=>localStorage.setItem('nowrecommend-prototype-v1',JSON.stringify(value)),seed);
   await page.goto('/#/recommend/food');
   await page.evaluate(()=>document.documentElement.style.fontSize='200%');
-  await page.getByRole('button',{name:'추천받기',exact:true}).click();
+  await page.getByRole('button',{name:/추천받기$/}).click();
   await page.evaluate(()=>{document.querySelector('.result-grid h3')!.textContent='아주 긴 한글 메뉴 이름과 영어 제목 A Very Long Recommendation Name';});
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('.result-grid .more-toggle').first().click();
@@ -70,11 +70,11 @@ test('200 percent text, long names, minimum controls and actual contrast',async(
 test('refused storage is visible and destructive modal starts on cancel',async({page})=>{
   await page.addInitScript(value=>{localStorage.setItem('nowrecommend-prototype-v1',JSON.stringify(value));Storage.prototype.setItem=()=>{throw new Error('quota');};},seed);
   await page.goto('/#/recommend/food');
-  await page.getByRole('button',{name:'추천받기',exact:true}).click();
+  await page.getByRole('button',{name:/추천받기$/}).click();
   await page.locator('.save-button').first().click();await expect(page.locator('.save-button').first()).toContainText('임시 저장');
   await expect(page.getByRole('button',{name:'저장 재시도'})).toBeVisible();
   await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'artifacts/light-storage-1440-error.png',fullPage:true});
-  await page.getByRole('button',{name:'브라우저 프로필',exact:true}).click();await page.getByRole('button',{name:'이 브라우저의 데이터 모두 초기화'}).click();
+  await page.getByRole('button',{name:'브라우저 프로필',exact:true}).click();await page.getByRole('button',{name:'데이터 관리',exact:true}).click();await page.getByRole('button',{name:'이 브라우저의 데이터 모두 초기화'}).click();
   await expect(page.getByRole('button',{name:'취소',exact:true})).toBeFocused();await page.keyboard.press('Escape');
 });
 test('Enter, Space and rendered hover, pressed, focus and disabled controls',async({page})=>{
@@ -82,12 +82,12 @@ test('Enter, Space and rendered hover, pressed, focus and disabled controls',asy
   await page.goto('/');await page.getByRole('button',{name:'음식 추천',exact:true}).focus();await page.keyboard.press('Enter');
   await openConditions(page);
   const chip=page.getByRole('button',{name:'담백함',exact:true});await chip.focus();await page.keyboard.press('Space');await expect(chip).toHaveAttribute('aria-pressed','true');
-  const next=page.getByRole('button',{name:'추천받기',exact:true});await next.focus();await expect(next).toHaveCSS('outline-color','rgb(29, 27, 24)');
+  const next=page.getByRole('button',{name:/추천받기$/});await next.focus();await expect(next).toHaveCSS('outline-color','rgb(29, 27, 24)');
   await next.hover();await expect(next).toHaveCSS('background-color','rgb(189, 56, 19)');
   await page.mouse.down();await expect(next).toHaveCSS('background-color','rgb(165, 48, 15)');await page.mouse.up();
   const save=page.locator('.save-button').first();await save.focus();await page.keyboard.press('Space');await expect(save).toHaveAttribute('aria-pressed','true');
-  await page.getByRole('button',{name:'조건 수정',exact:true}).click();await openConditions(page);
+  await page.getByRole('button',{name:'조건 바꾸기',exact:true}).click();await openConditions(page);
   // A conflict (매콤함 wanted and excluded) is now what disables the button; there is no budget input any more.
   await page.locator('.more-conditions .chip:not(.exclude)').filter({hasText:/^매콤함$/}).click();await page.locator('.chip.exclude').filter({hasText:/^매콤함$/}).click();
-  await expect(page.getByRole('button',{name:'추천받기',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'추천받기',exact:true})).toHaveCSS('background-color','rgb(238, 234, 226)');
+  await expect(page.getByRole('button',{name:/추천받기$/})).toBeDisabled();await expect(page.getByRole('button',{name:/추천받기$/})).toHaveCSS('background-color','rgb(238, 234, 226)');
 });

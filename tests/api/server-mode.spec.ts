@@ -25,8 +25,10 @@ async function catalogRoute(page: Page, mode: 'ok' | 'down' = 'ok') {
 }
 async function requestFood(page: Page) {
   await page.goto('/#/recommend/food');
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
 }
+// AI picks are looked up in the Apple store; nothing here should reach the real one.
+test.beforeEach(async ({ page }) => { await page.route('https://itunes.apple.com/**', route => route.abort()); });
 const cardNames = (page: Page) => page.locator('.result-grid h3').allTextContents();
 
 test('recommends from the API server and its catalog', async ({ page }) => {
@@ -53,7 +55,7 @@ test('offers a retry and the local fallback when the server fails', async ({ pag
   await expect(page.getByText('기본 추천으로 보여드리고 있어요.')).toBeVisible();
   expect(await cardNames(page)).toHaveLength(3); // bundled catalog still works while the catalog API is down
   healthy = true;
-  await page.getByRole('button', { name: '다른 추천 보기' }).click();
+  await page.getByRole('button', { name: '같은 조건으로 다시 추천' }).click();
   await expect(page.locator('.result-grid h3').first()).toHaveText(food('f12').name);
   await expect(page.getByText('기본 추천으로 보여드리고 있어요.')).toHaveCount(0);
 });
@@ -67,7 +69,7 @@ test('shows progress and sends one request for repeated clicks', async ({ page }
     return fulfill(route, batch(['f02', 'f07', 'f12']));
   });
   await page.goto('/#/recommend/food');
-  const submit = page.getByRole('button', { name: '추천받기', exact: true });
+  const submit = page.getByRole('button', { name: /추천받기$/ });
   await submit.click();
   const progress = page.getByRole('button', { name: '추천을 고르는 중' });
   await expect(progress).toBeDisabled();
@@ -101,7 +103,7 @@ const SENTENCE = '속이 안 좋아서 부담 없는 걸로';
 async function submitSentence(page: Page, text = SENTENCE) {
   await page.goto('/#/recommend/food');
   await page.locator('#situation').fill(text);
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
 }
 const recommendRoute = (page: Page, sink: any[] = []) => page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sink.push(route.request().postDataJSON()); return fulfill(route, batch(['f02', 'f12', 'f09'])); });
 
@@ -120,14 +122,14 @@ test('reads missed words with the server and keeps the answer for the same sente
   expect(parses).toEqual([{ category: 'food', text: SENTENCE }]);
   expect(recommends[0].conditions.tags).toEqual(expect.arrayContaining(['담백함', '따뜻함']));
   expect(recommends[0].conditions.excluded).toEqual(['매콤함']);
-  await page.getByRole('button', { name: '조건 수정', exact: true }).click();
+  await page.getByRole('button', { name: '조건 바꾸기', exact: true }).click();
   await expect(page.getByRole('button', { name: '매콤함 제외 조건 삭제' })).toBeVisible();
   await page.getByRole('button', { name: '따뜻함 조건 삭제' }).click();
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
   await expect(page.locator('.result-grid h3')).toHaveCount(3);
   expect(parses).toHaveLength(1); // the same sentence is not sent again
   expect(recommends[1].conditions).toEqual({ tags: ['담백함'], excluded: ['매콤함'] }); // no budget is ever sent
-  await page.getByRole('button', { name: '조건 수정', exact: true }).click();
+  await page.getByRole('button', { name: '조건 바꾸기', exact: true }).click();
   await expect(page.getByRole('button', { name: '따뜻함 조건 삭제' })).toHaveCount(0); // the removal survives re-submitting
 });
 
@@ -144,7 +146,7 @@ test('does not ask the server about an empty sentence', async ({ page }) => {
   let parses = 0;
   await page.route(`${API}/api/parse`, route => { parses++; return fulfill(route, {}); });
   await page.goto('/#/recommend/food');
-  await page.getByRole('button', { name: '추천받기', exact: true }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
   await expect(page.locator('.result-grid h3')).toHaveCount(3);
   expect(parses).toBe(0);
 });
@@ -162,7 +164,7 @@ test('says when the server answered without the AI or the sentence meaning', asy
   await page.reload();  // the notice belongs to the restored cards
   await expect(page.getByText('기본 방식으로 추천했어요.')).toBeVisible();
   degraded = false;
-  await page.getByRole('button', { name: '다른 추천 보기' }).click();
+  await page.getByRole('button', { name: '같은 조건으로 다시 추천' }).click();
   await expect(page.locator('.result-grid h3').first()).toHaveText(food('f01').name);
   await expect(page.getByText('기본 방식으로 추천했어요.')).toHaveCount(0);
 });
@@ -177,10 +179,28 @@ test('a wanted condition missing from the item tags reads as not registered, not
   const card = page.locator('.item-card').filter({ has: page.getByRole('heading', { name: untagged.name, exact: true }) });
   const check = card.locator('.condition-checks li.untagged');
   await expect(check).toHaveText(/혼자 미등록/);
-  await expect(check.locator('.sr-only')).toHaveText('혼자 특징 미등록(데이터에 표시 없음)');
+  await expect(check.locator('.sr-only')).toHaveText('혼자 정보 없음(데이터에 표시 없음)');
   await expect(card.locator('.reasons')).toContainText('혼자 먹기 좋아요');
-  await expect(page.locator('.item-card').filter({ has: page.getByRole('heading', { name: tagged.name, exact: true }) }).locator('.condition-checks li.met .sr-only')).toHaveText('혼자 특징 있음');
+  await expect(page.locator('.item-card').filter({ has: page.getByRole('heading', { name: tagged.name, exact: true }) }).locator('.condition-checks li.met .sr-only')).toHaveText('혼자 맞음');
   await expect(page.locator('.check-legend')).toContainText('미등록은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요.');
   await expect(page.getByText('해당 없음')).toHaveCount(0);
   expect(untagged.tags).not.toContain('혼자');
+});
+
+test('an AI song the Apple store lists gets its cover and page; one it does not is marked', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const pick = (name: string) => ({ item: { id: `ai-${name.replace(/\s/g, '')}`, category: 'music', name, subtitle: '테스트 가수', description: '', tags: [], ingredients: [], emoji: '', color: '' }, tasteReason: '좋아하는 분위기에 가까워요', contextReason: '지금 듣기 좋아요', aiPick: true, confidence: 'high' });
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [pick('있는 곡'), pick('없는 곡')], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 2, newCount: 2, catalogVersion: 'db-test', requestId: 'r' } }));
+  await page.route('https://itunes.apple.com/**', route => {
+    const known = decodeURIComponent(route.request().url().replace(/\+/g, ' ')).includes('있는 곡') && !route.request().url().includes(encodeURIComponent('없는').replace(/%20/g, '+'));
+    return route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ results: known ? [{ trackName: '있는 곡', artistName: '테스트 가수', trackViewUrl: 'https://music.apple.com/kr/album/x/1?i=2', artworkUrl100: 'https://example.test/100x100bb.jpg' }] : [] }) });
+  });
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  const found = page.locator('.item-card').filter({ has: page.getByRole('heading', { name: '있는 곡', exact: true }) });
+  const missing = page.locator('.item-card').filter({ has: page.getByRole('heading', { name: '없는 곡', exact: true }) });
+  await expect(found.getByRole('link', { name: /Apple Music에서 듣기/ })).toHaveAttribute('href', 'https://music.apple.com/kr/song/x/2');
+  await expect(found).not.toContainText('곡 정보 확인 필요');
+  await expect(missing).toContainText('곡 정보 확인 필요');
+  await expect(missing.getByRole('link', { name: /YouTube에서 찾기/ })).toBeVisible();
 });

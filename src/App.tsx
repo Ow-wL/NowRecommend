@@ -35,8 +35,18 @@ import { AuthPanel } from './components/AuthPanel';
 
 type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | null;
 const hasTaste = (p: Profile) => p.selected.length > 0 || p.tags.length > 0;
-/** The taste step is offered, never required: only before a category's first request, and it can be skipped. */
-const needsTaste = (store: Store, c: Category, skipped: Category[]) => !hasTaste(store.profiles[c]) && !skipped.includes(c) && !store.history.some(h => h.category === c);
+/** Today, yesterday and each earlier date, newest first, in Korean time. */
+function historyGroups(entries: HistoryEntry[]): [string, HistoryEntry[]][] {
+  const day = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(d);
+  const today = day(new Date()), yesterday = day(new Date(Date.now() - 86400000));
+  const groups = new Map<string, HistoryEntry[]>();
+  for (const entry of entries) {
+    const date = new Date(entry.date), key = day(date);
+    const label = key === today ? '오늘' : key === yesterday ? '어제' : new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' }).format(date);
+    groups.set(label, [...(groups.get(label) || []), entry]);
+  }
+  return [...groups];
+}
 const toggle = (values: string[], value: string) => values.includes(value) ? values.filter(v => v !== value) : [...values, value];
 
 export default function App() {
@@ -77,9 +87,9 @@ export default function App() {
   const [detail,setDetail]=useState<{item:Item;reasons?:Recommendation}|null>(null);
   const [compareOpen,setCompareOpen]=useState(false);
   const [deleteId, setDeleteId] = useState('');
-  // Categories whose taste step was skipped in this tab ("취향 없이 바로 추천받기"); not stored, so a new visit may offer it again.
-  const [skippedTaste, setSkippedTaste] = useState<Category[]>([]);
   const [tasteFilter, setTasteFilter] = useState('');
+  const [showAllChoices, setShowAllChoices] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'screen' | 'data'>('profile');
   // The lab compares both engines for one category at a time; the choice survives a reload of this tab.
   const [labCategory, setLabCategory] = useState<Category>(() => { try { return sessionStorage.getItem('nowrecommend-lab-category') === 'music' ? 'music' : 'food'; } catch { return 'food'; } });
   const [nameDraft, setNameDraft] = useState(store.name);
@@ -94,7 +104,6 @@ export default function App() {
   const requestCounter = useRef(0);
   const lastHash = useRef(window.location.hash);
   const stateRef = useRef({ session, active, store, view }); stateRef.current = { session, active, store, view };
-  const skippedRef = useRef<Category[]>([]); skippedRef.current = skippedTaste;
   useEffect(() => {
     const onHash = () => {
       if (window.location.hash === lastHash.current) return;
@@ -106,7 +115,6 @@ export default function App() {
         const fresh = newSession(next.category);
         setSession({ ...fresh, editor: createEditor('', next.category) }); setActive(true);
         next.step = 'input';
-        if (needsTaste(current.store, next.category, skippedRef.current)) { next.page = 'onboard'; setDraftProfile(current.store.profiles[next.category]); setEditingProfile(false); }
       }
       dispatchView(next); setRequestError(false);
     };
@@ -124,7 +132,7 @@ export default function App() {
   // Taste browsing (search, genre filter, "선택한 항목만") belongs to one category: a music filter left on the food screen
   // emptied its list with no visible control (review 2026-10-27). Any category change, including the back button, resets it.
   const browsedCategory = useRef(category);
-  useEffect(() => { if (browsedCategory.current !== category) { browsedCategory.current = category; setQuery(''); setSelectedOnly(false); setTasteFilter(''); } }, [category]);
+  useEffect(() => { if (browsedCategory.current !== category) { browsedCategory.current = category; setQuery(''); setSelectedOnly(false); setTasteFilter(''); setShowAllChoices(false); } }, [category]);
   const candidateStatus = candidateInfo(session, store.profiles[session.category]);
   const conflicts = conditionConflicts(session);
   const results = useMemo(() => recommend(session, store.profiles[session.category], items), [session, store.profiles, items]);
@@ -171,23 +179,23 @@ export default function App() {
 
   const notify = (message: string, undo?: () => void) => {setToastPaused(false);setToast({ message: storageWarning ? '화면에 반영했지만 브라우저에는 저장하지 못했어요.' : message, undo });};
   function navigate(next: Page) { requestCounter.current++; setBusy(false); setParsing(false); setRequestError(false); setToast(null); setPage(next); setQuery(''); setTasteFilter(''); setFilter('all'); }
+  // A request starts at the composer. Taste is offered there and never stands in the way.
   function start(next: Category, raw = '', forceNew = false) {
-    const ask = needsTaste(store, next, skippedTaste);
-    if (!forceNew && !raw && active && session.category === next) { setCategory(next); if (ask && (category !== next || editingProfile)) {setDraftProfile(store.profiles[next]);setEditingProfile(false);setSelectedOnly(false);} navigate(ask ? 'onboard' : 'recommend'); return; }
+    if (!forceNew && !raw && active && session.category === next) { setCategory(next); navigate('recommend'); return; }
     setActive(true); setSelectedOnly(false);
     requestCounter.current++; setBusy(false); setParsing(false); setRequestError(false); setToast(null); setQuery('');
     setCategory(next); setStep('input'); setSession({ ...newSession(next), category: next, raw, conditions: parseConditions(raw, next), editor: createEditor(raw, next), excludedIds: [], revision: 0 });
-    if (ask) { setDraftProfile(store.profiles[next]); setEditingProfile(false); setPage('onboard'); }
-    else setPage('recommend');
+    setPage('recommend');
   }
   function endRequest() { setActive(false); setSession(newSession(category)); setStep('input'); navigate('home'); notify('이번 요청을 종료했어요.'); }
-  function editTaste(next: Category) { setSelectedOnly(false); setTasteFilter(''); setCategory(next); setDraftProfile(store.profiles[next]); setEditingProfile(true); setQuery(''); navigate('onboard'); }
+  function editTaste(next: Category) { setShowAllChoices(false); setSelectedOnly(false); setTasteFilter(''); setCategory(next); setDraftProfile(store.profiles[next]); setEditingProfile(true); setQuery(''); navigate('onboard'); }
+  function addTaste() { setSelectedOnly(false); setTasteFilter(''); setDraftProfile(store.profiles[category]); setEditingProfile(false); setShowAllChoices(false); setPage('onboard'); }
   function saveProfile() {
     setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: draftProfile } }));
     if (editingProfile) navigate('taste'); else setPage('recommend');
     notify(editingProfile ? '내 취향을 저장했어요. 다음 추천부터 반영해요.' : '내 취향을 저장했어요. 이제 지금의 상황을 알려주세요.');
   }
-  function skipTaste() { setSkippedTaste(s => [...new Set([...s, category])]); setPage('recommend'); notify('취향 없이 시작해요. 결과에서 마음에 드는 항목을 내 취향에 더할 수 있어요.'); }
+  function skipTaste() { setPage('recommend'); }
   // Light feedback on a result: the item joins the taste profile, which the next recommendation really uses.
   function likeItem(item: Item) {
     if (store.profiles[item.category].selected.includes(item.id)) return;
@@ -302,28 +310,26 @@ export default function App() {
   const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
   const tabFilter = <div className="filter-tabs" role="group" aria-label="분야 필터">{(['all', 'food', 'music'] as const).map(f => <button key={f} aria-pressed={filter === f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f === 'all' ? '전체' : categoryLabel[f]}</button>)}</div>;
-  const itemCard = (item: Item, reasons?: Recommendation, rank?: number) => <RecommendationCard key={item.id} item={item} rank={rank} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
+  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
 
   // Navigation: top bar on wide screens, bottom tab bar on phones (DESIGN.md §2). Same accessible names in both.
   const allNav: { page: Page; label: string; icon: typeof House; category?: Category }[] = [...navItems, ...myItems];
-  const shortLabel: Record<string, string> = { '홈': '홈', '음식 추천': '음식', '음악 추천': '음악', '즐겨찾기': '저장', '추천 기록': '기록', '내 취향': '취향' };
-  const navLink = (n: typeof allNav[number]) => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`topnav-link ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}>{n.page === 'favorites' ? '즐겨찾기' : shortLabel[n.label]}{n.page === 'favorites' && store.favorites.length > 0 && <span className="nav-count" aria-hidden="true">{store.favorites.length}</span>}</button>;
+  const shortLabel: Record<string, string> = { '홈': '홈', '음식 추천': '음식', '음악 추천': '음악', '즐겨찾기': '즐겨찾기', '추천 기록': '기록', '내 취향': '취향' };
+  const navLink = (n: typeof allNav[number]) => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`topnav-link ${n.category ? `cat-${n.category}` : ''} ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}>{shortLabel[n.label]}{n.page === 'favorites' && store.favorites.length > 0 && <span className="nav-count" aria-hidden="true">{store.favorites.length}</span>}</button>;
   // Onboarding belongs to the taste page when editing, otherwise to that category's recommendation.
   const navPage: Page = page === 'onboard' ? (editingProfile ? 'taste' : 'recommend') : page;
   const navActive = (n: typeof allNav[number]) => navPage === n.page && (!n.category || category === n.category);
   const goNav = (n: typeof allNav[number]) => n.category ? start(n.category) : navigate(n.page);
   const inFlow = page === 'onboard' || (page === 'recommend' && step === 'input');
-  const ctaLabel = parsing ? '조건을 해석하는 중' : busy ? '추천을 고르는 중' : requestError ? '다시 시도하기' : '추천받기';
+  const ctaLabel = parsing ? '조건을 해석하는 중' : busy ? '추천을 고르는 중' : requestError ? '다시 시도하기' : `${categoryLabel[category]} 추천받기`;
   const ctaReady = !busy && !parsing && conflicts.length === 0;
   const conditionCount = session.conditions.tags.length + session.conditions.excluded.length;
   const unsupportedCount = unsupportedConditions(session.raw, session.category).length;
-  // What the recommendation rests on when no condition was found (e.g. a sentence that only asked for a price).
-  const basisNote = hasTaste(store.profiles[category]) ? '평소 취향을 기준으로 추천해요.' : '취향과 조건 없이 추천해요.';
   const hasUntagged = results.some(r => conditionChecks(r.item, session.conditions).some(c => c.state === 'untagged'));
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
   // The home doors and the login wall show real photos and covers; typeset covers only fill what is missing.
-  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f06', 'f05', 'f13', 'f07', 'f09', 'f10'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
+  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f05', 'f13', 'f06', 'f09', 'f10'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
     const own = items.filter(i => i.category === c), withArt = own.filter(i => mediaFor(i.id));
     return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt, ...own].filter((i, n, all) => all.indexOf(i) === n).slice(0, count); };
   const browseTags = category === 'music' ? ['발라드', '팝', '록', '재즈', '피아노', '어쿠스틱', '연주곡', '차분함', '활기참'] : ['한식', '일식', '양식', '분식', '국물', '매콤함', '담백함'];
@@ -331,19 +337,22 @@ export default function App() {
   const browsing = categoryItems.length > 24, activeFilter = browsing && browseTags.includes(tasteFilter) ? tasteFilter : '';
   const visibleChoices = categoryItems.filter(i => !browsing || (!selectedOnly || draftProfile.selected.includes(i.id)) && (!activeFilter || i.tags.includes(activeFilter)) && `${i.name} ${i.subtitle}`.toLowerCase().includes(query.toLowerCase()));
 
-  return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} cat-${page === 'lab' ? labCategory : page === 'complete' ? completed?.category || category : ['recommend', 'onboard'].includes(page) ? category : 'food'}`}>
+  // Twelve to start with, plus anything already picked; searching or filtering shows every match.
+  const shownChoices = showAllChoices || query || activeFilter || selectedOnly ? visibleChoices : visibleChoices.filter((i, n) => n < 12 || draftProfile.selected.includes(i.id));
+
+  return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} ${page === 'lab' ? ` cat-${labCategory}` : page === 'complete' ? ` cat-${completed?.category || category}` : ['recommend', 'onboard'].includes(page) ? ` cat-${category}` : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus();}}>본문 바로가기</a>
     <header className="appbar">
       <div className="appbar-inner">
         <button className="brand" onClick={() => navigate('home')} aria-label="지금 추천 홈">지금 추천<span className="brand-dot" aria-hidden="true" /></button>
         <nav className="topnav" aria-label="주요 메뉴">
           <div className="topnav-group">{navItems.slice(1).map(navLink)}</div>
-          <div className="topnav-group end">{myItems.map(navLink)}{apiEnabled() && <button aria-label="AI 실험실" aria-current={page === 'lab' ? 'page' : undefined} className={`topnav-link ${page === 'lab' ? 'active' : ''}`} onClick={() => navigate('lab')}>실험실</button>}</div>
+          <div className="topnav-group end">{myItems.map(navLink)}</div>
         </nav>
         <div className="appbar-actions">
           <button className="icon-button help-link" aria-label="체험 안내" onClick={() => setDialog('about')}><Info size={20} /></button>
           {apiEnabled() && !account && <button className="login-button" onClick={() => navigate('login')}>로그인</button>}
-          <button className={`top-avatar${account ? ' signed-in' : ''}`} aria-label={account ? '내 계정' : '브라우저 프로필'} title={account ? account.user.email : undefined} onClick={() => { setNameDraft(store.name); setDialog('account'); }}>{account ? <b>{account.user.name.slice(0, 1)}</b> : <Settings2 size={20} />}</button>
+          <button className={`top-avatar${account ? ' signed-in' : ''}`} aria-label={account ? '내 계정' : '브라우저 프로필'} title={account ? account.user.email : undefined} onClick={() => { setNameDraft(store.name); setSettingsTab('profile'); setDialog('account'); }}>{account ? <b>{account.user.name.slice(0, 1)}</b> : <Settings2 size={20} />}</button>
         </div>
       </div>
     </header>
@@ -354,9 +363,10 @@ export default function App() {
 
       {page === 'home' && <>
         <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1></section>
-        {active && requestHasContent && <section className="resume-banner">
-          <div className="resume-copy"><span>진행 중인 {categoryLabel[session.category]} 요청</span><strong>{session.raw || '직접 고른 조건으로 진행 중이에요.'}</strong></div>
-          <div className="resume-actions"><button className="text-button" onClick={endRequest}>요청 종료</button><button className="button primary" onClick={() => start(session.category)}>이어서 추천받기 <ArrowRight size={16} /></button></div>
+        {active && requestHasContent && <section className={`resume-banner cat-${session.category}`}>
+          <p className="resume-copy"><span>진행 중</span> <strong>{session.raw || '직접 고른 조건'}</strong></p>
+          <button className="text-button resume-end" onClick={endRequest}>요청 종료</button>
+          <button className="button primary compact" onClick={() => start(session.category)}>이어서 보기</button>
         </section>}
         <section className="doors" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <button key={c} className={`door ${c}`} onClick={() => start(c)}>
           <span className="door-copy">
@@ -366,29 +376,30 @@ export default function App() {
           </span>
           <span className="door-art" aria-hidden="true">{showcase(c, 3).map(i => <ItemArt key={i.id} item={i} size="tile" eager />)}</span>
         </button>)}</section>
+        <section className="quick-start" aria-label="빠른 시작">{(['food','music'] as Category[]).map(c => <div className={`cat-${c}`} key={c}>{presetList(c)}</div>)}</section>
         {store.history.some(h => h.selected) && <section className="home-section">
           <div className="section-heading"><h2>최근 선택</h2><button className="text-button" onClick={() => navigate('history')}>전체 기록</button></div>
-          <div className="recent-list recent-more">{store.history.filter(h=>h.selected).slice(0,5).map(h => <button className="recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
+          <div className="recent-list">{store.history.filter(h=>h.selected).slice(0,6).map(h => <button className="recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
             <ItemArt item={h.selected!.result.item} size="tile" />
             <b>{h.selected!.result.item.name}</b>
           </button>)}</div>
         </section>}
-        <section className="home-section">
-          <h2>빠른 시작</h2>
-          <div className="preset-home">{(['food','music'] as Category[]).map(c => <div className={`preset-card ${c}`} key={c}>{presetList(c)}</div>)}</div>
-          {apiEnabled() && <button className="lab-banner" onClick={() => navigate('lab')}><span><b>AI 실험실</b><small>두 가지 추천을 나란히 받아 비교해요</small></span><ArrowRight size={22} /></button>}
-        </section>
+        {apiEnabled() && <p className="lab-link"><button className="text-button" onClick={() => navigate('lab')}>AI 실험실 <ArrowRight size={14} /></button></p>}
       </>}
 
       {page === 'onboard' && <>
         <div className="flow-head">
-          <button className="back-link" onClick={() => navigate(editingProfile ? 'taste' : 'home')}><ArrowLeft size={16} /> {editingProfile ? '내 취향으로' : '홈으로'}</button>
+          <button className="back-link" onClick={() => navigate(editingProfile ? 'taste' : 'recommend')}><ArrowLeft size={16} /> 돌아가기</button>
           <h1>평소 좋아하는 {category === 'food' ? '음식을' : '음악을'} 골라주세요.</h1>
-          <p>{editingProfile ? '고른 항목과 특징이 다음 추천의 기준이 돼요.' : '몇 개만 골라도, 건너뛰어도 괜찮아요.'}</p>
+          <p>{category === 'food' ? '좋아하는 메뉴' : '좋아하는 곡'} 3개 정도 골라보세요.{editingProfile ? '' : ' 건너뛰어도 돼요.'}</p>
           {!editingProfile && <button className="button secondary skip-taste" onClick={skipTaste}>취향 없이 바로 추천받기 <ArrowRight size={16} /></button>}
         </div>
         <div className="flow-body">
-          <section className="panel selection-panel">
+          <section className="taste-tags">
+            <h3>어떤 점이 좋아요?</h3>
+            {chips(options[category].filter(t => !['혼자', '함께', '점심', '저녁', '과제', '운동', '산책', '휴식'].includes(t)), draftProfile.tags, v => setDraftProfile(p => ({ ...p, tags: toggle(p.tags, v) })))}
+          </section>
+          <section className="selection-panel">
             {/* Search only pays off once the catalog is long; the 16·15 sample lists fit on one screen. */}
             {categoryItems.length > 24 && <div className="selection-search">
               <label className="search-field"><Search size={18} /><input aria-label="취향 항목 검색" placeholder={category === 'food' ? '메뉴 이름 검색' : '곡명 또는 아티스트 검색'} value={query} onChange={e => setQuery(e.target.value)} /></label>
@@ -396,16 +407,13 @@ export default function App() {
             </div>}
             {/* A long song list is easier to scan by genre or mood than by scrolling (226 songs in server mode). */}
             {categoryItems.length > 24 && <div className="chips taste-filter" role="group" aria-label="장르·분위기로 좁히기">{['', ...browseTags].map(t => <button key={t || 'all'} className={`chip ${tasteFilter === t ? 'selected' : ''}`} aria-pressed={tasteFilter === t} onClick={() => setTasteFilter(t)}>{t || '전체'}</button>)}</div>}
-            {category === 'music' && <p className="small muted">목록에 없는 곡은 아직 직접 등록할 수 없어요. 대신 아래에서 좋아하는 장르·분위기를 고르면 추천에 반영돼요.</p>}
-            <div className={`selection-grid ${category}`}>{visibleChoices.map(i => { const on = draftProfile.selected.includes(i.id); return <button key={i.id} className={`selection-card ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setDraftProfile(p => ({ ...p, selected: toggle(p.selected, i.id), disliked: p.disliked.filter(id => id !== i.id) }))}><ItemArt item={i} size="tile" /><span className="selection-check" aria-hidden="true">{on && <Check size={14} strokeWidth={3} />}</span><span className="selection-name"><b>{i.name}</b>{category === 'music' && <small>{i.subtitle}</small>}</span></button>; })}</div>
+                        <div className={`selection-grid ${category}`}>{shownChoices.map(i => { const on = draftProfile.selected.includes(i.id); return <button key={i.id} className={`selection-card ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setDraftProfile(p => ({ ...p, selected: toggle(p.selected, i.id), disliked: p.disliked.filter(id => id !== i.id) }))}><ItemArt item={i} size="tile" /><span className="selection-check" aria-hidden="true"><Check size={15} strokeWidth={3} /></span><span className="selection-name"><b>{i.name}</b>{category === 'music' && <small>{i.subtitle}</small>}</span></button>; })}</div>
+            {shownChoices.length < visibleChoices.length && <button className="button secondary more-choices" onClick={() => setShowAllChoices(true)}>더 찾아보기 ({visibleChoices.length - shownChoices.length}개 더)</button>}
             {!visibleChoices.length && <p className="empty-small">{query ? `‘${query}’와 일치하는 항목이 목록에 없어요.` : '일치하는 항목이 없어요.'}{category === 'music' && ' 목록 밖 곡은 등록할 수 없어요.'} <button className="text-button" onClick={() => { setQuery(''); setSelectedOnly(false); setTasteFilter(''); }}>검색·필터 초기화</button></p>}
-          </section>
-          <section className="panel taste-tags">
-            <h3>어떤 점이 좋아요? <small>선택 사항</small></h3>
-            {chips(options[category].filter(t => !['혼자', '함께', '점심', '저녁', '과제', '운동', '산책', '휴식'].includes(t)), draftProfile.tags, v => setDraftProfile(p => ({ ...p, tags: toggle(p.tags, v) })))}
           </section>
         </div>
         <div className="action-bar"><div className="action-bar-inner">
+          {draftProfile.selected.length > 0 && <span className="taste-thumbs" aria-hidden="true">{draftProfile.selected.slice(-5).map(id => { const i = resolveItem(items, id); return i ? <ItemArt key={id} item={i} size="thumb" /> : null; })}</span>}
           <div className="action-status">
             <strong>{draftProfile.selected.length}개 선택{draftProfile.tags.length ? ` · 특징 ${draftProfile.tags.length}개` : ''}</strong>
             <p className="selection-help" role="status">{hasTaste(draftProfile) ? '이대로 저장할 수 있어요' : editingProfile ? '비워 두면 취향 없이 추천해요' : '하나 이상 고르거나 건너뛸 수 있어요'}</p>
@@ -421,26 +429,25 @@ export default function App() {
           <h1>{category === 'food' ? '어떤 한 끼가 필요하세요?' : '어떤 음악이 필요하세요?'}</h1>
           <div className="taste-strip">
             {store.profiles[category].selected.length > 0 && <span className="taste-thumbs" aria-hidden="true">{store.profiles[category].selected.slice(0, 5).map(id => { const i = resolveItem(items, id); return i ? <ItemArt key={id} item={i} size="thumb" /> : null; })}</span>}
-            <span className="taste-strip-items">{hasTaste(store.profiles[category]) ? `내 취향 ${store.profiles[category].selected.length + store.profiles[category].tags.length}개 반영` : '등록된 취향 없음'}</span>
-            <button className="text-button" onClick={() => editTaste(category)}>{hasTaste(store.profiles[category]) ? '취향 수정' : '취향 고르기'}</button>
+            <span className="taste-strip-items">{hasTaste(store.profiles[category]) ? `내 취향 ${store.profiles[category].selected.length + store.profiles[category].tags.length}개 반영` : '지금 상황만으로 추천할게요'}</span>
+            <button className="text-button" onClick={addTaste}>{hasTaste(store.profiles[category]) ? '취향 수정' : '취향 추가'}</button>
           </div>
         </div>}
         {step !== 'results' ? <>
           <div className="flow-body composer">
             <section className="panel compose-panel">
               <label className="field-title" htmlFor="situation">지금의 상황</label>
-              <textarea id="situation" maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && ctaReady) { e.preventDefault(); submit(); } }} placeholder={category === 'food' ? '예: 혼자 먹을 담백하고 따뜻한 저녁이 먹고 싶어' : '예: 과제하면서 들을 차분한 연주곡을 추천해줘'} />
+              <textarea id="situation" rows={3} maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && ctaReady) { e.preventDefault(); submit(); } }} placeholder={category === 'food' ? '예: 혼자 먹을 담백하고 따뜻한 저녁이 먹고 싶어' : '예: 과제하면서 들을 차분한 연주곡을 추천해줘'} />
               <div className="textarea-caption">
-                <div className="example-row">{(category === 'food' ? ['혼자 먹을 담백한 저녁', '친구랑 먹을 매콤한 국물', '맵지 않고 따뜻한 점심'] : ['과제할 때 듣는 연주곡', '산책할 때 활기찬 음악']).map(text => <button key={text} onClick={() => setSession(s => changeText(s, text))}>{text}</button>)}</div>
+                <div className={`example-row${session.raw ? ' quiet' : ''}`}>{(category === 'food' ? ['혼자 먹을 담백한 저녁', '친구랑 먹을 매콤한 국물', '맵지 않고 따뜻한 점심'] : ['과제할 때 듣는 연주곡', '산책할 때 활기찬 음악']).map(text => <button key={text} onClick={() => setSession(s => changeText(s, text))}>{text}</button>)}</div>
                 <span>{session.raw.length}/300</span>
               </div>
               <div className="condition-summary">
-                {(conditionCount > 0 || session.raw.trim()) && <h3>이번 요청 조건</h3>}
+                {conditionCount > 0 && <h3>{session.raw.trim() ? '이렇게 이해했어요. 다른 조건은 수정해 주세요.' : '고른 조건'}</h3>}
                 {conditionCount ? <div className="chips">
                   {session.conditions.tags.map(t => <button className="chip selected" key={t} onClick={() => conditionTag(t)} aria-label={`${t} 조건 삭제`}>{t}<X size={13} /></button>)}
                   {session.conditions.excluded.map(t => <button className="chip exclude selected" key={t} onClick={() => conditionTag(t, true)} aria-label={`${t} 제외 조건 삭제`}>{t} 제외<X size={13} /></button>)}
                 </div> : session.raw.trim() ? <p className="muted small">문장에서 반영할 조건을 찾지 못했어요. 아래에서 직접 고를 수 있어요.</p> : null}
-                {session.raw.trim() && <p className="condition-caveat">문장에서 알아본 표현만 조건이 돼요. 빠진 건 아래에서 고르고, 잘못 읽은 건 눌러서 지워주세요.</p>}
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} />
                 <ParseNotice ai={session.editor?.ai} raw={session.raw} />
               </div>
@@ -461,20 +468,19 @@ export default function App() {
           <div className="action-bar"><div className="action-bar-inner">
             {/* Kept visible on phones too: what is ignored must be clear before recommending, not only after. */}
             {unsupportedCount > 0 && <span className="action-warning" role="status">지원하지 않는 조건 {unsupportedCount}개는 반영하지 않아요</span>}
-            <span className="action-note">{conditionCount ? `조건 ${conditionCount}개를 반영해요` : basisNote}</span>
+            {conditionCount > 0 && <span className="action-note">조건 {conditionCount}개를 반영해요</span>}
             <button className="button primary" disabled={!ctaReady} onClick={submit}>{(busy || parsing) && <span className="spinner" />}{ctaLabel}{!busy && !parsing && <ArrowRight size={16} />}</button>
           </div></div>
         </> : <>
           <div className="result-head">
-            <div>
-              <span className="result-kicker">{categoryLabel[category]} 추천 {results.length}{category === 'food' ? '개' : '곡'}</span>
-              <h1 className={session.raw.length > 30 ? 'long' : undefined}>{session.raw || (category === 'food' ? '취향으로 고른 메뉴' : '취향으로 고른 음악')}</h1>
-              <div className="result-summary result-summary-copy">
+            <h1 className={session.raw.length > 30 ? 'long' : undefined}>{session.raw || (category === 'food' ? '취향으로 고른 메뉴' : '취향으로 고른 음악')}</h1>
+            <div className="result-summary">
+              <div className="result-summary-copy">
                 <div className="mini-tags">{session.conditions.tags.map(t => <span key={t}>{t}</span>)}{session.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}{!conditionCount && <span>{hasTaste(store.profiles[category]) ? '평소 취향 기준' : '취향·조건 없음'}</span>}</div>
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} folded />
               </div>
+              <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 바꾸기</button>
             </div>
-            <button className="button secondary edit-conditions" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 수정</button>
           </div>
           <ParseNotice ai={session.editor?.ai} raw={session.raw} />
           {!hasTaste(store.profiles[category]) && results.length > 0 && <p className="taste-hint">취향이 없어 상황만 보고 골랐어요. 마음에 드는 항목은 더보기에서 취향에 더할 수 있어요.</p>}
@@ -483,24 +489,24 @@ export default function App() {
           {results.length < (category === 'food' ? 3 : 5) && session.quality?.engine !== 'ai' && <div className="notice warning"><Info size={18} /><div><strong>{results.length ? '조건에 맞는 후보가 조금 부족해요.' : '지금 조건에 맞는 후보가 없어요.'}</strong><p>등록 데이터에서 필수 제외·장기 비선호·이번 요청 제외를 적용한 후보는 {candidateStatus.count}개예요. 필수 제외는 자동으로 완화하지 않아요.</p><button className="text-button" onClick={() => setStep('input')}>조건 조정하기 <ArrowRight size={14} /></button>{session.excludedIds.length > 0 && <button className="text-button" onClick={() => restoreTemporary(session.excludedIds[session.excludedIds.length - 1])}>마지막으로 제외한 항목 되돌리기</button>}</div></div>}
           {session.source === 'local' && apiEnabled() && <div className="notice" role="status"><Info size={18} /><div><strong>기본 추천으로 보여드리고 있어요.</strong><p>추천 서버에 연결하지 못해 이 브라우저의 기본 방식으로 골랐어요. 다른 추천 보기를 누르면 서버 추천을 다시 시도해요.</p></div></div>}
           <QualityNotice session={session} />
-          {session.source === 'server' && session.quality?.engine === 'ai' && results.length > 0 && <p className="taste-hint ai-notice" role="status">AI가 직접 고른 {category === 'music' ? '곡' : '메뉴'}이에요. 실제로 있는지는 검색으로 확인해주세요.</p>}
           {/* Repeats are judged against what is really left unseen, not by this round's new count alone. */}
           {repeatedCount > 0 && <div className="notice" role="status"><Info size={18} /><div>{unseenLeft === 0 ? <><strong>{session.batchNewCount === 0 ? '새로운 후보를 모두 살펴봤어요.' : `새 후보 ${session.batchNewCount}개 + 이전 후보 ${repeatedCount}개`}</strong><p>조건에 맞는 후보를 모두 보여드려서 이전 후보를 다시 보여드려요. 조건을 바꾸거나 새 요청을 시작할 수 있어요.</p></>
             : <><strong>이전에 본 후보 {repeatedCount}개를 다시 보여드려요.</strong><p>아직 보지 않은 후보가 {unseenLeft}개 남아 있어요. 다른 추천 보기로 이어서 볼 수 있어요.</p></>}</div></div>}
           {offTopicCount > 0 && <div className="notice" role="status"><Info size={18} /><div><strong>고른 조건({session.conditions.tags.join(' · ')})에 맞는 새 후보가 부족해요.</strong><p>{offTopicCount === results.length ? '이번 후보는 모두' : `이번 후보 중 ${offTopicCount}개는`} 등록 특징에 고른 조건이 없어요. 카드의 조건 확인에서 차이를 볼 수 있어요.</p></div></div>}
           {/* Always on screen, so touch and keyboard users get it too. Exclusions only go as far as the registered data. */}
-          <div className={`result-grid ${category}`}>{results.map((r, index) => itemCard(r.item, r, category === 'music' ? index + 1 : undefined))}</div>
-          {results.length > 0 && (hasUntagged || session.conditions.excluded.length > 0) && <p className="check-legend">
+          <div className={`result-grid ${category}`}>{results.map(r => itemCard(r.item, r))}</div>
+          {results.length > 0 && (hasUntagged || session.conditions.excluded.length > 0) && <p className={`check-legend${session.conditions.excluded.length ? '' : ' when-open'}`}>
             {hasUntagged && <>미등록은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요. </>}
             {session.conditions.excluded.length > 0 && <>{category === 'food' ? '재료·특징 제외는 등록된 정보를 기준으로 적용하며' : '제외는 등록된 곡 정보를 기준으로 적용하며'}, 일부 확인·미지원 조건은 따로 표시해요.</>}
           </p>}
           {requestError && <div className="error-box" role="alert">{requestError === 'server' ? <><strong>추천 서버에 연결하지 못했어요.</strong><p>아래 버튼으로 다시 시도하거나 기본 방식으로 추천받을 수 있어요.</p><button className="text-button" disabled={busy} onClick={() => run(true, true, true)}>기본 추천으로 보기 <ArrowRight size={14} /></button></> : '재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.'}</div>}
+          <p className="pick-note">{category === 'food' ? '오늘은 이걸로' : '이 곡으로'}를 누르면 추천 기록에 남아요.</p>
           <div className="reroll-panel">
             {allPinned && <p>모든 후보를 고정했어요. 하나 이상 고정을 해제하면 다시 추천할 수 있어요.</p>}
-            <button className="button secondary" disabled={busy || results.length === 0 || allPinned} onClick={() => run(true)}>{busy ? <span className="spinner" /> : <RefreshCw size={16} />}{busy ? '다른 추천을 고르는 중' : '다른 추천 보기'}</button>
+            <button className="button secondary" disabled={busy || results.length === 0 || allPinned} onClick={() => run(true)}>{busy ? <span className="spinner" /> : <RefreshCw size={16} />}{busy ? '다른 추천을 고르는 중' : '같은 조건으로 다시 추천'}</button>
           </div>
           {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => restoreTemporary(id)}>{resolveItem(items, id)?.name || id}<X size={12} /></button>)}</div>}
-          <div className="new-session-link"><button className="text-button" onClick={() => start(category, '', true)}>새 요청 시작 <ArrowRight size={15} /></button><button className="text-button" onClick={endRequest}>요청 종료</button></div>
+          <div className="new-session-link"><button className="text-button" onClick={() => start(category, '', true)}>새 요청 시작</button></div>
           <div className={`comparison-toolbar ${(session.compareIds?.length || 0) > 0 ? 'active' : ''}`}>
             <span><Columns2 size={16} /> 비교 {session.compareIds?.length || 0}/3{session.pinnedIds?.length ? ` · 고정 ${session.pinnedIds.length}개` : ''}</span>
             <button className="text-button" onClick={()=>setSession(s=>({...s,compareIds:[]}))}>비교 선택 비우기</button>
@@ -522,7 +528,7 @@ export default function App() {
               <p className="small muted">검색 결과예요. 판매 여부·가격·영업·배달 가능 여부는 각 서비스에서 확인해주세요.</p>
             </> : <>
               {song && <a className="button primary" href={song} target="_blank" rel="noopener noreferrer"><Play size={17} fill="currentColor" />Apple Music에서 듣기 (새 탭)</a>}
-              <a className={`button ${song ? 'secondary' : 'primary'}`} href={youtubeSearch(chosen)} target="_blank" rel="noopener noreferrer" aria-label="YouTube에서 검색 (새 탭)"><Search size={17} />YouTube에서 검색 (새 탭)</a>
+              <a className={`button ${song ? 'secondary' : 'primary'}`} href={youtubeSearch(chosen)} target="_blank" rel="noopener noreferrer" aria-label="YouTube에서 찾기 (새 탭)"><Search size={17} />YouTube에서 찾기 (새 탭)</a>
               {!song && <p className="small muted">확인된 곡 링크가 없어 검색으로 연결해요.</p>}
             </>}
           </div>
@@ -540,50 +546,49 @@ export default function App() {
       {page === 'history' && <>
         <div className="page-heading"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1></div>
         {tabFilter}
-        <div className="history-list">{store.history.filter(h => filter === 'all' || h.category === filter).map(h => <article className="history-row" key={h.id}>
+        {historyGroups(store.history.filter(h => filter === 'all' || h.category === filter)).map(([day, entries]) => <section className="history-group" key={day}>
+          <h2>{day}</h2>
+          <div className="history-list">{entries.map(h => <article className="history-row" key={h.id}>
           {(() => { const shown = h.selected?.result.item || h.rounds.at(-1)?.results[0]?.item; return shown ? <ItemArt item={shown} size="thumb" /> : <span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={18} /> : <Headphones size={18} />}</span>; })()}
           <div className="history-content">
-            <span>{categoryLabel[h.category]} 추천 · {new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(h.date))}</span>
+            <span>{categoryLabel[h.category]} · {new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(h.date))}</span>
             <button className="history-title" onClick={() => setHistoryPreview(h)}>{h.raw}</button>
-            <p>{h.selected ? <><b className="chosen">최종 선택</b> {h.selected.result.item.name}</> : h.legacy ? '이전 버전 기록 · 최종 선택 미등록' : h.rounds.at(-1)?.results.map(r=>r.item.name).join(' · ') || '조건에 맞는 결과 없음'}</p>
+            <p>{h.selected ? <><b className="chosen">선택함</b> {h.selected.result.item.name}</> : h.legacy ? '이전 버전 기록 · 최종 선택 미등록' : h.rounds.at(-1)?.results.length ? <><b className="only-seen">추천만 받음</b> {h.rounds.at(-1)!.results.map(r=>r.item.name).join(' · ')}</> : '조건에 맞는 결과 없음'}</p>
           </div>
-          <button className="button secondary compact" onClick={() => reuse(h)}>다시 추천 <ArrowRight size={14} /></button>
+          <button className="button secondary compact" onClick={() => reuse(h)}>같은 조건으로 새 추천</button>
           <button className="icon-button" aria-label={`${h.raw} 기록 삭제`} onClick={() => { setDeleteId(h.id); setDialog('deleteHistory'); }}><Trash2 size={16} /></button>
-        </article>)}</div>
+        </article>)}</div></section>)}
         {!store.history.some(h => filter === 'all' || h.category === filter) && <div className="empty-state"><span><Clock3 size={30} /></span><h3>아직 기록이 없어요.</h3><p>추천받은 상황과 결과를 여기에서 다시 볼 수 있어요.</p><button className="button primary" onClick={() => start(filter === 'music' ? 'music' : 'food')}>추천 시작하기 <ArrowRight size={16} /></button></div>}
       </>}
       {page === 'taste' && <>
-        <div className="page-heading"><h1>내 취향</h1></div>
-        <div className="my-links">
-          <button className="list-row" onClick={() => navigate('favorites')}><span className="list-copy"><b>즐겨찾기</b><small>저장한 메뉴·곡 {store.favorites.length}개</small></span><ChevronRight size={18} /></button>
-          <button className="list-row" onClick={() => { setNameDraft(store.name); setDialog('account'); }}><span className="list-copy"><b>프로필·화면 설정</b><small>이름, 테마, 데이터 백업</small></span><ChevronRight size={18} /></button>
-          {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}
-          {apiEnabled() && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>등록 목록 추천과 AI 자유 추천 비교</small></span><ChevronRight size={18} /></button>}
-        </div>
+        <div className="page-heading"><h1>내 취향</h1><p>취향은 다음 추천의 기준이 되고, 즐겨찾기는 다시 보고 싶은 항목을 모아 둬요.</p></div>
         <div className="taste-grid">{(['food', 'music'] as Category[]).map(c => <section className="taste-panel" key={c}>
           <div className="section-heading"><h2>{categoryLabel[c]}</h2><button className="text-button" onClick={() => editTaste(c)}>{hasTaste(store.profiles[c]) ? '편집하기' : '등록하기'}</button></div>
-          <h4>좋아하는 항목</h4>
-          <div className="taste-tiles">{store.profiles[c].selected.map(id => { const i = resolveItem(items, id); return i ? <span className="taste-tile" key={id}><ItemArt item={i} size="tile" /><small>{i.name}</small></span> : null; })}</div>
-          {!store.profiles[c].selected.length && <p className="muted">아직 좋아하는 항목이 없어요. 취향 없이도 추천받을 수 있고, 결과의 더보기에서 바로 더할 수 있어요.</p>}
-          <div className="mini-tags">{store.profiles[c].tags.map(t => <span key={t}>{t}</span>)}</div>
-          <div className="form-divider" />
-          <h4>추천에서 뺀 항목 <span>{store.profiles[c].disliked.length}</span></h4>
-          <div className="chips">{store.profiles[c].disliked.map(id => <button className="chip exclude selected" key={id} aria-label={`${resolveItem(items, id)?.name} 비선호 해제`} onClick={() => { setStore(s => ({ ...s, profiles: { ...s.profiles, [c]: { ...s.profiles[c], disliked: s.profiles[c].disliked.filter(v => v !== id) } } })); notify('장기 비선호를 해제했어요.'); }}>{resolveItem(items, id)?.name || id}<X size={13} /></button>)}</div>
-          {!store.profiles[c].disliked.length && <p className="muted small">없어요. 추천 카드의 더보기에서 뺄 수 있어요.</p>}
-          <button className="text-button danger reset-taste" onClick={() => { setCategory(c); setDialog('resetTaste'); }}>이 분야 취향 초기화</button>
+          {store.profiles[c].selected.length > 0 ? <div className="taste-tiles">{store.profiles[c].selected.map(id => { const i = resolveItem(items, id); return i ? <span className="taste-tile" key={id}><ItemArt item={i} size="tile" /><small>{i.name}</small></span> : null; })}</div>
+            : <p>아직 좋아하는 항목이 없어요. 취향 없이도 추천받을 수 있어요.</p>}
+          {store.profiles[c].tags.length > 0 && <div className="mini-tags">{store.profiles[c].tags.map(t => <span key={t}>{t}</span>)}</div>}
+          {store.profiles[c].disliked.length > 0 && <><h4>추천에서 뺀 항목 <span>{store.profiles[c].disliked.length}</span></h4>
+          <div className="chips">{store.profiles[c].disliked.map(id => <button className="chip exclude selected" key={id} aria-label={`${resolveItem(items, id)?.name} 비선호 해제`} onClick={() => { setStore(s => ({ ...s, profiles: { ...s.profiles, [c]: { ...s.profiles[c], disliked: s.profiles[c].disliked.filter(v => v !== id) } } })); notify('장기 비선호를 해제했어요.'); }}>{resolveItem(items, id)?.name || id}<X size={13} /></button>)}</div></>}
+          {(hasTaste(store.profiles[c]) || store.profiles[c].disliked.length > 0) && <button className="text-button danger reset-taste" onClick={() => { setCategory(c); setDialog('resetTaste'); }}>이 분야 취향 초기화</button>}
         </section>)}</div>
+        <div className="my-links">
+          <button className="list-row" onClick={() => navigate('history')}><span className="list-copy"><b>추천 기록</b><small>지난 추천과 선택 {store.history.length}개</small></span><ChevronRight size={18} /></button>
+          <button className="list-row" onClick={() => { setNameDraft(store.name); setDialog('account'); }}><span className="list-copy"><b>프로필·화면 설정</b><small>이름, 테마, 데이터 백업</small></span><ChevronRight size={18} /></button>
+          {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}
+          {apiEnabled() && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>등록된 후보와 새로운 후보 비교</small></span><ChevronRight size={18} /></button>}
+        </div>
       </>}
       {page === 'login' && <div className="login-panel">
         <div className="login-body">
         <h1>{account ? `${account.user.name}님, 로그인되어 있어요.` : '로그인'}</h1>
-        <p>{account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 계정에 저장하면 다른 기기에서도 이어 쓸 수 있어요.'}</p>
+        <p>{account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 저장해 다른 기기에서도 이어 쓸 수 있어요.'}</p>
         {account ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={signOut}><LogOut size={16} />로그아웃</button></div>
           : <AuthPanel online={apiEnabled()} initialName={store.name === '취향 탐험가' ? '' : store.name} onSuccess={signIn} onGuest={() => navigate('home')} />}
         </div>
         <div className="login-wall" aria-hidden="true">{showcase('food', 3).flatMap((f, n) => [f, showcase('music', 3)[n]]).filter(Boolean).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
       </div>}
     </main>
-    <nav className="tabbar" aria-label="하단 메뉴">{allNav.map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
+    <nav className="tabbar" aria-label="하단 메뉴">{allNav.filter(n => n.page !== 'history').map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
     {toast && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); setToast(null); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={() => setToast(null)}><X size={15} /></button></div>}
     {feedbackItem && <Modal title="어떤 이유로 바꾸고 싶으세요?" onClose={() => setFeedbackItem(null)}><p className="modal-description"><b>{feedbackItem.name}</b>에 대한 의견을 어디까지 반영할지 골라주세요.</p><button className="feedback-option" onClick={() => applyFeedback('session')}><span className="small-icon food"><Clock3 size={21} /></span><span><b>이번 요청에서 제외</b><small>이번 요청에서만 빼고 다른 항목을 추천해요.<br />새로운 상황으로 시작하면 다시 만날 수 있어요.</small></span><ChevronRight size={19} /></button><button className="feedback-option" onClick={() => applyFeedback('long')}><span className="small-icon music"><SlidersHorizontal size={21} /></span><span><b>원래 내 취향이 아님</b><small>이 항목을 장기 비선호에 저장해요.<br />다음 요청에서도 제외하며, 내 취향에서 해제할 수 있어요.</small></span><ChevronRight size={19} /></button><button className="button secondary full-width" onClick={() => setFeedbackItem(null)}>취소</button></Modal>}
     {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} persisted={!storageWarning} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} onReview={(rating,note)=>{const next=reviewSelection(historyPreview,rating,note);setStore(s=>({...s,history:s.history.map(h=>h.id===next.id?next:h)}));setHistoryPreview(next);}}/><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
@@ -592,11 +597,21 @@ export default function App() {
     {compareOpen && <Modal title="후보 비교" onClose={()=>setCompareOpen(false)}><Comparison results={results.filter(r=>session.compareIds?.includes(r.item.id))} conditions={session.conditions} onChoose={r=>{setCompareOpen(false);choose(r);}}/></Modal>}
     {savePresetOpen && <Modal title="내 조건 저장" onClose={()=>setSavePresetOpen(false)}><ConditionsSummary conditions={session.conditions}/><form onSubmit={e=>{e.preventDefault();if(!presetName.trim())return;const preset:Preset={id:crypto.randomUUID(),category:session.category,name:presetName.trim(),conditions:structuredClone(session.conditions)};setStore(s=>({...s,presets:[...(s.presets || []),preset]}));setSavePresetOpen(false);notify('조건 프리셋을 저장했어요.');}}><label className="field-title" htmlFor="preset-name">프리셋 이름</label><input id="preset-name" value={presetName} required maxLength={30} onChange={e=>setPresetName(e.target.value)}/><button className="button primary">프리셋 저장</button></form></Modal>}
     {dialog === 'about' && <Modal title="지금 추천을 먼저 경험해보세요." onClose={() => setDialog(null)}><p className="modal-description">취향 등록부터 조건 수정, 추천과 피드백까지 직접 사용해볼 수 있는 체험 버전이에요.</p><div className="about-list"><p><Check size={17} /> 음식은 {items.filter(i=>i.category==='food').length}개 등록 데이터에서 골라요. {apiEnabled() ? `음악은 AI가 아는 곡 중에서 직접 골라요(등록 곡 ${items.filter(i=>i.category==='music').length}곡은 취향 등록에 써요).` : `음악 ${items.filter(i=>i.category==='music').length}곡의 예시 데이터로 추천해요.`}</p><p><Check size={17} /> 가격·예산·배달 가능 여부는 다루지 않아요. 취향·상황·제외 조건으로 골라요.</p><p><Check size={17} /> 문장에서 조건을 찾아요. {apiEnabled() ? '규칙이 놓친 표현은 AI가 함께 읽어요.' : '알려진 표현만 읽으니 놓친 조건은 직접 골라주세요.'}</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> {apiEnabled() ? '로그인하면 취향·기록이 계정에 저장되어 다른 기기에서도 이어 써요. ' : ''}실제 주문·음원 재생은 포함하지 않아요. 지도·레시피·음악 서비스 검색으로 연결해요.</p></div><div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div></Modal>}
-    {dialog === 'account' && <Modal title={account ? '내 계정·설정' : '브라우저 프로필·설정'} onClose={() => setDialog(null)}>
-      {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true">{account.user.name.slice(0, 1)}</span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status">{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span></div>
-        : <p className="modal-description">{apiEnabled() ? '지금은 로그인하지 않아 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 계정에 저장되어 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요. 기기 간 동기화는 추천 서버가 연결된 사이트에서 로그인하면 쓸 수 있어요.'}</p>}
-      {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
-      <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form><AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/><DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/><div className="account-links">{account ? <><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></> : <button onClick={() => { setDialog(null); setNameDraft(store.name); navigate('login'); }}><LogIn size={17} /> 로그인 화면으로</button>}<button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div></Modal>}
+    {dialog === 'account' && <Modal title="설정" onClose={() => setDialog(null)}>
+      <div className="filter-tabs settings-tabs" role="group" aria-label="설정 구역">{([['profile', '프로필'], ['screen', '화면'], ['data', '데이터 관리']] as const).map(([id, name]) => <button key={id} aria-pressed={settingsTab === id} className={settingsTab === id ? 'active' : ''} onClick={() => setSettingsTab(id)}>{name}</button>)}</div>
+      {settingsTab === 'profile' && <>
+        {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status">{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span></div>
+          : <p className="modal-description">{apiEnabled() ? '지금은 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요.'}</p>}
+        {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
+        <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
+        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
+      </>}
+      {settingsTab === 'screen' && <AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/>}
+      {settingsTab === 'data' && <>
+        <DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/>
+        <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
+      </>}
+    </Modal>}
     {dialog === 'deleteAccount' && account && <Modal title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); try { await deleteAccount(account.token, deletePassword); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { notify(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
     {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;

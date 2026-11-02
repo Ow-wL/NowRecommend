@@ -10,13 +10,13 @@
   }
  },
  "f02": {
-  "image": "https://images.unsplash.com/photo-1584003397737-af22d880f5d8?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/%ED%94%84%EB%A0%88%ED%8D%BC%EC%8A%A4_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8_%ED%91%B8%EB%93%9C_%EC%84%B1%EC%8B%A0%EC%97%AC%EB%8C%80%EC%A0%90_%EB%8B%AD%EA%B0%80%EC%8A%B4%EC%82%B4_%EA%B3%B0%ED%83%95.jpg/960px-%ED%94%84%EB%A0%88%ED%8D%BC%EC%8A%A4_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8_%ED%91%B8%EB%93%9C_%EC%84%B1%EC%8B%A0%EC%97%AC%EB%8C%80%EC%A0%90_%EB%8B%AD%EA%B0%80%EC%8A%B4%EC%82%B4_%EA%B3%B0%ED%83%95.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "source": "commons",
   "credit": {
-   "author": "@sugercoatit",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/sjiX2VEVtpc"
+   "author": "재연",
+   "license": "CC BY 2.0 kr",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0/kr/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:%ED%94%84%EB%A0%88%ED%8D%BC%EC%8A%A4_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8_%ED%91%B8%EB%93%9C_%EC%84%B1%EC%8B%A0%EC%97%AC%EB%8C%80%EC%A0%90_%EB%8B%AD%EA%B0%80%EC%8A%B4%EC%82%B4_%EA%B3%B0%ED%83%95.jpg"
   }
  },
  "f03": {
@@ -30,13 +30,13 @@
   }
  },
  "f04": {
-  "image": "https://images.unsplash.com/photo-1760228865341-675704c22a5b?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Kimchi_jjigae_-_San_Francisco%2C_CA.jpg/960px-Kimchi_jjigae_-_San_Francisco%2C_CA.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "source": "commons",
   "credit": {
-   "author": "@rawkkim",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/1_SenAyTAXg"
+   "author": "Daderot",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:Kimchi_jjigae_-_San_Francisco,_CA.jpg"
   }
  },
  "f05": {
@@ -70,13 +70,13 @@
   }
  },
  "f08": {
-  "image": "https://images.unsplash.com/photo-1609948952339-76f02790cfcb?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Malatang_from_Hope_Tree_%2820220226172344%29.jpg/960px-Malatang_from_Hope_Tree_%2820220226172344%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "source": "commons",
   "credit": {
-   "author": "@candy_keeper",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/B8g2m7O50rU"
+   "author": "N509FZ",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Malatang_from_Hope_Tree_(20220226172344).jpg"
   }
  },
  "f09": {
@@ -100,13 +100,13 @@
   }
  },
  "f11": {
-  "image": "https://images.unsplash.com/photo-1635363638580-c2809d049eee?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Korean.snacks-Tteokbokki-08.jpg/960px-Korean.snacks-Tteokbokki-08.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "source": "commons",
   "credit": {
-   "author": "@m_skalij",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/w_2vlvTgk7E"
+   "author": "by jetalone (flickr)",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Korean.snacks-Tteokbokki-08.jpg"
   }
  },
  "f12": {
@@ -117,7 +117,8 @@
    "license": "Unsplash License",
    "licenseUrl": "https://unsplash.com/license",
    "page": "https://unsplash.com/photos/0JYC1jm1baM"
-  }
+  },
+  "approx": true
  },
  "f13": {
   "image": "https://images.unsplash.com/photo-1624153064067-566cae78993d?w=960&h=960&fit=crop&q=75&auto=format",

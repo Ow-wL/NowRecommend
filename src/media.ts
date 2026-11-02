@@ -1,20 +1,23 @@
 import media from './media.json';
 import type { Item } from './data';
 
-// Item images: food photos hand-picked from Unsplash with their credit, album covers from the
+// Item images: food photos hand-picked from Unsplash and Wikimedia Commons with their credit, album covers from the
 // iTunes Search API with the track's Apple Music page (server/app/cli/media.py). Images load from those hosts; an
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
-export type Media = { image: string; source: 'itunes' | 'unsplash'; link?: string; album?: string; credit?: Credit };
+export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; link?: string; album?: string; credit?: Credit };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;
+// Covers found at run time for AI picks (songCheck.ts).
+const found = new Map<string, Media>();
+export const addMedia = (id: string, entry: Media) => { found.set(id, entry); };
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
 /** Covers still marked for a person to confirm (`check`) are not shown. */
 export function mediaFor(id: string): Media | undefined {
-  const entry = table[id];
+  const entry: Entry | undefined = table[id] || found.get(id);
   return entry && !entry.check && /^https:\/\//.test(entry.image) ? entry : undefined;
 }
 

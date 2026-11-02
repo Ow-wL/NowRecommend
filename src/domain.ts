@@ -384,5 +384,5 @@ export function conditionChecks(item: Item, conditions: Conditions): ConditionCh
 /** What a check says, for screen readers and the comparison table. A partial exclusion never reads as applied. */
 export function checkText(c: ConditionCheck): string {
   if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.label}, 등록 정보 기준 적용`;
-  return c.state === 'met' ? `${c.label} 특징 있음` : `${c.label} 특징 미등록(데이터에 표시 없음)`;
+  return c.state === 'met' ? `${c.label} 맞음` : `${c.label} 정보 없음(데이터에 표시 없음)`;
 }
