@@ -41,7 +41,7 @@ test('refresh, browser back, home resume and explicit request end preserve the r
   await page.reload();
   await page.getByRole('button',{name:'이어서 보기'}).click();
   await expect(page.locator('.temporary-exclusions')).toContainText(excluded!);
-  await page.getByRole('button',{name:'새 요청 시작',exact:true}).click();
+  await page.getByRole('button',{name:'다른 상황으로 추천받기',exact:true}).click();
   await expect(page.getByLabel('지금의 상황')).toHaveValue('');
   await page.getByRole('button',{name:/추천받기$/}).click();
   await expect(page.locator('.temporary-exclusions')).toHaveCount(0);

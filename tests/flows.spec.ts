@@ -89,14 +89,14 @@ test('session exclusion clears while long feedback persists and can be reversed'
   await expect(page.locator('.result-grid')).toContainText(first!);
   await excludeCard(page);
   await page.getByRole('button', { name: '이번 요청에서 제외', exact: false }).click();
-  await page.getByRole('button', { name: '새 요청 시작' }).click();
+  await page.getByRole('button', { name: '다른 상황으로 추천받기' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
   await page.getByRole('button', { name: /추천받기$/ }).click();
   await expect(page.locator('.result-grid')).toContainText(first!);
   await excludeCard(page);
   await page.getByRole('button', { name: '원래 내 취향이 아님', exact: false }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
-  await page.getByRole('button', { name: '새 요청 시작' }).click();
+  await page.getByRole('button', { name: '다른 상황으로 추천받기' }).click();
   await page.getByLabel('지금의 상황').fill('담백한 저녁');
   await page.getByRole('button', { name: /추천받기$/ }).click();
   await expect(page.locator('.result-grid')).not.toContainText(first!);
@@ -216,7 +216,7 @@ test('one taste item is enough, editing can empty it, and liking a result adds t
   await expect(selected).toHaveCount(2);
   while (await selected.count()) await selected.first().click();
   await page.getByRole('button', { name: '저장하기' }).click();
-  await expect(page.locator('.taste-panel').nth(1)).toContainText('아직 좋아하는 항목이 없어요');
+  await expect(page.locator('.taste-panel').nth(1)).toContainText('좋아하는 곡이나 분위기를 골라주세요');
 });
 
 // 2026-10-27: "신나는 록" lost 록 without a word. Catalog genres are conditions now; genres without a tag are named.

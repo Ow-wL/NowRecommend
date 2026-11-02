@@ -52,8 +52,8 @@ test('after a one-card replacement every comparison describes the three cards sh
   const grid = page.locator('.result-grid');
   await expect(grid).not.toContainText('유일하게 따뜻한');      // 채소 카레 and 두부 덮밥 are both warm
   await expect(grid).not.toContainText('유일하게 채소가 많은'); // all three have vegetables
-  await expect(page.locator('.item-card').filter({ hasText: '두부 덮밥' }).locator('.contrast')).toHaveText('다른 후보와 비교추천 중 유일하게 고소한 메뉴예요.');
-  await expect(page.locator('.item-card').filter({ hasText: '샌드위치' }).locator('.contrast')).toHaveText('다른 후보와 비교추천 중 유일하게 차가운 메뉴예요.'); // 두부 덮밥 is also 담백함
+  await expect(page.locator('.item-card').filter({ hasText: '두부 덮밥' }).locator('.contrast')).toHaveText('추천 중 유일하게 고소한 메뉴예요.');
+  await expect(page.locator('.item-card').filter({ hasText: '샌드위치' }).locator('.contrast')).toHaveText('추천 중 유일하게 차가운 메뉴예요.'); // 두부 덮밥 is also 담백함
   await expect(page.getByText(/이전에 본 후보/)).toHaveCount(0); // the two cards kept are not repeats
   await page.screenshot({ path: 'artifacts/review-fix-replacement.png', fullPage: true });
   await page.locator('.item-card').filter({ hasText: '두부 덮밥' }).locator('.select-button').click();

@@ -24,7 +24,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
     return ()=>{background.forEach((n,i)=>n.inert=inert[i]);document.body.style.overflow=overflow;document.removeEventListener('keydown',handle);if(previous?.isConnected && !previous.closest('[inert]') && previous.getClientRects().length)previous.focus();else document.querySelector<HTMLElement>('main h1')?.focus();};
   },[enabled,ref,backgroundSelector]);
 }
-export function Modal({ title, children, onClose }: { title:string; children:ReactNode; onClose:()=>void }) {
+export function Modal({ title, children, onClose, neutral = false }: { title:string; children:ReactNode; onClose:()=>void; neutral?:boolean }) {
   const ref=useRef<HTMLDivElement>(null);useFocusTrap(ref,onClose);
-  return <div className="modal-backdrop" onClick={onClose}><div className="modal" ref={ref} role="dialog" aria-modal="true" aria-labelledby="dialog-title" onClick={e=>e.stopPropagation()}><button className="icon-button modal-close" aria-label="닫기" onClick={onClose}><X size={20}/></button><h2 id="dialog-title">{title}</h2>{children}</div></div>;
+  return <div className={`modal-backdrop${neutral ? ' neutral-scope' : ''}`} onClick={onClose}><div className="modal" ref={ref} role="dialog" aria-modal="true" aria-labelledby="dialog-title" onClick={e=>e.stopPropagation()}><button className="icon-button modal-close" aria-label="닫기" onClick={onClose}><X size={20}/></button><h2 id="dialog-title">{title}</h2>{children}</div></div>;
 }

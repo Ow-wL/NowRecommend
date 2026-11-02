@@ -39,3 +39,6 @@
 :root:not([data-custom-accent]) .cat-food, :root:not([data-custom-accent]) .item-card.food { --accent: var(--food-ink); --accent-fill: #D4411A; --accent-hover: #BD3813; --accent-pressed: #A5300F; --text-on-accent: #FFFFFF; --bg-soft: var(--food-soft); --bg-selected: var(--food-soft); }
 :root:not([data-custom-accent]) .cat-music, :root:not([data-custom-accent]) .item-card.music { --accent: var(--music-ink); --accent-fill: #2B46D6; --accent-hover: #2339BB; --accent-pressed: #1C2F9E; --text-on-accent: #FFFFFF; --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
 :root[data-theme="dark"]:not([data-custom-accent]) .cat-music, :root[data-theme="dark"]:not([data-custom-accent]) .item-card.music { --accent-fill: #3B57E8; --accent-hover: #2F49CF; --accent-pressed: #2840B8; }
+/* Settings, account and confirmation dialogs belong to no category, wherever they open from. */
+:root:not([data-custom-accent]) .neutral-scope { --accent: #1D1B18; --accent-fill: #1D1B18; --accent-hover: #38342E; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #EEEAE2; --bg-selected: #EEEAE2; }
+:root[data-theme="dark"]:not([data-custom-accent]) .neutral-scope { --accent: #F5F1EA; --accent-fill: #F5F1EA; --accent-hover: #FFFFFF; --accent-pressed: #D9D4C9; --text-on-accent: #1D1B18; --bg-soft: #332E27; --bg-selected: #332E27; }
