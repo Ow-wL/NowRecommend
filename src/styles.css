@@ -176,8 +176,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .selection-card { position: relative; display: block; width: 100%; text-align: left; }
 .selection-card .item-art { transition: box-shadow var(--fast), transform var(--fast); }
 .selection-card.selected .item-art { box-shadow: 0 0 0 3px var(--bg-canvas), 0 0 0 6px var(--accent-fill); }
-.selection-check { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; color: #A8A399; box-shadow: 0 0 0 1.5px rgb(0 0 0 / 28%), 0 2px 6px rgb(0 0 0 / 18%); }
-.selection-card.selected .selection-check { background: var(--accent-fill); color: var(--text-on-accent); box-shadow: 0 2px 6px rgb(0 0 0 / 18%); }
+.selection-check { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgb(255 255 255 / 55%); box-shadow: inset 0 0 0 2px #fff, 0 1px 5px rgb(0 0 0 / 35%); }
+.selection-card.selected .selection-check { background: var(--accent-fill); color: var(--text-on-accent); box-shadow: inset 0 0 0 2px #fff, 0 2px 6px rgb(0 0 0 / 22%); }
 .selection-name { display: block; margin-top: 12px; }
 .selection-name b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 15px; font-weight: 600; line-height: 1.35; }
 .selection-name small { display: block; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

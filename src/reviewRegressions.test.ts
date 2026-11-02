@@ -62,7 +62,7 @@ describe('comparisons describe the cards actually shown', () => {
     const shown = recommend(changed, p);
     expect(shown.map(r => r.item.name)).toEqual(['채소 카레', '샌드위치', '두부 덮밥']);
     setReasonsAreTrue(shown);
-    expect(shown.find(r => r.item.name === '두부 덮밥')?.contrast).toBe('추천 중 유일하게 고소한 메뉴예요.');
+    expect(shown.find(r => r.item.name === '두부 덮밥')?.contrast).toBe('고소한 메뉴예요.');
     expect(shown.find(r => r.item.name === '채소 카레')?.contrast).toBeUndefined();
     expect(changed.snapshot).toEqual(shown); // what is stored (history, selection) is what is shown
   });
@@ -71,8 +71,8 @@ describe('comparisons describe the cards actually shown', () => {
     const changed = replaceCandidate(first, p, 'f07')!;
     const history = recordRound(recordRound([], first, first.snapshot!), changed, changed.snapshot!);
     const [before, after] = history[0].rounds;
-    expect(before.results.find(r => r.item.id === 'f12')?.contrast).toBe('추천 중 유일하게 따뜻한 메뉴예요.'); // 비빔밥 was also 고소한 then
-    expect(after.results.find(r => r.item.id === 'f12')?.contrast).toBe('추천 중 유일하게 고소한 메뉴예요.');
+    expect(before.results.find(r => r.item.id === 'f12')?.contrast).toBe('따뜻한 메뉴예요.'); // 비빔밥 was also 고소한 then
+    expect(after.results.find(r => r.item.id === 'f12')?.contrast).toBe('고소한 메뉴예요.');
   });
   it('recomputes when a card leaves the set, whatever the reasons were written for', () => {
     const p = emptyProfile(), s = nextBatch(request({ raw: '채소', conditions: { tags: ['채소'], excluded: [] } }), p);

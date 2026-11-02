@@ -50,17 +50,17 @@ test('after a one-card replacement every comparison describes the three cards sh
   await page.getByRole('button', { name: '비빔밥 한 장 교체', exact: true }).click();
   await expect(page.locator('.result-grid h3')).toHaveText(['채소 카레', '샌드위치', '두부 덮밥']);
   const grid = page.locator('.result-grid');
-  await expect(grid).not.toContainText('유일하게 따뜻한');      // 채소 카레 and 두부 덮밥 are both warm
-  await expect(grid).not.toContainText('유일하게 채소가 많은'); // all three have vegetables
-  await expect(page.locator('.item-card').filter({ hasText: '두부 덮밥' }).locator('.contrast')).toHaveText('추천 중 유일하게 고소한 메뉴예요.');
-  await expect(page.locator('.item-card').filter({ hasText: '샌드위치' }).locator('.contrast')).toHaveText('추천 중 유일하게 차가운 메뉴예요.'); // 두부 덮밥 is also 담백함
+  await expect(grid).not.toContainText('따뜻한 메뉴예요');      // 채소 카레 and 두부 덮밥 are both warm
+  await expect(grid).not.toContainText('채소가 많은 메뉴예요'); // all three have vegetables
+  await expect(page.locator('.item-card').filter({ hasText: '두부 덮밥' }).locator('.contrast')).toHaveText('고소한 메뉴예요.');
+  await expect(page.locator('.item-card').filter({ hasText: '샌드위치' }).locator('.contrast')).toHaveText('차가운 메뉴예요.'); // 두부 덮밥 is also 담백함
   await expect(page.getByText(/이전에 본 후보/)).toHaveCount(0); // the two cards kept are not repeats
   await page.screenshot({ path: 'artifacts/review-fix-replacement.png', fullPage: true });
   await page.locator('.item-card').filter({ hasText: '두부 덮밥' }).locator('.select-button').click();
-  await expect(page.locator('.completion-panel')).toContainText('추천 중 유일하게 고소한 메뉴예요.');
+  await expect(page.locator('.completion-panel')).toContainText('고소한 메뉴예요.');
   await page.getByRole('button', { name: '선택 변경', exact: true }).click();
   // The first round keeps what was true for its own three cards.
-  await expect(page.getByRole('dialog').locator('.history-round').first()).toContainText('당시 비교: 추천 중 유일하게 따뜻한 메뉴예요.');
+  await expect(page.getByRole('dialog').locator('.history-round').first()).toContainText('특징: 따뜻한 메뉴예요.');
 });
 
 // Second review: a negated phrase must never become a wanted condition, and every listed item is applied or reported.

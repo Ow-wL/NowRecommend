@@ -8,7 +8,7 @@ export type Conditions = { tags: string[]; excluded: string[] };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[];
   /** How the server read `raw` ('local': server unreachable, browser rules kept). Applies only while raw matches. */
   ai?: { raw: string; source: 'rule' | 'rule+ai' | 'local'; unparsed: string[] } };
-export type Session = { category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number;
+export type Session = { preset?: { name: string; key: string }; category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number;
   /** Cards of this round that had been seen before the round began (a reroll that ran out of unseen ones). */
   repeatIds?: string[]; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local';
   /** How the server produced the current cards (only with source 'server'): AI used/failed/off, sentence meaning used. */
@@ -310,14 +310,18 @@ export function templateReasons(item: Item, profile: Profile, preferred: Set<str
   const contextReason = matched.length ? `이번 조건 ${matched.join(' · ')}에 맞아요.` : conditions.tags.length ? '고른 조건과 겹치는 특징은 적어요.' : conditions.excluded.length ? '등록 정보 기준으로 제외 조건을 적용했어요.' : '상황 조건 없이 골랐어요.';
   return { tasteReason, contextReason };
 }
-/** What only this card has among the cards shown with it, from its tags; empty when nothing sets it apart. */
+export const presetKey = (c: Conditions) => JSON.stringify([[...c.tags].sort(), [...c.excluded].sort()]);
+/** The quick condition this request came from, while no sentence and no change has made it something else. */
+export const presetLabel = (s: Pick<Session, 'raw' | 'preset' | 'conditions'>) => !s.raw.trim() && s.preset && s.preset.key === presetKey(s.conditions) ? s.preset.name : undefined;
+/** What this card has that the others shown with it are not tagged with. A missing tag does not mean the others lack it, so this
+ * names the card's own trait and never claims it is the only one. Empty when nothing sets it apart. */
 export function contrastReason(item: Item, shown: Item[]): string {
   const others = shown.filter(o => o.id !== item.id);
   if (!others.length) return '';
   const unique = (values: string[]) => values.filter(t => item.tags.includes(t) && !others.some(o => o.tags.includes(t)));
-  if (item.category === 'food') { const words = unique(Object.keys(FOOD_TRAIT_WORDS)).map(t => FOOD_TRAIT_WORDS[t]); return words.length ? `추천 중 유일하게 ${words.join(', ')} 메뉴예요.` : ''; }
+  if (item.category === 'food') { const words = unique(Object.keys(FOOD_TRAIT_WORDS)).map(t => FOOD_TRAIT_WORDS[t]); return words.length ? `${words.join(', ')} 메뉴예요.` : ''; }
   const [tag] = unique(MUSIC_DISTINCT);
-  return tag ? `추천 중 유일한 ${tag} 곡이에요.` : '';
+  return tag ? `${tag} 곡이에요.` : '';
 }
 /** Recomputes every card's contrast for exactly this set of cards (after a batch, a replacement or a card leaving). */
 export function withContrast(results: Recommendation[]): Recommendation[] {
