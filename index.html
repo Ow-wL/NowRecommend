@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f5f4fa" />
-    <meta name="description" content="평소 취향과 지금의 상황을 함께 담아, 음식과 음악을 추천하는 지금 추천." />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="취향과 지금 상황으로 음식과 음악을 골라주는 서비스." />
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <!-- Pretendard (OFL). If it fails to load, the system Korean fonts in styles.css take over. -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-    <style>html,body{background:#f5f4fa;color:#17162b;color-scheme:light}html[data-theme=dark],html[data-theme=dark] body{background:#0f1020;color:#f3f2fa;color-scheme:dark}</style>
-    <script>try{const a=JSON.parse(localStorage.getItem('nowrecommend-prototype-v1')||'null')?.appearance;const dark=a?.mode==='dark'||a?.mode==='system'&&matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.theme=dark?'dark':'light';document.querySelector('meta[name="theme-color"]').content=dark?'#0f1020':'#f5f4fa';}catch{}</script>
-    <title>지금 추천 — 오늘의 선택, 지금의 나답게</title>
+    <!-- Wanted Sans (OFL). If it fails to load, the system Korean fonts in styles.css take over. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css" />
+    <style>html,body{background:#fff;color:#111;color-scheme:light}html[data-theme=dark],html[data-theme=dark] body{background:#0f0f0e;color:#f3f3f0;color-scheme:dark}</style>
+    <script>try{const a=JSON.parse(localStorage.getItem('nowrecommend-prototype-v1')||'null')?.appearance;const dark=a?.mode==='dark'||a?.mode==='system'&&matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.theme=dark?'dark':'light';document.querySelector('meta[name="theme-color"]').content=dark?'#0f0f0e':'#ffffff';}catch{}</script>
+    <title>지금 추천</title>
   </head>
   <body>
     <div id="root"></div>

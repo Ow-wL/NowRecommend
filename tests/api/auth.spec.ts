@@ -39,7 +39,7 @@ test('signing up keeps this browser’s data, names it after the account and sta
   await page.getByLabel('이메일').fill('Lee@example.com');
   await page.getByLabel('비밀번호', { exact: false }).fill('password1');
   await page.getByRole('button', { name: '가입하고 시작하기' }).click();
-  await expect(page.getByRole('heading', { name: '지금, 어떤 선택이 필요하세요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
   await expect(page.getByText('주형님, 가입을 환영해요.', { exact: false })).toBeVisible();
   expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형' });
   // The store was uploaded with the token; its content is still the local data, now carrying the account name.

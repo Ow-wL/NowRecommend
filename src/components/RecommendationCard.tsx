@@ -14,27 +14,29 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
   /** AI engine picks: the model's own confidence that the item exists as named (shown as a badge). */
   confidence?: 'high' | 'medium' | 'low'; aiPick?: boolean;
 }) {
-  const confidenceLabel = { high: 'AI 확신 높음', medium: 'AI 확신 보통', low: 'AI 확신 낮음' } as const;
+  // Nearly every AI pick is "high", so only the doubtful ones are worth a word on the card.
+  const doubt = confidence && confidence !== 'high' ? confidence : undefined;
+  const confidenceLabel = { medium: 'AI 확신 보통', low: 'AI 확신 낮음' } as const;
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
   const music = item.category === 'music';
   const song = music ? songLink(item.id) : undefined;
   const album = music ? mediaFor(item.id)?.album || mediaFor(item.id)?.link : undefined;
   const listen = music && (song
-    ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={16} fill="currentColor" />Apple Music에서 듣기</a>
+    ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={15} fill="currentColor" />Apple Music에서 듣기</a>
     : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}><Search size={16} />YouTube에서 검색</a>);
   // Album artwork links to Apple Music (the artwork terms); it is never the only way to listen.
   const art = album ? <a className="item-art-link" href={song || album} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><ItemArt item={item} size="thumb" /></a>
     : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 사진 크게 보기`} tabIndex={-1}><ItemArt item={item} size={music ? 'thumb' : 'card'} /></button>
     : <ItemArt item={item} size={music ? 'thumb' : 'card'} />;
   return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}${reasons ? '' : ' plain'}${aiPick ? ' ai-pick' : ''}`}>
+    {rank !== undefined && <span className="item-rank" aria-hidden="true">{String(rank).padStart(2, '0')}</span>}
     {art}
     <div className="item-head">
-      {rank !== undefined && <span className="item-rank" aria-hidden="true">{rank}</span>}
       <div className="item-title">
         <h3>{item.name}</h3>
         <p className="item-subtitle">{item.subtitle}</p>
       </div>
-      {(pinned || familiar || confidence) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{confidence && <span className={`confidence-badge ${confidence}`} title="AI가 밝힌, 이 항목이 실제로 있다는 확신">{confidenceLabel[confidence]}</span>}</span>}
+      {(pinned || familiar || doubt) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubt && <span className={`confidence-badge ${doubt}`} title="AI가 밝힌, 이 항목이 실제로 있다는 확신">{confidenceLabel[doubt]}</span>}</span>}
       <div className="item-quick">
         <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={19} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
       </div>

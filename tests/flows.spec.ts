@@ -51,7 +51,7 @@ test('the reproduction sentence: kept, partial and unsupported conditions before
 
 test('food journey, favorites, history and browser persistence', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '지금, 어떤 선택이 필요하세요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await expect(page.getByRole('button', { name: '저장하고 시작' })).toBeDisabled();
   const choices = page.locator('.selection-card');
@@ -74,7 +74,7 @@ test('food journey, favorites, history and browser persistence', async ({ page }
   await page.locator('.history-title').click();
   await expect(page.getByRole('dialog')).toContainText('밀 제외');
   await page.getByRole('button', { name: '같은 조건으로 다시 추천' }).click();
-  await expect(page.getByRole('heading', { name: '지금, 어떤 한 끼가 필요하세요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '어떤 한 끼가 필요하세요?' })).toBeVisible();
 });
 
 test('session exclusion clears while long feedback persists and can be reversed', async ({ page }) => {

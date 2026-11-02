@@ -10,7 +10,7 @@ test('selection completion, refresh, change, cancel and historical snapshots',as
   await page.locator('.result-grid .select-button').first().dblclick();
   await expect(page.getByRole('heading',{name:'선택을 기록했어요'})).toBeVisible();
   await page.reload();await expect(page.locator('.completion-panel')).toContainText(name!);
-  await page.getByRole('button',{name:'홈',exact:true}).click();await expect(page.getByRole('button',{name:'이어서 추천받기'})).toHaveCount(0);
+  await page.getByRole('button',{name:'지금 추천 홈',exact:true}).click();await expect(page.getByRole('button',{name:'이어서 추천받기'})).toHaveCount(0);
   await expect(page.locator('.recent-choice')).toContainText(name!);
   await page.getByRole('button',{name:'추천 기록',exact:true}).click();await expect(page.locator('.history-row')).toHaveCount(1);
   await page.locator('.history-title').click();await expect(page.locator('.history-round')).toHaveCount(2);

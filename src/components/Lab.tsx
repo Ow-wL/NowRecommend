@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronDown, Download, ExternalLink, Info, RefreshCw, SearchX, SlidersHorizontal, Sparkles, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Download, ExternalLink, Info, RefreshCw, SearchX, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import { categoryLabel, exclusions, options, type Category, type Item } from '../data';
 import { apiEnabled } from '../api/client';
 import { fetchRecommendations } from '../api/recommend';
@@ -192,12 +192,11 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
   return <>
     <div className="flow-head">
       <button className="back-link" onClick={onHome}><ArrowLeft size={16} /> 홈으로</button>
-      <span className="eyebrow">AI 실험실</span>
-      <h1>두 가지 AI 추천을 비교해보세요.</h1>
-      <p>같은 상황과 취향으로 A({side.pool.title})와 B(AI 자유 추천)를 나란히 받아요. 실험 결과는 추천 기록과 취향에 반영하지 않아요.</p>
+      <h1>AI 실험실</h1>
+      <p>같은 상황으로 A({side.pool.title})와 B(AI 자유 추천)를 나란히 받아 비교해요. 기록과 취향에는 반영하지 않아요.</p>
       <div className="filter-tabs lab-category" role="group" aria-label="실험 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => onCategory(c)}>{categoryLabel[c]} 실험</button>)}</div>
       <div className="taste-strip">
-        <span className="taste-strip-label">평소의 나</span>
+        <span className="taste-strip-label">내 취향</span>
         <span className="taste-strip-items">{[...liked, ...profile.tags].join(' · ') || `등록된 ${categoryLabel[category]} 취향 없음`}</span>
         <button className="text-button" onClick={onEditTaste}>취향 수정</button>
       </div>
@@ -218,7 +217,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
           {session.conditions.tags.length + session.conditions.excluded.length ? <div className="chips">
             {session.conditions.tags.map(t => <button className="chip selected" key={t} onClick={() => setSession(s => toggleCondition(s, t))} aria-label={`${t} 조건 삭제`}>{t}<X size={13} /></button>)}
             {session.conditions.excluded.map(t => <button className="chip exclude selected" key={t} onClick={() => setSession(s => toggleCondition(s, t, true))} aria-label={`${t} 제외 조건 삭제`}>{t} 제외<X size={13} /></button>)}
-          </div> : <p className="muted small">문장을 적거나 아래에서 골라주세요. 비워두면 평소 취향으로 추천해요.</p>}
+          </div> : <p className="muted small">비워두면 평소 취향으로 추천해요.</p>}
           <ParseNotice ai={session.editor?.ai} raw={session.raw} />
         </div>
         <label className="field-title lab-liked-label" htmlFor="lab-liked">{category === 'food' ? '목록에 없는 좋아하는 메뉴·식당 종류' : '목록에 없는 좋아하는 곡·아티스트'} <small>B에만 적용 · 쉼표로 구분, 최대 10개</small></label>
@@ -233,7 +232,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
       <div className="lab-actions">
         <div className="filter-tabs" role="group" aria-label="비교 방식">{(['both', 'pool', 'free'] as const).map(v => <button key={v} aria-pressed={view === v} className={view === v ? 'active' : ''} onClick={() => setView(v)}>{v === 'both' ? '둘 다 나란히' : `${side[v].label}만`}</button>)}</div>
         {models.length > 1 && view !== 'pool' && <label className="lab-model">B 모델<select value={freeModel} onChange={e => setFreeModel(e.target.value)}>{models.map(m => <option key={m} value={m}>{m}</option>)}</select></label>}
-        <button className="button primary" disabled={!online || working || conflicts.length > 0} onClick={() => run(false)}>{working ? <span className="spinner" /> : <Sparkles size={16} />}{parsing ? '조건을 해석하는 중' : working ? '추천을 고르는 중' : '추천받기'}</button>
+        <button className="button primary" disabled={!online || working || conflicts.length > 0} onClick={() => run(false)}>{working && <span className="spinner" />}{parsing ? '조건을 해석하는 중' : working ? '추천을 고르는 중' : '추천받기'}</button>
       </div>
     </div>
 

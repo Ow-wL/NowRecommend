@@ -6,7 +6,7 @@ test('resuming an unfinished food request does not reuse a music profile draft',
   await page.getByRole('button',{name:'내 취향',exact:true}).click();
   await page.getByRole('button',{name:'등록하기',exact:true}).nth(1).click();
   await page.locator('.selection-card').first().click();
-  await page.getByRole('button',{name:'홈',exact:true}).click();
+  await page.getByRole('button',{name:'지금 추천 홈',exact:true}).click();
   // A request with nothing in it is not offered for resuming; starting food again resumes the same scope.
   await expect(page.getByRole('button',{name:'이어서 추천받기'})).toHaveCount(0);
   await page.getByRole('button',{name:/음식 추천받기/}).click();
@@ -27,7 +27,7 @@ test('refresh, browser back, home resume and explicit request end preserve the r
   await page.getByRole('button',{name:'추천받기',exact:true}).click();
   await expect(page).toHaveURL(/#\/recommend\/food\/results$/);
   await page.goBack();
-  await expect(page.getByRole('heading',{name:'지금, 어떤 한 끼가 필요하세요?'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'어떤 한 끼가 필요하세요?'})).toBeVisible();
   await expect(page.getByLabel('담백함 조건 삭제')).toHaveCount(0);
   await page.goForward();
   const excluded = await page.locator('.result-grid h3').first().textContent();
@@ -36,7 +36,7 @@ test('refresh, browser back, home resume and explicit request end preserve the r
   await page.reload();
   await expect(page.locator('.result-grid')).not.toContainText(excluded!);
   await expect(page.locator('.temporary-exclusions')).toContainText(excluded!);
-  await page.getByRole('button',{name:'홈',exact:true}).click();
+  await page.getByRole('button',{name:'지금 추천 홈',exact:true}).click();
   await page.reload();
   await page.getByRole('button',{name:'이어서 추천받기'}).click();
   await expect(page.locator('.temporary-exclusions')).toContainText(excluded!);
