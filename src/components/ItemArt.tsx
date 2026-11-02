@@ -11,14 +11,14 @@ const coverFor = (key: string) => { let hash = 0; for (const ch of key) hash = (
 /** Photo or album cover of an item. An item with no image, or whose image fails, gets a typeset cover: its title on one
  * solid colour. The title is drawn by CSS from data attributes so it is not repeated to screen readers or text search.
  * Decorative by default (the name is always written next to it); `label` gives it an accessible name. */
-export function ItemArt({ item, size = 'card', label, className = '' }: { item: Art; size?: 'card' | 'thumb' | 'tile' | 'hero'; label?: string; className?: string }) {
+export function ItemArt({ item, size = 'card', label, className = '', eager = false }: { item: Art; size?: 'card' | 'thumb' | 'tile' | 'hero'; label?: string; className?: string; eager?: boolean }) {
   const media = item.id ? mediaFor(item.id) : undefined;
   const [failed, setFailed] = useState('');
   const image = media && failed !== media.image ? media.image : '';
   const [bg, fg] = coverFor(item.id || item.name);
   return <span className={`item-art ${item.category} ${size} ${image ? 'has-image' : 'generated'} ${className}`}
     role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
-    {image ? <img src={image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(image)} />
+    {image ? <img src={image} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(image)} />
       : <span className="art-cover" data-title={item.name} data-sub={item.subtitle || ''} style={{ ['--cover-bg' as string]: bg, ['--cover-fg' as string]: fg }} />}
   </span>;
 }

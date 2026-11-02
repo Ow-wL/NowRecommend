@@ -9,7 +9,7 @@ export function ItemDetails({item,reasons}: {item:Item;reasons?:Recommendation})
   const catalog=useCatalog();
   const media = mediaFor(item.id), song = item.category === 'music' ? songLink(item.id) : undefined;
   return <div className="item-details"><figure className="details-art"><ItemArt item={item} size="hero" />
-    {media?.credit && <figcaption>사진: <a href={media.credit.page} target="_blank" rel="noopener noreferrer">{media.credit.author}</a> · {media.credit.licenseUrl ? <a href={media.credit.licenseUrl} target="_blank" rel="noopener noreferrer">{media.credit.license}</a> : media.credit.license} · Wikimedia Commons</figcaption>}
+    {media?.credit && <figcaption>사진: <a href={media.credit.page} target="_blank" rel="noopener noreferrer">{media.credit.author}</a> · {media.credit.licenseUrl ? <a href={media.credit.licenseUrl} target="_blank" rel="noopener noreferrer">{media.credit.license}</a> : media.credit.license} · Unsplash</figcaption>}
     {media?.source === 'itunes' && <figcaption>앨범 아트: Apple Music</figcaption>}
     {!media && <figcaption>{item.category === 'food' ? '등록된 사진이 없어 기본 그림으로 보여드려요.' : '앨범 아트를 찾지 못해 기본 커버로 보여드려요.'}</figcaption>}
   </figure>

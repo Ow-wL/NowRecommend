@@ -196,8 +196,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
       <p>같은 상황으로 A({side.pool.title})와 B(AI 자유 추천)를 나란히 받아 비교해요. 기록과 취향에는 반영하지 않아요.</p>
       <div className="filter-tabs lab-category" role="group" aria-label="실험 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => onCategory(c)}>{categoryLabel[c]} 실험</button>)}</div>
       <div className="taste-strip">
-        <span className="taste-strip-label">내 취향</span>
-        <span className="taste-strip-items">{[...liked, ...profile.tags].join(' · ') || `등록된 ${categoryLabel[category]} 취향 없음`}</span>
+                <span className="taste-strip-items">{[...liked, ...profile.tags].join(' · ') || `등록된 ${categoryLabel[category]} 취향 없음`}</span>
         <button className="text-button" onClick={onEditTaste}>취향 수정</button>
       </div>
     </div>
@@ -205,7 +204,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
     {online && profile.selected.length < 5 && <div className="notice" role="status"><Info size={18} /><div><strong>{categoryLabel[category]} 취향을 5개 이상 등록하면 더 공정하게 비교할 수 있어요.</strong><p>등록한 취향은 두 방식에 똑같이 보내요.</p><button className="text-button" onClick={onEditTaste}>{categoryLabel[category]} 취향 등록하기</button></div></div>}
 
     <div className="flow-body composer lab-composer">
-      <section className="panel compose-panel">
+      <section className="compose-panel">
         <label className="field-title" htmlFor="lab-situation">지금의 상황</label>
         <textarea id="lab-situation" maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(false); } }} placeholder={category === 'food' ? '예: 비 오는 날 혼자 먹을 따뜻한 국물' : '예: 비 오는 밤 혼자 걸으면서 들을 노래'} />
         <div className="textarea-caption">
@@ -223,7 +222,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
         <label className="field-title lab-liked-label" htmlFor="lab-liked">{category === 'food' ? '목록에 없는 좋아하는 메뉴·식당 종류' : '목록에 없는 좋아하는 곡·아티스트'} <small>B에만 적용 · 쉼표로 구분, 최대 10개</small></label>
         <input id="lab-liked" className="lab-liked" maxLength={400} value={likedText} onChange={e => setLikedText(e.target.value)} placeholder={category === 'food' ? '예: 평양냉면, 마라탕, 베트남 음식' : '예: 검정치마, 잔나비 - 주저하는 연인들을 위해'} />
       </section>
-      <details className="panel more-conditions">
+      <details className="more-conditions">
         <summary><SlidersHorizontal size={16} /> 조건 직접 고르기<ChevronDown size={16} className="chevron" /></summary>
         {groups.map(group => <div className="chip-group" key={group.label}><h3>{group.label}</h3>{chips(group.values, session.conditions.tags, v => setSession(s => toggleCondition(s, v)))}</div>)}
         <div className="chip-group"><h3>반드시 제외 <small>두 방식 모두에 보내요</small></h3>{chips(exclusions[category], session.conditions.excluded, v => setSession(s => toggleCondition(s, v, true)), 'exclude')}</div>

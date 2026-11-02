@@ -1,12 +1,12 @@
 import media from './media.json';
 import type { Item } from './data';
 
-// Item images (DESIGN.md v3): food photos curated from Wikimedia Commons with their credit, album covers from the
+// Item images: food photos hand-picked from Unsplash with their credit, album covers from the
 // iTunes Search API with the track's Apple Music page (server/app/cli/media.py). Images load from those hosts; an
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
-export type Media = { image: string; source: 'itunes' | 'commons'; link?: string; album?: string; credit?: Credit };
+export type Media = { image: string; source: 'itunes' | 'unsplash'; link?: string; album?: string; credit?: Credit };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;

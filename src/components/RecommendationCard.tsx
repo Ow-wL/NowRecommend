@@ -22,39 +22,45 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
   const song = music ? songLink(item.id) : undefined;
   const album = music ? mediaFor(item.id)?.album || mediaFor(item.id)?.link : undefined;
   const listen = music && (song
-    ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={15} fill="currentColor" />Apple Music에서 듣기</a>
-    : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}><Search size={16} />YouTube에서 검색</a>);
+    ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={20} fill="currentColor" /><span className="listen-label">Apple Music에서 듣기</span></a>
+    : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}><Search size={20} /><span className="listen-label">YouTube에서 검색</span></a>);
   // Album artwork links to Apple Music (the artwork terms); it is never the only way to listen.
-  const art = album ? <a className="item-art-link" href={song || album} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><ItemArt item={item} size="thumb" /></a>
-    : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 사진 크게 보기`} tabIndex={-1}><ItemArt item={item} size={music ? 'thumb' : 'card'} /></button>
-    : <ItemArt item={item} size={music ? 'thumb' : 'card'} />;
+  const art = album ? <a className="item-art-link" href={song || album} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><ItemArt item={item} size="tile" /></a>
+    : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 사진 크게 보기`} tabIndex={-1}><ItemArt item={item} size={music ? 'tile' : 'card'} /></button>
+    : <ItemArt item={item} size={music ? 'tile' : 'card'} />;
   return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}${reasons ? '' : ' plain'}${aiPick ? ' ai-pick' : ''}`}>
-    {rank !== undefined && <span className="item-rank" aria-hidden="true">{String(rank).padStart(2, '0')}</span>}
-    {art}
+    <div className="art-frame">
+      {art}
+      {rank !== undefined && <span className="item-rank" aria-hidden="true">{rank}</span>}
+      <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={20} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
+      {listen}
+    </div>
+    <div className="item-body">
     <div className="item-head">
       <div className="item-title">
         <h3>{item.name}</h3>
         <p className="item-subtitle">{item.subtitle}</p>
       </div>
       {(pinned || familiar || doubt) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubt && <span className={`confidence-badge ${doubt}`} title="AI가 밝힌, 이 항목이 실제로 있다는 확신">{confidenceLabel[doubt]}</span>}</span>}
-      <div className="item-quick">
-        <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={19} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>
-      </div>
     </div>
-    {/* A missing tag reads "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits.
-        The meaning is explained once above the list (.check-legend), not in a hover-only title on every card. */}
-    {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>
-      {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}
-      <span aria-hidden="true">{c.state === 'untagged' ? `${c.label} 미등록` : c.label}</span><span className="sr-only">{checkText(c)}</span></li>)}</ul>}
-    {/* Without a registered taste the list says so once above the cards; repeating it on every card is noise. */}
-    {reasons ? <div className="reasons">{reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}<p><b>이번 상황</b>{reasons.contextReason}</p>{reasons.contrast && <p className="contrast"><b>다른 후보와 비교</b>{reasons.contrast}</p>}</div> : <>
+    {/* One line of why on the card; the rest opens on demand so the picture stays the main thing. A missing tag reads
+        "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits. */}
+    {reasons ? <div className="reasons">
+      <p className="lead">{reasons.contextReason}</p>
+      {(checks.length > 0 || reasons.tasteReason !== NO_TASTE_REASON || reasons.contrast) && <details className="why"><summary>추천 이유</summary><div className="why-body">
+        {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>
+          {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}
+          <span aria-hidden="true">{c.state === 'untagged' ? `${c.label} 미등록` : c.label}</span><span className="sr-only">{checkText(c)}</span></li>)}</ul>}
+        {reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}
+        {reasons.contrast && <p className="contrast"><b>다른 후보와 비교</b>{reasons.contrast}</p>}
+      </div></details>}
+    </div> : <>
       <div className="mini-tags">{item.tags.slice(0, 3).map(t => <span key={t}>{t}</span>)}</div>
       <p className="item-description">{item.description}</p>
     </>}
     <div className="card-actions">
-      {listen}
       {onSelect && <button className={`button ${music ? 'secondary' : 'primary'} select-button`} aria-label={`${item.name} 선택하고 기록`} onClick={onSelect}>선택하고 기록</button>}
-      {!music && reasons && <a className="button secondary map-button" href={mapSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} 네이버 지도에서 검색 (새 탭)`}><MapPin size={16} />지도 검색</a>}
+      {!music && reasons && <a className="button secondary map-button" href={mapSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} 네이버 지도에서 검색 (새 탭)`}><MapPin size={19} /><span className="map-label">지도 검색</span></a>}
       {reasons ? <MoreMenu label={`${item.name} 더보기`}>
         {onDetails && <button aria-label={`${item.name} 상세 보기`} onClick={onDetails}><Info size={17} />상세 보기</button>}
         {song && <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 검색 (새 탭)`}><ExternalLink size={17} />YouTube에서 검색</a>}
@@ -64,6 +70,7 @@ export function RecommendationCard({ item, saved, reasons, rank, checks = [], fa
         {onCompare && <button aria-label={`${item.name} 비교 항목`} aria-pressed={compared} disabled={compareDisabled} onClick={onCompare}><Columns2 size={17} />{compared ? '비교에서 빼기' : '비교에 담기'}</button>}
         <button className="feedback-button" onClick={onExclude}><Ban size={17} />추천에서 제외</button>
       </MoreMenu> : onDetails && <button className="button secondary" aria-label={`${item.name} 상세 보기`} onClick={onDetails}>상세 보기</button>}
+    </div>
     </div>
   </article>;
 }

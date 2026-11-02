@@ -12,7 +12,7 @@ for(const width of [320,360,390,768,1024,1440]){
     await page.route('https://cdn.jsdelivr.net/**',route=>route.abort());  // Pretendard: layout must hold with fallback fonts
     await page.addInitScript(value=>localStorage.setItem('nowrecommend-prototype-v1',JSON.stringify(value)),seed);
     await page.goto('/');
-    await expect(page.locator('body')).toHaveCSS('background-color','rgb(255, 255, 255)');
+    await expect(page.locator('body')).toHaveCSS('background-color','rgb(247, 245, 240)');
     await expect(page.locator('h1')).toBeFocused();
     const overflow=()=>expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await overflow();
@@ -82,12 +82,12 @@ test('Enter, Space and rendered hover, pressed, focus and disabled controls',asy
   await page.goto('/');await page.getByRole('button',{name:'음식 추천',exact:true}).focus();await page.keyboard.press('Enter');
   await openConditions(page);
   const chip=page.getByRole('button',{name:'담백함',exact:true});await chip.focus();await page.keyboard.press('Space');await expect(chip).toHaveAttribute('aria-pressed','true');
-  const next=page.getByRole('button',{name:'추천받기',exact:true});await next.focus();await expect(next).toHaveCSS('outline-color','rgb(17, 17, 17)');
-  await next.hover();await expect(next).toHaveCSS('background-color','rgb(46, 46, 44)');
-  await page.mouse.down();await expect(next).toHaveCSS('background-color','rgb(0, 0, 0)');await page.mouse.up();
+  const next=page.getByRole('button',{name:'추천받기',exact:true});await next.focus();await expect(next).toHaveCSS('outline-color','rgb(29, 27, 24)');
+  await next.hover();await expect(next).toHaveCSS('background-color','rgb(189, 56, 19)');
+  await page.mouse.down();await expect(next).toHaveCSS('background-color','rgb(165, 48, 15)');await page.mouse.up();
   const save=page.locator('.save-button').first();await save.focus();await page.keyboard.press('Space');await expect(save).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'조건 수정',exact:true}).click();await openConditions(page);
   // A conflict (매콤함 wanted and excluded) is now what disables the button; there is no budget input any more.
   await page.locator('.more-conditions .chip:not(.exclude)').filter({hasText:/^매콤함$/}).click();await page.locator('.chip.exclude').filter({hasText:/^매콤함$/}).click();
-  await expect(page.getByRole('button',{name:'추천받기',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'추천받기',exact:true})).toHaveCSS('background-color','rgb(238, 238, 236)');
+  await expect(page.getByRole('button',{name:'추천받기',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'추천받기',exact:true})).toHaveCSS('background-color','rgb(238, 234, 226)');
 });

@@ -4,7 +4,7 @@ for (const width of [390, 1440]) {
   test(`light home and both result layouts at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await page.goto('/');
-    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(247, 245, 240)');
     for (const name of ['음식 추천받기', '음악 추천받기']) {
       const box = await page.getByRole('button', { name: new RegExp(name) }).boundingBox();
       expect(box!.y + box!.height).toBeLessThan(844);
@@ -19,8 +19,9 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.result-grid .item-card')).toHaveCount(category === 'food' ? 3 : 5);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       const cards = await page.locator('.result-grid .item-card').evaluateAll(nodes => nodes.map(n => { const b = n.getBoundingClientRect(); return { x: b.x, y: b.y }; }));
-      if (category === 'food' && width === 1440) expect(new Set(cards.map(b => b.y)).size).toBe(1);
-      else expect(new Set(cards.map(b => b.x)).size).toBe(1);
+      // Food: three across on a wide screen, stacked on a phone. Music: the first pick is a wide feature above a shelf of covers.
+      if (category === 'food') expect(new Set(cards.map(b => width === 1440 ? b.y : b.x)).size).toBe(1);
+      else expect(new Set(cards.slice(1).map(b => b.x)).size).toBe(width === 1440 ? 4 : 2);
       const dismiss = page.getByRole('button', { name: '알림 닫기' });
       if (await dismiss.isVisible()) await dismiss.click();
       await page.screenshot({ path: `artifacts/light-${category}-${width}-results.png`, fullPage: true });

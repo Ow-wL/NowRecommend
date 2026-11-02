@@ -6,7 +6,7 @@ vi.mock('./media.json', () => ({ default: {
   m05: { image: 'https://example.test/d.jpg', source: 'itunes', album: 'https://music.apple.com/us/album/x/1' },
   m02: { image: 'https://example.test/guess.jpg', source: 'itunes', check: true },
   m03: { image: 'javascript:alert(1)', source: 'itunes' },
-  f01: { image: 'https://upload.wikimedia.org/a.jpg', source: 'commons', credit: { author: 'A', license: 'CC0', licenseUrl: '', page: 'https://commons.wikimedia.org/x' } },
+  f01: { image: 'https://images.unsplash.com/a.jpg', source: 'unsplash', credit: { author: 'A', license: 'CC0', licenseUrl: '', page: 'https://unsplash.com/photos/x' } },
 } }));
 
 const { mediaFor, findSong, youtubeSearch, songLink, mapSearch, recipeSearch } = await import('./media');

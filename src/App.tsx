@@ -323,7 +323,7 @@ export default function App() {
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
   // The home doors and the login wall show real photos and covers; typeset covers only fill what is missing.
-  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f01', 'f13', 'f03', 'f09', 'f05'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
+  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f06', 'f05', 'f13', 'f07', 'f09', 'f10'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
     const own = items.filter(i => i.category === c), withArt = own.filter(i => mediaFor(i.id));
     return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt, ...own].filter((i, n, all) => all.indexOf(i) === n).slice(0, count); };
   const browseTags = category === 'music' ? ['발라드', '팝', '록', '재즈', '피아노', '어쿠스틱', '연주곡', '차분함', '활기참'] : ['한식', '일식', '양식', '분식', '국물', '매콤함', '담백함'];
@@ -331,7 +331,7 @@ export default function App() {
   const browsing = categoryItems.length > 24, activeFilter = browsing && browseTags.includes(tasteFilter) ? tasteFilter : '';
   const visibleChoices = categoryItems.filter(i => !browsing || (!selectedOnly || draftProfile.selected.includes(i.id)) && (!activeFilter || i.tags.includes(activeFilter)) && `${i.name} ${i.subtitle}`.toLowerCase().includes(query.toLowerCase()));
 
-  return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''}`}>
+  return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} cat-${page === 'lab' ? labCategory : page === 'complete' ? completed?.category || category : ['recommend', 'onboard'].includes(page) ? category : 'food'}`}>
     <a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus();}}>본문 바로가기</a>
     <header className="appbar">
       <div className="appbar-inner">
@@ -359,31 +359,25 @@ export default function App() {
           <div className="resume-actions"><button className="text-button" onClick={endRequest}>요청 종료</button><button className="button primary" onClick={() => start(session.category)}>이어서 추천받기 <ArrowRight size={16} /></button></div>
         </section>}
         <section className="doors" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <button key={c} className={`door ${c}`} onClick={() => start(c)}>
-          <span className="door-wall" aria-hidden="true">{showcase(c).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</span>
-          <span className="door-label">
+          <span className="door-copy">
             <strong>{c === 'food' ? '오늘 뭐 먹지' : '지금 뭐 듣지'}</strong>
-            <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : '취향 없이도 바로'}{apiEnabled() && c === 'music' ? ' · AI가 골라요' : ''}</small>
-            <span className="door-go">{categoryLabel[c]} 추천받기 <ArrowRight size={18} /></span>
+            <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : '취향 없이도 바로'}</small>
+            <span className="door-go">{categoryLabel[c]} 추천받기 <ArrowRight size={17} /></span>
           </span>
+          <span className="door-art" aria-hidden="true">{showcase(c, 3).map(i => <ItemArt key={i.id} item={i} size="tile" eager />)}</span>
         </button>)}</section>
-        <div className="home-index">
-          <section className="index-row">
-            <h2>최근 선택</h2>
-            {store.history.some(h => h.selected) ? <div><div className="recent-list">{store.history.filter(h=>h.selected).slice(0,4).map(h => <button className="list-row recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
-              <ItemArt item={h.selected!.result.item} size="thumb" />
-              <span className="list-copy"><b>{h.selected!.result.item.name}</b><small>{h.raw}</small></span>
-            </button>)}</div><button className="text-button" onClick={() => navigate('history')}>전체 기록</button></div>
-            : <div className="list-empty"><p>아직 선택한 항목이 없어요.</p><button className="text-button" onClick={() => start('food')}>추천 시작하기</button></div>}
-          </section>
-          <section className="index-row">
-            <h2>빠른 시작</h2>
-            <div className="preset-home">{(['food','music'] as Category[]).map(c => <div key={c}>{presetList(c)}</div>)}</div>
-          </section>
-          {apiEnabled() && <section className="index-row">
-            <h2>AI 실험실</h2>
-            <button className="lab-banner" onClick={() => navigate('lab')}><span>등록 목록 추천과 AI 자유 추천을 나란히 받아 비교해요.</span><ArrowRight size={18} /></button>
-          </section>}
-        </div>
+        {store.history.some(h => h.selected) && <section className="home-section">
+          <div className="section-heading"><h2>최근 선택</h2><button className="text-button" onClick={() => navigate('history')}>전체 기록</button></div>
+          <div className="recent-list recent-more">{store.history.filter(h=>h.selected).slice(0,5).map(h => <button className="recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
+            <ItemArt item={h.selected!.result.item} size="tile" />
+            <b>{h.selected!.result.item.name}</b>
+          </button>)}</div>
+        </section>}
+        <section className="home-section">
+          <h2>빠른 시작</h2>
+          <div className="preset-home">{(['food','music'] as Category[]).map(c => <div className={`preset-card ${c}`} key={c}>{presetList(c)}</div>)}</div>
+          {apiEnabled() && <button className="lab-banner" onClick={() => navigate('lab')}><span><b>AI 실험실</b><small>두 가지 추천을 나란히 받아 비교해요</small></span><ArrowRight size={22} /></button>}
+        </section>
       </>}
 
       {page === 'onboard' && <>
@@ -426,8 +420,8 @@ export default function App() {
           <button className="back-link" onClick={() => navigate('home')}><ArrowLeft size={16} /> 홈으로</button>
           <h1>{category === 'food' ? '어떤 한 끼가 필요하세요?' : '어떤 음악이 필요하세요?'}</h1>
           <div className="taste-strip">
-            <span className="taste-strip-label">내 취향</span>
-            <span className="taste-strip-items">{[...store.profiles[category].selected.slice(0, 5).map(id => resolveItem(items, id)?.name).filter(Boolean), ...store.profiles[category].tags].join(' · ') || '등록된 취향 없음'}</span>
+            {store.profiles[category].selected.length > 0 && <span className="taste-thumbs" aria-hidden="true">{store.profiles[category].selected.slice(0, 5).map(id => { const i = resolveItem(items, id); return i ? <ItemArt key={id} item={i} size="thumb" /> : null; })}</span>}
+            <span className="taste-strip-items">{hasTaste(store.profiles[category]) ? `내 취향 ${store.profiles[category].selected.length + store.profiles[category].tags.length}개 반영` : '등록된 취향 없음'}</span>
             <button className="text-button" onClick={() => editTaste(category)}>{hasTaste(store.profiles[category]) ? '취향 수정' : '취향 고르기'}</button>
           </div>
         </div>}
@@ -472,15 +466,15 @@ export default function App() {
           </div></div>
         </> : <>
           <div className="result-head">
-            <span className="result-kicker">{categoryLabel[category]} 추천 {results.length}{category === 'food' ? '개' : '곡'}</span>
-            <h1 className={session.raw.length > 34 ? 'long' : undefined}>{session.raw || (category === 'food' ? '취향으로 고른 메뉴' : '취향으로 고른 음악')}</h1>
-            <div className="result-summary">
-              <div className="result-summary-copy">
+            <div>
+              <span className="result-kicker">{categoryLabel[category]} 추천 {results.length}{category === 'food' ? '개' : '곡'}</span>
+              <h1 className={session.raw.length > 30 ? 'long' : undefined}>{session.raw || (category === 'food' ? '취향으로 고른 메뉴' : '취향으로 고른 음악')}</h1>
+              <div className="result-summary result-summary-copy">
                 <div className="mini-tags">{session.conditions.tags.map(t => <span key={t}>{t}</span>)}{session.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}{!conditionCount && <span>{hasTaste(store.profiles[category]) ? '평소 취향 기준' : '취향·조건 없음'}</span>}</div>
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} folded />
               </div>
-              <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 수정</button>
             </div>
+            <button className="button secondary edit-conditions" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 수정</button>
           </div>
           <ParseNotice ai={session.editor?.ai} raw={session.raw} />
           {!hasTaste(store.profiles[category]) && results.length > 0 && <p className="taste-hint">취향이 없어 상황만 보고 골랐어요. 마음에 드는 항목은 더보기에서 취향에 더할 수 있어요.</p>}
@@ -495,14 +489,14 @@ export default function App() {
             : <><strong>이전에 본 후보 {repeatedCount}개를 다시 보여드려요.</strong><p>아직 보지 않은 후보가 {unseenLeft}개 남아 있어요. 다른 추천 보기로 이어서 볼 수 있어요.</p></>}</div></div>}
           {offTopicCount > 0 && <div className="notice" role="status"><Info size={18} /><div><strong>고른 조건({session.conditions.tags.join(' · ')})에 맞는 새 후보가 부족해요.</strong><p>{offTopicCount === results.length ? '이번 후보는 모두' : `이번 후보 중 ${offTopicCount}개는`} 등록 특징에 고른 조건이 없어요. 카드의 조건 확인에서 차이를 볼 수 있어요.</p></div></div>}
           {/* Always on screen, so touch and keyboard users get it too. Exclusions only go as far as the registered data. */}
+          <div className={`result-grid ${category}`}>{results.map((r, index) => itemCard(r.item, r, category === 'music' ? index + 1 : undefined))}</div>
           {results.length > 0 && (hasUntagged || session.conditions.excluded.length > 0) && <p className="check-legend">
             {hasUntagged && <>미등록은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요. </>}
             {session.conditions.excluded.length > 0 && <>{category === 'food' ? '재료·특징 제외는 등록된 정보를 기준으로 적용하며' : '제외는 등록된 곡 정보를 기준으로 적용하며'}, 일부 확인·미지원 조건은 따로 표시해요.</>}
           </p>}
-          <div className={`result-grid ${category}`}>{results.map((r, index) => itemCard(r.item, r, category === 'music' ? index + 1 : undefined))}</div>
           {requestError && <div className="error-box" role="alert">{requestError === 'server' ? <><strong>추천 서버에 연결하지 못했어요.</strong><p>아래 버튼으로 다시 시도하거나 기본 방식으로 추천받을 수 있어요.</p><button className="text-button" disabled={busy} onClick={() => run(true, true, true)}>기본 추천으로 보기 <ArrowRight size={14} /></button></> : '재추천을 완료하지 못했어요. 아래 버튼으로 다시 시도해주세요.'}</div>}
           <div className="reroll-panel">
-            <p>{allPinned ? '모든 후보를 고정했어요. 하나 이상 고정을 해제하면 다시 추천할 수 있어요.' : '조건과 고정한 후보는 그대로 두고 다른 후보를 보여드려요.'}</p>
+            {allPinned && <p>모든 후보를 고정했어요. 하나 이상 고정을 해제하면 다시 추천할 수 있어요.</p>}
             <button className="button secondary" disabled={busy || results.length === 0 || allPinned} onClick={() => run(true)}>{busy ? <span className="spinner" /> : <RefreshCw size={16} />}{busy ? '다른 추천을 고르는 중' : '다른 추천 보기'}</button>
           </div>
           {session.excludedIds.length > 0 && <div className="temporary-exclusions"><span>이번 요청에서만 제외</span>{session.excludedIds.map(id => <button key={id} onClick={() => restoreTemporary(id)}>{resolveItem(items, id)?.name || id}<X size={12} /></button>)}</div>}
@@ -569,7 +563,7 @@ export default function App() {
         <div className="taste-grid">{(['food', 'music'] as Category[]).map(c => <section className="taste-panel" key={c}>
           <div className="section-heading"><h2>{categoryLabel[c]}</h2><button className="text-button" onClick={() => editTaste(c)}>{hasTaste(store.profiles[c]) ? '편집하기' : '등록하기'}</button></div>
           <h4>좋아하는 항목</h4>
-          <div className="summary-items">{store.profiles[c].selected.map(id => { const i = resolveItem(items, id); return i ? <span key={id}>{i.name}</span> : null; })}</div>
+          <div className="taste-tiles">{store.profiles[c].selected.map(id => { const i = resolveItem(items, id); return i ? <span className="taste-tile" key={id}><ItemArt item={i} size="tile" /><small>{i.name}</small></span> : null; })}</div>
           {!store.profiles[c].selected.length && <p className="muted">아직 좋아하는 항목이 없어요. 취향 없이도 추천받을 수 있고, 결과의 더보기에서 바로 더할 수 있어요.</p>}
           <div className="mini-tags">{store.profiles[c].tags.map(t => <span key={t}>{t}</span>)}</div>
           <div className="form-divider" />
@@ -586,7 +580,7 @@ export default function App() {
         {account ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={signOut}><LogOut size={16} />로그아웃</button></div>
           : <AuthPanel online={apiEnabled()} initialName={store.name === '취향 탐험가' ? '' : store.name} onSuccess={signIn} onGuest={() => navigate('home')} />}
         </div>
-        <div className="login-wall" aria-hidden="true">{[...showcase('food', 8), ...showcase('music', 7)].sort((a, b) => a.id.charCodeAt(a.id.length - 1) - b.id.charCodeAt(b.id.length - 1)).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
+        <div className="login-wall" aria-hidden="true">{showcase('food', 3).flatMap((f, n) => [f, showcase('music', 3)[n]]).filter(Boolean).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
       </div>}
     </main>
     <nav className="tabbar" aria-label="하단 메뉴">{allNav.map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>

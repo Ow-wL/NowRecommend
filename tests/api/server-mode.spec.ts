@@ -35,6 +35,7 @@ test('recommends from the API server and its catalog', async ({ page }) => {
   await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') bodies.push(route.request().postDataJSON()); return fulfill(route, batch(['f99', 'f02', 'f12'])); });
   await requestFood(page);
   await expect(page.locator('.result-grid h3').first()).toHaveText('서버 전용 메뉴');
+  await page.locator('.result-grid .why summary').first().click();  // the taste reason opens on demand
   await expect(page.getByText('서버가 고른 이유').first()).toBeVisible();
   expect(bodies).toHaveLength(1);
   expect(bodies[0]).toMatchObject({ category: 'food', profile: { selected: ['f01', 'f02', 'f03', 'f04', 'f05'] }, seenIds: [], candidateIds: null });

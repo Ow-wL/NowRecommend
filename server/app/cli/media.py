@@ -15,7 +15,7 @@ URL, so "듣기" opened the album). It looks the albums up by id and keeps a son
 whose title and artist are exactly the matched ones; otherwise the entry keeps only the album page and the UI offers a
 search instead of guessing.
 
-Food photos are curated by hand (Wikimedia Commons, with author and license) and written to the same file.
+Food photos are curated by hand (Unsplash, with author and license) and written to the same file.
 """
 import argparse
 import json
