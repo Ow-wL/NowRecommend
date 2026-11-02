@@ -334,4 +334,21 @@ $env:VITE_API_BASE_URL = 'http://127.0.0.1:8010'
 try { npm run dev } finally { Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue }
 ```
 
-브라우저는 `http://127.0.0.1:5173`으로 엽니다. 로컬 API의 CORS 허용 주소이기 때문입니다.
+브라우저는 `http://127.0.0.1:5173`으로 엽니다. 로컬 API의 CORS 허용 주소이기 때문입니다. `docker-compose.yml`은 로컬용 `AUTH_SECRET` 기본값을 넣어 계정 기능이 켜진 상태로 뜹니다.
+
+## 6. 계정(로그인·회원가입) 배포 — 2026-11-02 추가, 배포 대기
+
+코드에 계정 기능이 들어갔습니다(README "계정과 동기화"). 배포하려면 두 가지가 더 필요합니다.
+
+1. **마이그레이션 `0004`(users 표)는 `0003` 뒤에 있습니다.** 리비전이 한 줄이라 DB가 `0002`인 지금은 컨테이너 시작 시 `contract migrations waiting: 0003` 앞에서 멈추고 `0004`도 적용되지 않습니다. 그래서 이번 배포는 **§0-4의 2단계(열 삭제)를 먼저** 실행해야 합니다. 지금 운영 중인 `8e27ded`는 가격 열을 읽지 않으므로 조건은 이미 충족됩니다. 순서: 수동 백업 → `nowrecommend-contract` 작업으로 `python -m app.cli.migrate --contract`(0003과 0004가 함께 적용됨) → 새 이미지 배포.
+2. **비밀 값 `auth-secret`**: `python -c "import secrets; print(secrets.token_urlsafe(48))"`로 만든 값을 Secret Manager에 넣고 Cloud Run에 `AUTH_SECRET`으로 주입합니다. 서비스 계정에 읽기 권한을 추가합니다. 값을 바꾸면 모든 사용자가 로그아웃됩니다.
+
+```powershell
+gcloud secrets create auth-secret --project harness-recommend --replication-policy automatic
+python -c "import secrets; print(secrets.token_urlsafe(48))" | gcloud secrets versions add auth-secret --project harness-recommend --data-file=-
+gcloud secrets add-iam-policy-binding auth-secret --project harness-recommend --member serviceAccount:nowrecommend-api@harness-recommend.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor
+gcloud run services update nowrecommend-api --project harness-recommend --region asia-northeast3 --update-secrets AUTH_SECRET=auth-secret:latest
+```
+
+- 비밀 값을 넣지 않으면 계정 경로만 503으로 답하고 나머지는 그대로 동작합니다. 프론트는 이때 로그인 화면에서 "이 서버에는 계정 기능이 설정되지 않았어요"를 보여줍니다.
+- `users.store`에는 사용자의 취향·즐겨찾기·기록이 들어갑니다. 지금까지 "서버에는 사용자 데이터가 없다"(§4 자동 백업 없음)는 전제가 바뀌므로, 계정 배포 뒤에는 Cloud SQL 자동 백업을 켜는 것을 권합니다(월 비용 소폭 증가).

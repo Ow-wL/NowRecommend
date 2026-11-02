@@ -12,7 +12,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 log = logging.getLogger(__name__)
-LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free"}
+LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login"}
 MAX_CLIENTS = 10_000
 
 

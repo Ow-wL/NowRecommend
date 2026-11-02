@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # POSTs to /api/recommend and /api/parse per client per minute (0 = off); TRUST_PROXY reads X-Forwarded-For.
     rate_limit_per_minute: int = 30
     trust_proxy: bool = False
+    # Accounts (2026-11-02). Without AUTH_SECRET the auth routes answer 503 and the app stays guest-only. Rotating the
+    # secret signs every account out. Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"
+    auth_secret: str | None = None
+    auth_token_days: int = 30
+    # Largest synced browser store accepted by PUT /api/me/store (backups cap at 5MB in the browser; 1MB ≈ 50 entries with rounds).
+    store_max_bytes: int = 1_000_000
 
 
 @lru_cache

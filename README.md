@@ -83,6 +83,23 @@ curl http://127.0.0.1:8010/api/catalog?category=food
   - 응답의 `ai`는 `not_needed`·`used`·`unavailable`·`failed` 중 하나입니다. LLM 해석은 `PARSE_ENABLED=false`로 끌 수 있습니다.
   - 해석 규칙은 `shared/parse-cases.json`으로 프론트 `parseConditions`와 서버가 함께 검사합니다.
 
+### 계정과 동기화 (2026-11-02)
+
+서버에 `AUTH_SECRET`이 설정되어 있으면 회원가입·로그인을 제공합니다(`server/app/auth.py`, `server/app/routes/auth.py`, 마이그레이션 `0004`). 비워 두면 계정 경로가 503으로 답하고 앱은 지금처럼 로그인 없이(게스트) 동작합니다.
+
+| 경로 | 설명 |
+|---|---|
+| `POST /api/auth/signup` `{email, password(8~128자), name(1~16자)}` | 가입하고 토큰을 돌려줍니다(201). 같은 이메일은 409 |
+| `POST /api/auth/login` `{email, password}` | 토큰과 사용자 정보. 이메일·비밀번호가 틀리면 둘 다 같은 401 문구 |
+| `GET /api/auth/me` | `Authorization: Bearer <토큰>`으로 현재 사용자 |
+| `GET` / `PUT /api/me/store` | 브라우저 저장소(`Store` 전체 JSON)를 계정에 저장·복원. 1MB(`STORE_MAX_BYTES`) 초과는 413 |
+| `POST /api/auth/delete` `{password}` | 계정과 저장 데이터를 삭제(204) |
+
+- 비밀번호는 PBKDF2-HMAC-SHA256(사용자별 솔트)으로 저장하고, 토큰은 `AUTH_SECRET`으로 서명한 30일(`AUTH_TOKEN_DAYS`) 만료 토큰입니다. 세션 표가 없어서 비밀 값을 바꾸면 모두 로그아웃됩니다.
+- 가입·로그인 경로도 기존 요청 제한(IP당 분당 30회)을 받습니다. `/api/health`의 `auth.enabled`로 설정 여부를 확인할 수 있습니다.
+- 서버는 `store` 내용을 해석하지 않고 크기만 확인합니다. 어떤 데이터가 들어가는지는 프론트의 `Store` 타입(`src/domain.ts`)이 정합니다.
+- 테스트: `server/tests/test_auth.py`는 PostgreSQL 없이 SQLite의 `users` 표만 만들어 경로를 검사합니다.
+
 ### 카탈로그 늘리기 (AI 초안 → 사람 검수)
 
 `server/data/drafts/`에 이름 파일을 두고 실행합니다. 음식은 한 줄에 메뉴 하나, 음악은 `제목 - 아티스트` 형식입니다. 이 폴더는 컨테이너와 연결되며 git에 올리지 않습니다.

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .ratelimit import RateLimitMiddleware
-from .routes import catalog, health, lab, parse, recommend
+from .routes import auth, catalog, health, lab, parse, recommend
 from .vocab import get_vocab
 
 
@@ -24,14 +24,15 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Content-Type", "Authorization"],
     )
     app.include_router(health.router)
     app.include_router(catalog.router)
     app.include_router(recommend.router)
     app.include_router(parse.router)
     app.include_router(lab.router)
+    app.include_router(auth.router)
     return app
 
 

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ARRAY, CheckConstraint, DateTime, Index, Integer, Text, func, text
+from sqlalchemy import ARRAY, JSON, CheckConstraint, DateTime, Index, Integer, Text, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -68,3 +68,20 @@ class RecommendationLog(Base):
     mode: Mapped[str] = mapped_column(Text)
     latency_ms: Mapped[int | None] = mapped_column(Integer)
     error: Mapped[str | None] = mapped_column(Text)
+
+
+class User(Base):
+    """An account (2026-11-02). `store` is the browser store (src/domain.ts Store) as the client last uploaded it, so
+    tastes, favourites, history and presets follow the account across devices; the server only checks its size.
+    JSON on SQLite so the auth routes can be tested without PostgreSQL (tests/test_auth.py)."""
+    __tablename__ = "users"
+    __table_args__ = (Index("users_email", "email", unique=True),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(Text)  # normalized: trimmed, lower case
+    name: Mapped[str] = mapped_column(Text)
+    password_hash: Mapped[str] = mapped_column(Text)
+    store: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"))
+    store_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
