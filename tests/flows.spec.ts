@@ -33,7 +33,7 @@ test('the reproduction sentence: kept, partial and unsupported conditions before
   const cards = page.locator('.result-grid .item-card');
   await expect(cards).toHaveCount(3);
   // Exclusions reach only as far as the registered data: no "always" promise, and a partial one never reads as applied.
-  await expect(page.locator('.check-legend')).toContainText('재료·특징 제외는 등록된 정보를 기준으로 적용하며, 일부 확인·미지원 조건은 따로 표시해요.');
+  await expect(page.locator('.check-legend')).toContainText('재료·특징 제외는 등록된 정보를 기준으로 적용했어요.');
   await expect(page.locator('main')).not.toContainText('항상 지켜요');
   for (const card of await cards.all()) {
     await expect(card).not.toContainText('원');

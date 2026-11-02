@@ -172,7 +172,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .taste-browse[open] .chevron { transform: rotate(180deg); }
 .taste-filter { margin-top: 4px; }
 .selection-panel > .small { margin-bottom: 20px; color: var(--text-muted); }
-.selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 24px 16px; }
+.selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 24px 16px; align-items: start; }
 .selection-card { position: relative; display: block; width: 100%; text-align: left; }
 .selection-card .item-art { transition: box-shadow var(--fast), transform var(--fast); }
 .selection-card.selected .item-art { box-shadow: 0 0 0 3px var(--bg-canvas), 0 0 0 6px var(--accent-fill); }
@@ -251,8 +251,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .taste-hint { margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
 .check-legend { margin-top: 20px; font-size: 13px; color: var(--text-muted); text-align: center; }
 /* The note about 미등록 only matters once a card's details are open. */
-.check-legend.when-open { display: none; }
-main:has(.why[open]) .check-legend.when-open { display: block; }
+.check-legend .when-open { display: none; }
+main:has(.why[open]) .check-legend .when-open { display: inline; }
 .pick-note { margin-top: 12px; font-size: 13px; color: var(--text-muted); text-align: center; }
 
 /* ── Results ──────────────────────────────────────── */
@@ -321,7 +321,7 @@ main:has(.why[open]) .check-legend.when-open { display: block; }
 
 /* Music is identified and heard, not looked at: equal rows, because the order is not a ranking. */
 .result-grid.music { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; animation: rise var(--normal) var(--ease); }
-.result-grid.music .item-card { display: grid; grid-template-columns: 84px minmax(0, 1fr) 344px; align-items: center; gap: 4px 18px; padding: 12px; }
+.result-grid.music .item-card { display: grid; grid-template-columns: 84px minmax(0, 1fr) 360px; align-items: center; gap: 4px 18px; padding: 12px; }
 .result-grid.music .item-body { display: contents; }
 .result-grid.music .art-frame { grid-row: 1 / span 2; }
 .result-grid.music .item-head { grid-column: 2; align-self: end; display: block; }
@@ -333,10 +333,10 @@ main:has(.why[open]) .check-legend.when-open { display: block; }
 .result-grid.music .card-actions { grid-column: 3; grid-row: 1 / span 2; margin: 0; padding: 0; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
 .result-grid.music .card-actions .button { min-height: 44px; flex: 0 0 auto; }
 .result-grid.music .card-actions .listen-button { width: 186px; flex: 0 0 186px; padding: 8px 10px; }
-.result-grid.music .card-actions .select-button { width: 88px; padding: 8px 6px; }
+.result-grid.music .card-actions .select-button { width: 104px; padding: 8px 6px; }
 .result-grid.music .more-toggle.button { min-height: 44px; width: 44px; }
 /* The heart keeps one place on every row: right beside the actions. */
-.result-grid.music .save-button { position: absolute; top: 50%; right: 360px; transform: translateY(-50%); }
+.result-grid.music .save-button { position: absolute; top: 50%; right: 376px; transform: translateY(-50%); }
 
 .reroll-panel { display: grid; justify-items: center; gap: 8px; margin-top: 32px; text-align: center; }
 .reroll-panel p { font-size: 14px; color: var(--text-muted); }
@@ -469,12 +469,19 @@ main:has(.why[open]) .check-legend.when-open { display: block; }
 .data-management .field-title { margin-top: 20px; }
 .import-preview { margin-top: 16px; padding: 20px; background: var(--bg-elevated); border-radius: 18px; font-size: 14px; }
 .item-details { display: grid; gap: 14px; }
+.details-head { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: center; }
+.details-head .listen-links { display: grid; gap: 8px; }
+.details-why { padding: 16px 18px; background: var(--bg-elevated); border-radius: 16px; }
+.details-why h3 { margin: 0 0 8px; }
+.details-why h4 { margin: 14px 0 6px; font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.details-why .reasons { margin: 0; }
+.details-why .condition-checks { display: grid; gap: 4px; margin-bottom: 6px; }
+.details-credit { font-size: 12px; color: var(--text-muted); }
+.details-credit a { text-decoration: underline; text-underline-offset: 2px; }
+.to-moods { display: flex; margin-top: 4px; }
 .item-details h3 { margin: 8px 0 0; font-size: 14px; }
 .item-details dt { font-size: 13px; color: var(--text-muted); }
 .item-details dd { font-size: 15px; }
-.details-art figcaption { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
-.details-art figcaption a { text-decoration: underline; text-underline-offset: 2px; }
-.item-details .item-art.music.hero { max-width: 280px; }
 .listen-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .data-info { font-size: 13px; color: var(--text-muted); }
 .data-info > summary { cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
@@ -640,11 +647,20 @@ main:has(.why[open]) .check-legend.when-open { display: block; }
   .taste-panel { padding: 22px; }
   .selection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; }
   .selection-name b { font-size: 13px; }
+  .selection-grid.music { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .selection-grid.music .selection-card { display: grid; grid-template-columns: 56px minmax(0, 1fr) 28px; align-items: center; gap: 12px; padding: 6px; background: var(--bg-surface); border-radius: 14px; }
+  .selection-grid.music .selection-name { margin: 0; grid-column: 2; grid-row: 1; }
+  .selection-grid.music .selection-name b { font-size: 15px; }
+  .selection-grid.music .selection-name small { white-space: normal; }
+  .selection-grid.music .selection-check { grid-column: 3; grid-row: 1; position: static; background: transparent; box-shadow: inset 0 0 0 2px var(--border-control); }
+  .selection-grid.music .selection-card.selected .selection-check { background: var(--accent-fill); box-shadow: none; }
   .selection-check { width: 24px; height: 24px; top: 6px; right: 6px; }
   .action-bar-inner { flex-wrap: nowrap; padding: 8px 8px 8px 14px; }
   .action-note { display: none; }
   .action-bar-inner > .button.primary { flex: 1; min-width: 0; min-height: 50px; }
-  .action-status { flex: 1; min-width: 0; margin-right: 0; }
+  .action-status { flex: 1 1 90px; min-width: 0; margin-right: 0; }
+  .action-status strong { font-size: 13px; line-height: 1.35; overflow-wrap: normal; }
+  .action-bar-inner > .taste-thumbs .item-art:nth-child(n + 4) { display: none; }
   .action-status + .button.primary { flex: 0 0 auto; padding: 12px 16px; }
   .selection-help { display: none; }
   .action-warning { font-size: 12px; flex: 1; }

@@ -4,17 +4,18 @@ import type { Item } from './data';
 import { isAiPick } from './knownItems';
 import { addMedia, songLink, storeArtist, type Media } from './media';
 
-// An AI pick comes with a title and an artist and nothing else. The Apple store's search tells us whether that song
-// exists: a match gives the real cover and the song page, and no match leaves the card saying so. A failed request is a
-// different thing from "not listed": we simply do not know yet, so it says that and offers another try.
+// An AI pick comes with a title and an artist and nothing else. The Apple store's search may list a result with the same
+// title and artist: that gives a cover and a song page. It does not prove the same recording, and no match does not prove
+// the song does not exist; the card says only what the search returned. A failed request means we do not know yet.
 const KEY = 'nowrecommend-song-check-v2';
 const MAX_KEPT = 300;
-const TIMEOUT_MS = 6000;
+const DEADLINE_MS = 8000; // for the whole check, however many requests it takes
 export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string };
 export type SongStatus = 'known' | 'checking' | 'found' | 'missing' | 'failed';
 
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
-// A guest credit or a film credit is dropped: same recording. "(Live)", "[Remastered]" or " - Acoustic" is another one.
+// Guest and film credits are left out of the comparison, because the model rarely writes them while the store often does.
+// "(Live)", "[Remastered]" or " - Acoustic" stay, so those versions do not count as a match.
 const withoutGuests = (text: string) => text.replace(/\s*[([](feat|ft|with|from)\b.*?[)\]]/gi, '').replace(/\s+-\s+from\b.*$/i, '');
 
 export const titleMatches = (want: string, got: string) => { const a = norm(withoutGuests(want)); return !!a && a === norm(withoutGuests(got)); };
@@ -39,11 +40,12 @@ export function artistNames(artist: string, items: Pick<Item, 'id' | 'category' 
   const listed = items.filter(i => i.category === 'music' && norm(i.subtitle) === norm(artist)).map(i => storeArtist(i.id)).filter((n): n is string => !!n);
   return [...new Set([...listed, artist])];
 }
-/** The store's search answers in English-language stores only (the Korean store always returns nothing). A long Hangul title
- * rarely matches a text search, so the artist's own list is the second place to look. Throws when the store cannot answer. */
+/** Uses the US store: the Korean store returned nothing for every request tried when this was written (2026-11-03). A long
+ * Hangul title rarely matches a text search, so the artist's own list is the second place to look. Throws when the store cannot answer. */
 export async function lookupSong(title: string, artist: string, names: string[] = [artist], fetcher: typeof fetch = fetch): Promise<Media | undefined> {
+  const signal = AbortSignal.timeout(DEADLINE_MS);
   const ask = async (params: Record<string, string>) => {
-    const response = await fetcher(`https://itunes.apple.com/search?${new URLSearchParams({ country: 'US', entity: 'song', ...params })}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetcher(`https://itunes.apple.com/search?${new URLSearchParams({ country: 'US', entity: 'song', ...params })}`, { signal });
     if (!response.ok) throw new Error(`store ${response.status}`);
     return ((await response.json()) as { results?: Hit[] }).results || [];
   };
@@ -91,5 +93,6 @@ export function useSongCheck(item: { id: string; category: string; name: string;
     void checkSong(item.id, item.name, item.subtitle, artistNames(item.subtitle, items)).then(outcome => { if (live) setStatus(outcome); });
     return () => { live = false; };
   }, [item.id, attempt]);  // eslint-disable-line react-hooks/exhaustive-deps
-  return { status, retry: useCallback(() => setAttempt(n => n + 1), []) };
+  // Another try also goes back to the store for a song it did not list: a spelling can be all that was missed.
+  return { status, retry: useCallback(() => { notListed.delete(item.id); setAttempt(n => n + 1); }, [item.id]) };
 }

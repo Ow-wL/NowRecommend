@@ -46,7 +46,7 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
         <p className="item-subtitle">{item.subtitle}</p>
       </div>
       {music && saveButton}
-      {songStatus === 'missing' && <p className="song-note">일치하는 곡 정보를 찾지 못했어요</p>}
+      {songStatus === 'missing' && <p className="song-note">Apple Music 검색에서 일치하는 정보를 찾지 못했어요 <button className="text-button" onClick={retryCheck}>다시 확인</button></p>}
       {songStatus === 'failed' && <p className="song-note">지금은 확인할 수 없어요 <button className="text-button" onClick={retryCheck}>다시 확인</button></p>}
       {media?.approx && <p className="song-note">이미지는 참고용이에요</p>}
       {(pinned || familiar || doubtful) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubtful && <span className="check-badge">정보 확인 필요</span>}</span>}
@@ -69,10 +69,10 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
     </>}
     <div className="card-actions">
       {music && listen}
-      {onSelect && <button className={`button ${music ? 'secondary' : 'primary'} select-button`} aria-label={`${item.name} ${music ? '오늘의 곡으로 기록' : '오늘은 이걸로'}`} onClick={onSelect}>{music ? '오늘의 곡' : '오늘은 이걸로'}</button>}
+      {onSelect && <button className={`button ${music ? 'secondary' : 'primary'} select-button`} aria-label={`${item.name} ${music ? '오늘의 곡으로 기록' : '오늘은 이걸로'}`} onClick={onSelect}>{music ? '오늘의 곡으로' : '오늘은 이걸로'}</button>}
       {!music && reasons && <a className="button secondary map-button" href={mapSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} 네이버 지도에서 찾기 (새 탭)`}><MapPin size={17} />지도에서 찾기</a>}
       {reasons ? <MoreMenu label={`${item.name} 더보기`}>
-        {onDetails && <button aria-label={`${item.name} 상세 보기`} onClick={onDetails}><Info size={17} />상세 보기</button>}
+        {onDetails && <button aria-label={`${item.name} 추천 이유 보기`} onClick={onDetails}><Info size={17} />추천 이유 보기</button>}
         {song && <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><ExternalLink size={17} />YouTube에서 찾기</a>}
         {onLike && <button aria-label={`${item.name} 내 취향에 추가`} onClick={onLike}><ThumbsUp size={17} />내 취향에 추가</button>}
         {onPin && <button aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={17} />{pinned ? '고정 해제' : '이번 요청 고정'}</button>}

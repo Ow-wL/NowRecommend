@@ -22,7 +22,7 @@ export async function openConditions(page: Page) {
 export async function openCardMenu(page: Page, item: string) {
   await page.getByRole('button', { name: `${item} 더보기`, exact: true }).click();
 }
-export async function cardTool(page: Page, item: string, tool: '상세 보기' | '이번 요청 고정' | '한 장 교체' | '비교 항목') {
+export async function cardTool(page: Page, item: string, tool: '추천 이유 보기' | '이번 요청 고정' | '한 장 교체' | '비교 항목') {
   await openCardMenu(page, item);
   await page.getByRole('button', { name: `${item} ${tool}`, exact: true }).click();
 }

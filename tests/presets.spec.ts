@@ -24,3 +24,8 @@ test('a quick condition asks only when it would replace something, can be undone
 test('a result title never claims a taste that is not registered',async({page})=>{
   await page.goto('/#/recommend/music');await page.getByRole('button',{name:/추천받기$/}).click();await expect(page.locator('h1')).toHaveText('지금 만나볼 음악');
 });
+test('an unpicked taste card shows an empty ring, and only a picked one shows a check',async({page})=>{
+  await page.goto('/#/recommend/food');await page.getByRole('button',{name:'취향 추가',exact:true}).click();
+  const card=page.locator('.selection-card').first();await expect(card.locator('.selection-check svg')).toHaveCount(0);await expect(card).toHaveAttribute('aria-pressed','false');
+  await card.click();await expect(card.locator('.selection-check svg')).toHaveCount(1);await expect(card).toHaveAttribute('aria-pressed','true');
+});

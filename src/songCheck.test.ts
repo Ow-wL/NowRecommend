@@ -43,6 +43,7 @@ describe('song check', () => {
     await expect(lookupSong('가로수 그늘 아래 서면', '이문세', ['Lee Moon Sae', '이문세'], fetcher as typeof fetch)).resolves.toBeDefined();
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(String(fetcher.mock.calls[1][0])).toContain('attribute=artistTerm');
+    expect(fetcher.mock.calls[1][1].signal).toBe(fetcher.mock.calls[0][1].signal); // one limit for the whole check
     const other = vi.fn().mockResolvedValue(store([{ ...korean, artistName: 'Someone Else' }]));
     await expect(lookupSong('가로수 그늘 아래 서면', '이문세', ['Lee Moon Sae', '이문세'], other as typeof fetch)).resolves.toBeUndefined();
   });
