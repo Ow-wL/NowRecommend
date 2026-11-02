@@ -467,6 +467,22 @@ input[type=checkbox] { accent-color: var(--accent-fill); }
 .favorites .collection-grid { margin-top: var(--space-5); }
 
 /* ── Account, settings, data ────────────────────────── */
+.login-button { min-height: 40px; }
+.top-avatar.signed-in { background: var(--accent-fill); color: var(--text-on-accent); }
+.auth-panel { margin-top: var(--space-6); }
+.auth-tabs { display: flex; width: 100%; }
+.auth-tabs button { flex: 1; }
+.auth-form .field-title { margin-top: var(--space-2); }
+.auth-form .field-title small { font-weight: 500; font-size: 13px; color: var(--text-muted); margin-left: 6px; }
+.auth-form .error-box { margin: 0 0 var(--space-4); }
+.auth-note { margin-top: var(--space-4); }
+.auth-guest { margin-top: var(--space-3); }
+.account-card { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-5); border-radius: 16px; background: var(--bg-elevated); }
+.account-card .top-avatar { flex-shrink: 0; }
+.sync-state { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 13px; font-weight: 600; color: var(--success); white-space: nowrap; }
+.sync-state.saving { color: var(--text-muted); }
+.sync-state.failed { color: var(--danger); }
+.account-links button small { color: var(--text-muted); font-weight: 400; }
 .login-panel { max-width: 480px; margin: var(--space-6) auto; }
 .login-panel h1 { margin: var(--space-6) 0 var(--space-4); }
 .login-panel form { margin-top: var(--space-6); }

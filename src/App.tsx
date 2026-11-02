@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Columns2, FlaskConical, Headphones, Heart, House, Info, LogOut, MapPin, Music2, Play, RefreshCw, Search, Settings2, SlidersHorizontal, Sparkles, ThumbsUp, Trash2, Utensils, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, Columns2, FlaskConical, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Music2, Play, RefreshCw, Search, Settings2, SlidersHorizontal, Sparkles, ThumbsUp, Trash2, Utensils, X } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -28,8 +28,12 @@ import { RecommendationCard } from './components/RecommendationCard';
 import { parseRoute, routeFor, viewReducer, type Page, type Step } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
 import { isAiPick, rememberItems, resolveItem } from './knownItems';
+import { keepLocalCopy, mergeOnLogin, readAccount, writeAccount, type Account } from './account';
+import { deleteAccount, fetchRemoteStore, pushRemoteStore, type AuthSession } from './api/auth';
+import { ApiError } from './api/client';
+import { AuthPanel } from './components/AuthPanel';
 
-type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | null;
+type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | null;
 const hasTaste = (p: Profile) => p.selected.length > 0 || p.tags.length > 0;
 /** The taste step is offered, never required: only before a category's first request, and it can be skipped. */
 const needsTaste = (store: Store, c: Category, skipped: Category[]) => !hasTaste(store.profiles[c]) && !skipped.includes(c) && !store.history.some(h => h.category === c);
@@ -60,6 +64,11 @@ export default function App() {
   const [editingProfile, setEditingProfile] = useState(initial.editingProfile || false);
   const [filter, setFilter] = useState<'all' | Category>('all');
   const [dialog, setDialog] = useState<Dialog>(null);
+  // The signed-in account (server mode). Its store follows the account: downloaded on login, uploaded after each change.
+  const [account, setAccount] = useState<Account | null>(readAccount);
+  const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [deletePassword, setDeletePassword] = useState('');
+  const syncSkip = useRef(0);  // store versions that came from the server need no upload
   const [feedbackItem, setFeedbackItem] = useState<Item | null>(null);
   const [historyPreview, setHistoryPreview] = useState<HistoryEntry | null>(null);
   const [presetPreview,setPresetPreview]=useState<Preset|null>(null);
@@ -129,6 +138,31 @@ export default function App() {
 
   useEffect(() => { const failed = storageBlocked || !writeStore(store); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
+  // Upload the store to the account 1.5s after the last change. A 401 means the token expired: sign out, keep the local data.
+  useEffect(() => {
+    if (!account || !apiEnabled()) return;
+    if (syncSkip.current > 0) { syncSkip.current--; return; }
+    const token = account.token, snapshot = store;
+    setSyncState('saving');
+    const timer = setTimeout(() => {
+      pushRemoteStore(token, snapshot).then(() => setSyncState('saved')).catch(error => {
+        setSyncState('failed');
+        if (error instanceof ApiError && error.status === 401) { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); }
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [store, account]);  // eslint-disable-line react-hooks/exhaustive-deps
+  async function signIn(session: AuthSession, mode: 'login' | 'signup') {
+    const next: Account = { token: session.token, user: session.user };
+    const remote = session.hasStore ? (await fetchRemoteStore(session.token).catch(() => ({ store: null }))).store : null;
+    const merged = mergeOnLogin(store, remote, next);
+    if (merged.action === 'downloaded') { keepLocalCopy(localStorage.getItem('nowrecommend-prototype-v1')); syncSkip.current++; }
+    writeAccount(next); setAccount(next); setStore(merged.store); setNameDraft(merged.store.name);
+    setActive(false); setSession(newSession(category)); setCompletedId(''); selectionLock.current = ''; setDialog(null);
+    navigate('home');
+    notify(mode === 'signup' ? `${session.user.name}님, 가입을 환영해요. 이 브라우저의 데이터를 계정에 저장했어요.` : merged.action === 'downloaded' ? `${session.user.name}님, 계정의 취향·기록을 불러왔어요.` : `${session.user.name}님, 로그인했어요. 이 브라우저의 데이터를 계정에 저장해요.`);
+  }
+  function signOut() { writeAccount(null); setAccount(null); setSyncState('idle'); setDialog(null); notify('로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.'); }
   useEffect(() => { if (!toast || toastPaused || dialog || feedbackItem || historyPreview || presetPreview || savePresetOpen || detail || compareOpen) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast, toastPaused, dialog, feedbackItem, historyPreview, presetPreview, savePresetOpen, detail,compareOpen]);
   useEffect(() => { if (previousPage.current !== page) { window.scrollTo({ top: 0, behavior: 'instant' }); previousPage.current = page; } }, [page]);
   useEffect(() => () => { requestCounter.current++; }, []);
@@ -303,7 +337,8 @@ export default function App() {
         <nav className="topnav" aria-label="주요 메뉴">{allNav.map(n => <button key={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`topnav-link ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><span>{n.label}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="nav-count">{store.favorites.length}</span>}</button>)}</nav>
         <div className="appbar-actions">
           <button className="icon-button help-link" aria-label="체험 안내" onClick={() => setDialog('about')}><Info size={20} /></button>
-          <button className="top-avatar" aria-label="브라우저 프로필" onClick={() => { setNameDraft(store.name); setDialog('account'); }}>{store.name.slice(0, 1)}</button>
+          {apiEnabled() && !account && <button className="button secondary compact login-button" onClick={() => navigate('login')}><LogIn size={16} />로그인</button>}
+          <button className={`top-avatar${account ? ' signed-in' : ''}`} aria-label={account ? '내 계정' : '브라우저 프로필'} title={account ? account.user.email : undefined} onClick={() => { setNameDraft(store.name); setDialog('account'); }}>{(account?.user.name || store.name).slice(0, 1)}</button>
         </div>
       </div>
     </header>
@@ -551,9 +586,10 @@ export default function App() {
       </>}
       {page === 'login' && <div className="login-panel panel">
         <span className="brand-mark"><Sparkles size={26} /></span>
-        <h1>당신의 취향에서 시작해요.</h1>
-        <p>이름만 입력하고 체험을 이어가세요.<br />실제 회원가입 없이 화면 흐름을 살펴볼 수 있어요.</p>
-        <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); navigate('home'); }}><label className="field-title" htmlFor="demo-name">체험 이름</label><input id="demo-name" required maxLength={16} placeholder="어떻게 불러드릴까요?" value={nameDraft} onChange={e => setNameDraft(e.target.value)} /><button className="button primary full-width">체험 시작하기 <ArrowRight size={17} /></button></form>
+        <h1>{account ? `${account.user.name}님, 이미 로그인되어 있어요.` : '당신의 취향에서 시작해요.'}</h1>
+        <p>{account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '로그인하면 취향·즐겨찾기·기록이 계정에 저장되어 다른 기기에서도 이어 쓸 수 있어요. 로그인 없이도 이 브라우저에서 바로 쓸 수 있어요.'}</p>
+        {account ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={signOut}><LogOut size={16} />로그아웃</button></div>
+          : <AuthPanel online={apiEnabled()} initialName={store.name === '취향 탐험가' ? '' : store.name} onSuccess={signIn} onGuest={() => navigate('home')} />}
       </div>}
     </main>
     <nav className="tabbar" aria-label="하단 메뉴">{allNav.map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
@@ -564,8 +600,13 @@ export default function App() {
     {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons}/></Modal>}
     {compareOpen && <Modal title="후보 비교" onClose={()=>setCompareOpen(false)}><Comparison results={results.filter(r=>session.compareIds?.includes(r.item.id))} conditions={session.conditions} onChoose={r=>{setCompareOpen(false);choose(r);}}/></Modal>}
     {savePresetOpen && <Modal title="내 조건 저장" onClose={()=>setSavePresetOpen(false)}><ConditionsSummary conditions={session.conditions}/><form onSubmit={e=>{e.preventDefault();if(!presetName.trim())return;const preset:Preset={id:crypto.randomUUID(),category:session.category,name:presetName.trim(),conditions:structuredClone(session.conditions)};setStore(s=>({...s,presets:[...(s.presets || []),preset]}));setSavePresetOpen(false);notify('조건 프리셋을 저장했어요.');}}><label className="field-title" htmlFor="preset-name">프리셋 이름</label><input id="preset-name" value={presetName} required maxLength={30} onChange={e=>setPresetName(e.target.value)}/><button className="button primary">프리셋 저장</button></form></Modal>}
-    {dialog === 'about' && <Modal title="지금 추천을 먼저 경험해보세요." onClose={() => setDialog(null)}><p className="modal-description">취향 등록부터 조건 수정, 추천과 피드백까지 직접 사용해볼 수 있는 체험 버전이에요.</p><div className="about-list"><p><Check size={17} /> 음식은 {items.filter(i=>i.category==='food').length}개 등록 데이터에서 골라요. {apiEnabled() ? `음악은 AI가 아는 곡 중에서 직접 골라요(등록 곡 ${items.filter(i=>i.category==='music').length}곡은 취향 등록에 써요).` : `음악 ${items.filter(i=>i.category==='music').length}곡의 예시 데이터로 추천해요.`}</p><p><Check size={17} /> 가격·예산·배달 가능 여부는 다루지 않아요. 취향·상황·제외 조건으로 골라요.</p><p><Check size={17} /> 문장에서 조건을 찾아요. {apiEnabled() ? '규칙이 놓친 표현은 AI가 함께 읽어요.' : '알려진 표현만 읽으니 놓친 조건은 직접 골라주세요.'}</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> 계정 인증과 실제 주문·음원 재생은 포함하지 않아요. 지도·레시피·음악 서비스 검색으로 연결해요.</p></div><div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div></Modal>}
-    {dialog === 'account' && <Modal title="브라우저 프로필·설정" onClose={() => setDialog(null)}><p className="modal-description">취향과 기록은 이 브라우저에만 저장돼요. 기기 간 동기화는 지원하지 않아요. 이름을 바꿀 수 있어요.</p><form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('체험 이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button primary full-width">변경 저장</button></form><AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/><DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/><div className="account-links"><button onClick={() => { setDialog(null); setNameDraft(store.name); navigate('login'); }}><LogOut size={17} /> 체험 나가기</button><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 체험 데이터 모두 초기화</button></div></Modal>}
+    {dialog === 'about' && <Modal title="지금 추천을 먼저 경험해보세요." onClose={() => setDialog(null)}><p className="modal-description">취향 등록부터 조건 수정, 추천과 피드백까지 직접 사용해볼 수 있는 체험 버전이에요.</p><div className="about-list"><p><Check size={17} /> 음식은 {items.filter(i=>i.category==='food').length}개 등록 데이터에서 골라요. {apiEnabled() ? `음악은 AI가 아는 곡 중에서 직접 골라요(등록 곡 ${items.filter(i=>i.category==='music').length}곡은 취향 등록에 써요).` : `음악 ${items.filter(i=>i.category==='music').length}곡의 예시 데이터로 추천해요.`}</p><p><Check size={17} /> 가격·예산·배달 가능 여부는 다루지 않아요. 취향·상황·제외 조건으로 골라요.</p><p><Check size={17} /> 문장에서 조건을 찾아요. {apiEnabled() ? '규칙이 놓친 표현은 AI가 함께 읽어요.' : '알려진 표현만 읽으니 놓친 조건은 직접 골라주세요.'}</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> {apiEnabled() ? '로그인하면 취향·기록이 계정에 저장되어 다른 기기에서도 이어 써요. ' : ''}실제 주문·음원 재생은 포함하지 않아요. 지도·레시피·음악 서비스 검색으로 연결해요.</p></div><div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div></Modal>}
+    {dialog === 'account' && <Modal title={account ? '내 계정·설정' : '브라우저 프로필·설정'} onClose={() => setDialog(null)}>
+      {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true">{account.user.name.slice(0, 1)}</span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status">{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span></div>
+        : <p className="modal-description">{apiEnabled() ? '지금은 로그인하지 않아 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 계정에 저장되어 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요. 기기 간 동기화는 추천 서버가 연결된 사이트에서 로그인하면 쓸 수 있어요.'}</p>}
+      {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
+      <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form><AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/><DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/><div className="account-links">{account ? <><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></> : <button onClick={() => { setDialog(null); setNameDraft(store.name); navigate('login'); }}><LogIn size={17} /> 로그인 화면으로</button>}<button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div></Modal>}
+    {dialog === 'deleteAccount' && account && <Modal title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); try { await deleteAccount(account.token, deletePassword); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { notify(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
     {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;
 }
