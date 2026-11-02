@@ -21,6 +21,11 @@ export function mediaFor(id: string): Media | undefined {
   return entry && !entry.check && /^https:\/\//.test(entry.image) ? entry : undefined;
 }
 
+/** The artist's name as the store lists it, from a catalog cover that was confirmed by hand ("이문세" is listed as "Lee Moon Sae"). */
+export function storeArtist(id: string): string | undefined {
+  return table[id]?.match?.match(/^.* - (.+?) \[.*\]$/)?.[1];
+}
+
 /** A free-form AI song that is also in the catalog gets that song's cover (the lab's B side). */
 export function findSong(items: Item[], title: string, artist: string): Item | undefined {
   const key = norm(title) + '|' + norm(artist);
