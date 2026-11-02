@@ -649,7 +649,12 @@ input::file-selector-button { min-height: 40px; color: var(--text-primary); back
 /* Visually hidden, still read by assistive technology (icon-only buttons keep their state text). */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* Music AI lab (plans-music-ai.md): two answers side by side, stacked on phones. */
+/* AI lab (plans-music-ai.md, food and music): two answers side by side, stacked on phones. */
+.lab-banner { display: flex; align-items: center; gap: var(--space-3); width: 100%; text-align: left; padding: var(--space-4) var(--space-5); margin: calc(-1 * var(--space-6)) 0 var(--space-10); border-radius: var(--radius-card); background: var(--bg-surface); box-shadow: var(--shadow-card); }
+.lab-banner .list-copy small { white-space: normal; }
+.small-icon.lab { background: var(--bg-music); color: var(--music); }
+.lab-category { margin: var(--space-4) 0 0; }
+.item-card.lab-song .mini-tags { margin: var(--space-2) 0 0; }
 .lab-composer { max-width: var(--flow-width); }
 .lab-liked-label { margin-top: var(--space-5); }
 .lab-liked-label small, .lab-vote .field-title small { font-weight: 500; font-size: 13px; color: var(--text-muted); margin-left: 8px; }

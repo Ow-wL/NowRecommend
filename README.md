@@ -126,14 +126,15 @@ docker compose exec api python -m app.cli.review publish
 - 서버 테스트는 GitHub Actions `server-ci.yml`에서 pgvector 컨테이너와 함께 실행됩니다(`server/`·`shared/` 변경 시).
 - `POST /api/recommend`·`/api/parse`·`/api/lab/music/free`는 세 경로를 합쳐 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔). `TRUST_PROXY=true`이면 `X-Forwarded-For`의 **가장 오른쪽** 주소(프록시가 붙인 값)로 클라이언트를 구분합니다. 왼쪽 값은 클라이언트가 마음대로 보낼 수 있습니다.
 
-### 음악 AI 실험 (`#/lab`)
+### AI 실험실 (`#/lab`)
 
-음악을 DB 곡 목록에서 고르는 방식과 AI가 바로 고르는 방식을 비교하는 실험 페이지입니다([plans-music-ai.md](./plans-music-ai.md)). 서버 모드에서만 홈에 진입 카드가 보입니다.
+등록 목록에서 고르는 방식(A)과 AI가 바로 고르는 방식(B)을 같은 입력으로 나란히 비교하는 페이지입니다([plans-music-ai.md](./plans-music-ai.md)). 처음에는 음악만 있었고, 음악이 B로 바뀐 뒤(2026-11-02) **음식 실험**을 더했습니다. 서버 모드에서 홈과 내 취향에 입구가 있습니다. 화면 위의 "음식 실험 / 음악 실험"으로 분야를 바꾸며, 분야마다 회차와 기록이 따로입니다.
 
-- A(저장된 곡 목록): 기존 `POST /api/recommend`를 그대로 씁니다.
-- B(AI 자유 추천): `POST /api/lab/music/free`. 등록 취향(곡 ID는 서버가 "제목 - 아티스트"로 바꿈)·조건·직접 적은 좋아하는 곡을 보내면 모델이 아는 곡 중 5곡과 확신도를 돌려줍니다. 서버는 빈 값·중복·이미 본 곡·비선호·취향 곡 자체를 걸러내지만, 이름이 글자 그대로 같을 때만 같은 곡으로 봅니다("봄날 - BTS"와 "Spring Day - 방탄소년단"은 다른 곡). 곡이 실제로 있는지도 확인하지 못합니다. 실패하면 대체 결과 없이 실패를 그대로 돌려줍니다.
-- B 모델은 `LAB_FREE_MODELS`(기본 `["gemini-3.5-flash-lite","gemini-3.6-flash"]`) 중에서 화면에서 고르고, `GET /api/lab/music/models`가 목록을 줍니다. 같은 이름의 모델은 재순위·해석과 429 쿨다운을 공유합니다. 첫 번째가 아닌 모델은 하루 `LAB_EXTRA_MODEL_DAILY_LIMIT`회(기본 10)까지만 부릅니다.
-- 비교 평가(A/비슷/B)·곡별 표시(좋아요·별로예요·없는 곡)·메모는 이 브라우저의 `nowrecommend-lab-v1`에만 저장되고, 추천 기록·취향에는 반영하지 않습니다. 실험 기록에서 집계와 JSON 내려받기를 할 수 있습니다.
+- A(등록 목록): `POST /api/recommend`에 `engine: "catalog"`를 보내 카탈로그 파이프라인(유사도 검색 + AI 재순위)을 씁니다. 음악도 이 경로로 비교할 수 있습니다.
+- B(AI 자유 추천): `POST /api/lab/{food|music}/free`. 등록 취향(항목 ID는 서버가 "이름 - 아티스트" 또는 메뉴 이름으로 바꿈)·조건·직접 적은 좋아하는 것을 보내면 모델이 아는 것 중 3개(음식)/5곡(음악)과 확신도·어휘 태그를 돌려줍니다. 고른 항목은 음악 엔진과 같은 방식으로 `items`에 초안으로 저장되어 응답의 `item`으로 함께 옵니다. 서버는 빈 값·중복·이미 본 항목·비선호·취향 항목 자체를 걸러내지만, 이름이 글자 그대로 같을 때만 같은 항목으로 봅니다. 곡이 실제로 있는지, 음식의 재료 제외를 지켰는지는 확인하지 못합니다. 실패하면 대체 결과 없이 실패를 그대로 돌려줍니다.
+- 음식 B의 핵심 비교 항목은 **재료·알레르기 제외**입니다. A는 등록 재료로 SQL에서 보장하지만 B는 AI의 판단이라 화면에 경고를 붙이고, 곡별 "없는 곡이에요"에 해당하는 표시가 음식에서는 "조건에 안 맞아요"입니다.
+- B 모델은 `LAB_FREE_MODELS`(기본 `["gemini-3.5-flash-lite","gemini-3.6-flash"]`) 중에서 화면에서 고르고, `GET /api/lab/models`가 목록을 줍니다. 같은 이름의 모델은 재순위·해석·음악 엔진과 429 쿨다운을 공유합니다. 첫 번째가 아닌 모델은 하루 `LAB_EXTRA_MODEL_DAILY_LIMIT`회(기본 10)까지만 부릅니다.
+- 비교 평가(A/비슷/B)·항목별 표시(좋아요·별로예요·없는 곡/조건에 안 맞음)·메모는 이 브라우저의 `nowrecommend-lab-v2`에만 저장되고(분야 포함), 추천 기록·취향에는 반영하지 않습니다. 실험 기록에서 분야별 집계와 JSON 내려받기를 할 수 있습니다. 이전 `nowrecommend-lab-v1` 기록은 읽지 않습니다.
 - `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
 - 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
 

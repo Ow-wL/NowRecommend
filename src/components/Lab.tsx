@@ -1,0 +1,275 @@
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Check, ChevronDown, Download, ExternalLink, Info, RefreshCw, SearchX, SlidersHorizontal, Sparkles, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
+import { categoryLabel, exclusions, options, type Category, type Item } from '../data';
+import { apiEnabled } from '../api/client';
+import { fetchRecommendations } from '../api/recommend';
+import { fetchParse } from '../api/parse';
+import { fetchFreePicks, fetchLabModels } from '../api/lab';
+import { applyParsed, changeText, conditionConflicts, createEditor, toggleCondition, type Profile, type Session } from '../domain';
+import { newSession } from '../sessionStorage';
+import { downloadLab, markKey, pickLabel, readLab, tally, upsertEntry, writeLab, type LabAnswer, type LabEntry, type LabMark, type LabPick, type LabSide, type LabVote } from '../lab';
+import { ParseNotice } from './ParseNotice';
+import { ItemArt } from './ItemArt';
+import { mapSearch, mediaFor, youtubeSearch } from '../media';
+import { resolveItem } from '../knownItems';
+
+// The AI lab (plans-music-ai.md, extended to food on 2026-11-02): the same request answered two ways, side by side.
+// A = the catalog pipeline (engine "catalog"), B = free AI picks. Nothing here feeds history or tastes.
+type ViewMode = 'both' | LabSide;
+type TabState = { version: 2; category: Category; raw: string; session: Session; likedText: string; view: ViewMode; freeModel?: string; entry: LabEntry | null; poolIds: string[]; poolSeen: string[]; poolExcluded: string[]; freeAvoid: string[] };
+const TAB_KEY = 'nowrecommend-lab-tab-v2';
+const COUNT: Record<Category, number> = { food: 3, music: 5 };
+const SIDE = (c: Category): Record<LabSide, { label: string; title: string; about: string }> => ({
+  pool: { label: 'A', title: c === 'food' ? '등록된 메뉴 목록에서' : '저장된 곡 목록에서', about: c === 'food' ? '검수한 메뉴 중 상황·취향에 가까운 10개를 찾고, AI가 그 안에서 3개를 골라요. 재료 제외는 등록 정보로 보장돼요.' : 'DB에 등록된 곡 중 상황·취향에 가까운 15곡을 찾고, AI가 그 안에서 5곡을 골라요.' },
+  free: { label: 'B', title: 'AI 자유 추천', about: c === 'food' ? '목록 없이 AI가 아는 메뉴 중에서 바로 3개를 골라요. 재료·알레르기 제외는 AI의 판단이라 보장되지 않아요.' : '목록 없이 AI가 아는 곡 중에서 바로 5곡을 골라요. 실제로 있는 곡인지는 검색으로 확인해주세요.' },
+});
+const confidenceLabel = { high: '확신 높음', medium: '확신 보통', low: '확신 낮음' } as const;
+const markLabel = (c: Category): Record<LabMark, string> => ({ good: '좋아요', bad: '별로예요', missing: c === 'food' ? '조건에 안 맞아요' : '없는 곡이에요' });
+const EXAMPLES: Record<Category, string[]> = { food: ['혼자 먹을 담백한 저녁', '비 오는 날 따뜻한 국물', '더운 날 가볍고 상큼하게'], music: ['과제할 때 듣는 연주곡', '신나게 달리기', '비 오는 밤 혼자 듣기 좋은 노래'] };
+
+function readTabState(category: Category): TabState | null {
+  try { const v = JSON.parse(sessionStorage.getItem(`${TAB_KEY}:${category}`) || 'null'); return v && v.version === 2 && typeof v.raw === 'string' && v.session?.category === category ? v : null; } catch { return null; }
+}
+const freshSession = (c: Category): Session => ({ ...newSession(c), editor: createEditor('', c) });
+const splitLiked = (text: string) => [...new Set(text.split(/[,\n]/).map(s => s.trim()).filter(Boolean))].slice(0, 10).map(s => s.slice(0, 60));
+
+export function Lab({ category, profile, items, onCategory, onEditTaste, onHome }: { category: Category; profile: Profile; items: Item[]; onCategory: (c: Category) => void; onEditTaste: () => void; onHome: () => void }) {
+  const [initial] = useState(() => readTabState(category));
+  const [session, setSession] = useState<Session>(initial?.session || freshSession(category));
+  const [likedText, setLikedText] = useState(initial?.likedText || '');
+  const [view, setView] = useState<ViewMode>(initial?.view || 'both');
+  const [models, setModels] = useState<string[]>([]);
+  const [freeModel, setFreeModel] = useState(initial?.freeModel || '');
+  const [entry, setEntry] = useState<LabEntry | null>(initial?.entry || null);
+  const [poolIds, setPoolIds] = useState<string[]>(initial?.poolIds || []);
+  const [poolSeen, setPoolSeen] = useState<string[]>(initial?.poolSeen || []);
+  const [poolExcluded, setPoolExcluded] = useState<string[]>(initial?.poolExcluded || []);
+  const [freeAvoid, setFreeAvoid] = useState<string[]>(initial?.freeAvoid || []);
+  const [busy, setBusy] = useState<Record<LabSide, boolean>>({ pool: false, free: false });
+  const [parsing, setParsing] = useState(false);
+  const [log, setLog] = useState<LabEntry[]>(readLab);
+  const [logWarning, setLogWarning] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const token = useRef(0);
+  const online = apiEnabled();
+  const conflicts = conditionConflicts(session);
+  const working = parsing || busy.pool || busy.free;
+  const sides: LabSide[] = view === 'both' ? ['pool', 'free'] : [view];
+  const side = SIDE(category), marks = markLabel(category);
+  // What the shown round actually ran; the view toggle only decides the next request.
+  const shown: LabSide[] = entry?.sides || (['pool', 'free'] as const).filter(s => entry?.[s]);
+  const liked = profile.selected.map(id => resolveItem(items, id)?.name).filter((n): n is string => !!n);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(`${TAB_KEY}:${category}`, JSON.stringify({ version: 2, category, raw: session.raw, session, likedText, view, freeModel, entry, poolIds, poolSeen, poolExcluded, freeAvoid } satisfies TabState)); } catch { /* the lab still works without tab restore */ }
+  }, [category, session, likedText, view, freeModel, entry, poolIds, poolSeen, poolExcluded, freeAvoid]);
+  useEffect(() => () => { token.current++; }, []);
+  useEffect(() => { if (online) fetchLabModels().then(list => { setModels(list); setFreeModel(m => list.includes(m) ? m : list[0] || ''); }).catch(() => setModels([])); }, [online]);
+
+  function saveEntry(next: LabEntry) {
+    setEntry(next);
+    setLog(current => { const updated = upsertEntry(current, next); setLogWarning(!writeLab(updated)); return updated; });
+  }
+  // Both answers land asynchronously; each one merges into the latest copy of the round.
+  const latest = useRef<LabEntry | null>(entry); latest.current = entry;
+  function land(id: string, s: LabSide, answer: LabAnswer) {
+    const current = latest.current;
+    if (!current || current.id !== id) return;
+    const next = { ...current, [s]: answer };
+    latest.current = next;
+    saveEntry(next);
+  }
+
+  function run(again: boolean) {
+    if (!online || working || conflicts.length) return;
+    const t = ++token.current;
+    const likedExtra = splitLiked(likedText);
+    const seen = again ? [...new Set([...poolSeen, ...poolIds])] : [];
+    const avoid = again ? [...new Set([...freeAvoid, ...(entry?.free?.picks || []).map(pickLabel)])] : [];
+    const excluded = again ? poolExcluded : [];
+    if (!again) setPoolExcluded([]);
+    setPoolSeen(seen); setFreeAvoid(avoid);
+    const go = (base: Session) => {
+      if (t !== token.current) return;
+      setParsing(false); setSession(base);
+      if (conditionConflicts(base).length) return;
+      const round: LabEntry = { id: crypto.randomUUID(), date: new Date().toISOString(), category, raw: base.raw, conditions: structuredClone(base.conditions), likedText: likedExtra,
+        round: again && entry ? entry.round + 1 : 1, sides, marks: {} };
+      latest.current = round; saveEntry(round);
+      setPoolIds([]);
+      for (const s of sides) {
+        setBusy(b => ({ ...b, [s]: true }));
+        const started = performance.now();
+        const ms = () => Math.round(performance.now() - started);
+        const request: Promise<LabAnswer> = s === 'pool'
+          ? fetchRecommendations({ ...base, seenIds: seen, excludedIds: excluded, pinnedIds: [], candidateScope: undefined }, profile, { engine: 'catalog' }).then(r => {
+            if (t === token.current) setPoolIds(r.results.map(x => x.item.id));
+            const picks: LabPick[] = r.results.map(x => ({ name: x.item.name, detail: x.item.subtitle, tasteReason: x.tasteReason, contextReason: x.contextReason, itemId: x.item.id }));
+            return r.meta.mode === 'rag' ? { picks, ms: ms(), status: 'ok' } : { picks, ms: ms(), status: 'fallback', detail: r.meta.ai === 'off' ? 'AI 꺼짐' : 'AI 응답 없음' };
+          })
+          : fetchFreePicks(category, { raw: base.raw, conditions: base.conditions, profile, likedText: likedExtra, avoid, model: freeModel || undefined }).then(r => {
+            const model = r.meta.model || undefined;
+            if (r.meta.ai === 'used') return { picks: r.results.map(p => ({ name: p.name, detail: p.detail, tasteReason: p.tasteReason, contextReason: p.contextReason, confidence: p.confidence, itemId: p.item.id, tags: p.tags })), ms: ms(), status: 'ok', detail: r.meta.issues || undefined, model };
+            const detail = r.meta.ai === 'off' ? 'AI 꺼짐' : r.meta.issues === 'daily_limit' ? '오늘 이 모델의 실험 사용량을 다 썼어요' : r.meta.issues || 'AI 응답 없음';
+            return { picks: [], ms: ms(), status: 'failed', detail, model };
+          });
+        request.catch(error => ({ picks: [], ms: ms(), status: 'failed' as const, detail: error instanceof Error ? error.message : '서버 오류' }))
+          .then(answer => { if (t === token.current) land(round.id, s, answer); })
+          .finally(() => { if (t === token.current) setBusy(b => ({ ...b, [s]: false })); });
+      }
+    };
+    // Same rule as the main flow: ask /api/parse once per new sentence, then use the merged conditions for both sides.
+    const raw = session.raw, parsed = changeText(session, raw);
+    if (!raw.trim() || (parsed.editor?.ai?.raw === raw && parsed.editor.ai.source !== 'local')) { go(parsed); return; }
+    setParsing(true); setSession(parsed);
+    fetchParse(category, raw)
+      .then(r => go(applyParsed(parsed, raw, r.conditions, { raw, source: r.source, unparsed: r.unparsed })))
+      .catch(() => go(applyParsed(parsed, raw, null, { raw, source: 'local', unparsed: [] })));
+  }
+
+  // Clicks read the newest round (latest), not the last render, so they never undo an answer that just landed.
+  function mark(s: LabSide, pick: LabPick, value: LabMark) {
+    const current = latest.current;
+    if (!current) return;
+    const key = markKey(s, pick), next = { ...current.marks };
+    if (next[key] === value) delete next[key]; else next[key] = value;
+    saveEntry({ ...current, marks: next });
+    // "별로" (and a wrong pick) also keeps the item out of the next round of that side.
+    const index = current[s]?.picks.indexOf(pick) ?? -1;
+    if (s === 'pool' && poolIds[index]) setPoolExcluded(ids => next[key] === 'bad' ? [...new Set([...ids, poolIds[index]])] : ids.filter(id => id !== poolIds[index]));
+    if (s === 'free') setFreeAvoid(list => next[key] === 'bad' || next[key] === 'missing' ? [...new Set([...list, pickLabel(pick)])] : list.filter(l => l !== pickLabel(pick)));
+  }
+  const vote = (value: LabVote) => { const current = latest.current; if (current) saveEntry({ ...current, vote: current.vote === value ? undefined : value }); };
+  function reset() { token.current++; setBusy({ pool: false, free: false }); setParsing(false); setSession(freshSession(category)); setEntry(null); setPoolIds([]); setPoolSeen([]); setPoolExcluded([]); setFreeAvoid([]); }
+
+  const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
+  const stats = tally(log.filter(e => (e.category || 'music') === category));
+  const pickCard = (s: LabSide, pick: LabPick, index: number) => {
+    const key = markKey(s, pick), current = entry?.marks[key];
+    const known = pick.itemId ? resolveItem(items, pick.itemId) : undefined;
+    const art = <ItemArt item={known || { category, name: pick.name, subtitle: pick.detail }} size="thumb" />;
+    const apple = category === 'music' && known && mediaFor(known.id)?.link;
+    const search = category === 'music' ? youtubeSearch({ name: pick.name, subtitle: pick.detail }) : mapSearch({ name: pick.name });
+    return <article className={`item-card lab-song ${category}`} key={key}>
+      <div className="item-head">
+        <span className="item-rank" aria-hidden="true">{index + 1}</span>
+        {apple ? <a className="item-art-link" href={apple} target="_blank" rel="noopener noreferrer" aria-label={`${pick.name} Apple Music에서 듣기 (새 탭)`}>{art}</a> : art}
+        <div className="item-title"><h3>{pick.name}</h3><p className="item-subtitle">{pick.detail}</p></div>
+        {pick.confidence && <span className={`lab-confidence ${pick.confidence}`}>{confidenceLabel[pick.confidence]}</span>}
+        <a className="icon-button" href={search} target="_blank" rel="noopener noreferrer" aria-label={`${pick.name} ${category === 'music' ? 'YouTube에서 검색' : '네이버 지도에서 검색'} (새 탭)`} title={category === 'music' ? 'YouTube에서 검색' : '네이버 지도에서 검색'}><ExternalLink size={18} /></a>
+      </div>
+      {pick.tags && pick.tags.length > 0 && <div className="mini-tags">{pick.tags.map(t => <span key={t}>{t}</span>)}</div>}
+      <div className="reasons"><p><b>평소 취향</b>{pick.tasteReason}</p><p><b>이번 상황</b>{pick.contextReason}</p></div>
+      <div className="lab-marks" role="group" aria-label={`${pick.name} 평가`}>
+        {(['good', 'bad', ...(s === 'free' ? ['missing' as const] : [])] as LabMark[]).map(m => <button key={m} className={`lab-mark ${m}`} aria-pressed={current === m} onClick={() => mark(s, pick, m)}>
+          {m === 'good' ? <ThumbsUp size={15} /> : m === 'bad' ? <ThumbsDown size={15} /> : <SearchX size={15} />}{marks[m]}</button>)}
+      </div>
+    </article>;
+  };
+  const column = (s: LabSide) => {
+    const answer = entry?.[s];
+    return <section className="lab-column" key={s} aria-labelledby={`lab-${s}`} aria-busy={busy[s]}>
+      <header className="lab-column-head">
+        <span className={`lab-side ${s}`}>{side[s].label}</span>
+        <div><h2 id={`lab-${s}`}>{side[s].title}</h2><p>{side[s].about}</p></div>
+      </header>
+      {busy[s] ? <div className="lab-loading" role="status"><span className="spinner" />추천을 고르는 중</div>
+        : !answer ? <p className="lab-empty">{entry ? '이 방식은 이번 요청에서 실행하지 않았어요.' : '상황을 적고 추천받기를 눌러주세요.'}</p>
+        : <>
+          <div className="lab-meta">{answer.model && <span>{answer.model}</span>}<span>{answer.ms.toLocaleString()}ms</span><span>{answer.picks.length}{category === 'music' ? '곡' : '개'}</span>{answer.status === 'ok' && <span>AI 선택</span>}{answer.detail && answer.status === 'ok' && <span title="서버가 걸러낸 항목">정리: {answer.detail}</span>}</div>
+          {answer.status === 'fallback' && <div className="notice warning" role="status"><Info size={18} /><div><strong>AI가 답하지 않아 유사도 순서로 보여드려요.</strong><p>{answer.detail}. 한도 초과나 응답 지연일 수 있어요.</p></div></div>}
+          {answer.status === 'failed' && <div className="error-box" role="alert"><strong>AI가 {category === 'music' ? '곡' : '메뉴'}을 추천하지 못했어요.</strong><p>{answer.detail}. 이 방식은 대체 결과가 없어요.</p></div>}
+          {answer.status === 'ok' && answer.picks.length === 0 && <div className="notice warning" role="status"><Info size={18} /><div><strong>AI가 답했지만 모두 걸러졌어요.</strong><p>이미 본 항목·비선호·취향 항목과 겹쳤어요{answer.detail ? ` (${answer.detail})` : ''}. 새 요청으로 다시 시작할 수 있어요.</p></div></div>}
+          {s === 'free' && answer.picks.length > 0 && <p className="lab-caution"><Info size={14} />{category === 'music' ? 'AI가 직접 고른 곡이에요. 실제로 있는 곡인지 검색으로 확인해주세요.' : 'AI가 직접 고른 메뉴예요. 재료·알레르기 제외는 AI의 판단이라 꼭 확인해주세요.'}</p>}
+          <div className="lab-songs">{answer.picks.map((p, i) => pickCard(s, p, i))}</div>
+        </>}
+    </section>;
+  };
+  const groups = category === 'food'
+    ? [{ label: '상황', values: ['혼자', '함께', '점심', '저녁'] }, { label: '원하는 맛·특징', values: options.food.filter(t => !['혼자', '함께', '점심', '저녁'].includes(t)) }]
+    : [{ label: '활동', values: ['과제', '휴식', '산책', '운동'] }, { label: '분위기', values: options.music.filter(t => !['과제', '휴식', '산책', '운동', '보컬', '연주곡'].includes(t)) }, { label: '보컬', values: ['보컬', '연주곡'] }];
+
+  return <>
+    <div className="flow-head">
+      <button className="back-link" onClick={onHome}><ArrowLeft size={16} /> 홈으로</button>
+      <span className="eyebrow">AI 실험실</span>
+      <h1>두 가지 AI 추천을 비교해보세요.</h1>
+      <p>같은 상황과 취향으로 A({side.pool.title})와 B(AI 자유 추천)를 나란히 받아요. 실험 결과는 추천 기록과 취향에 반영하지 않아요.</p>
+      <div className="filter-tabs lab-category" role="group" aria-label="실험 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => onCategory(c)}>{categoryLabel[c]} 실험</button>)}</div>
+      <div className="taste-strip">
+        <span className="taste-strip-label">평소의 나</span>
+        <span className="taste-strip-items">{[...liked, ...profile.tags].join(' · ') || `등록된 ${categoryLabel[category]} 취향 없음`}</span>
+        <button className="text-button" onClick={onEditTaste}>취향 수정</button>
+      </div>
+    </div>
+    {!online && <div className="notice warning" role="status"><Info size={18} /><div><strong>추천 서버가 연결된 사이트에서만 쓸 수 있어요.</strong><p>두 방식 모두 서버의 AI를 사용해요. 지금은 이 브라우저만으로 동작하는 모드예요.</p></div></div>}
+    {online && profile.selected.length < 5 && <div className="notice" role="status"><Info size={18} /><div><strong>{categoryLabel[category]} 취향을 5개 이상 등록하면 더 공정하게 비교할 수 있어요.</strong><p>등록한 취향은 두 방식에 똑같이 보내요.</p><button className="text-button" onClick={onEditTaste}>{categoryLabel[category]} 취향 등록하기</button></div></div>}
+
+    <div className="flow-body composer lab-composer">
+      <section className="panel compose-panel">
+        <label className="field-title" htmlFor="lab-situation">지금의 상황</label>
+        <textarea id="lab-situation" maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(false); } }} placeholder={category === 'food' ? '예: 비 오는 날 혼자 먹을 따뜻한 국물' : '예: 비 오는 밤 혼자 걸으면서 들을 노래'} />
+        <div className="textarea-caption">
+          <div className="example-row">{EXAMPLES[category].map(text => <button key={text} onClick={() => setSession(s => changeText(s, text))}>{text}</button>)}</div>
+          <span>{session.raw.length}/300</span>
+        </div>
+        <div className="condition-summary">
+          <h3>이번 요청 조건</h3>
+          {session.conditions.tags.length + session.conditions.excluded.length ? <div className="chips">
+            {session.conditions.tags.map(t => <button className="chip selected" key={t} onClick={() => setSession(s => toggleCondition(s, t))} aria-label={`${t} 조건 삭제`}>{t}<X size={13} /></button>)}
+            {session.conditions.excluded.map(t => <button className="chip exclude selected" key={t} onClick={() => setSession(s => toggleCondition(s, t, true))} aria-label={`${t} 제외 조건 삭제`}>{t} 제외<X size={13} /></button>)}
+          </div> : <p className="muted small">문장을 적거나 아래에서 골라주세요. 비워두면 평소 취향으로 추천해요.</p>}
+          <ParseNotice ai={session.editor?.ai} raw={session.raw} />
+        </div>
+        <label className="field-title lab-liked-label" htmlFor="lab-liked">{category === 'food' ? '목록에 없는 좋아하는 메뉴·식당 종류' : '목록에 없는 좋아하는 곡·아티스트'} <small>B에만 적용 · 쉼표로 구분, 최대 10개</small></label>
+        <input id="lab-liked" className="lab-liked" maxLength={400} value={likedText} onChange={e => setLikedText(e.target.value)} placeholder={category === 'food' ? '예: 평양냉면, 마라탕, 베트남 음식' : '예: 검정치마, 잔나비 - 주저하는 연인들을 위해'} />
+      </section>
+      <details className="panel more-conditions">
+        <summary><SlidersHorizontal size={16} /> 조건 직접 고르기<ChevronDown size={16} className="chevron" /></summary>
+        {groups.map(group => <div className="chip-group" key={group.label}><h3>{group.label}</h3>{chips(group.values, session.conditions.tags, v => setSession(s => toggleCondition(s, v)))}</div>)}
+        <div className="chip-group"><h3>반드시 제외 <small>두 방식 모두에 보내요</small></h3>{chips(exclusions[category], session.conditions.excluded, v => setSession(s => toggleCondition(s, v, true)), 'exclude')}</div>
+      </details>
+      {conflicts.length > 0 && <div className="error-box" role="alert">함께 적용할 수 없는 조건이 있어요: {conflicts.join(', ')}. 조건을 해제한 뒤 진행해주세요.</div>}
+      <div className="lab-actions">
+        <div className="filter-tabs" role="group" aria-label="비교 방식">{(['both', 'pool', 'free'] as const).map(v => <button key={v} aria-pressed={view === v} className={view === v ? 'active' : ''} onClick={() => setView(v)}>{v === 'both' ? '둘 다 나란히' : `${side[v].label}만`}</button>)}</div>
+        {models.length > 1 && view !== 'pool' && <label className="lab-model">B 모델<select value={freeModel} onChange={e => setFreeModel(e.target.value)}>{models.map(m => <option key={m} value={m}>{m}</option>)}</select></label>}
+        <button className="button primary" disabled={!online || working || conflicts.length > 0} onClick={() => run(false)}>{working ? <span className="spinner" /> : <Sparkles size={16} />}{parsing ? '조건을 해석하는 중' : working ? '추천을 고르는 중' : '추천받기'}</button>
+      </div>
+    </div>
+
+    {entry && <>
+      <div className="section-heading result-heading lab-heading">
+        <h2>{entry.raw || '직접 고른 조건'} <span className="count">{entry.round}회차</span></h2>
+        <div className="mini-tags">{entry.conditions.tags.map(t => <span key={t}>{t}</span>)}{entry.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}</div>
+      </div>
+      <div className={`lab-grid ${shown.length === 1 ? 'single' : ''}`}>{shown.map(column)}</div>
+      {shown.length === 2 && (entry.pool || entry.free) && !working && <section className="panel lab-vote">
+        <h2>이번 결과는 어느 쪽이 나았나요?</h2>
+        <div className="lab-vote-buttons" role="group" aria-label="비교 평가">{([['pool', 'A가 나아요'], ['same', '비슷해요'], ['free', 'B가 나아요']] as const).map(([v, label]) => <button key={v} className={`button ${entry.vote === v ? 'primary' : 'secondary'}`} aria-pressed={entry.vote === v} onClick={() => vote(v)}>{label}</button>)}</div>
+        <label className="field-title" htmlFor="lab-note">메모 <small>선택 사항</small></label>
+        <textarea id="lab-note" className="lab-note" maxLength={200} value={entry.note || ''} onChange={e => { const current = latest.current; if (current) saveEntry({ ...current, note: e.target.value }); }} placeholder={category === 'food' ? '예: B가 더 다양했지만 한 메뉴는 유제품이 들어가요' : '예: B가 더 다양했지만 한 곡은 검색해도 안 나왔어요'} />
+      </section>}
+      <div className="reroll-panel">
+        <p>이미 본 항목과 ‘별로예요’·‘{marks.missing}’로 표시한 항목은 빼고 다시 추천해요.</p>
+        <div className="lab-reroll-actions"><button className="text-button" onClick={reset}>새 요청</button><button className="button secondary" disabled={working} onClick={() => run(true)}>{working ? <span className="spinner" /> : <RefreshCw size={16} />}다른 추천 보기</button></div>
+      </div>
+    </>}
+
+    <details className="panel lab-log">
+      <summary>{categoryLabel[category]} 실험 기록 <span className="count">{stats.rounds}</span><ChevronDown size={16} className="chevron" /></summary>
+      {logWarning && <p className="danger small">기록을 브라우저에 저장하지 못했어요. 새로고침하면 사라질 수 있어요.</p>}
+      <div className="lab-stats">
+        <div><b>비교 평가</b><p>A가 나아요 {stats.votes.pool} · 비슷해요 {stats.votes.same} · B가 나아요 {stats.votes.free}</p></div>
+        {(['pool', 'free'] as const).map(s => { const st = stats.sides[s]; return <div key={s}><b>{side[s].label} {side[s].title}</b>
+          <p>응답 {st.answered}회 · 실패 {st.failed}회 · 평균 {st.avgMs === null ? '-' : `${st.avgMs.toLocaleString()}ms`}</p>
+          <p>{category === 'music' ? '곡' : '메뉴'} {st.picks}개 중 좋아요 {st.good} · 별로예요 {st.bad}{s === 'free' ? ` · ${marks.missing} ${st.missing}` : ''}</p></div>; })}
+      </div>
+      <p className="small muted">기록은 이 브라우저에만 저장돼요(최근 200회).</p>
+      <div className="lab-log-actions">
+        <button className="button secondary" disabled={!log.length} onClick={() => downloadLab(log)}><Download size={16} />JSON 내려받기</button>
+        {confirmClear ? <><button className="text-button danger" onClick={() => { setLog([]); setLogWarning(!writeLab([])); setConfirmClear(false); }}><Trash2 size={15} />정말 지우기</button><button className="text-button" onClick={() => setConfirmClear(false)}>취소</button></>
+          : <button className="text-button danger" disabled={!log.length} onClick={() => setConfirmClear(true)}><Trash2 size={15} />기록 지우기</button>}
+      </div>
+    </details>
+  </>;
+}

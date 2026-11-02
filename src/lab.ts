@@ -1,23 +1,28 @@
 import type { Conditions } from './domain';
+import type { Category } from './data';
 
-// Lab log (plans-music-ai.md §2): one entry per request round with both answers and the user's verdict.
-// It stays in this browser, separate from the main store, and never feeds history or tastes.
-const KEY = 'nowrecommend-lab-v1';
+// Lab log (plans-music-ai.md §2, both categories since 2026-11-02): one entry per request round with both answers and
+// the user's verdict. It stays in this browser, separate from the main store, and never feeds history or tastes.
+// v2 key: entries carry a category and picks are name/detail (v1 music logs are left untouched and no longer read).
+const KEY = 'nowrecommend-lab-v2';
 const LIMIT = 200;
 
 export type LabSide = 'pool' | 'free';
-export type LabSong = { title: string; artist: string; tasteReason: string; contextReason: string; confidence?: 'high' | 'medium' | 'low' };
+/** One recommended item: a song (name/artist) or a dish (name/short description). `itemId` is the server's item when known. */
+export type LabPick = { name: string; detail: string; tasteReason: string; contextReason: string; confidence?: 'high' | 'medium' | 'low'; itemId?: string; tags?: string[] };
+/** 'missing': the B pick is wrong — a song that does not exist, or a dish that breaks the request's conditions. */
 export type LabMark = 'missing' | 'bad' | 'good';
-export type LabAnswer = { songs: LabSong[]; ms: number; status: 'ok' | 'failed' | 'fallback'; detail?: string; model?: string };
+export type LabAnswer = { picks: LabPick[]; ms: number; status: 'ok' | 'failed' | 'fallback'; detail?: string; model?: string };
 export type LabVote = 'pool' | 'same' | 'free';
 export type LabEntry = {
-  id: string; date: string; raw: string; conditions: Conditions; likedText: string[]; round: number; sides?: LabSide[];
+  id: string; date: string; category: Category; raw: string; conditions: Conditions; likedText: string[]; round: number; sides?: LabSide[];
   pool?: LabAnswer; free?: LabAnswer; vote?: LabVote; note?: string; marks: Record<string, LabMark>;
 };
 
-export const markKey = (side: LabSide, song: { title: string; artist: string }) => `${side}:${song.title} - ${song.artist}`;
+export const pickLabel = (p: { name: string; detail?: string }) => p.detail ? `${p.name} - ${p.detail}` : p.name;
+export const markKey = (side: LabSide, pick: { name: string; detail?: string }) => `${side}:${pickLabel(pick)}`;
 
-const validEntry = (v: any): v is LabEntry => !!v && typeof v.id === 'string' && typeof v.date === 'string' && typeof v.raw === 'string'
+const validEntry = (v: any): v is LabEntry => !!v && typeof v.id === 'string' && typeof v.date === 'string' && typeof v.raw === 'string' && ['food', 'music'].includes(v.category)
   && !!v.conditions && Array.isArray(v.likedText) && Number.isInteger(v.round) && !!v.marks && typeof v.marks === 'object';
 
 export function readLab(storage: Pick<Storage, 'getItem'> = localStorage): LabEntry[] {
@@ -37,12 +42,12 @@ export function upsertEntry(entries: LabEntry[], entry: LabEntry): LabEntry[] {
 
 export type LabTally = {
   votes: Record<LabVote, number>; rounds: number;
-  sides: Record<LabSide, { answered: number; failed: number; songs: number; missing: number; bad: number; good: number; avgMs: number | null }>;
+  sides: Record<LabSide, { answered: number; failed: number; picks: number; missing: number; bad: number; good: number; avgMs: number | null }>;
 };
 
 export function tally(entries: LabEntry[]): LabTally {
   const votes: Record<LabVote, number> = { pool: 0, same: 0, free: 0 };
-  const side = () => ({ answered: 0, failed: 0, songs: 0, missing: 0, bad: 0, good: 0, avgMs: null as number | null, total: 0 });
+  const side = () => ({ answered: 0, failed: 0, picks: 0, missing: 0, bad: 0, good: 0, avgMs: null as number | null, total: 0 });
   const sides = { pool: side(), free: side() };
   for (const entry of entries) {
     if (entry.vote) votes[entry.vote]++;
@@ -50,7 +55,7 @@ export function tally(entries: LabEntry[]): LabTally {
       const answer = entry[name], s = sides[name];
       if (!answer) continue;
       if (answer.status === 'failed') s.failed++; else s.answered++;
-      s.songs += answer.songs.length;
+      s.picks += answer.picks.length;
       s.total += answer.ms;
     }
     for (const [key, mark] of Object.entries(entry.marks)) {
@@ -67,7 +72,7 @@ export function tally(entries: LabEntry[]): LabTally {
 }
 
 export function downloadLab(entries: LabEntry[]) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'nowrecommend-lab', version: 1, exportedAt: new Date().toISOString(), entries }, null, 2)], { type: 'application/json' }));
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'nowrecommend-lab', version: 2, exportedAt: new Date().toISOString(), entries }, null, 2)], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url; link.download = `nowrecommend-lab-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
