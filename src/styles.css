@@ -682,9 +682,13 @@ input::file-selector-button { min-height: 40px; color: var(--text-primary); back
 .item-card.lab-song .item-title h3 { font-size: 17px; line-height: 24px; }
 .item-card.lab-song .icon-button { color: var(--text-muted); margin-right: -10px; }
 .item-card.lab-song .reasons { margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); }
-.lab-confidence { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--bg-success); color: var(--success); }
-.lab-confidence.medium { background: var(--bg-warning); color: var(--warning); }
-.lab-confidence.low { background: var(--bg-danger); color: var(--danger); }
+.lab-confidence, .confidence-badge { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--bg-success); color: var(--success); }
+.lab-confidence.medium, .confidence-badge.medium { background: var(--bg-warning); color: var(--warning); }
+.lab-confidence.low, .confidence-badge.low { background: var(--bg-danger); color: var(--danger); }
+/* AI engine results (meta.engine 'ai'): a violet-tinted notice; cards carry the model's confidence badge. */
+.notice.ai-notice > svg { color: var(--music); }
+.notice.ai-notice { background: var(--bg-music); box-shadow: none; }
+.notice.ai-notice strong, .notice.ai-notice p { color: var(--text-primary); }
 .lab-marks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .lab-mark { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; background: var(--bg-hover); color: var(--text-secondary); font-size: 13px; font-weight: 600; }
 .lab-mark[aria-pressed="true"] { background: var(--bg-selected); color: var(--accent); }

@@ -4,13 +4,15 @@ import { exclusions, options, type Item } from '../data';
 import { apiEnabled } from '../api/client';
 import { fetchRecommendations } from '../api/recommend';
 import { fetchParse } from '../api/parse';
-import { fetchFreeSongs, fetchLabModels, songLabel } from '../api/lab';
+import { fetchFreePicks, fetchLabModels } from '../api/lab';
+const songLabel = (s: { title: string; artist: string }) => `${s.title} - ${s.artist}`;
 import { applyParsed, changeText, conditionConflicts, createEditor, toggleCondition, type Profile, type Session } from '../domain';
 import { newSession } from '../sessionStorage';
 import { downloadLab, markKey, readLab, tally, upsertEntry, writeLab, type LabAnswer, type LabEntry, type LabMark, type LabSide, type LabSong, type LabVote } from '../lab';
 import { ParseNotice } from './ParseNotice';
 import { ItemArt } from './ItemArt';
 import { findSong, mediaFor } from '../media';
+import { resolveItem } from '../knownItems';
 
 type ViewMode = 'both' | LabSide;
 type TabState = { raw: string; session: Session; likedText: string; view: ViewMode; freeModel?: string; entry: LabEntry | null; poolIds: string[]; poolSeen: string[]; poolExcluded: string[]; freeAvoid: string[] };
@@ -52,7 +54,7 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
   const sides: LabSide[] = view === 'both' ? ['pool', 'free'] : [view];
   // What the shown round actually ran; the view toggle only decides the next request.
   const shown: LabSide[] = entry?.sides || (['pool', 'free'] as const).filter(side => entry?.[side]);
-  const liked = profile.selected.map(id => items.find(i => i.id === id)?.name).filter(Boolean);
+  const liked = profile.selected.map(id => resolveItem(items, id)?.name).filter((n): n is string => !!n);
 
   useEffect(() => {
     try { sessionStorage.setItem(TAB_KEY, JSON.stringify({ raw: session.raw, session, likedText, view, freeModel, entry, poolIds, poolSeen, poolExcluded, freeAvoid } satisfies TabState)); } catch { /* the lab still works without tab restore */ }
@@ -101,9 +103,9 @@ export function MusicLab({ profile, items, onEditTaste, onHome }: { profile: Pro
             const songs = r.results.map(x => ({ title: x.item.name, artist: x.item.subtitle, tasteReason: x.tasteReason, contextReason: x.contextReason }));
             return r.meta.mode === 'rag' ? { songs, ms: ms(), status: 'ok' } : { songs, ms: ms(), status: 'fallback', detail: r.meta.ai === 'off' ? 'AI 꺼짐' : 'AI 응답 없음' };
           })
-          : fetchFreeSongs({ raw: base.raw, conditions: base.conditions, profile, likedText: liked, avoid, model: freeModel || undefined }).then(r => {
+          : fetchFreePicks('music', { raw: base.raw, conditions: base.conditions, profile, likedText: liked, avoid, model: freeModel || undefined }).then(r => {
             const model = r.meta.model || undefined;
-            if (r.meta.ai === 'used') return { songs: r.results, ms: ms(), status: 'ok', detail: r.meta.issues || undefined, model };
+            if (r.meta.ai === 'used') return { songs: r.results.map(p => ({ title: p.name, artist: p.detail, tasteReason: p.tasteReason, contextReason: p.contextReason, confidence: p.confidence })), ms: ms(), status: 'ok', detail: r.meta.issues || undefined, model };
             const detail = r.meta.ai === 'off' ? 'AI 꺼짐' : r.meta.issues === 'daily_limit' ? '오늘 이 모델의 실험 사용량을 다 썼어요' : r.meta.issues || 'AI 응답 없음';
             return { songs: [], ms: ms(), status: 'failed', detail, model };
           });

@@ -1,5 +1,5 @@
 import {options,exclusions,type Category} from './data';
-import {getCatalog} from './catalog';
+import {getCatalog,knownCatalogItems} from './catalog';
 import type {Store} from './domain';
 import {decodeStore} from './storage';
 
@@ -7,7 +7,8 @@ export const MAX_BACKUP_BYTES=5_000_000;
 export type BackupPreview={store:Store;date?:string};
 const unique=(ids:string[])=>new Set(ids).size===ids.length;
 export function importIssue(store:Store):string|null {
-  const ids=new Map(getCatalog().items.map(i=>[i.id,i.category]));
+  // Reviewed items plus AI picks this browser has seen: a favourite or taste may point at either.
+  const ids=new Map(knownCatalogItems().map(i=>[i.id,i.category]));
   // Historical snapshots may refer to retired catalog IDs; validate against their frozen category.
   for(const h of store.history) for(const r of h.rounds) for(const v of r.results){if(ids.has(v.item.id) && ids.get(v.item.id)!==v.item.category)return '기록 항목의 분야가 일치하지 않아요.';ids.set(v.item.id,v.item.category);}
   for(const h of store.history) if(h.selected){const i=h.selected.result.item;if(ids.has(i.id)&&ids.get(i.id)!==i.category)return '선택 항목의 분야가 일치하지 않아요.';ids.set(i.id,i.category);}

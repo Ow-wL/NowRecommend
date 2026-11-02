@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fetchFreeSongs, validFreeBatch } from './api/lab';
+import { fetchFreePicks, validFreeBatch } from './api/lab';
 import { markKey, readLab, tally, upsertEntry, writeLab, type LabEntry } from './lab';
 
 const song = (title: string) => ({ title, artist: '가수', tasteReason: '취향', contextReason: '상황' });
@@ -38,12 +38,16 @@ describe('lab log', () => {
 });
 
 describe('free recommendation API', () => {
-  const ok = { results: [{ ...song('밤'), confidence: 'high' }], meta: { mode: 'free', requestId: 'r', model: 'm', ai: 'used', issues: null, latencyMs: 10 } };
+  const pick = (name: string) => ({ name, detail: '가수', tasteReason: '취향', contextReason: '상황', confidence: 'high', tags: ['차분함'],
+    item: { id: 'ai-1', category: 'music', name, subtitle: '가수', description: 'AI', tags: ['차분함'], ingredients: [], emoji: '🎵', color: '#eee' } });
+  const ok = { results: [pick('밤')], meta: { mode: 'free', requestId: 'r', model: 'm', ai: 'used', issues: null, latencyMs: 10 } };
 
-  it('accepts the server shape and rejects broken songs', () => {
+  it('accepts the server shape and rejects broken picks', () => {
     expect(validFreeBatch(ok)).toBe(true);
-    expect(validFreeBatch({ ...ok, results: [{ ...song('밤'), confidence: 'sure' }] })).toBe(false);
-    expect(validFreeBatch({ ...ok, results: [{ ...song(''), confidence: 'high' }] })).toBe(false);
+    expect(validFreeBatch({ ...ok, results: [{ ...pick('밤'), confidence: 'sure' }] })).toBe(false);
+    expect(validFreeBatch({ ...ok, results: [pick('')] })).toBe(false);
+    expect(validFreeBatch({ ...ok, results: [{ ...pick('밤'), item: { id: 'x' } }] })).toBe(false);
+    expect(validFreeBatch({ ...ok, results: [{ ...pick('비빔국수'), detail: '' }] })).toBe(true);  // food picks may have no detail
     expect(validFreeBatch({ ...ok, meta: { ...ok.meta, mode: 'rag' } })).toBe(false);
   });
 
@@ -51,7 +55,7 @@ describe('free recommendation API', () => {
     let sent: any;
     const fetchImpl = (async (_: string, init: RequestInit) => { sent = JSON.parse(String(init.body)); return new Response(JSON.stringify(ok)); }) as typeof fetch;
     const avoid = Array.from({ length: 70 }, (_, i) => `곡${i} - 가수`);
-    await fetchFreeSongs({ raw: '산책', conditions: { tags: ['산책'], excluded: ['보컬'] }, profile: { selected: ['m01'], tags: [], disliked: [] },
+    await fetchFreePicks('music', { raw: '산책', conditions: { tags: ['산책'], excluded: ['보컬'] }, profile: { selected: ['m01'], tags: [], disliked: [] },
       likedText: Array.from({ length: 12 }, (_, i) => `가수${i}`), avoid, model: 'm' }, { base: 'http://api.test', fetchImpl });
     expect(sent.conditions).toEqual({ tags: ['산책'], excluded: ['보컬'] });
     expect(sent.likedText).toHaveLength(10);

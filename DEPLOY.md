@@ -350,5 +350,6 @@ gcloud secrets add-iam-policy-binding auth-secret --project harness-recommend --
 gcloud run services update nowrecommend-api --project harness-recommend --region asia-northeast3 --update-secrets AUTH_SECRET=auth-secret:latest
 ```
 
+- 같은 배포에 **음악 AI 엔진**(README "음악은 AI가 직접 고릅니다")도 들어갑니다. 기본값 `MUSIC_ENGINE=ai`이며, 되돌리려면 `--update-env-vars MUSIC_ENGINE=catalog`. 음악 추천 1회에 생성 요청 1회가 들고(재순위와 같은 모델·한도), 고른 곡이 `items`에 초안으로 쌓이므로 DB 크기가 서서히 늘어납니다(곡당 1행, 임베딩 없음).
 - 비밀 값을 넣지 않으면 계정 경로만 503으로 답하고 나머지는 그대로 동작합니다. 프론트는 이때 로그인 화면에서 "이 서버에는 계정 기능이 설정되지 않았어요"를 보여줍니다.
 - `users.store`에는 사용자의 취향·즐겨찾기·기록이 들어갑니다. 지금까지 "서버에는 사용자 데이터가 없다"(§4 자동 백업 없음)는 전제가 바뀌므로, 계정 배포 뒤에는 Cloud SQL 자동 백업을 켜는 것을 권합니다(월 비용 소폭 증가).

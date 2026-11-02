@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { CATALOG_META, items as bundledItems, normalizeItem, type Item } from './data';
 import { apiEnabled, apiJson, API_BASE_URL } from './api/client';
+import { knownItems } from './knownItems';  // a module cycle (knownItems uses validItem), used only inside functions
 
 // The catalog the app recommends from: the bundled sample until the API catalog arrives (plans-rag.md §8).
 export type Catalog = { items: Item[]; version: string; source: 'bundled' | 'server' };
@@ -14,6 +15,10 @@ export function resetCatalog() { setCatalog(bundled); }
 export function subscribeCatalog(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 export const useCatalog = () => useSyncExternalStore(subscribeCatalog, getCatalog);
 export const findItem = (id: string, catalog: Catalog = current) => catalog.items.find(i => i.id === id);
+/** Reviewed items plus remembered AI picks (src/knownItems.ts), for resolving stored ids (favourites, tastes, backups). */
+export function knownCatalogItems(catalog: Catalog = current): Item[] {
+  return [...catalog.items, ...knownItems().filter(k => !catalog.items.some(i => i.id === k.id))];
+}
 
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === 'string');
 export function validItem(i: any): i is Item {

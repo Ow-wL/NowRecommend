@@ -12,10 +12,14 @@ export type Session = { category: Category; raw: string; conditions: Conditions;
   /** Cards of this round that had been seen before the round began (a reroll that ran out of unseen ones). */
   repeatIds?: string[]; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local';
   /** How the server produced the current cards (only with source 'server'): AI used/failed/off, sentence meaning used. */
-  quality?: { ai: 'used' | 'failed' | 'off'; context: boolean } };
+  quality?: { ai: 'used' | 'failed' | 'off'; context: boolean;
+    /** 'ai': the model named the items itself; 'catalog': retrieval over reviewed items. `wanted` is set when the AI engine fell back. */
+    engine?: 'ai' | 'catalog'; wanted?: 'ai' } };
 /** `contrast` compares the card with the others shown with it ("추천 중 유일하게 …"). It is recomputed whenever the shown set
  * changes (withContrast); taste and context reasons only describe the card itself. */
-export type Recommendation = { item: Item; tasteReason: string; contextReason: string; contrast?: string };
+export type Recommendation = { item: Item; tasteReason: string; contextReason: string; contrast?: string;
+  /** AI engine only (server meta.engine 'ai'): how sure the model is that the item exists as named. */
+  confidence?: 'high' | 'medium' | 'low'; aiPick?: boolean };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
 export type Selection = { result: Recommendation; date: string; roundId: string };
@@ -252,8 +256,8 @@ export function conditionConflicts(session: Session): string[] {
 // The local recommender: offline mode and the fallback when the API server cannot answer.
 export function recommend(session: Session, profile: Profile, catalog: Item[] = catalogItems()): Recommendation[] {
   if (session.snapshot) {
-    const eligible = new Set(eligibleCandidates(session, profile, catalog).map(i => i.id));
-    return withContrast(session.snapshot.filter(r => eligible.has(r.item.id)));
+    // Server rounds may hold items outside the catalog (AI picks); they are judged by the same hard filters on their own data.
+    return withContrast(session.snapshot.filter(r => session.source === 'server' ? eligibleItem(r.item, session, profile) : eligibleItem(r.item, session, profile) && catalog.some(i => i.id === r.item.id)));
   }
   const { category, conditions } = session;
   const preferred = new Set([...profile.tags, ...catalog.filter(i => profile.selected.includes(i.id)).flatMap(i => i.tags)]);
@@ -321,10 +325,14 @@ export function withContrast(results: Recommendation[]): Recommendation[] {
   return results.map(({ contrast: _old, ...r }) => { const contrast = contrastReason(r.item, shown); return contrast ? { ...r, contrast } : r; });
 }
 
-export function eligibleCandidates(session: Session, profile: Profile, catalog: Item[] = catalogItems()): Item[] {
-  return catalog.filter(i => i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
+/** The hard filters on one item: category, long-term dislikes, this request's exclusions, favourites scope, excluded traits. */
+export function eligibleItem(i: Item, session: Session, profile: Profile): boolean {
+  return i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
     && (session.candidateScope !== 'favorites' || (session.candidateIds || []).includes(i.id))
-    && !blockedValues(session.conditions.excluded).some(t => [...i.tags, ...i.ingredients].includes(t)));
+    && !blockedValues(session.conditions.excluded).some(t => [...i.tags, ...i.ingredients].includes(t));
+}
+export function eligibleCandidates(session: Session, profile: Profile, catalog: Item[] = catalogItems()): Item[] {
+  return catalog.filter(i => eligibleItem(i, session, profile));
 }
 /** Starts a new round from results computed locally or by the API server. */
 export function applyBatch(session: Session, results: Recommendation[]): Session {

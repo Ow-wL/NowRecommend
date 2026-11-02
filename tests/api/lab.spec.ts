@@ -11,7 +11,8 @@ const pool = (ids: string[], mode = 'rag') => ({
   results: ids.map(id => ({ item: music.find(i => i.id === id)!, tasteReason: '풀 취향 이유', contextReason: '풀 상황 이유' })),
   meta: { mode, eligibleCount: 15, newCount: ids.length, catalogVersion: 'db-test', requestId: 'r', ai: mode === 'rag' ? 'used' : 'failed' },
 });
-const song = (title: string, confidence = 'high') => ({ title, artist: '자유 가수', tasteReason: '자유 취향 이유', contextReason: '자유 상황 이유', confidence });
+const song = (title: string, confidence = 'high') => ({ name: title, detail: '자유 가수', tasteReason: '자유 취향 이유', contextReason: '자유 상황 이유', confidence, tags: ['차분함'],
+  item: { id: `ai-${title.replace(/\s/g, '')}`, category: 'music', name: title, subtitle: '자유 가수', description: 'AI 추천', tags: ['차분함'], ingredients: [], emoji: '🎵', color: '#e6dfef' } });
 const free = (titles: string[], model = 'lite') => ({ results: titles.map(t => song(t)), meta: { mode: 'free', requestId: 'f', model, ai: titles.length ? 'used' : 'failed', issues: titles.length ? null : 'TimeoutError', latencyMs: 900 } });
 
 async function setup(page: Page, opts: { freeFails?: boolean } = {}) {
@@ -20,7 +21,7 @@ async function setup(page: Page, opts: { freeFails?: boolean } = {}) {
       profiles: { food: { selected: [], tags: [], disliked: [] }, music: { selected: ['m01', 'm05', 'm13', 'm14', 'm15'], tags: [], disliked: [] } }, favorites: [], history: [] }));
   });
   await page.route(`${API}/api/catalog**`, route => fulfill(route, { catalogVersion: 'db-test', items }));
-  await page.route(`${API}/api/lab/music/models`, route => fulfill(route, { models: ['lite', 'flash'] }));
+  await page.route(`${API}/api/lab/models`, route => fulfill(route, { models: ['lite', 'flash'] }));
   await page.route(`${API}/api/parse`, route => fulfill(route, { conditions: { tags: ['차분함'], excluded: [], maxPrice: null }, unparsed: [], source: 'rule', ai: 'not_needed' }));
   const bodies = { pool: [] as any[], free: [] as any[] };
   let poolCalls = 0, freeCalls = 0;

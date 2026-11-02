@@ -53,8 +53,13 @@ describe('recommend request and response', () => {
   });
   it('turns server meta into the quality shown on the results screen', () => {
     const meta = { mode: 'retrieval_only' as const, eligibleCount: 3, newCount: 1, catalogVersion: 'db-1', requestId: 'r' };
-    expect(qualityOf(meta)).toEqual({ ai: 'off', context: true });  // older servers report nothing
-    expect(qualityOf({ ...meta, ai: 'failed', situational: true, contextSimilarity: false })).toEqual({ ai: 'failed', context: false });
-    expect(qualityOf({ ...meta, ai: 'used', situational: false, contextSimilarity: false })).toEqual({ ai: 'used', context: true });  // nothing to embed
+    expect(qualityOf(meta)).toEqual({ ai: 'off', context: true, engine: 'catalog' });  // older servers report nothing
+    expect(qualityOf({ ...meta, ai: 'failed', situational: true, contextSimilarity: false })).toEqual({ ai: 'failed', context: false, engine: 'catalog' });
+    expect(qualityOf({ ...meta, ai: 'used', situational: false, contextSimilarity: false })).toEqual({ ai: 'used', context: true, engine: 'catalog' });  // nothing to embed
+    // The AI engine answered, or fell back to the catalog (engineWanted says what was asked for).
+    expect(qualityOf({ ...meta, mode: 'rag', ai: 'used', engine: 'ai', model: 'lite' })).toEqual({ ai: 'used', context: true, engine: 'ai' });
+    expect(qualityOf({ ...meta, ai: 'failed', engine: 'catalog', engineWanted: 'ai' })).toEqual({ ai: 'failed', context: true, engine: 'catalog', wanted: 'ai' });
+    expect(validRemoteBatch({ results: [], meta: { ...meta, engine: 'ai', engineWanted: 'ai', model: null } })).toBe(true);
+    expect(validRemoteBatch({ results: [], meta: { ...meta, engine: 'oracle' } })).toBe(false);
   });
 });

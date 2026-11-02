@@ -67,7 +67,12 @@ curl http://127.0.0.1:8010/api/catalog?category=food
 - `app.cli.embed`: 검수 완료 항목 중 임베딩 원문·모델·차원이 바뀐 항목만 `gemini-embedding-2`(768차원)로 계산합니다. `--dry-run`은 API를 호출하지 않고 대상만 보여줍니다.
 - `src/data.ts`를 고치면 `npx vite-node scripts/export-catalog.ts`로 시드 파일을 다시 만듭니다. 둘이 어긋나면 `npm test`가 실패합니다.
 - `GET /api/catalog?category=food|music`은 검수 완료 항목만 프론트 `Item` 형식으로 돌려주고, 카탈로그 전체 내용 기준의 `catalogVersion`을 함께 줍니다.
-- `POST /api/recommend`는 다음 순서로 동작합니다.
+- **음악은 2026-11-02부터 AI가 직접 고릅니다**(`MUSIC_ENGINE=ai`, 실험 비교 [plans-music-ai.md](./plans-music-ai.md) §6의 결과). `POST /api/recommend`의 `category: "music"`은 아래 카탈로그 파이프라인 대신 `server/app/ai_engine.py`가 답합니다.
+  - 모델이 아는 곡 중에서 상황·취향에 맞는 5곡을 곡명·아티스트·이유·확신도(`confidence`)·태그와 함께 고릅니다(`llm/free.py`). 서버는 중복·이미 본 곡·비선호·취향 곡 자체·모르는 태그를 걸러내지만, 곡이 실제로 있는지는 확인하지 못합니다. 화면은 "AI가 직접 고른 곡"임을 알리고 카드에 확신도 배지를 붙입니다.
+  - 고른 곡은 `items`에 `status: draft`, `source: ai_draft`, id `ai-<해시>`로 저장합니다(`ai_items.py`). 그래서 다음 회차의 `seenIds`·`pinnedIds`·비선호·취향 ID를 다시 "곡명 - 아티스트"로 바꿀 수 있고, 카탈로그에 이미 있는 곡(이름·아티스트 일치)은 그 항목(커버·Apple Music 링크 포함)으로 돌려줍니다. 초안은 `/api/catalog`·검색 파이프라인·`app.cli.review`에 나오지 않습니다.
+  - 고정한 곡은 그대로 두고 나머지만 새로 받습니다. 모델이 실패하거나(한도·시간 초과) 응답이 모두 걸러지면 카탈로그 파이프라인 결과로 대체하고 `meta.engine: "catalog"`, `meta.engineWanted: "ai"`를 표시합니다. 즐겨찾기 범위(`candidateIds`) 요청과 음식은 카탈로그 파이프라인을 씁니다. 요청의 `engine: "catalog"|"ai"`로 직접 고를 수도 있습니다(실험실이 씁니다).
+  - 브라우저는 카탈로그에 없는 AI 곡을 `nowrecommend-known-items-v1`에 기억해(최근 400개) 즐겨찾기·취향·기록에서 이름을 보여줍니다. 오프라인 모드(서버 없음)의 음악 추천은 전과 같이 내장 카탈로그를 씁니다.
+- `POST /api/recommend`의 카탈로그 파이프라인(음식, 즐겨찾기 범위, 음악 대체 경로)은 다음 순서로 동작합니다.
   1. 필수 제외·비선호·이번 요청 제외·즐겨찾기 범위를 SQL로 거릅니다. `해산물` 같은 묶음 제외는 등록 재료 중 덮는 값(지금은 `생선`)으로 거릅니다.
      - 가격·배달·주변 표현("만원 이하", "배달 가능한")은 문장 임베딩과 AI 재순위에 보내기 전에 지웁니다. 예전 클라이언트가 보낸 `maxPrice`는 무시합니다.
   2. 상황 문장 임베딩, 취향 항목 평균 벡터, 조건 태그 일치를 합쳐 점수를 매깁니다. 등록한 취향 항목은 한 회차에 하나까지만 앞에 두고, 나머지는 요청에 맞는 새 후보 뒤로 보냅니다.

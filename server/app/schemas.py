@@ -32,6 +32,9 @@ class RecommendRequest(BaseModel):
     candidateIds: IdList | None = None  # favorites scope; None means the whole catalog
     count: Annotated[int, Field(ge=1, le=5)] | None = None  # default: food 3, music 5
     tau: Annotated[float, Field(ge=0, le=1)] | None = None  # exploration temperature; 0 = deterministic
+    # "ai": the model names items itself (app/ai_items.py); "catalog": retrieval + rerank over reviewed items.
+    # None: the server default (MUSIC_ENGINE for music, catalog for food; favourites scope is always catalog).
+    engine: Literal["catalog", "ai"] | None = None
 
     @model_validator(mode="after")
     def known_vocabulary(self) -> "RecommendRequest":

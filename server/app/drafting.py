@@ -150,7 +150,8 @@ def similar_items(row: Item, others: Iterable[Item], threshold: float = DUPLICAT
 def export_review(session: Session, category: str | None = None, threshold: float = DUPLICATE_THRESHOLD) -> dict:
     query = select(Item).order_by(Item.category, Item.created_at, Item.id)
     everything = list(session.scalars(query))
-    drafts = [r for r in everything if r.status == "draft" and (category is None or r.category == category)]
+    # AI recommendation results are stored as drafts too (app/ai_items.py) but were never written for a reviewer.
+    drafts = [r for r in everything if r.status == "draft" and not r.id.startswith("ai-") and (category is None or r.category == category)]
     entries = []
     for row in drafts:
         entry = {"id": row.id, "category": row.category, "name": row.name, "artist": row.artist, "description": row.description,
