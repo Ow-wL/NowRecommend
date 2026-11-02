@@ -134,7 +134,8 @@ export default function App() {
   // unseen, and cards that match none of the wanted tags (tags rank candidates, they do not filter them).
   const repeatedCount = (session.repeatIds || []).filter(id => results.some(r => r.item.id === id) && !session.pinnedIds?.includes(id)).length;
   const unseenLeft = eligibleCandidates(session, store.profiles[session.category], items).filter(i => !session.seenIds?.includes(i.id)).length;
-  const offTopicCount = session.conditions.tags.length ? results.filter(r => !r.item.tags.some(t => session.conditions.tags.includes(t))).length : 0;
+  // AI picks carry the model's own tags, so a missing tag is not a shortage of registered candidates: no off-topic notice for them.
+  const offTopicCount = session.conditions.tags.length && session.quality?.engine !== 'ai' ? results.filter(r => !r.item.tags.some(t => session.conditions.tags.includes(t))).length : 0;
 
   useEffect(() => { const failed = storageBlocked || !writeStore(store); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);

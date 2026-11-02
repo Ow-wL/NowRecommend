@@ -4,11 +4,27 @@
 
 - 사이트: <https://ow-wl.github.io/NowRecommend/>
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- 운영 중(2026-10-27 장르 규칙 배포 뒤): 가격 제거 **1단계 배포 완료, 2단계(가격 열 삭제) 미실행**. API와 프론트엔드가 같은 커밋 `8e27ded`입니다.
-  - API·시드 작업: 이미지 `api:8e27ded`, 리비전 `nowrecommend-api-00008-f97`(트래픽 100%)
-  - Pages: `8e27ded`
-  - DB: 마이그레이션 `0002`. `0003`은 대기 중입니다.
-  - 자세한 상태는 §0-1에 있습니다.
+- 운영 중(2026-11-02 계정·AI 음악·실험실·디자인 v4 배포 뒤): 가격 제거 **2단계(열 삭제)까지 완료**, 계정 기능 **켜짐**.
+  - API·시드·확인·열 삭제 작업: 이미지 `api:a3db2d5`, 리비전 `nowrecommend-api-00009-qxr`(트래픽 100%)
+  - Pages: `895b72d`(a3db2d5의 화면 + 테스트 수정)
+  - DB: 마이그레이션 `0004`(0003 가격 열 삭제, 0004 users 표). 대기 중인 마이그레이션 없음.
+  - 자세한 상태는 §0-0에, 계정 배포 절차와 결과는 §6에 있습니다. 2026-10-27의 1단계 상태는 §0-1에 남겨 둡니다.
+
+### 0-0. 지금 운영 상태 (계정·AI 음악 배포 뒤, 2026-11-02)
+
+2026-11-02 15시(KST)에 `a3db2d5`(회원가입·로그인과 계정 동기화, AI 음악 엔진, 음식·음악 AI 실험실, 디자인 v4)를 배포했습니다. 순서: 수동 백업 → 이미지 빌드·푸시 → `auth-secret` 생성 → `nowrecommend-contract` 작업으로 `--contract` 실행(0002 → 0003 → 0004, 한 트랜잭션) → 서비스 배포(`--update-secrets AUTH_SECRET=auth-secret:latest`) → 시드·확인 작업 이미지 교체.
+
+| 항목 | 상태 |
+|---|---|
+| API 서비스 | `nowrecommend-api`, 트래픽 100% `nowrecommend-api-00009-qxr`, 이미지 `api:a3db2d5`(매니페스트 `sha256:84798685…`)<br>시작 로그: `migrate: at 0004; nothing to apply`. 환경 변수는 이전과 같고 `AUTH_SECRET`(비밀 값 `auth-secret` 버전 1)이 추가됐습니다. `MUSIC_ENGINE`은 기본값 `ai` |
+| 프론트엔드(Pages) | `a3db2d5`의 Pages 실행 41397937928은 단위 테스트(`theme.test.ts`의 옛 표면색) 때문에 실패했고, `895b72d`로 고쳐 다시 배포했습니다 |
+| 열 삭제 작업 | `nowrecommend-contract` 생성(이미지 `api:a3db2d5`, `python -m app.cli.migrate --contract`), 실행 `nowrecommend-contract-btr4b` 성공: `migrate: at 0002; upgraded to 0004` |
+| 시드·확인 작업 | `nowrecommend-seed`(`sh scripts/seed-job.sh`)·`nowrecommend-migrate-plan`을 `api:a3db2d5`로 바꿨습니다. 시드는 실행하지 않았습니다(카탈로그 변경 없음) |
+| DB 마이그레이션 | **0004**. `items.price_label`·`cost`는 삭제되어 `items_price_backup`에 값만 남아 있고, `users` 표가 생겼습니다. AI 음악 추천이 고른 곡은 `items`에 `ai-…` 초안으로 쌓입니다 |
+| 백업 | 수동 백업 `1793600082130`(ON_DEMAND, SUCCESSFUL, 2026-11-02 06:14 UTC, 이번 배포 직전, DB 0002). 이전 백업 `1793084373805`·`1793050877375` |
+| 코드 롤백 대상 | 없음에 가깝습니다. `00008-f97`(`api:8e27ded`) 이하의 리비전은 DB가 0004라 시작하지 못합니다(`alembic upgrade head`가 0003·0004를 모름). 되돌리려면 §0-4 "2단계 뒤 되돌리기"처럼 `--downgrade 0002`를 먼저 실행해야 하며, 그러면 `users` 표(계정 데이터)도 삭제됩니다 |
+
+배포 뒤 확인한 것: `/api/health` 200에 `auth.enabled: true`, `/api/auth/login`(틀린 비밀번호) 401, `/api/me/store`(토큰 없음) 401, `/api/lab/models`에 모델 두 개, `/api/recommend`(음악)가 `engine: "ai"`·`model: gemini-3.5-flash-lite`로 5곡(카탈로그에 있는 곡은 기존 ID로) 응답. 운영에 계정을 만들어 보지는 않았습니다(테스트 계정은 로컬 DB에서만 확인).
 
 ## 0. 가격 제거 배포 순서 (1단계 2026-10-27 완료, 2단계 대기)
 
@@ -336,9 +352,9 @@ try { npm run dev } finally { Remove-Item Env:VITE_API_BASE_URL -ErrorAction Sil
 
 브라우저는 `http://127.0.0.1:5173`으로 엽니다. 로컬 API의 CORS 허용 주소이기 때문입니다. `docker-compose.yml`은 로컬용 `AUTH_SECRET` 기본값을 넣어 계정 기능이 켜진 상태로 뜹니다.
 
-## 6. 계정(로그인·회원가입) 배포 — 2026-11-02 추가, 배포 대기
+## 6. 계정(로그인·회원가입) 배포 — 2026-11-02 완료
 
-코드에 계정 기능이 들어갔습니다(README "계정과 동기화"). 배포하려면 두 가지가 더 필요합니다.
+코드에 계정 기능이 들어갔습니다(README "계정과 동기화"). 배포에는 두 가지가 더 필요했고, 2026-11-02에 아래 순서대로 실행했습니다(결과는 §0-0).
 
 1. **마이그레이션 `0004`(users 표)는 `0003` 뒤에 있습니다.** 리비전이 한 줄이라 DB가 `0002`인 지금은 컨테이너 시작 시 `contract migrations waiting: 0003` 앞에서 멈추고 `0004`도 적용되지 않습니다. 그래서 이번 배포는 **§0-4의 2단계(열 삭제)를 먼저** 실행해야 합니다. 지금 운영 중인 `8e27ded`는 가격 열을 읽지 않으므로 조건은 이미 충족됩니다. 순서: 수동 백업 → `nowrecommend-contract` 작업으로 `python -m app.cli.migrate --contract`(0003과 0004가 함께 적용됨) → 새 이미지 배포.
 2. **비밀 값 `auth-secret`**: `python -c "import secrets; print(secrets.token_urlsafe(48))"`로 만든 값을 Secret Manager에 넣고 Cloud Run에 `AUTH_SECRET`으로 주입합니다. 서비스 계정에 읽기 권한을 추가합니다. 값을 바꾸면 모든 사용자가 로그아웃됩니다.
