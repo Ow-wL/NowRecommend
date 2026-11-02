@@ -204,3 +204,18 @@ test('an AI song the Apple store lists gets its cover and page; one it does not 
   await expect(missing).toContainText('일치하는 곡 정보를 찾지 못했어요');
   await expect(missing.getByRole('link', { name: /YouTube에서 찾기/ })).toBeVisible();
 });
+
+test('a failed store request says so and can be tried again, unlike a song that is not listed', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const item = { id: 'ai-다시확인', category: 'music', name: '다시 확인', subtitle: '테스트 가수', description: '', tags: [], ingredients: [], emoji: '', color: '' };
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [{ item, tasteReason: '좋아하는 분위기에 가까워요', contextReason: '지금 듣기 좋아요', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }));
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  const card = page.locator('.item-card').first();
+  await expect(card).toContainText('지금은 확인할 수 없어요');  // beforeEach aborts every store request
+  await expect(card).not.toContainText('일치하는 곡 정보를 찾지 못했어요');
+  await page.route('https://itunes.apple.com/**', route => route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ results: [{ trackName: '다시 확인', artistName: '테스트 가수', trackViewUrl: 'https://music.apple.com/kr/album/x/1?i=2', artworkUrl100: 'https://example.test/100x100bb.jpg' }] }) }));
+  await card.getByRole('button', { name: '다시 확인', exact: true }).click();
+  await expect(card.getByRole('link', { name: /Apple Music에서 듣기/ })).toHaveAttribute('href', 'https://music.apple.com/kr/song/x/2');
+  await expect(card).not.toContainText('지금은 확인할 수 없어요');
+});
