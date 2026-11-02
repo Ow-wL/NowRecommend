@@ -18,7 +18,7 @@ export function ItemDetails({item,reasons,conditions}: {item:Item;reasons?:Recom
     {reasons && <section className="details-why"><h3>추천 이유</h3>
       <div className="reasons">{reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}<p><b>이번 상황</b>{reasons.contextReason}</p>{reasons.contrast && <p><b>이 후보의 특징</b>{reasons.contrast}</p>}</div>
       {checks.length > 0 && <><h4>조건 확인</h4><ul className="condition-checks">{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>{c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}{checkText(c)}</li>)}</ul>
-        {checks.some(c => c.state === 'untagged') && <p className="small muted">정보 없음은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요.</p>}</>}
+        {checks.some(c => c.state === 'untagged') && <p className="small muted">등록 정보 없음은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요.</p>}</>}
     </section>}
     <p>{item.description || '설명 미등록'}</p><dl><dt>{item.category==='food' ? '주요 재료' : '아티스트'}</dt><dd>{item.category==='food' ? item.ingredients.join(' · ') || '미등록' : item.subtitle || '미등록'}</dd></dl>
     {item.tags.length > 0 && <><h3>특징</h3><div className="mini-tags">{item.tags.map(t=><span key={t}>{t}</span>)}</div></>}

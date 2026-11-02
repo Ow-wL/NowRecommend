@@ -14,15 +14,30 @@ export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: stri
 export type SongStatus = 'known' | 'checking' | 'found' | 'missing' | 'failed';
 
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
-// Guest and film credits are left out of the comparison, because the model rarely writes them while the store often does.
-// "(Live)", "[Remastered]" or " - Acoustic" stay, so those versions do not count as a match.
-const withoutGuests = (text: string) => text.replace(/\s*[([](feat|ft|with|from)\b.*?[)\]]/gi, '').replace(/\s+-\s+from\b.*$/i, '');
+// A film credit is never part of the song. Guests are compared apart from the title (see matchRank).
+// "(Live)", "[Remastered]" or " - Acoustic" stay in the title, so those versions do not count as the same song.
+const guestPart = /\s*[([](?:feat\.?|ft\.?|with)\s+([^)\]]+)[)\]]/gi;
+const baseTitle = (text: string) => norm(text.replace(guestPart, '').replace(/\s*[([]from\b.*?[)\]]/gi, '').replace(/\s+-\s+from\b.*$/i, ''));
+const creditSplit = /\s*(?:,|&|\/|×|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/i;
+export const guestsIn = (text: string) => [...text.matchAll(guestPart)].flatMap(m => m[1].split(creditSplit)).map(norm).filter(Boolean);
 
-export const titleMatches = (want: string, got: string) => { const a = norm(withoutGuests(want)); return !!a && a === norm(withoutGuests(got)); };
+/** 0: not this song. 1: same title, but a guest the request names is not shown. 2: same title with nothing against it.
+ * No guest asked: a listed guest is fine. A guest asked: that person must be credited, and other guests only is a different song. */
+export function matchRank(want: string, got: string, gotArtist = ''): 0 | 1 | 2 {
+  const title = baseTitle(want);
+  if (!title || title !== baseTitle(got)) return 0;
+  const asked = guestsIn(want), listed = guestsIn(got);
+  if (!asked.length) return 2;
+  const artists = gotArtist.split(creditSplit).map(norm);
+  const credited = (g: string) => listed.includes(g) || artists.includes(g);
+  if (asked.every(credited)) return 2;
+  return listed.length ? 0 : 1;
+}
+export const titleMatches = (want: string, got: string) => matchRank(want, got) > 0;
 /** The asked artist must be one of the credited names as a whole, not a piece of a longer name. */
 export function artistMatches(want: string, got: string): boolean {
   const a = norm(want);
-  return !!a && [got, ...got.split(/\s*(?:,|&|\/|×|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/i)].some(name => norm(name) === a);
+  return !!a && [got, ...got.split(creditSplit)].some(name => norm(name) === a);
 }
 
 /** The store's track URL is the album page with ?i=<track id>; Apple Music's song page is /song/<slug>/<track id>. */
@@ -50,7 +65,8 @@ export async function lookupSong(title: string, artist: string, names: string[] 
     return ((await response.json()) as { results?: Hit[] }).results || [];
   };
   const pick = (results: Hit[]) => {
-    const hit = results.find(r => titleMatches(title, r.trackName || '') && names.some(n => artistMatches(n, r.artistName || '')) && mediaFromHit(r));
+    const usable = results.filter(r => names.some(n => artistMatches(n, r.artistName || '')) && mediaFromHit(r));
+    const hit = usable.find(r => matchRank(title, r.trackName || '', r.artistName) === 2) || usable.find(r => matchRank(title, r.trackName || '', r.artistName) === 1);
     return hit && mediaFromHit(hit);
   };
   const first = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { artistMatches, artistNames, lookupSong, mediaFromHit, songPage, titleMatches } from './songCheck';
+import { artistMatches, artistNames, guestsIn, lookupSong, matchRank, mediaFromHit, songPage, titleMatches } from './songCheck';
 
 const store = (results: object[]) => ({ ok: true, json: async () => ({ results }) }) as Response;
 const hit = { trackName: 'River Flows in You', artistName: 'Yiruma', trackViewUrl: 'https://music.apple.com/us/album/first-love/123?i=456&uo=4', artworkUrl100: 'https://is1.mzstatic.com/x/100x100bb.jpg' };
@@ -16,6 +16,24 @@ describe('song check', () => {
     expect(titleMatches('River Flows in You', 'River Flows in You [Remastered]')).toBe(false);
     expect(titleMatches('River Flows in You', 'River Flows in You - Acoustic')).toBe(false);
     expect(titleMatches('Letter', 'Letter from Autumn')).toBe(false);
+  });
+  it('accepts a listed guest when none was asked, and judges one that was', () => {
+    expect(guestsIn('Song (feat. A & B)')).toEqual(['a', 'b']);
+    expect(matchRank('Song', 'Song (feat. A)')).toBe(2);              // none asked: fine
+    expect(matchRank('Song (feat. A)', 'Song (feat. A)')).toBe(2);    // the asked guest is credited
+    expect(matchRank('Song (feat. A)', 'Song', 'Singer & A')).toBe(2); // credited in the artist name
+    expect(matchRank('Song (feat. A)', 'Song')).toBe(1);              // not shown: only if nothing better
+    expect(matchRank('Song (feat. A)', 'Song (feat. B)')).toBe(0);    // a different guest is not a match
+  });
+  it('keeps a named version apart in both directions', () => {
+    expect(matchRank('Song (Live)', 'Song (Live)')).toBe(2);
+    expect(matchRank('Song (Live)', 'Song')).toBe(0);
+    expect(matchRank('Song', 'Song - Remix')).toBe(0);
+  });
+  it('prefers the result that credits the asked guest', async () => {
+    const plain = { ...hit, trackName: 'Song' }, guest = { ...hit, trackName: 'Song (feat. A)', trackViewUrl: 'https://music.apple.com/us/album/x/1?i=9' };
+    const fetcher = vi.fn().mockResolvedValue(store([plain, guest]));
+    await expect(lookupSong('Song (feat. A)', 'Yiruma', ['Yiruma'], fetcher as typeof fetch)).resolves.toMatchObject({ link: 'https://music.apple.com/us/song/x/9' });
   });
   it('requires the artist to be a whole credited name', () => {
     expect(artistMatches('Yiruma', 'Yiruma')).toBe(true);

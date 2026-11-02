@@ -20,7 +20,7 @@ test('selection completion, refresh, change, cancel and historical snapshots',as
   await page.getByRole('button',{name:'선택 취소',exact:true}).click();await expect(page.getByRole('button',{name:'선택 취소',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'닫기',exact:true}).click();
   await page.getByRole('button',{name:'내 취향',exact:true}).click();await page.getByRole('button',{name:'편집하기',exact:true}).first().click();
-  await page.getByRole('button',{name:'매콤함',exact:true}).click();await page.getByRole('button',{name:'저장하기'}).click();
+  await page.locator('.to-moods').click();await page.getByRole('button',{name:'매콤함',exact:true}).click();await page.getByRole('button',{name:'저장하기'}).click();
   await page.getByRole('button',{name:'추천 기록',exact:true}).click();await page.locator('.history-title').click();
   await expect(page.locator('.history-round').first()).toHaveText(before!);
 });

@@ -89,6 +89,7 @@ export default function App() {
   const [deleteId, setDeleteId] = useState('');
   const [tasteFilter, setTasteFilter] = useState('');
   const [showAllChoices, setShowAllChoices] = useState(false);
+  const [showMoods, setShowMoods] = useState(false);
   // How to add to taste is said once, on the first results seen in this browser.
   const [showLikeHint] = useState(() => { try { return !localStorage.getItem('nowrecommend-like-hint-seen'); } catch { return false; } });
   const [settingsTab, setSettingsTab] = useState<'profile' | 'screen' | 'data'>('profile');
@@ -134,7 +135,7 @@ export default function App() {
   // Taste browsing (search, genre filter, "선택한 항목만") belongs to one category: a music filter left on the food screen
   // emptied its list with no visible control (review 2026-10-27). Any category change, including the back button, resets it.
   const browsedCategory = useRef(category);
-  useEffect(() => { if (browsedCategory.current !== category) { browsedCategory.current = category; setQuery(''); setSelectedOnly(false); setTasteFilter(''); setShowAllChoices(false); setDraftProfile(stateRef.current.store.profiles[category]); } }, [category]);
+  useEffect(() => { if (browsedCategory.current !== category) { browsedCategory.current = category; setQuery(''); setSelectedOnly(false); setTasteFilter(''); setShowAllChoices(false); setShowMoods(false); setDraftProfile(stateRef.current.store.profiles[category]); } }, [category]);
   const candidateStatus = candidateInfo(session, store.profiles[session.category]);
   const conflicts = conditionConflicts(session);
   const results = useMemo(() => recommend(session, store.profiles[session.category], items), [session, store.profiles, items]);
@@ -349,6 +350,8 @@ export default function App() {
   const browsing = categoryItems.length > 24, activeFilter = browsing && browseTags.includes(tasteFilter) ? tasteFilter : '';
   const visibleChoices = categoryItems.filter(i => !browsing || (!selectedOnly || draftProfile.selected.includes(i.id)) && (!activeFilter || i.tags.includes(activeFilter)) && `${i.name} ${i.subtitle}`.toLowerCase().includes(query.toLowerCase()));
 
+  // Likes already chosen stay in view, so they can always be seen and changed.
+  const moodsOpen = showMoods || draftProfile.tags.length > 0;
   const tasteKey = (p: Profile) => JSON.stringify([[...p.selected].sort(), [...p.tags].sort()]);
   const tasteUnchanged = tasteKey(draftProfile) === tasteKey(store.profiles[category]);
   // Twelve to start with, plus anything already picked; searching or filtering shows every match.
@@ -408,7 +411,8 @@ export default function App() {
           <button className="back-link" onClick={() => navigate(editingProfile ? 'taste' : 'recommend')}><ArrowLeft size={16} /> 돌아가기</button>
           <h1>평소 좋아하는 {category === 'food' ? '음식을' : '음악을'} 골라주세요.</h1>
           <p>{category === 'food' ? '좋아하는 메뉴' : '좋아하는 곡'} 3개 정도 골라보세요.{editingProfile ? '' : ' 건너뛰어도 돼요.'}</p>
-          <button className="text-button to-moods" onClick={() => { const moods = document.getElementById('taste-moods'); moods?.scrollIntoView({ behavior: 'smooth', block: 'center' }); moods?.querySelector('button')?.focus({ preventScroll: true }); }}>{category === 'food' ? '메뉴 대신 맛으로 고르기' : '곡 대신 분위기로 고르기'}</button>
+          <button className="text-button to-moods" aria-expanded={moodsOpen} aria-controls="taste-moods" onClick={() => setShowMoods(open => { if (!open) requestAnimationFrame(() => document.querySelector<HTMLElement>('#taste-moods button')?.focus()); return !open; })}>{category === 'food' ? '메뉴 대신 맛으로 고르기' : '곡 대신 분위기로 고르기'}{draftProfile.tags.length > 0 && ` · ${draftProfile.tags.length}개`}<ChevronDown size={15} className="chevron" /></button>
+          {moodsOpen && <div className="taste-tags" id="taste-moods">{chips(options[category].filter(t => !['혼자', '함께', '점심', '저녁', '과제', '운동', '산책', '휴식'].includes(t) && !t.includes('에너지')), draftProfile.tags, v => setDraftProfile(p => ({ ...p, tags: toggle(p.tags, v) })))}</div>}
           {!editingProfile && <button className="button secondary skip-taste" onClick={skipTaste}>취향 없이 바로 추천받기 <ArrowRight size={16} /></button>}
         </div>
         <div className="flow-body">
@@ -425,10 +429,6 @@ export default function App() {
             <div className={`selection-grid ${category}`}>{shownChoices.map(i => { const on = draftProfile.selected.includes(i.id); return <button key={i.id} className={`selection-card ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setDraftProfile(p => ({ ...p, selected: toggle(p.selected, i.id), disliked: p.disliked.filter(id => id !== i.id) }))}><ItemArt item={i} size="tile" /><span className="selection-check" aria-hidden="true">{on && <Check size={15} strokeWidth={3} />}</span><span className="selection-name"><b>{i.name}</b>{category === 'music' && <small>{i.subtitle}</small>}{mediaFor(i.id)?.approx && <small>이미지는 참고용이에요</small>}</span></button>; })}</div>
             {shownChoices.length < visibleChoices.length && <button className="button secondary more-choices" onClick={() => setShowAllChoices(true)}>다른 {category === 'food' ? '메뉴' : '곡'} 더 보기</button>}
             {!visibleChoices.length && <p className="empty-small">{query ? `‘${query}’와 일치하는 항목이 목록에 없어요.` : '일치하는 항목이 없어요.'}{category === 'music' && ' 목록 밖 곡은 등록할 수 없어요.'} <button className="text-button" onClick={() => { setQuery(''); setSelectedOnly(false); setTasteFilter(''); }}>검색·필터 초기화</button></p>}
-          </section>
-          <section className="taste-tags" id="taste-moods">
-            <h3>{category === 'food' ? '메뉴 대신 맛으로 고르기' : '곡 대신 분위기로 고르기'}</h3>
-            {chips(options[category].filter(t => !['혼자', '함께', '점심', '저녁', '과제', '운동', '산책', '휴식'].includes(t) && !t.includes('에너지')), draftProfile.tags, v => setDraftProfile(p => ({ ...p, tags: toggle(p.tags, v) })))}
           </section>
         </div>
         <div className="action-bar"><div className="action-bar-inner">

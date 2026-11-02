@@ -29,3 +29,19 @@ test('an unpicked taste card shows an empty ring, and only a picked one shows a 
   const card=page.locator('.selection-card').first();await expect(card.locator('.selection-check svg')).toHaveCount(0);await expect(card).toHaveAttribute('aria-pressed','false');
   await card.click();await expect(card.locator('.selection-check svg')).toHaveCount(1);await expect(card).toHaveAttribute('aria-pressed','true');
 });
+test('the mood picker opens in place, in view and above the save bar',async({page})=>{
+  await page.setViewportSize({width:390,height:844});await page.goto('/#/recommend/music');await page.getByRole('button',{name:'취향 추가',exact:true}).click();
+  const open=page.locator('.to-moods');await expect(open).toHaveAttribute('aria-expanded','false');await expect(page.locator('#taste-moods')).toHaveCount(0);
+  await open.click();await expect(open).toHaveAttribute('aria-expanded','true');
+  const chip=page.locator('#taste-moods .chip').first();await expect(chip).toBeFocused();
+  const [c,bar,head]=await Promise.all([chip.boundingBox(),page.locator('.action-bar-inner').boundingBox(),page.locator('.appbar').boundingBox()]);
+  expect(c!.y).toBeGreaterThanOrEqual(head!.y+head!.height);expect(c!.y+c!.height).toBeLessThanOrEqual(bar!.y);
+  await chip.click();await expect(open).toContainText('1개');await page.getByRole('button',{name:'저장하고 시작'}).click();await expect(page.getByLabel('지금의 상황')).toBeVisible();
+});
+for(const width of [320,360,390])test(`music actions stay on one line each at ${width}`,async({page})=>{
+  await page.setViewportSize({width,height:800});await page.goto('/#/recommend/music');await page.getByRole('button',{name:/추천받기$/}).click();
+  const sizes=await page.locator('.result-grid .card-actions .button:not(.more-toggle)').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().height));
+  expect(sizes.length).toBeGreaterThan(0);sizes.forEach(h=>expect(h).toBeLessThanOrEqual(48));
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('.result-grid .more-toggle').first().click();await expect(page.locator('.more-menu')).toBeVisible();const menu=await page.locator('.more-menu').boundingBox();expect(menu!.x).toBeGreaterThanOrEqual(0);expect(menu!.x+menu!.width).toBeLessThanOrEqual(width);
+});
