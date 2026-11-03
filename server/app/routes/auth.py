@@ -89,7 +89,7 @@ def _is_uuid(value: str) -> bool:
 
 
 def public_user(user: User) -> dict:
-    return {"id": str(user.id), "email": user.email, "name": user.name, "createdAt": _iso(user.created_at)}
+    return {"id": str(user.id), "email": user.email, "name": user.name, "createdAt": _iso(user.created_at), **({"isAdmin": True} if user.is_admin else {})}
 
 
 def _iso(value: datetime | None) -> str | None:

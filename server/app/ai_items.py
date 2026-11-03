@@ -79,7 +79,8 @@ def persist_picks(session: Session, category: str, picks: list[FreePick]) -> lis
         elif row.status == "draft":  # an AI draft saved before these fields existed, or with less known
             row.release_year = row.release_year or pick.release_year
             row.ingredients = row.ingredients or ingredients
-            row.parent_id = row.parent_id or parent_of(session, category, pick.base_dish)
+            # "" means an admin took the borrowed picture away (routes/reports.py): it stays away.
+            row.parent_id = parent_of(session, category, pick.base_dish) if row.parent_id is None else row.parent_id
         rows.append(row)
     try:
         session.commit()

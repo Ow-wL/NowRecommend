@@ -271,6 +271,61 @@ test('music years can be chosen, are sent, shown on the result and restored from
   await expect(page.getByRole('button', { name: /추천받기$/ })).toBeDisabled();
 });
 
+test('a card can be reported as a guest, and the admin page shows only what the server allows', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const item = { id: 'ai-injeolmi', category: 'food', name: '인절미 빙수', subtitle: '카페 · 디저트', description: '', tags: [], ingredients: [], emoji: '', color: '', parentId: 'f-bingsu' };
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [{ item, tasteReason: 't', contextReason: 'c', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }));
+  let sent: any; let down = true;
+  await page.route(`${API}/api/reports`, route => { if (route.request().method() !== 'POST') return fulfill(route, {}); if (down) return fulfill(route, { detail: 'no' }, 500); sent = { body: route.request().postDataJSON(), auth: route.request().headers()['authorization'] }; return fulfill(route, { id: 'r1' }, 201); });
+  await page.goto('/#/recommend/food');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  const card = page.locator('.item-card').first();
+  await card.locator('.more-toggle').click();
+  await page.getByRole('button', { name: '인절미 빙수 오류 신고' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('radio', { name: '기타' }).check();
+  await expect(dialog.getByRole('button', { name: '신고 보내기' })).toBeDisabled();
+  await dialog.getByRole('radio', { name: '사진이 메뉴와 달라요' }).check();
+  await dialog.getByLabel(/자세한 내용/).fill('딸기 빙수 사진이 나와요');
+  await dialog.getByRole('button', { name: '신고 보내기' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('신고를 보내지 못했어요');  // told inside the dialog; nothing lost
+  await expect(dialog.getByLabel(/자세한 내용/)).toHaveValue('딸기 빙수 사진이 나와요');
+  down = false;
+  await dialog.getByRole('button', { name: '신고 보내기' }).click();
+  await expect(page.locator('.toast')).toContainText('신고를 보냈어요');
+  expect(sent.body).toEqual({ itemId: 'ai-injeolmi', kind: 'wrong_image', note: '딸기 빙수 사진이 나와요' });
+  expect(sent.auth).toBeUndefined();
+  await card.locator('.more-toggle').click();
+  await expect(page.getByRole('button', { name: '인절미 빙수 오류 신고' })).toBeDisabled();
+  await page.goto('/#/admin');
+  await expect(page.getByRole('alert')).toContainText('관리자 계정으로 로그인해야 볼 수 있어요');
+});
+
+test('an admin lists reports and settles one, and the list follows the status', async ({ page }) => {
+  await catalogRoute(page);
+  await page.addInitScript(() => localStorage.setItem('nowrecommend-auth-v1', JSON.stringify({ token: 'tok', user: { id: 'u', email: 'a@example.com', name: '관리', isAdmin: true } })));
+  const report = { id: 'r1', createdAt: '2026-11-03T05:00:00Z', kind: 'wrong_image', note: '<b>딸기</b> 사진이에요', status: 'open', resolvedAt: null, byMember: false, canDropImage: true, item: { id: 'ai-injeolmi', category: 'food', name: '인절미 빙수', subtitle: '카페 · 디저트', parentId: 'f-bingsu' } };
+  let current: any = report; const updates: any[] = [];
+  await page.route(`${API}/api/admin/reports?**`, route => { const status = new URL(route.request().url()).searchParams.get('status'); const shown = status === 'all' || status === current.status ? [current] : []; return fulfill(route, { reports: shown, counts: { open: current.status === 'open' ? 1 : 0, resolved: current.status === 'resolved' ? 1 : 0, dismissed: 0 } }); });
+  await page.route(`${API}/api/admin/reports/r1`, route => { if (route.request().method() !== 'POST') return fulfill(route, {}); const body = route.request().postDataJSON(); updates.push(body); current = { ...current, ...(body.status ? { status: body.status } : {}), canDropImage: body.dropImage ? false : current.canDropImage }; return fulfill(route, current); });
+  await page.route(`${API}/api/me/store`, route => fulfill(route, { store: null, updatedAt: null }));
+  await page.route(`${API}/api/auth/me`, route => fulfill(route, { user: { id: 'u', email: 'a@example.com', name: '관리', isAdmin: true }, hasStore: false, storeUpdatedAt: null }));
+  await page.goto('/#/taste');
+  await page.getByRole('button', { name: /오류 신고 관리/ }).click();
+  const card = page.locator('.report-card');
+  await expect(card).toContainText('인절미 빙수');await expect(card).toContainText('사진이 메뉴와 달라요');await expect(card).toContainText('손님');
+  await expect(card.locator('.report-note')).toHaveText('<b>딸기</b> 사진이에요');  // a note is text, never markup
+  await expect(page.getByRole('button', { name: '미처리 1' })).toBeVisible();
+  await card.getByRole('button', { name: '참고 사진 빼기' }).click();
+  await expect(card).toHaveCount(0);
+  expect(updates).toEqual([{ dropImage: true, status: 'resolved' }]);
+  await page.getByRole('button', { name: '처리 완료 1' }).click();
+  await expect(card).toContainText('처리 완료');
+  await card.getByRole('button', { name: '다시 열기' }).click();
+  await expect(card).toHaveCount(0);
+  expect(updates[1]).toEqual({ status: 'open' });
+});
+
 test('AI food with an exclusion says the check rests on estimated ingredients', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
   const item = { id: 'ai-safe', category: 'food', name: '메뉴', subtitle: '한식', description: '', tags: [], ingredients: [], emoji: '', color: '' };

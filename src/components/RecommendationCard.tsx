@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Ban, Check, ChevronRight, CircleDashed, Columns2, ExternalLink, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
+import { AlertTriangle, Ban, Check, ChevronRight, CircleDashed, Columns2, ExternalLink, Flag, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
 import type { Item } from '../data';
 import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
 import { mapSearch, mediaFor, mediaOf, overseasLink, songLink, youtubeSearch } from '../media';
@@ -10,7 +10,9 @@ const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Ap
 
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
-export function RecommendationCard({ onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+export function RecommendationCard({ onReport, reported = false, onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+  /** Flags a wrong picture or wrong facts; absent without a server to send it to. */
+  onReport?: () => void; reported?: boolean;
   /** Asks again within this dish: 치킨 → 뿌링클, 황금올리브, 허니콤보. Only for a name that covers several menus. */
   onRefine?: () => void;
   /** Reports the song check so the results can sum it up once. */
@@ -92,6 +94,7 @@ export function RecommendationCard({ onRefine, onSongStatus, item, saved, reason
         {onPin && <button aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={17} />{pinned ? '고정 해제' : '이번 요청 고정'}</button>}
         {onReplace && <button aria-label={`${item.name} 한 장 교체`} disabled={pinned} onClick={onReplace}><RefreshCw size={17} />다른 후보로 교체</button>}
         {onCompare && <button aria-label={`${item.name} 비교 항목`} aria-pressed={compared} disabled={compareDisabled} onClick={onCompare}><Columns2 size={17} />{compared ? '비교에서 빼기' : '비교에 담기'}</button>}
+        {onReport && <button aria-label={`${item.name} 오류 신고`} disabled={reported} onClick={onReport}><Flag size={17} />{reported ? '신고했어요' : '오류 신고'}</button>}
         <button className="feedback-button" onClick={onExclude}><Ban size={17} />추천에서 제외</button>
       </MoreMenu> : onDetails && <button className="button secondary" aria-label={`${item.name} 상세 보기`} onClick={onDetails}>상세 보기</button>}
     </div>

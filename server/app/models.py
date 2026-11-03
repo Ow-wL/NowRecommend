@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ARRAY, JSON, CheckConstraint, DateTime, Index, Integer, Text, Uuid, func, text
+from sqlalchemy import ARRAY, JSON, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, Text, Uuid, false, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -88,3 +88,26 @@ class User(Base):
     store_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())  # set only by app.cli.admin
+
+
+class Report(Base):
+    """An error someone flagged on a card (routes/reports.py). The name is kept as it was, as an AI pick's row may go away."""
+    __tablename__ = "reports"
+    __table_args__ = (
+        CheckConstraint("kind IN ('wrong_image','wrong_info','not_exist','other')", name="reports_kind"),
+        CheckConstraint("status IN ('open','resolved','dismissed')", name="reports_status"),
+        Index("reports_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    item_id: Mapped[str] = mapped_column(Text)
+    category: Mapped[str] = mapped_column(Text)
+    item_name: Mapped[str] = mapped_column(Text)
+    item_subtitle: Mapped[str] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(Text)
+    note: Mapped[str] = mapped_column(Text, server_default="")
+    status: Mapped[str] = mapped_column(Text, server_default="open")
+    user_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

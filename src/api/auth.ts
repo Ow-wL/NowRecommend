@@ -4,7 +4,7 @@ import type { Store } from '../domain';
 
 // Accounts (2026-11-02, server/app/routes/auth.py). Tokens are opaque strings the browser stores (src/account.ts) and
 // sends as `Authorization: Bearer`. The synced store is the whole browser Store; the server never interprets it.
-export type AccountUser = { id: string; email: string; name: string; createdAt?: string | null };
+export type AccountUser = { id: string; email: string; name: string; createdAt?: string | null; isAdmin?: boolean };
 export type AuthSession = { token: string; user: AccountUser; hasStore: boolean };
 
 const user = (v: any): v is AccountUser => !!v && typeof v.id === 'string' && typeof v.email === 'string' && typeof v.name === 'string';

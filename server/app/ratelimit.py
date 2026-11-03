@@ -1,4 +1,4 @@
-"""Per-client request limit for the endpoints that spend API quota (plans-rag.md §9).
+"""Per-client request limit for the endpoints that spend API quota or that anyone can write to (plans-rag.md §9).
 
 In-memory and per process: enough for one small deployment. Behind a reverse proxy set TRUST_PROXY=true
 so the client address comes from X-Forwarded-For instead of the proxy's own address.
@@ -12,7 +12,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 log = logging.getLogger(__name__)
-LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login"}
+LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login", "/api/reports"}
 MAX_CLIENTS = 10_000
 
 

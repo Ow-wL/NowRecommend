@@ -7,7 +7,7 @@ import { mapSearch, mediaFor, mediaOf, overseasLink, recipeSearch, songLink, you
 import { ItemArt } from './ItemArt';
 // Why this one comes first: the cards keep only one line, so this is where the rest of the reason and each condition's
 // check can be read. Where to go next follows, then what is known about the item; the catalog source stays folded.
-export function ItemDetails({item,reasons,conditions}: {item:Item;reasons?:Recommendation;conditions?:Conditions}) {
+export function ItemDetails({item,reasons,conditions,onReport}: {item:Item;reasons?:Recommendation;conditions?:Conditions;onReport?:()=>void}) {
   const catalog=useCatalog();
   const own = mediaFor(item.id), media = mediaOf(item), song = item.category === 'music' ? songLink(item.id) : undefined, overseas = item.category === 'music' ? overseasLink(item.id) : undefined;
   const checks = reasons && conditions ? conditionChecks(item,conditions) : [];
@@ -26,6 +26,7 @@ export function ItemDetails({item,reasons,conditions}: {item:Item;reasons?:Recom
     {item.tags.length > 0 && <><h3>특징</h3><div className="mini-tags">{item.tags.map(t=><span key={t}>{t}</span>)}</div></>}
     <p className="small muted">{item.category==='food' ? '등록된 재료만 표시해요. 실제 판매처의 재료·알레르기 안전은 보장하지 않아요. 검색 결과의 판매 여부·영업·배달은 각 서비스에서 확인해주세요.' : '외부 서비스로 연결해요. 앱에서 음원을 재생하지 않아요.'}</p>
     <p className="details-credit">{media?.credit ? <>사진: <a href={media.credit.page} target="_blank" rel="noopener noreferrer">{media.credit.author}</a> · {media.credit.licenseUrl ? <a href={media.credit.licenseUrl} target="_blank" rel="noopener noreferrer">{media.credit.license}</a> : media.credit.license} · {media.source === 'commons' ? 'Wikimedia Commons' : 'Unsplash'}{media.approx ? ' · 메뉴와 비슷한 참고 사진이에요' : ''}</> : media?.source === 'itunes' ? '앨범 아트: Apple Music' : item.category === 'food' ? '등록된 사진이 없어요.' : '앨범 아트를 찾지 못했어요.'}</p>
+    {onReport && <button className="text-button details-report" onClick={onReport}>사진이나 정보가 틀렸나요? 오류 신고</button>}
     <details className="data-info"><summary>데이터 정보</summary>{item.id.startsWith('ai-') && <p>AI가 직접 고른 항목이에요. 이름·정보는 AI의 답을 그대로 저장한 것이라 실제와 다를 수 있어요.</p>}<p>출처: {item.id.startsWith('ai-') ? 'AI 추천 결과' : catalog.source==='server' ? '추천 서버 카탈로그' : CATALOG_META.source} · 버전 {catalog.version}</p><p>{item.category==='food' ? '검수 전 샘플 데이터예요.' : '곡·아티스트 정보는 별도 검수가 필요해요.'}</p></details>
   </div>;
 }

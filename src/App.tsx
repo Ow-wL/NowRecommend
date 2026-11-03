@@ -19,6 +19,8 @@ import { applyPreset } from './presets';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
+import { AdminReports } from './components/AdminReports';
+import { ReportDialog } from './components/ReportDialog';
 import { TasteReasons } from './components/TasteReasons';
 import { TasteType } from './components/TasteType';
 import { requestForType } from './tasteType';
@@ -33,7 +35,7 @@ import { parseRoute, routeFor, viewReducer, type Page, type Step } from './navig
 import { newSession, readTab, writeTab } from './sessionStorage';
 import { isAiPick, rememberItems, resolveItem } from './knownItems';
 import { keepLocalCopy, mergeOnLogin, readAccount, writeAccount, type Account } from './account';
-import { deleteAccount, fetchRemoteStore, pushRemoteStore, type AuthSession } from './api/auth';
+import { fetchMe, deleteAccount, fetchRemoteStore, pushRemoteStore, type AuthSession } from './api/auth';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
 
@@ -83,6 +85,7 @@ export default function App() {
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [deletePassword, setDeletePassword] = useState(''), [deleteError, setDeleteError] = useState('');
   const [tasteDecade, setTasteDecade] = useState(0);
+  const [reportItem, setReportItem] = useState<Item | null>(null), [reportedIds, setReportedIds] = useState<string[]>([]);
   const [songChecks, setSongChecks] = useState<Record<string, SongStatus>>({});
   const [syncAttempt, setSyncAttempt] = useState(0), syncFailureTold = useRef(false);
   const syncSkip = useRef(0);  // store versions that came from the server need no upload
@@ -157,6 +160,13 @@ export default function App() {
 
   useEffect(() => { const failed = storageBlocked || !writeStore(store); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
+  // The account as the server has it now: being made an admin shows without logging in again. The server checks on every request anyway.
+  useEffect(() => {
+    if (!account || !apiEnabled()) return;
+    let live = true;
+    fetchMe(account.token).then(me => { if (live && !!me.user.isAdmin !== !!account.user.isAdmin) { const next = { ...account, user: me.user }; writeAccount(next); setAccount(next); } }).catch(() => { /* the store sync reports an expired sign-in */ });
+    return () => { live = false; };
+  }, [account?.token]);  // eslint-disable-line react-hooks/exhaustive-deps
   // Upload the store to the account 1.5s after the last change. A 401 means the token expired: sign out, keep the local data.
   useEffect(() => {
     if (!account || !apiEnabled()) return;
@@ -183,7 +193,7 @@ export default function App() {
     notify(mode === 'signup' ? `${session.user.name}님, 가입을 환영해요. 이 브라우저의 데이터를 계정에 저장했어요.` : merged.action === 'downloaded' ? `${session.user.name}님, 계정의 취향·기록을 불러왔어요.` : `${session.user.name}님, 로그인했어요. 이 브라우저의 데이터를 계정에 저장해요.`);
   }
   function signOut() { writeAccount(null); setAccount(null); setSyncState('idle'); setDialog(null); notify('로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.'); }
-  useEffect(() => { if (!toast || toastPaused || dialog || feedbackItem || historyPreview || presetPreview || savePresetOpen || detail || compareOpen) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast, toastPaused, dialog, feedbackItem, historyPreview, presetPreview, savePresetOpen, detail,compareOpen]);
+  useEffect(() => { if (!toast || toastPaused || reportItem || dialog || feedbackItem || historyPreview || presetPreview || savePresetOpen || detail || compareOpen) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast, toastPaused, dialog, feedbackItem, historyPreview, presetPreview, savePresetOpen, detail, compareOpen, reportItem]);
   useEffect(() => { if (previousPage.current !== page) { window.scrollTo({ top: 0, behavior: 'instant' }); previousPage.current = page; } }, [page]);
   useEffect(() => () => { requestCounter.current++; }, []);
   useEffect(() => { if (page === 'recommend' && step === 'results' && showLikeHint) { try { localStorage.setItem('nowrecommend-like-hint-seen', '1'); } catch { /* it just shows again */ } } }, [page, step, showLikeHint]);
@@ -333,13 +343,13 @@ export default function App() {
   }
   const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} onPreview={chooseQuickCondition} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
 
-  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', lab: 'AI 실험실' };
+  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', admin: '오류 신고 관리', lab: 'AI 실험실' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
   const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
   const tabFilter = <div className="filter-tabs" role="group" aria-label="분야 필터">{(['all', 'food', 'music'] as const).map(f => <button key={f} aria-pressed={filter === f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f === 'all' ? '전체' : categoryLabel[f]}</button>)}</div>;
   const reportSongCheck = (id: string, status: SongStatus) => setSongChecks(all => all[id] === status ? all : { ...all, [id]: status });
-  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
+  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} onReport={apiEnabled() && !!reasons ? () => setReportItem(item) : undefined} reported={reportedIds.includes(item.id)} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
 
   // Navigation: top bar on wide screens, bottom tab bar on phones (DESIGN.md §2). Same accessible names in both.
   const allNav: { page: Page; label: string; icon: typeof House; category?: Category }[] = [...navItems, ...myItems];
@@ -604,6 +614,7 @@ export default function App() {
         </div>
       </div>; })()}
 
+      {page === 'admin' && <AdminReports token={account?.token} onBack={() => navigate('taste')} />}
       {page === 'type' && <TasteType results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate('lab')} onEditTaste={editTaste}
         onRecommend={(c, code) => { const base = { ...newSession(c), ...requestForType(c, code) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
@@ -641,6 +652,7 @@ export default function App() {
         <div className="my-links">
           <button className="list-row" onClick={() => navigate('history')}><span className="list-copy"><b>추천 기록</b><small>지난 추천과 선택 {store.history.length}개</small></span><ChevronRight size={18} /></button>
           <button className="list-row" onClick={() => { setNameDraft(store.name); setDialog('account'); }}><span className="list-copy"><b>프로필·화면 설정</b><small>이름, 테마, 데이터 백업</small></span><ChevronRight size={18} /></button>
+          {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>오류 신고 관리</b><small>사용자가 보낸 사진·정보 오류 확인</small></span><ChevronRight size={18} /></button>}
           {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}
           {apiEnabled() && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>후보 비교와 취향 유형 테스트</small></span><ChevronRight size={18} /></button>}
         </div>
@@ -656,11 +668,12 @@ export default function App() {
       </div>}
     </main>
     <nav className="tabbar" aria-label="하단 메뉴">{allNav.filter(n => n.page !== 'history').map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
-    {toast && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); dismissToast(); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={dismissToast}><X size={15} /></button></div>}
+    {toast && !reportItem && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); dismissToast(); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={dismissToast}><X size={15} /></button></div>}
     {feedbackItem && <Modal title="어떤 이유로 바꾸고 싶으세요?" onClose={() => setFeedbackItem(null)}><p className="modal-description"><b>{feedbackItem.name}</b>에 대한 의견을 어디까지 반영할지 골라주세요.</p><button className="feedback-option" onClick={() => applyFeedback('session')}><span className="small-icon food"><Clock3 size={21} /></span><span><b>이번 요청에서 제외</b><small>이번 요청에서만 빼고 다른 항목을 추천해요.<br />새로운 상황으로 시작하면 다시 만날 수 있어요.</small></span><ChevronRight size={19} /></button><button className="feedback-option" onClick={() => applyFeedback('long')}><span className="small-icon music"><SlidersHorizontal size={21} /></span><span><b>원래 내 취향이 아님</b><small>이 항목을 장기 비선호에 저장해요.<br />다음 요청에서도 제외하며, 내 취향에서 해제할 수 있어요.</small></span><ChevronRight size={19} /></button><button className="button secondary full-width" onClick={() => setFeedbackItem(null)}>취소</button></Modal>}
     {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} persisted={!storageWarning} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} onReview={(rating,note)=>{const next=reviewSelection(historyPreview,rating,note);setStore(s=>({...s,history:s.history.map(h=>h.id===next.id?next:h)}));setHistoryPreview(next);}}/><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
     {presetPreview && <Modal title="조건을 바꿀까요?" onClose={()=>setPresetPreview(null)}><p className="modal-description">작성 중인 조건을 ‘{presetPreview.name}’으로 바꿀까요?</p><ConditionsSummary conditions={presetPreview.conditions}/><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={()=>setPresetPreview(null)}>취소</button><button className="button primary" onClick={()=>applyQuickCondition(presetPreview)}>이 조건 적용</button></div></Modal>}
-    {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons} conditions={session.conditions}/></Modal>}
+    {reportItem && <ReportDialog item={reportItem} token={account?.token} onClose={() => setReportItem(null)} onSent={() => { setReportedIds(ids => [...ids, reportItem.id]); setReportItem(null); notify('신고를 보냈어요. 확인 후 고칠게요.'); }} />}
+    {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons} conditions={session.conditions} onReport={apiEnabled() ? () => { const it = detail.item; setDetail(null); setReportItem(it); } : undefined}/></Modal>}
     {compareOpen && <Modal title="후보 비교" onClose={()=>setCompareOpen(false)}><Comparison results={results.filter(r=>session.compareIds?.includes(r.item.id))} conditions={session.conditions} onChoose={r=>{setCompareOpen(false);choose(r);}}/></Modal>}
     {savePresetOpen && <Modal title="내 조건 저장" onClose={()=>setSavePresetOpen(false)}><ConditionsSummary conditions={session.conditions}/><form onSubmit={e=>{e.preventDefault();if(!presetName.trim())return;const preset:Preset={id:crypto.randomUUID(),category:session.category,name:presetName.trim(),conditions:structuredClone(session.conditions)};setStore(s=>({...s,presets:[...(s.presets || []),preset]}));setSavePresetOpen(false);notify('조건 프리셋을 저장했어요.');}}><label className="field-title" htmlFor="preset-name">프리셋 이름</label><input id="preset-name" value={presetName} required maxLength={30} onChange={e=>setPresetName(e.target.value)}/><button className="button primary">프리셋 저장</button></form></Modal>}
     {dialog === 'about' && <Modal neutral title="지금 추천을 먼저 경험해보세요." onClose={() => setDialog(null)}><p className="modal-description">취향 등록부터 조건 수정, 추천과 피드백까지 직접 사용해볼 수 있는 체험 버전이에요.</p><div className="about-list"><p><Check size={17} /> 음식은 {items.filter(i=>i.category==='food').length}개 등록 데이터에서 골라요. {apiEnabled() ? `음악은 AI가 아는 곡 중에서 직접 골라요(등록 곡 ${items.filter(i=>i.category==='music').length}곡은 취향 등록에 써요).` : `음악 ${items.filter(i=>i.category==='music').length}곡의 예시 데이터로 추천해요.`}</p><p><Check size={17} /> 가격·예산·배달 가능 여부는 다루지 않아요. 취향·상황·제외 조건으로 골라요.</p><p><Check size={17} /> 문장에서 조건을 찾아요. {apiEnabled() ? '규칙이 놓친 표현은 AI가 함께 읽어요.' : '알려진 표현만 읽으니 놓친 조건은 직접 골라주세요.'}</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> {apiEnabled() ? '로그인하면 취향·기록이 계정에 저장되어 다른 기기에서도 이어 써요. ' : ''}실제 주문·음원 재생은 포함하지 않아요. 지도·레시피·음악 서비스 검색으로 연결해요.</p></div><div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div></Modal>}
