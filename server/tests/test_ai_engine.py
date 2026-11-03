@@ -11,6 +11,7 @@ from app.db import get_session
 from app.drafting import export_review
 from app.main import create_app
 from app.models import Item, RecommendationLog
+from app.retrieval.reasons import NO_TASTE_REASON
 from app.routes.recommend import get_ai_engine_model, get_query_embedder, get_rerank_model
 from app.schemas import RecommendRequest
 from app.vocab import get_vocab
@@ -170,3 +171,28 @@ def test_a_pick_listing_an_excluded_ingredient_or_doubted_by_the_model_is_droppe
         answer = client.post("/api/recommend", json={"category": "food", "raw": "저녁", "engine": "ai", "conditions": {"excluded": ["밀", "해산물"]}}).json()
     assert [r["item"]["name"] for r in answer["results"]] == ["안전한 메뉴"]
     assert "excluded_value=3" in answer["meta"]["issues"]
+
+
+def test_a_song_outside_the_years_or_without_one_is_dropped(catalog):
+    model = FakeModel({"picks": [{**pick("옛 노래", "가수"), "releaseYear": 1995}, {**pick("새 노래", "가수2"), "releaseYear": 2021}, pick("모르는 해", "가수3")]})
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "music", "raw": "90년대", "years": {"from": 1990, "to": 1999}, "count": 3}).json()
+    assert [r["item"]["name"] for r in answer["results"]] == ["옛 노래"]
+    assert answer["results"][0]["item"]["releaseYear"] == 1995
+    assert model.payloads[0]["releaseYears"] == {"from": 1990, "to": 1999}
+    assert "out_of_years=2" in answer["meta"]["issues"]
+
+
+def test_reversed_years_are_refused(catalog):
+    with client_for(catalog, FakeModel({"picks": []})) as client:
+        assert client.post("/api/recommend", json={"category": "music", "years": {"from": 2000, "to": 1990}}).status_code == 422
+
+
+def test_written_reasons_reach_the_model_and_a_typed_favourite_is_not_recommended_back(catalog):
+    model = FakeModel({"picks": [pick("뿌링클", "BHC"), pick("황금올리브", "BBQ")]})
+    profile = {"notes": ["치킨: 바삭해서", "뿌링클"], "customNames": ["뿌링클"]}
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "food", "engine": "ai", "count": 2, "profile": profile}).json()
+    assert model.payloads[0]["taste"]["likedText"] == ["치킨: 바삭해서", "뿌링클"]
+    assert [r["item"]["name"] for r in answer["results"]] == ["황금올리브"]
+    assert answer["results"][0]["tasteReason"] != NO_TASTE_REASON

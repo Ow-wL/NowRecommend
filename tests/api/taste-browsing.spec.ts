@@ -14,7 +14,6 @@ async function openMusicWithFilter(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: '음악 추천', exact: true }).click();
   await page.getByRole('button', { name: '취향 추가', exact: true }).click();
-  await page.getByText('장르로 찾기').click();
   const filters = page.getByRole('group', { name: '장르·분위기로 좁히기' });
   await filters.getByRole('button', { name: '재즈', exact: true }).click();
   await page.getByLabel('취향 항목 검색').fill('Miles');
@@ -27,17 +26,14 @@ test('music browsing state never leaks into food, through the menu or the back b
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await page.getByRole('button', { name: '취향 추가', exact: true }).click();
   await expect(page.getByRole('heading', { name: '평소 좋아하는 음식을 골라주세요.' })).toBeVisible();
-  await expect(page.locator('.selection-card')).toHaveCount(12);  // a short first list
-  await page.getByRole('button', { name: /다른 (메뉴|곡) 더 보기/ }).click();
-  await expect(page.locator('.selection-card')).toHaveCount(16);
+  await expect(page.locator('.selection-card')).toHaveCount(16);  // this test catalog's whole food list, no music filter left on it
   await page.screenshot({ path: 'artifacts/review-fix-filter.png', fullPage: true });
   await page.goBack();
   await page.goBack();
   await expect(page.getByRole('heading', { name: '평소 좋아하는 음악을 골라주세요.' })).toBeVisible();
-  await page.getByText('장르로 찾기').click();
   await expect(page.getByRole('group', { name: '장르·분위기로 좁히기' }).getByRole('button', { name: '전체', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByLabel('취향 항목 검색')).toHaveValue('');
-  await expect(page.locator('.selection-card')).toHaveCount(12);
+  await expect(page.locator('.selection-card')).toHaveCount(24);
 });
 
 test('food to music and taste editing start with a clean list too', async ({ page }) => {
@@ -45,12 +41,12 @@ test('food to music and taste editing start with a clean list too', async ({ pag
   await page.getByLabel('선택한 항목만 보기').check();
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await page.getByRole('button', { name: '취향 추가', exact: true }).click();
-  await expect(page.locator('.selection-card')).toHaveCount(12);
+  await expect(page.locator('.selection-card')).toHaveCount(16);
   await page.getByRole('button', { name: '음악 추천', exact: true }).click();
   await page.getByRole('button', { name: '취향 추가', exact: true }).click();
-  await expect(page.locator('.selection-card')).toHaveCount(12);
+  await expect(page.locator('.selection-card')).toHaveCount(24);
   await expect(page.getByLabel('선택한 항목만 보기')).not.toBeChecked();
   await page.getByRole('button', { name: '내 취향', exact: true }).first().click();
   await page.getByRole('button', { name: '등록하기' }).first().click(); // food taste editing
-  await expect(page.locator('.selection-card')).toHaveCount(12);
+  await expect(page.locator('.selection-card')).toHaveCount(16);
 });

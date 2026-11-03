@@ -1,5 +1,6 @@
 import { cleanConditions, type Profile, type Recommendation, type Session } from '../domain';
 import { normalizeItem } from '../data';
+import { knownCatalogItems } from '../catalog';
 import { validRecommendation } from '../sessionStorage';
 import { apiJson, API_BASE_URL } from './client';
 
@@ -22,13 +23,23 @@ export function validRemoteBatch(v: any): v is RemoteBatch {
     && (m.model === undefined || m.model === null || typeof m.model === 'string');
 }
 
+/** What the person wrote, as words for the AI: "치킨: 바삭해서", or a typed-in favourite. Item names come from the catalog here. */
+function tasteNotes(profile: Profile) {
+  const named = (name: string, reason?: string) => (reason?.trim() ? `${name}: ${reason.trim()}` : name).slice(0, 120);
+  const notes = [...profile.selected.flatMap(id => { const reason = profile.reasons?.[id]?.trim(), item = knownCatalogItems().find(i => i.id === id); return reason && item ? [named(item.name, reason)] : []; }),
+    ...(profile.custom || []).map(c => named(c.name, c.reason))].slice(0, 40);
+  const customNames = (profile.custom || []).map(c => c.name.slice(0, 120)).slice(0, 30);
+  return { ...(notes.length ? { notes } : {}), ...(customNames.length ? { customNames } : {}) };
+}
+
 /** Request body for POST /api/recommend (server/app/schemas.py). Only what ranking needs leaves the browser. */
 export function recommendBody(session: Session, profile: Profile, count?: number, engine?: Engine) {
   return {
     category: session.category, raw: session.raw, conditions: cleanConditions(session.conditions),
-    profile: { selected: profile.selected, tags: profile.tags, disliked: profile.disliked },
+    profile: { selected: profile.selected, tags: profile.tags, disliked: profile.disliked, ...tasteNotes(profile) },
     excludedIds: session.excludedIds, seenIds: session.seenIds || [], pinnedIds: session.pinnedIds || [],
     candidateIds: session.candidateScope === 'favorites' ? session.candidateIds || [] : null,
+    ...(session.category === 'music' && session.years ? { years: session.years } : {}),
     ...(count === undefined ? {} : { count }),
     ...(engine === undefined ? {} : { engine }),
   };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronDown, Download, ExternalLink, Info, RefreshCw, SearchX, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, ExternalLink, Info, RefreshCw, SearchX, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import { categoryLabel, exclusions, options, type Category, type Item } from '../data';
 import { apiEnabled } from '../api/client';
 import { fetchRecommendations } from '../api/recommend';
@@ -33,7 +33,7 @@ function readTabState(category: Category): TabState | null {
 const freshSession = (c: Category): Session => ({ ...newSession(c), editor: createEditor('', c) });
 const splitLiked = (text: string) => [...new Set(text.split(/[,\n]/).map(s => s.trim()).filter(Boolean))].slice(0, 10).map(s => s.slice(0, 60));
 
-export function Lab({ category, profile, items, onCategory, onEditTaste, onHome }: { category: Category; profile: Profile; items: Item[]; onCategory: (c: Category) => void; onEditTaste: () => void; onHome: () => void }) {
+export function Lab({ onTasteType, category, profile, items, onCategory, onEditTaste, onHome }: { onTasteType: () => void; category: Category; profile: Profile; items: Item[]; onCategory: (c: Category) => void; onEditTaste: () => void; onHome: () => void }) {
   const [initial] = useState(() => readTabState(category));
   const [session, setSession] = useState<Session>(initial?.session || freshSession(category));
   const [likedText, setLikedText] = useState(initial?.likedText || '');
@@ -194,6 +194,7 @@ export function Lab({ category, profile, items, onCategory, onEditTaste, onHome 
       <button className="back-link" onClick={onHome}><ArrowLeft size={16} /> 홈으로</button>
       <h1>AI 실험실</h1>
       <p>같은 상황으로 두 가지 방식의 추천을 나란히 비교해요. 기록과 취향에는 반영하지 않아요.</p>
+      <button className="list-row type-link" onClick={onTasteType}><span className="list-copy"><b>취향 유형 테스트</b><small>음식·음악 취향을 MBTI처럼 네 글자로</small></span><ArrowRight size={18} /></button>
       <div className="filter-tabs lab-category" role="group" aria-label="실험 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => onCategory(c)}>{categoryLabel[c]} 실험</button>)}</div>
       <div className="taste-strip">
                 <span className="taste-strip-items">{[...liked, ...profile.tags].join(' · ') || `등록된 ${categoryLabel[category]} 취향 없음`}</span>

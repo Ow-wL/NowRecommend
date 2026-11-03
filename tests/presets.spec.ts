@@ -54,3 +54,11 @@ for(const width of [320,360,390])test(`music actions stay on one line each at ${
   expect(heart.y).toBeCloseTo(more.y,0);expect(more.x+more.width).toBeLessThanOrEqual(heart.x);expect(heart.height).toBeGreaterThanOrEqual(44);expect(listen.width).toBeGreaterThanOrEqual(170);
   await page.locator('.result-grid .more-toggle').first().click();await expect(page.locator('.more-menu')).toBeVisible();const menu=await page.locator('.more-menu').boundingBox();expect(menu!.x).toBeGreaterThanOrEqual(0);expect(menu!.x+menu!.width).toBeLessThanOrEqual(width);
 });
+test('the taste type test gives a code by questions, and asks for recommendations in its words',async({page})=>{
+  await page.goto('/#/type');await page.getByRole('button',{name:'테스트 시작'}).click();
+  for(let i=0;i<8;i++){await expect(page.locator('.type-question small')).toHaveText(`${i+1} / 8`);await page.locator('.type-choice').first().click();}
+  await expect(page.locator('.type-result h2')).toContainText('혼밥 국밥 장인');await expect(page.locator('.type-result h2')).toBeFocused();
+  await page.reload();await expect(page.locator('.type-result h2')).toContainText('혼밥 국밥 장인');
+  await page.getByRole('button',{name:/이 유형으로 추천받기/}).click();
+  await expect(page.getByLabel('지금의 상황')).toHaveValue(/얼큰하고 자극적인 맛/);await expect(page.locator('.condition-summary .chip')).toContainText(['매콤함']);
+});

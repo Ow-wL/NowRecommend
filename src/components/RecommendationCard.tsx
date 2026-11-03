@@ -53,7 +53,7 @@ export function RecommendationCard({ onRefine, onSongStatus, item, saved, reason
     <div className="item-head">
       <div className="item-title">
         <h3 ref={title} tabIndex={-1}>{item.name}</h3>
-        <p className="item-subtitle">{item.subtitle}</p>
+        <p className="item-subtitle">{item.subtitle}{music && item.releaseYear ? ` · ${item.releaseYear}` : ''}</p>
       </div>
       {music && saveButton}
       {(pinned || familiar || doubtful) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubtful && <span className="check-badge">정보 확인 필요</span>}</span>}

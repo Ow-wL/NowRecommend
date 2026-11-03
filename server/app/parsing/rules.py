@@ -271,6 +271,9 @@ def parse_rules(text: str, category: str) -> RuleParse:
     # The trigger words ("빼줘", "말고") are understood too, so a fully read request does not go to the model.
     result.spans += negations.spans + [m.span() for m in re.finditer(EXCLUDE, text)]
     result.not_wanted = negations.not_wanted
+    # Years are read by the browser (parseYears in src/domain.ts) and sent apart; the words are understood, not for the LLM.
+    if category == "music":
+        result.spans += [m.span() for m in re.finditer(r"\d{2,4}\s*년대?(?:\s*(?:이후|이전|부터|까지))?|최근|최신|요즘", text)]
     for pattern, value in FOOD_RULES if category == "food" else MUSIC_RULES:
         _cover(result, pattern, text)
         if re.search(pattern, negations.masked) and value not in negations.not_wanted:

@@ -1,7 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { capFamiliar, checkText, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session } from './domain';
+import { capFamiliar, changeText, checkText, inYears, parseYears, yearLabel, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session } from './domain';
 import { items } from './data';
 const session = (changes: Partial<Session> = {}): Session => ({ category: 'food', raw: '', conditions: emptyConditions(), excludedIds: [], revision: 0, ...changes });
+describe('release years', () => {
+  it('reads the years a sentence names', () => {
+    const at = 2026;
+    expect(parseYears('90년대 발라드', at)).toEqual({ from: 1990, to: 1999 });
+    expect(parseYears('10년대 노래', at)).toEqual({ from: 2010, to: 2019 });
+    expect(parseYears('2010년대', at)).toEqual({ from: 2010, to: 2019 });
+    expect(parseYears('2015년 이후 곡', at)).toEqual({ from: 2015 });
+    expect(parseYears('2000년 이전 노래', at)).toEqual({ to: 2000 });
+    expect(parseYears('2010년부터 2015년까지', at)).toEqual({ from: 2010, to: 2015 });
+    expect(parseYears('2017년 노래', at)).toEqual({ from: 2017, to: 2017 });
+    expect(parseYears('요즘 노래', at)).toEqual({ from: 2024 });
+    expect(parseYears('비 오는 밤', at)).toBeUndefined();
+  });
+  it('labels and checks a range; no known year is outside every range', () => {
+    expect(yearLabel({ from: 1990, to: 1999 })).toBe('1990년대');
+    expect(yearLabel({ from: 2015 })).toBe('2015년 이후');
+    expect(yearLabel({ from: 2010, to: 2015 })).toBe('2010~2015년');
+    expect(inYears({ releaseYear: 1995 }, { from: 1990, to: 1999 })).toBe(true);
+    expect(inYears({ releaseYear: 2001 }, { from: 1990, to: 1999 })).toBe(false);
+    expect(inYears({}, { from: 1990 })).toBe(false);
+  });
+  it('follows the sentence, and leaves years chosen by hand alone', () => {
+    let s: Session = { category: 'music', raw: '', conditions: { tags: [], excluded: [] }, excludedIds: [], revision: 0 };
+    s = changeText(s, '90년대 노래'); expect(s.years).toEqual({ from: 1990, to: 1999 });
+    s = changeText(s, '비 오는 밤'); expect(s.years).toBeUndefined();
+    s = changeText({ ...s, years: { from: 2000 }, yearsFromText: false }, '잔잔한 노래'); expect(s.years).toEqual({ from: 2000 });
+  });
+});
+
 describe('recommendation invariants', () => {
   it('never recommends items excluded by ingredients, and 해산물 blocks every recorded fish ingredient', () => {
     const result = recommend(session({ conditions: { tags: ['저녁'], excluded: ['밀', '해산물'] } }), emptyProfile());

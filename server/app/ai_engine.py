@@ -57,12 +57,14 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
     food = category == "food"
+    years = (request.years.start, request.years.end) if request.years and not food else None
     base_dishes = [r.name for r in reviewed_items(session) if r.category == "food"] if food else None
     payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
-                            [], disliked, avoid[-60:], wanted, [*vocab.conditionTags, *vocab.extraTags],
-                            base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None)
-    validation = validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked], [*vocab.conditionTags, *vocab.extraTags],
-                               detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None)
+                            profile.notes, disliked, avoid[-60:], wanted, [*vocab.conditionTags, *vocab.extraTags],
+                            base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None,
+                            release_years={"from": years[0], "to": years[1]} if years else None)
+    validation = validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
+                               detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years)
     rows = persist_picks(session, category, validation.picks)
     # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too.
     blocked = {*request.seenIds, *request.excludedIds, *profile.disliked, *(r.id for r in pinned_rows)}
@@ -95,7 +97,7 @@ def recommend_ai(session: Session, request: RecommendRequest, model: JsonModel |
         answer["meta"].update({"engine": "catalog", "engineWanted": "ai", "ai": "failed", "aiError": result.validation.summary() if result.validation else "empty"})
         return answer
 
-    has_taste = bool(request.profile.selected or request.profile.tags)
+    has_taste = bool(request.profile.selected or request.profile.tags or request.profile.notes)
     results = []
     for row in result.rows:
         pick = result.picks.get(row.id)

@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from .vocab import get_vocab
 
@@ -15,16 +15,36 @@ class Conditions(BaseModel):
     excluded: Annotated[list[Tag], Field(max_length=30)] = []
 
 
+class YearRange(BaseModel):
+    """Release years a song must fall in (music only). Either end may be open."""
+    model_config = ConfigDict(populate_by_name=True)
+    start: int | None = Field(None, ge=1900, le=2100, alias="from")
+    end: int | None = Field(None, ge=1900, le=2100, alias="to")
+
+    @model_validator(mode="after")
+    def in_order(self) -> "YearRange":
+        if self.start is not None and self.end is not None and self.start > self.end:
+            raise ValueError("시작 연도가 끝 연도보다 늦어요")
+        return self
+
+
+Note = Annotated[str, StringConstraints(min_length=1, max_length=120)]
+
+
 class Profile(BaseModel):
     selected: IdList = []
     tags: Annotated[list[Tag], Field(max_length=30)] = []
     disliked: IdList = []
+    # Free words for the AI: "치킨: 바삭해서", or something typed in that the catalog does not have.
+    notes: Annotated[list[Note], Field(max_length=40)] = []
+    customNames: Annotated[list[Note], Field(max_length=30)] = []
 
 
 class RecommendRequest(BaseModel):
     category: Literal["food", "music"]
     raw: Annotated[str, StringConstraints(max_length=300)] = ""
     conditions: Conditions = Conditions()
+    years: YearRange | None = None
     profile: Profile = Profile()
     excludedIds: IdList = []
     seenIds: IdList = []

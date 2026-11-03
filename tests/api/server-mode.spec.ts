@@ -236,6 +236,41 @@ test('AI food names detail menus, borrows the general dish photo, and can ask wi
   await expect(first.locator('img')).toHaveCount(1);
 });
 
+test('what a person writes about a favourite reaches the AI: a reason and a typed-in dish', async ({ page }) => {
+  await catalogRoute(page);
+  let sent: any;
+  await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sent = route.request().postDataJSON(); return fulfill(route, { results: [], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 0, newCount: 0, catalogVersion: 'db-test', requestId: 'r' } }); });
+  await page.goto('/#/onboard/food');
+  await page.locator('.selection-card').first().click();
+  const first = (await page.locator('.selection-card b').first().innerText()).trim();
+  await page.getByRole('textbox', { name: `${first}을 좋아하는 이유` }).fill('바삭해서');
+  await page.getByLabel('취향 항목 검색').fill('뿌링클');
+  await page.getByRole('button', { name: /‘뿌링클’ 직접 추가/ }).click();
+  await page.getByRole('button', { name: '뿌링클 이유 고르기' }).or(page.getByRole('group', { name: '뿌링클 이유 고르기' }).getByRole('button', { name: '매콤해서' })).first().click();
+  await page.getByRole('button', { name: /저장하고 시작/ }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect.poll(() => sent?.profile?.notes).toEqual([`${first}: 바삭해서`, '뿌링클: 매콤해서']);
+  expect(sent.profile.customNames).toEqual(['뿌링클']);
+});
+
+test('music years can be chosen, are sent, shown on the result and restored from a sentence', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  let sent: any;
+  const item = { id: 'ai-old', category: 'music', name: '옛 노래', subtitle: '가수', description: '', tags: [], ingredients: [], emoji: '', color: '', releaseYear: 1995 };
+  await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sent = route.request().postDataJSON(); return fulfill(route, { results: [{ item, tasteReason: 't', contextReason: 'c', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }); });
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: '1990년대' }).click();
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.locator('.result-summary .mini-tags')).toContainText('1990년대');
+  await expect(page.locator('.item-card .item-subtitle')).toContainText('가수 · 1995');
+  expect(sent.years).toEqual({ from: 1990, to: 1999 });
+  await page.getByRole('button', { name: '조건 바꾸기' }).click();
+  await page.getByLabel('시작').fill('2005');
+  await page.getByLabel('끝').fill('2000');
+  await expect(page.getByRole('alert')).toContainText('시작 연도가 끝 연도보다 늦어요');
+  await expect(page.getByRole('button', { name: /추천받기$/ })).toBeDisabled();
+});
+
 test('AI food with an exclusion says the check rests on estimated ingredients', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
   const item = { id: 'ai-safe', category: 'food', name: '메뉴', subtitle: '한식', description: '', tags: [], ingredients: [], emoji: '', color: '' };

@@ -2,13 +2,18 @@ import { dietExclusions, exclusionAliases, exclusionGroups, exclusionHeadNouns, 
 import { getCatalog } from './catalog';
 
 const catalogItems = () => getCatalog().items;
-export type Profile = { selected: string[]; tags: string[]; disliked: string[] };
+/** Something the person likes that the catalog does not list, in their own words. */
+export type CustomTaste = { id: string; name: string; reason?: string };
+export type Profile = { selected: string[]; tags: string[]; disliked: string[];
+  /** Why they like a selected item, by item id, in their own words (optional; read by the AI engine). */
+  reasons?: Record<string, string>; custom?: CustomTaste[] };
 // Price and budget were removed on 2026-10-27; stored conditions may still carry `maxPrice`, which cleanConditions drops.
 export type Conditions = { tags: string[]; excluded: string[] };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[];
   /** How the server read `raw` ('local': server unreachable, browser rules kept). Applies only while raw matches. */
   ai?: { raw: string; source: 'rule' | 'rule+ai' | 'local'; unparsed: string[] } };
-export type Session = { preset?: { name: string; key: string }; category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number;
+export type YearRange = { from?: number; to?: number };
+export type Session = { years?: YearRange; yearsFromText?: boolean; preset?: { name: string; key: string }; category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number;
   /** Cards of this round that had been seen before the round began (a reroll that ran out of unseen ones). */
   repeatIds?: string[]; id?: string; roundId?: string; snapshot?: Recommendation[]; candidateScope?: 'favorites'; candidateIds?: string[]; pinnedIds?: string[]; compareIds?:string[]; source?: 'server' | 'local';
   /** How the server produced the current cards (only with source 'server'): AI used/failed/off, sentence meaning used. */
@@ -26,10 +31,10 @@ export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exc
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
 export type Selection = { result: Recommendation; date: string; roundId: string };
 export type Review = { rating?:'good'|'neutral'|'poor';note:string;date:string;itemId:string;roundId:string };
-export type HistoryEntry = { id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; review?:Review;legacy?: boolean; trimmedRounds?: number };
+export type HistoryEntry = { years?: YearRange; id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; review?:Review;legacy?: boolean; trimmedRounds?: number };
 export type Preset = { id: string; category: Category; name: string; conditions: Conditions };
 export type Appearance={mode:'dark'|'light'|'system';accent?:string};
-export type Store = { version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[]; presets?: Preset[];appearance?:Appearance };
+export type Store = { tasteTypes?: Partial<Record<Category, import('./tasteType').TasteTypeResult>>; version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[]; presets?: Preset[];appearance?:Appearance };
 export const emptyProfile = (): Profile => ({ selected: [], tags: [], disliked: [] });
 export const emptyStore = (): Store => ({ version: 2, name: '취향 탐험가', profiles: { food: emptyProfile(), music: emptyProfile() }, favorites: [], history: [] });
 export const emptyConditions = (): Conditions => ({ tags: [], excluded: [] });
@@ -225,8 +230,31 @@ export function effectiveConditions(editor: ConditionEditor): Conditions {
   const tags = [...new Set([...editor.automatic.tags.filter(t => !editor.removedTags.includes(t) && !excluded.includes(t)), ...editor.manual.tags])];
   return { tags, excluded };
 }
+/** A two-digit decade means the nearest one that has happened: "90년대" 1990, "10년대" 2010. */
+const fullYear = (y: number, now: number) => y >= 100 ? y : y + (2000 + y <= now ? 2000 : 1900);
+/** The release years a sentence names ("90년대 발라드", "2015년 이후", "2010년부터 2015년까지", "최근"). Mirrored as understood words in server/app/parsing/rules.py. */
+export function parseYears(text: string, now = new Date().getFullYear()): YearRange | undefined {
+  const range = text.match(/(\d{2,4})\s*년?\s*(?:부터|~|-)\s*(\d{2,4})\s*년(?:까지)?/);
+  if (range) { const a = fullYear(+range[1], now), b = fullYear(+range[2], now); return a <= b ? { from: a, to: b } : undefined; }
+  const decade = text.match(/(\d{2,4})\s*년대/);
+  if (decade) { const a = fullYear(+decade[1], now); return { from: a, to: a + 9 }; }
+  const after = text.match(/(\d{2,4})\s*년\s*(?:이후|부터)/); if (after) return { from: fullYear(+after[1], now) };
+  const before = text.match(/(\d{2,4})\s*년\s*(?:이전|까지)/); if (before) return { to: fullYear(+before[1], now) };
+  const exact = text.match(/(\d{4})\s*년/); if (exact) return { from: +exact[1], to: +exact[1] };
+  return /최근|최신|요즘/.test(text) ? { from: now - 2 } : undefined;
+}
+export function yearLabel(y: YearRange): string {
+  if (y.from !== undefined && y.to !== undefined) return y.from === y.to ? `${y.from}년` : y.from % 10 === 0 && y.to === y.from + 9 ? `${y.from}년대` : `${y.from}~${y.to}년`;
+  return y.from !== undefined ? `${y.from}년 이후` : y.to !== undefined ? `${y.to}년 이전` : '전체 시기';
+}
+/** A song with no known year cannot be said to fall in the range (same as the server's filter). */
+export const inYears = (i: Pick<Item, 'releaseYear'>, y: YearRange) => i.releaseYear !== undefined && (y.from === undefined || i.releaseYear >= y.from) && (y.to === undefined || i.releaseYear <= y.to);
 export function changeText(session: Session, raw: string): Session {
   const old = editorFor(session);
+  if (old.parsedRaw !== raw && session.category === 'music') {
+    const named = parseYears(raw);
+    session = { ...session, years: named ?? (session.yearsFromText ? undefined : session.years), yearsFromText: !!named };
+  }
   const editor = old.parsedRaw === raw ? old : { ...old, parsedRaw: raw, automatic: parseConditions(raw, session.category), removedTags: [], removedExcluded: [] };
   return { ...session, raw, editor, conditions: effectiveConditions(editor), revision: 0, currentIds: old.parsedRaw === raw ? session.currentIds : undefined, snapshot: old.parsedRaw === raw ? session.snapshot : undefined };
 }
@@ -333,7 +361,7 @@ export function withContrast(results: Recommendation[]): Recommendation[] {
 
 /** The hard filters on one item: category, long-term dislikes, this request's exclusions, favourites scope, excluded traits. */
 export function eligibleItem(i: Item, session: Session, profile: Profile): boolean {
-  return i.category === session.category && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
+  return i.category === session.category && (!session.years || i.category !== 'music' || inYears(i, session.years)) && !profile.disliked.includes(i.id) && !session.excludedIds.includes(i.id)
     && (session.candidateScope !== 'favorites' || (session.candidateIds || []).includes(i.id))
     && !blockedValues(session.conditions.excluded).some(t => [...i.tags, ...i.ingredients].includes(t));
 }

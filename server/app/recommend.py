@@ -51,7 +51,8 @@ def recommend(session: Session, request: RecommendRequest, embed_query: Callable
     started = time.perf_counter()
     conditions, profile = request.conditions, request.profile
     rows = session.scalars(eligible_query(request.category, conditions.excluded, profile.disliked,
-                                          request.excludedIds, request.candidateIds)).all()
+                                          request.excludedIds, request.candidateIds,
+                                          request.years.start if request.years else None, request.years.end if request.years else None)).all()
     liked_rows = session.scalars(select(Item).where(Item.id.in_(profile.selected), Item.category == request.category)).all() if profile.selected else []
 
     errors: list[str] = []
