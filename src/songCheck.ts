@@ -11,7 +11,7 @@ const KEY = 'nowrecommend-song-check-v4';
 const MAX_KEPT = 300;
 const DEADLINE_MS = 8000; // for the whole check, however many requests it takes
 const SAME_LENGTH_MS = 3000; // two listings of one recording differ by a little at most
-export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string; artistId?: number; trackTimeMillis?: number };
+export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string; artistId?: number; trackTimeMillis?: number; collectionName?: string };
 export type SongStatus = 'known' | 'checking' | 'found' | 'missing' | 'failed';
 
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
@@ -56,29 +56,43 @@ export function artistNames(artist: string, items: Pick<Item, 'id' | 'category' 
   const listed = items.filter(i => i.category === 'music' && norm(i.subtitle) === norm(artist)).map(i => storeArtist(i.id)).filter((n): n is string => !!n);
   return [...new Set([...listed, artist])];
 }
-/** Searches the US store: a text search of the Korean store returned nothing for every request tried when this was written
- * (2026-11-03), though looking up an id there works. A long Hangul title rarely matches a text search, so the artist's own list is
- * the second place to look. What it finds is then looked for in the Korean store, by id and then in that artist's list, because the
- * button must lead somewhere a listener in Korea can use. Not confirmed there: `regionUnconfirmed`, never a guessed /kr/ address.
- * Throws when the store cannot answer the search. */
+const liveAlbum = /\b(?:live|concert|tour)\b|라이브|콘서트/i;
+/** Three doors, because no single one finds everything (measured 2026-11-03, see VERIFICATION.md):
+ * - The Korean store's artist search resolves a Hangul name to the store's artist ("볼빨간사춘기" to BOL4). That artist's Korean list
+ *   with the exact title is the answer; a live album does not stand for a song that did not ask for one. Song search there returns nothing.
+ * - The US store's song search finds what that list misses, as its list stops at 200 songs. What it finds is looked for in the Korean
+ *   store by id, then in that artist's list by title and length. Not confirmed there: `regionUnconfirmed`, never a guessed /kr/ address.
+ * - A Hangul artist goes to the Korean door first, others after the US search misses.
+ * Throws only when no door could be asked, so a failed request is not reported as "not listed". */
 export async function lookupSong(title: string, artist: string, names: string[] = [artist], fetcher: typeof fetch = fetch): Promise<Media | undefined> {
   const signal = AbortSignal.timeout(DEADLINE_MS);
-  const ask = async (params: Record<string, string>) => {
-    const response = await fetcher(`https://itunes.apple.com/search?${new URLSearchParams({ country: 'US', entity: 'song', ...params })}`, { signal });
-    return read(response);
-  };
   const read = async (response: Response) => {
     if (!response.ok) throw new Error(`store ${response.status}`);
     return ((await response.json()) as { results?: Hit[] }).results || [];
   };
-  const askKorea = async (params: Record<string, string>) => read(await fetcher(`https://itunes.apple.com/lookup?${new URLSearchParams({ country: 'KR', ...params })}`, { signal }));
+  const ask = async (params: Record<string, string>) => read(await fetcher(`https://itunes.apple.com/search?${new URLSearchParams({ country: 'US', entity: 'song', ...params })}`, { signal }));
+  const askKorea = async (path: 'search' | 'lookup', params: Record<string, string>) => read(await fetcher(`https://itunes.apple.com/${path}?${new URLSearchParams({ country: 'KR', ...params })}`, { signal }));
+  const rank = (want: string, r: Hit) => matchRank(want, r.trackName || '', r.artistName);
+  const withGuest = (media: Media, partial: boolean): Media => partial ? { ...media, guestUnconfirmed: true } : media;
+
+  let koreaError: unknown;
+  const fromKoreanArtist = async (): Promise<Media | undefined> => {
+    try {
+      const [who] = await askKorea('search', { term: artist, entity: 'musicArtist', limit: '1' });
+      if (!who?.artistId) return undefined;
+      const listed = (await askKorea('lookup', { id: String(who.artistId), entity: 'song', limit: '200' })).filter(r => mediaFromHit(r));
+      const usable = liveAlbum.test(title) ? listed : listed.filter(r => !liveAlbum.test(`${r.trackName} ${r.collectionName}`));
+      const sure = usable.find(r => rank(title, r) === 2), partial = usable.find(r => rank(title, r) === 1), hit = sure || partial;
+      return hit && withGuest(mediaFromHit(hit)!, !sure);
+    } catch (error) { koreaError = error; return undefined; }
+  };
   const forKorea = async (hit: Hit): Promise<Media> => {
     const media = mediaFromHit(hit)!, id = media.link!.split('/').pop()!;
     try {
-      const same = (await askKorea({ id })).find(r => mediaFromHit(r)?.link?.endsWith(`/${id}`));
+      const same = (await askKorea('lookup', { id })).find(r => mediaFromHit(r)?.link?.endsWith(`/${id}`));
       if (same) return mediaFromHit(same)!;
       if (hit.artistId && hit.trackTimeMillis) {
-        const listed = await askKorea({ id: String(hit.artistId), entity: 'song', limit: '200' });
+        const listed = await askKorea('lookup', { id: String(hit.artistId), entity: 'song', limit: '200' });
         const twin = listed.find(r => matchRank(hit.trackName || '', r.trackName || '') === 2 && Math.abs((r.trackTimeMillis || 0) - hit.trackTimeMillis!) <= SAME_LENGTH_MS && mediaFromHit(r));
         if (twin) return mediaFromHit(twin)!;
       }
@@ -87,15 +101,26 @@ export async function lookupSong(title: string, artist: string, names: string[] 
   };
   const pick = (results: Hit[]) => {
     const usable = results.filter(r => names.some(n => artistMatches(n, r.artistName || '')) && mediaFromHit(r));
-    const rank = (r: Hit) => matchRank(title, r.trackName || '', r.artistName);
-    const sure = usable.find(r => rank(r) === 2), partial = usable.find(r => rank(r) === 1);
-    return sure ? { hit: sure } : partial && { hit: partial, guestUnconfirmed: true };
+    const sure = usable.find(r => rank(title, r) === 2), partial = usable.find(r => rank(title, r) === 1);
+    return sure ? { hit: sure, partial: false } : partial && { hit: partial, partial: true };
   };
-  let found = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));
-  if (!found && (hangul.test(title) || names.length > 1)) found = pick(await ask({ term: names[0], attribute: 'artistTerm', limit: '200' }));
-  if (!found) return undefined;
-  const media = await forKorea(found.hit);
-  return found.guestUnconfirmed ? { ...media, guestUnconfirmed: true } : media;
+
+  const koreanFirst = hangul.test(artist);
+  if (koreanFirst) { const media = await fromKoreanArtist(); if (media) return media; }
+  let found: ReturnType<typeof pick>;
+  try {
+    found = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));
+    if (!found && (names.length > 1 || (hangul.test(title) && !koreanFirst))) found = pick(await ask({ term: names[0], attribute: 'artistTerm', limit: '200' }));
+  } catch (error) {
+    if (koreanFirst) throw error;
+    const media = await fromKoreanArtist();
+    if (media) return media;
+    throw error;
+  }
+  if (found) return withGuest(await forKorea(found.hit), found.partial);
+  if (!koreanFirst) { const media = await fromKoreanArtist(); if (media) return media; }
+  if (koreaError) throw koreaError;
+  return undefined;
 }
 
 function readKept(): Record<string, Media> { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; } }

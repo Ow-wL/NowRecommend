@@ -67,13 +67,39 @@ describe('song check', () => {
   });
   it('finds a Hangul title in the artist\'s list, under the name the store uses', async () => {
     const korean = { ...hit, trackName: '가로수 그늘아래 서면', artistName: 'Lee Moon Sae' };
-    const fetcher = vi.fn().mockResolvedValueOnce(store([])).mockResolvedValue(store([korean]));
-    await expect(lookupSong('가로수 그늘 아래 서면', '이문세', ['Lee Moon Sae', '이문세'], fetcher as typeof fetch)).resolves.toBeDefined();
-    expect(fetcher.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(String(fetcher.mock.calls[1][0])).toContain('attribute=artistTerm');
-    expect(fetcher.mock.calls[1][1].signal).toBe(fetcher.mock.calls[0][1].signal); // one limit for the whole check
-    const other = vi.fn().mockResolvedValue(store([{ ...korean, artistName: 'Someone Else' }]));
-    await expect(lookupSong('가로수 그늘 아래 서면', '이문세', ['Lee Moon Sae', '이문세'], other as typeof fetch)).resolves.toBeUndefined();
+    const fetcher = vi.fn(async (url: string) => store(url.includes('attribute=artistTerm') ? [korean] : url.includes('lookup') ? [hit] : [])) as unknown as typeof fetch;
+    await expect(lookupSong('가로수 그늘 아래 서면', '이문세', ['Lee Moon Sae', '이문세'], fetcher)).resolves.toBeDefined();
+    const calls = vi.mocked(fetcher).mock.calls;
+    expect(String(calls.find(c => String(c[0]).includes('artistTerm'))?.[0])).toContain('Lee+Moon+Sae');
+    expect(new Set(calls.map(c => (c[1] as RequestInit).signal)).size).toBe(1); // one limit for the whole check
+    const other = vi.fn(async (url: string) => store(url.includes('US') ? [{ ...korean, artistName: 'Someone Else' }] : [])) as unknown as typeof fetch;
+    await expect(lookupSong('가로수 그늘 아래 서면', '이문세', ['Lee Moon Sae', '이문세'], other)).resolves.toBeUndefined();
+  });
+  it('takes a Hangul artist to the Korean store first, where it resolves the name itself', async () => {
+    const song = (trackName: string, i: number, collectionName = '꽃갈피') => ({ ...hit, trackName, artistName: '아이유', collectionName, trackViewUrl: `https://music.apple.com/kr/album/x/1?i=${i}` });
+    const router = (list: object[], artists: object[] = [{ artistId: 7, artistName: 'IU' }]) => vi.fn(async (url: string) => store(url.includes('musicArtist') ? artists : url.includes('lookup') ? list : [])) as unknown as typeof fetch;
+    const direct = router([song('너의 의미', 5)]);
+    await expect(lookupSong('너의 의미', '아이유', ['아이유'], direct)).resolves.toEqual(expect.objectContaining({ link: 'https://music.apple.com/kr/song/x/5' }));
+    expect(vi.mocked(direct).mock.calls).toHaveLength(2); // the artist, then that artist's songs; no US search
+    await expect(lookupSong('없는 노래', '아이유', ['아이유'], router([song('너의 의미', 5)]))).resolves.toBeUndefined();
+    await expect(lookupSong('너의 의미', '없는가수', ['없는가수'], router([song('너의 의미', 5)], []))).resolves.toBeUndefined();
+  });
+  it('does not take a live album for a song that did not ask for one', async () => {
+    const song = (i: number, collectionName: string, trackName = '혜화동') => ({ ...hit, trackName, artistName: '동물원', collectionName, trackViewUrl: `https://music.apple.com/kr/album/x/1?i=${i}` });
+    const router = (list: object[]) => vi.fn(async (url: string) => store(url.includes('musicArtist') ? [{ artistId: 7 }] : url.includes('lookup') ? list : [])) as unknown as typeof fetch;
+    await expect(lookupSong('혜화동', '동물원', ['동물원'], router([song(1, 'In Concert (Live)'), song(2, '동물원 2집')]))).resolves.toMatchObject({ link: 'https://music.apple.com/kr/song/x/2' });
+    await expect(lookupSong('혜화동', '동물원', ['동물원'], router([song(1, 'In Concert (Live)')]))).resolves.toBeUndefined();
+    await expect(lookupSong('혜화동 (Live)', '동물원', ['동물원'], router([song(1, 'In Concert (Live)', '혜화동 (Live)')]))).resolves.toMatchObject({ link: 'https://music.apple.com/kr/song/x/1' });
+  });
+  it('asks the Korean artist door for others once the US search misses, and only calls it failed when nothing could be asked', async () => {
+    const kr = { ...hit, trackViewUrl: 'https://music.apple.com/kr/album/x/1?i=3' };
+    const late = vi.fn(async (url: string) => store(url.includes('musicArtist') ? [{ artistId: 7 }] : url.includes('lookup') ? [kr] : [])) as unknown as typeof fetch;
+    await expect(lookupSong('River Flows in You', 'Yiruma', ['Yiruma'], late)).resolves.toMatchObject({ link: 'https://music.apple.com/kr/song/x/3' });
+    expect(String(vi.mocked(late).mock.calls[0][0])).toContain('country=US');
+    const usDown = vi.fn(async (url: string) => { if (url.includes('country=US')) throw new Error('offline'); return store(url.includes('musicArtist') ? [{ artistId: 7 }] : [kr]); }) as unknown as typeof fetch;
+    await expect(lookupSong('River Flows in You', 'Yiruma', ['Yiruma'], usDown)).resolves.toMatchObject({ link: 'https://music.apple.com/kr/song/x/3' });
+    const koreaDown = vi.fn(async (url: string) => { if (url.includes('country=KR')) throw new Error('offline'); return store([]); }) as unknown as typeof fetch;
+    await expect(lookupSong('너의 의미', '아이유', ['아이유'], koreaDown)).rejects.toThrow('offline'); // not "not listed": half the search never ran
   });
   it('uses the Korean page of the song, and never takes one for granted', async () => {
     const us = { ...hit, artistId: 7, trackTimeMillis: 200000 };
@@ -89,7 +115,7 @@ describe('song check', () => {
   it('tells "not listed" apart from "could not ask"', async () => {
     const none = vi.fn().mockResolvedValue(store([{ ...hit, trackName: 'Kiss the Rain' }]));
     await expect(lookupSong('River Flows in You', 'Yiruma', ['Yiruma'], none as typeof fetch)).resolves.toBeUndefined();
-    expect(none).toHaveBeenCalledTimes(1);
+    expect(none).toHaveBeenCalledTimes(2); // the US search, then the Korean artist search, which finds no one here
     const down = vi.fn().mockRejectedValue(new Error('offline'));
     await expect(lookupSong('River Flows in You', 'Yiruma', ['Yiruma'], down as typeof fetch)).rejects.toThrow('offline');
     const limited = vi.fn().mockResolvedValue({ ok: false, status: 429 } as Response);
