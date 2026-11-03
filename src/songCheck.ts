@@ -2,15 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { useCatalog } from './catalog';
 import type { Item } from './data';
 import { isAiPick } from './knownItems';
-import { addMedia, songLink, storeArtist, type Media } from './media';
+import { addMedia, mediaFor, storeArtist, type Media } from './media';
 
 // An AI pick comes with a title and an artist and nothing else. The Apple store's search may list a result with the same
 // title and artist: that gives a cover and a song page. It does not prove the same recording, and no match does not prove
 // the song does not exist; the card says only what the search returned. A failed request means we do not know yet.
-const KEY = 'nowrecommend-song-check-v3';
+const KEY = 'nowrecommend-song-check-v4';
 const MAX_KEPT = 300;
 const DEADLINE_MS = 8000; // for the whole check, however many requests it takes
-export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string };
+const SAME_LENGTH_MS = 3000; // two listings of one recording differ by a little at most
+export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string; artistId?: number; trackTimeMillis?: number };
 export type SongStatus = 'known' | 'checking' | 'found' | 'missing' | 'failed';
 
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
@@ -55,25 +56,46 @@ export function artistNames(artist: string, items: Pick<Item, 'id' | 'category' 
   const listed = items.filter(i => i.category === 'music' && norm(i.subtitle) === norm(artist)).map(i => storeArtist(i.id)).filter((n): n is string => !!n);
   return [...new Set([...listed, artist])];
 }
-/** Uses the US store: the Korean store returned nothing for every request tried when this was written (2026-11-03). A long
- * Hangul title rarely matches a text search, so the artist's own list is the second place to look. Throws when the store cannot answer. */
+/** Searches the US store: a text search of the Korean store returned nothing for every request tried when this was written
+ * (2026-11-03), though looking up an id there works. A long Hangul title rarely matches a text search, so the artist's own list is
+ * the second place to look. What it finds is then looked for in the Korean store, by id and then in that artist's list, because the
+ * button must lead somewhere a listener in Korea can use. Not confirmed there: `regionUnconfirmed`, never a guessed /kr/ address.
+ * Throws when the store cannot answer the search. */
 export async function lookupSong(title: string, artist: string, names: string[] = [artist], fetcher: typeof fetch = fetch): Promise<Media | undefined> {
   const signal = AbortSignal.timeout(DEADLINE_MS);
   const ask = async (params: Record<string, string>) => {
     const response = await fetcher(`https://itunes.apple.com/search?${new URLSearchParams({ country: 'US', entity: 'song', ...params })}`, { signal });
+    return read(response);
+  };
+  const read = async (response: Response) => {
     if (!response.ok) throw new Error(`store ${response.status}`);
     return ((await response.json()) as { results?: Hit[] }).results || [];
+  };
+  const askKorea = async (params: Record<string, string>) => read(await fetcher(`https://itunes.apple.com/lookup?${new URLSearchParams({ country: 'KR', ...params })}`, { signal }));
+  const forKorea = async (hit: Hit): Promise<Media> => {
+    const media = mediaFromHit(hit)!, id = media.link!.split('/').pop()!;
+    try {
+      const same = (await askKorea({ id })).find(r => mediaFromHit(r)?.link?.endsWith(`/${id}`));
+      if (same) return mediaFromHit(same)!;
+      if (hit.artistId && hit.trackTimeMillis) {
+        const listed = await askKorea({ id: String(hit.artistId), entity: 'song', limit: '200' });
+        const twin = listed.find(r => matchRank(hit.trackName || '', r.trackName || '') === 2 && Math.abs((r.trackTimeMillis || 0) - hit.trackTimeMillis!) <= SAME_LENGTH_MS && mediaFromHit(r));
+        if (twin) return mediaFromHit(twin)!;
+      }
+    } catch { /* the song was found; only its availability here stays unknown */ }
+    return { ...media, regionUnconfirmed: true };
   };
   const pick = (results: Hit[]) => {
     const usable = results.filter(r => names.some(n => artistMatches(n, r.artistName || '')) && mediaFromHit(r));
     const rank = (r: Hit) => matchRank(title, r.trackName || '', r.artistName);
     const sure = usable.find(r => rank(r) === 2), partial = usable.find(r => rank(r) === 1);
-    if (sure) return mediaFromHit(sure);
-    return partial && { ...mediaFromHit(partial)!, guestUnconfirmed: true };
+    return sure ? { hit: sure } : partial && { hit: partial, guestUnconfirmed: true };
   };
-  const first = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));
-  if (first || !(hangul.test(title) || names.length > 1)) return first;
-  return pick(await ask({ term: names[0], attribute: 'artistTerm', limit: '200' }));
+  let found = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));
+  if (!found && (hangul.test(title) || names.length > 1)) found = pick(await ask({ term: names[0], attribute: 'artistTerm', limit: '200' }));
+  if (!found) return undefined;
+  const media = await forKorea(found.hit);
+  return found.guestUnconfirmed ? { ...media, guestUnconfirmed: true } : media;
 }
 
 function readKept(): Record<string, Media> { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; } }
@@ -101,7 +123,7 @@ function checkSong(id: string, title: string, artist: string, names: string[]): 
 /** 'known' needs no check (a catalog song, or a song page we already hold). `retry` runs a failed check again. */
 export function useSongCheck(item: { id: string; category: string; name: string; subtitle: string }): { status: SongStatus; retry: () => void } {
   const { items } = useCatalog();
-  const needed = item.category === 'music' && isAiPick(item.id) && !songLink(item.id);
+  const needed = item.category === 'music' && isAiPick(item.id) && !mediaFor(item.id)?.link;
   const [status, setStatus] = useState<SongStatus>(needed ? 'checking' : 'known');
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {

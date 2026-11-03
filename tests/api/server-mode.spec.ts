@@ -192,7 +192,7 @@ test('an AI song the Apple store lists gets its cover and page; one it does not 
   const pick = (name: string) => ({ item: { id: `ai-${name.replace(/\s/g, '')}`, category: 'music', name, subtitle: '테스트 가수', description: '', tags: [], ingredients: [], emoji: '', color: '' }, tasteReason: '좋아하는 분위기에 가까워요', contextReason: '지금 듣기 좋아요', aiPick: true, confidence: 'high' });
   await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [pick('있는 곡'), pick('없는 곡')], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 2, newCount: 2, catalogVersion: 'db-test', requestId: 'r' } }));
   await page.route('https://itunes.apple.com/**', route => {
-    const known = decodeURIComponent(route.request().url().replace(/\+/g, ' ')).includes('있는 곡') && !route.request().url().includes(encodeURIComponent('없는').replace(/%20/g, '+'));
+    const known = decodeURIComponent(route.request().url().replace(/\+/g, ' ')).includes('있는 곡') && !route.request().url().includes(encodeURIComponent('없는').replace(/%20/g, '+')) || route.request().url().includes('/lookup');
     return route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ results: known ? [{ trackName: '있는 곡', artistName: '테스트 가수', trackViewUrl: 'https://music.apple.com/kr/album/x/1?i=2', artworkUrl100: 'https://example.test/100x100bb.jpg' }] : [] }) });
   });
   await page.goto('/#/recommend/music');
@@ -203,11 +203,34 @@ test('an AI song the Apple store lists gets its cover and page; one it does not 
   await expect(found).not.toContainText('일치하는 정보를 찾지 못했어요');
   await expect(missing).toContainText('일치하는 정보를 찾지 못했어요');
   await expect(missing.getByRole('link', { name: /YouTube에서 찾기/ })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: '곡 중' })).toHaveText('2곡 중 1곡은 곡 정보를 확인하지 못했어요');
   await expect(missing.locator('.lead')).toContainText('AI가 제안한 이유');
   await expect(found.locator('.lead')).not.toContainText('AI가 제안한 이유');
   await missing.getByRole('button', { name: '없는 곡 더보기' }).click();
   await missing.getByRole('button', { name: '없는 곡 추천 이유 보기' }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'AI가 제안한 이유' })).toBeVisible();
+});
+
+test('a song not confirmed in the Korean store leads with a search and keeps the overseas page in the menu', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const item = { id: 'ai-해외곡', category: 'music', name: '해외곡', subtitle: '테스트 가수', description: '', tags: [], ingredients: [], emoji: '', color: '' };
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [{ item, tasteReason: '좋아하는 분위기에 가까워요', contextReason: '지금 듣기 좋아요', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }));
+  await page.route('https://itunes.apple.com/**', route => route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ results: route.request().url().includes('/lookup') ? [] : [{ trackName: '해외곡', artistName: '테스트 가수', trackViewUrl: 'https://music.apple.com/us/album/x/1?i=2', artworkUrl100: 'https://example.test/100x100bb.jpg' }] }) }));
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  const card = page.locator('.item-card').first();
+  await expect(card.getByRole('link', { name: /YouTube에서 찾기/ })).toBeVisible();
+  await expect(card.locator('.listen-button')).toHaveText('YouTube에서 찾기');
+  await expect(page.locator('.song-summary')).toHaveCount(0);  // the song itself was found
+  await card.locator('.more-toggle').click();
+  const overseas = card.locator('.overseas-link');
+  await expect(overseas).toHaveAttribute('href', 'https://music.apple.com/us/song/x/2');
+  await expect(overseas).toContainText('Apple Music 해외 스토어에서 보기');
+  await expect(overseas).toContainText('한국 계정 이용 가능 여부 미확인');
+  const box = await page.locator('.more-menu').boundingBox(); expect(box!.x).toBeGreaterThanOrEqual(0);
+  await card.getByRole('button', { name: '해외곡 추천 이유 보기' }).click();
+  await expect(page.getByRole('dialog')).toContainText('한국 계정에서 들을 수 있는지는 확인하지 못했어요');
+  await expect(page.getByRole('dialog').getByRole('heading', { name: '추천 이유' })).toBeVisible();
 });
 
 test('a song whose asked guest the store does not show says so and keeps its song page', async ({ page }) => {

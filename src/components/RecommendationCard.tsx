@@ -2,15 +2,17 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { AlertTriangle, Ban, Check, CircleDashed, Columns2, ExternalLink, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
 import type { Item } from '../data';
 import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
-import { mapSearch, mediaFor, songLink, youtubeSearch } from '../media';
-import { useSongCheck } from '../songCheck';
+import { mapSearch, mediaFor, overseasLink, songLink, youtubeSearch } from '../media';
+import { useSongCheck, type SongStatus } from '../songCheck';
 import { ItemArt } from './ItemArt';
 
 const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Apple Music에서 곡을 찾았어요', missing: 'Apple Music 검색에서 일치하는 정보를 찾지 못했어요', failed: '지금은 확인할 수 없어요' };
 
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
-export function RecommendationCard({ item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+export function RecommendationCard({ onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+  /** Reports the song check so the results can sum it up once. */
+  onSongStatus?: (id: string, status: SongStatus) => void;
   item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string; contrast?: string }; checks?: ConditionCheck[]; familiar?: boolean;
   onSave: () => void; onExclude: () => void; onSelect?: () => void; onDetails?: () => void; persisted?: boolean;
   onPin?:()=>void;onReplace?:()=>void;onCompare?:()=>void;onLike?:()=>void;pinned?:boolean;compared?:boolean;compareDisabled?:boolean;
@@ -21,6 +23,7 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
   const { status: songStatus, retry: retryCheck } = useSongCheck(item);
   // The retry button goes away while the check runs, so focus waits on the title and the outcome is announced.
   const title = useRef<HTMLHeadingElement>(null), [retried, setRetried] = useState(false);
+  useEffect(() => { onSongStatus?.(item.id, songStatus); }, [item.id, songStatus]);  // eslint-disable-line react-hooks/exhaustive-deps
   const checkAgain = () => { setRetried(true); retryCheck(); title.current?.focus(); };
   const doubtful = item.category !== 'music' && !!confidence && confidence !== 'high';
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
@@ -29,7 +32,7 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
   // The template sentence reads the same on every card, so the dish's own line says more about why this one.
   const templated = !!reasons && /^(이번 조건|고른 조건|등록 정보)/.test(reasons.contextReason);
   const lead = reasons && (templated && item.description && !music ? item.description : reasons.contextReason);
-  const song = music ? songLink(item.id) : undefined;
+  const song = music ? songLink(item.id) : undefined, overseas = music ? overseasLink(item.id) : undefined;
   const media = mediaFor(item.id);
   const album = music ? mediaFor(item.id)?.album || mediaFor(item.id)?.link : undefined;
   const listen = music && (songStatus === 'checking' ? <span className="button listen-button checking"><span className="spinner" />곡 정보를 확인하고 있어요</span> : song
@@ -81,6 +84,7 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
       {reasons ? <MoreMenu label={`${item.name} 더보기`}>
         {onDetails && <button aria-label={`${item.name} 추천 이유 보기`} onClick={onDetails}><Info size={17} />추천 이유 보기</button>}
         {song && <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><ExternalLink size={17} />YouTube에서 찾기</a>}
+        {overseas && <a className="overseas-link" href={overseas} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music 해외 스토어에서 보기, 한국 계정 이용 가능 여부 미확인 (새 탭)`}><ExternalLink size={17} /><span>Apple Music 해외 스토어에서 보기<small>한국 계정 이용 가능 여부 미확인</small></span></a>}
         {onLike && <button aria-label={`${item.name} 내 취향에 추가`} onClick={onLike}><ThumbsUp size={17} />내 취향에 추가</button>}
         {onPin && <button aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={17} />{pinned ? '고정 해제' : '이번 요청 고정'}</button>}
         {onReplace && <button aria-label={`${item.name} 한 장 교체`} disabled={pinned} onClick={onReplace}><RefreshCw size={17} />다른 후보로 교체</button>}

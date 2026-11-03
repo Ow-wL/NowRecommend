@@ -6,8 +6,9 @@ import type { Item } from './data';
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
+// `regionUnconfirmed`: a real page in another store whose Korean counterpart could not be confirmed, so it is not the main way to listen.
 // `guestUnconfirmed`: same title and artist, but the guest the pick names is not shown on the store's result.
-export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; guestUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit };
+export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; guestUnconfirmed?: boolean; regionUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;
@@ -33,10 +34,16 @@ export function findSong(items: Item[], title: string, artist: string): Item | u
   return items.find(i => i.category === 'music' && norm(i.name) + '|' + norm(i.subtitle) === key);
 }
 
+const isSongPage = (link = '') => /^https:\/\/music\.apple\.com\/[a-z]{2}\/song\//.test(link);
 /** A song page to listen on, or undefined: then the UI offers a search and never builds a guessed song link. */
 export function songLink(id: string): string | undefined {
-  const link = mediaFor(id)?.link;
-  return link && /^https:\/\/music\.apple\.com\/[a-z]{2}\/song\//.test(link) ? link : undefined;
+  const entry = mediaFor(id);
+  return !entry?.regionUnconfirmed && isSongPage(entry?.link) ? entry?.link : undefined;
+}
+/** The song page in another store, for a song we could not confirm in Korea: offered as a secondary choice, marked as such. */
+export function overseasLink(id: string): string | undefined {
+  const entry = mediaFor(id);
+  return entry?.regionUnconfirmed && isSongPage(entry.link) ? entry.link : undefined;
 }
 // Search pages, not seller integrations: they show what the services list, without availability, price or delivery checks.
 export const mapSearch = (item: Pick<Item, 'name'>) => `https://map.naver.com/p/search/${encodeURIComponent(item.name)}`;

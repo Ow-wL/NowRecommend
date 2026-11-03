@@ -294,6 +294,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .reasons .contrast { font-size: 13px; font-weight: 600; color: var(--accent); }
 .song-note { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; margin-top: 6px; font-size: 13px; font-weight: 500; color: var(--sun-ink); }
 .song-note .text-button { min-height: 32px; font-size: 13px; color: inherit; }
+.song-summary { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--sun-ink); }
 .listen-button.checking { background: var(--bg-elevated); color: var(--text-muted); font-size: 13px; font-weight: 500; cursor: default; }
 .reasons b { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); }
 .why > summary { display: inline-flex; align-items: center; min-height: 36px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; list-style: none; }
@@ -318,7 +319,10 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .more-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 35; display: flex; flex-direction: column; min-width: 220px; padding: 8px; background: var(--bg-surface); border-radius: 18px; box-shadow: var(--shadow-raised); }
 .more-menu.up { top: auto; bottom: calc(100% + 8px); }
 .more-menu button, .more-menu a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap; border-radius: 10px; }
-.more-menu svg { color: var(--text-muted); }
+.more-menu svg { color: var(--text-muted); flex-shrink: 0; }
+.more-menu .overseas-link { padding-block: 6px; white-space: normal; }
+.overseas-link span { max-width: 156px; }
+.overseas-link small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--text-muted); }
 .more-menu button[aria-pressed="true"] { color: var(--accent); font-weight: 700; }
 .more-menu .feedback-button { color: var(--danger); }
 .more-menu .feedback-button svg { color: var(--danger); }
