@@ -91,3 +91,44 @@ test('a wrong password shows the server message and stays on the form', async ({
   await page.getByRole('button', { name: '로그인 없이 계속' }).click();
   await expect(page).toHaveURL(/#\/home$/);
 });
+
+test('a failed account save is told, named on the account button and can be retried; logging out on the page keeps focus', async ({ page }) => {
+  await setup(page, { hasStore: true });
+  await page.goto('/#/login');
+  await page.getByLabel('이메일').fill('lee@example.com');
+  await page.getByLabel('비밀번호', { exact: false }).fill('password1');
+  await page.getByRole('button', { name: '로그인', exact: true }).last().click();
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  let down = true;
+  await page.route(`${API}/api/me/store`, route => down && route.request().method() === 'PUT' ? route.abort() : route.fallback());
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByLabel('이름', { exact: true }).fill('새 이름');
+  await page.getByRole('button', { name: '이름 변경' }).click();
+  await expect(page.getByText('계정에 저장하지 못했어요', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '내 계정, 저장 실패' }).click();
+  await expect(page.locator('.sync-state')).toContainText('저장 실패');
+  down = false;
+  await page.getByRole('button', { name: '다시 저장' }).click();
+  await expect(page.locator('.sync-state')).toBeFocused();
+  await expect(page.locator('.sync-state')).toContainText('계정에 저장됨');
+  await expect(page.getByRole('button', { name: '다시 저장' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.goto('/#/login');
+  await page.getByRole('button', { name: '로그아웃' }).click();
+  await expect(page.locator('#main-content')).toBeFocused();
+});
+
+test('a wrong password in the delete dialog shows inside the dialog', async ({ page }) => {
+  await setup(page, { hasStore: true });
+  await page.route(`${API}/api/auth/delete`, route => fulfill(route, { detail: 'no' }, 401));
+  await page.goto('/#/login');
+  await page.getByLabel('이메일').fill('lee@example.com');
+  await page.getByLabel('비밀번호', { exact: false }).fill('password1');
+  await page.getByRole('button', { name: '로그인', exact: true }).last().click();
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByRole('button', { name: /계정과 계정 데이터 삭제/ }).click();
+  await page.getByLabel('비밀번호 확인').fill('wrong-pass');
+  await page.getByRole('button', { name: '계정 삭제' }).click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('비밀번호가 맞지 않아요.');
+});

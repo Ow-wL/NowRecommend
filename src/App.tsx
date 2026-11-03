@@ -77,7 +77,8 @@ export default function App() {
   // The signed-in account (server mode). Its store follows the account: downloaded on login, uploaded after each change.
   const [account, setAccount] = useState<Account | null>(readAccount);
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
-  const [deletePassword, setDeletePassword] = useState('');
+  const [deletePassword, setDeletePassword] = useState(''), [deleteError, setDeleteError] = useState('');
+  const [syncAttempt, setSyncAttempt] = useState(0), syncFailureTold = useRef(false);
   const syncSkip = useRef(0);  // store versions that came from the server need no upload
   const [feedbackItem, setFeedbackItem] = useState<Item | null>(null);
   const [historyPreview, setHistoryPreview] = useState<HistoryEntry | null>(null);
@@ -157,13 +158,14 @@ export default function App() {
     const token = account.token, snapshot = store;
     setSyncState('saving');
     const timer = setTimeout(() => {
-      pushRemoteStore(token, snapshot).then(() => setSyncState('saved')).catch(error => {
+      pushRemoteStore(token, snapshot).then(() => { syncFailureTold.current = false; setSyncState('saved'); }).catch(error => {
         setSyncState('failed');
         if (error instanceof ApiError && error.status === 401) { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); }
+        else if (!syncFailureTold.current) { syncFailureTold.current = true; notify('계정에 저장하지 못했어요. 이 브라우저에는 남아 있고, 내 계정에서 다시 저장할 수 있어요.'); }
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [store, account]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [store, account, syncAttempt]);  // eslint-disable-line react-hooks/exhaustive-deps
   async function signIn(session: AuthSession, mode: 'login' | 'signup') {
     const next: Account = { token: session.token, user: session.user };
     const remote = session.hasStore ? (await fetchRemoteStore(session.token).catch(() => ({ store: null }))).store : null;
@@ -371,7 +373,7 @@ export default function App() {
         <div className="appbar-actions">
           <button className="icon-button help-link" aria-label="체험 안내" onClick={() => setDialog('about')}><Info size={20} /></button>
           {apiEnabled() && !account && <button className="login-button" onClick={() => navigate('login')}>로그인</button>}
-          <button className={`top-avatar${account ? ' signed-in' : ''}`} aria-label={account ? '내 계정' : '브라우저 프로필'} title={account ? account.user.email : undefined} onClick={() => { setNameDraft(store.name); setSettingsTab('profile'); setDialog('account'); }}>{account ? <b>{account.user.name.slice(0, 1)}</b> : <Settings2 size={20} />}</button>
+          <button className={`top-avatar${account ? ' signed-in' : ''}${account && syncState === 'failed' ? ' sync-failed' : ''}`} aria-label={account ? syncState === 'failed' ? '내 계정, 저장 실패' : '내 계정' : '브라우저 프로필'} title={account ? account.user.email : undefined} onClick={() => { setNameDraft(store.name); setSettingsTab('profile'); setDialog('account'); }}>{account ? <b>{account.user.name.slice(0, 1)}</b> : <Settings2 size={20} />}</button>
         </div>
       </div>
     </header>
@@ -603,7 +605,7 @@ export default function App() {
         <div className="login-body">
         <h1>{account ? `${account.user.name}님, 로그인되어 있어요.` : '로그인'}</h1>
         <p>{account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 저장해 다른 기기에서도 이어 쓸 수 있어요.'}</p>
-        {account ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={signOut}><LogOut size={16} />로그아웃</button></div>
+        {account ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={() => { signOut(); document.getElementById('main-content')?.focus({ preventScroll: true }); }}><LogOut size={16} />로그아웃</button></div>
           : <AuthPanel online={apiEnabled()} initialName={store.name === '취향 탐험가' ? '' : store.name} onSuccess={signIn} onGuest={() => navigate('home')} />}
         </div>
         <div className="login-wall" aria-hidden="true">{showcase('food', 3).flatMap((f, n) => [f, showcase('music', 3)[n]]).filter(Boolean).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
@@ -621,11 +623,11 @@ export default function App() {
     {dialog === 'account' && <Modal neutral title="설정" onClose={() => setDialog(null)}>
       <div className="filter-tabs settings-tabs" role="group" aria-label="설정 구역">{([['profile', '프로필'], ['screen', '화면'], ['data', '데이터 관리']] as const).map(([id, name]) => <button key={id} aria-pressed={settingsTab === id} className={settingsTab === id ? 'active' : ''} onClick={() => setSettingsTab(id)}>{name}</button>)}</div>
       {settingsTab === 'profile' && <>
-        {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status">{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span></div>
+        {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status" tabIndex={-1}>{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span>{syncState === 'failed' && <button className="text-button" onClick={e => { e.currentTarget.parentElement?.querySelector<HTMLElement>('.sync-state')?.focus(); setSyncAttempt(n => n + 1); }}>다시 저장</button>}</div>
           : <p className="modal-description">{apiEnabled() ? '지금은 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요.'}</p>}
         {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
         <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
-        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
+        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
       </>}
       {settingsTab === 'screen' && <AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/>}
       {settingsTab === 'data' && <>
@@ -633,7 +635,7 @@ export default function App() {
         <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
       </>}
     </Modal>}
-    {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); try { await deleteAccount(account.token, deletePassword); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { notify(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
+    {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
     {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;
 }

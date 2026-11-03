@@ -6,6 +6,8 @@ import { mapSearch, mediaFor, songLink, youtubeSearch } from '../media';
 import { useSongCheck } from '../songCheck';
 import { ItemArt } from './ItemArt';
 
+const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Apple Music에서 곡을 찾았어요', missing: 'Apple Music 검색에서 일치하는 정보를 찾지 못했어요', failed: '지금은 확인할 수 없어요' };
+
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
 export function RecommendationCard({ item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
@@ -17,6 +19,9 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
 }) {
   // What the person should do about a pick we could not confirm: a song the store does not list, or a doubtful AI answer.
   const { status: songStatus, retry: retryCheck } = useSongCheck(item);
+  // The retry button goes away while the check runs, so focus waits on the title and the outcome is announced.
+  const title = useRef<HTMLHeadingElement>(null), [retried, setRetried] = useState(false);
+  const checkAgain = () => { setRetried(true); retryCheck(); title.current?.focus(); };
   const doubtful = item.category !== 'music' && !!confidence && confidence !== 'high';
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
   const music = item.category === 'music';
@@ -27,7 +32,7 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
   const song = music ? songLink(item.id) : undefined;
   const media = mediaFor(item.id);
   const album = music ? mediaFor(item.id)?.album || mediaFor(item.id)?.link : undefined;
-  const listen = music && (songStatus === 'checking' ? <span className="button listen-button checking" role="status"><span className="spinner" />곡 정보를 확인하고 있어요</span> : song
+  const listen = music && (songStatus === 'checking' ? <span className="button listen-button checking"><span className="spinner" />곡 정보를 확인하고 있어요</span> : song
     ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={15} fill="currentColor" />Apple Music에서 듣기</a>
     : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><Search size={16} />YouTube에서 찾기</a>);
   // Album artwork links to Apple Music (the artwork terms); it is never the only way to listen.
@@ -42,14 +47,15 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
     <div className="item-body">
     <div className="item-head">
       <div className="item-title">
-        <h3>{item.name}</h3>
+        <h3 ref={title} tabIndex={-1}>{item.name}</h3>
         <p className="item-subtitle">{item.subtitle}</p>
       </div>
       {music && saveButton}
       {(pinned || familiar || doubtful) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubtful && <span className="check-badge">정보 확인 필요</span>}</span>}
     </div>
-    {songStatus === 'missing' && <p className="song-note">Apple Music 검색에서 일치하는 정보를 찾지 못했어요 <button className="text-button" onClick={retryCheck}>다시 확인</button></p>}
-    {songStatus === 'failed' && <p className="song-note">지금은 확인할 수 없어요 <button className="text-button" onClick={retryCheck}>다시 확인</button></p>}
+    {songStatus !== 'known' && <span className="sr-only" role="status">{retried && SONG_NEWS[songStatus]}</span>}
+    {songStatus === 'missing' && <p className="song-note">Apple Music 검색에서 일치하는 정보를 찾지 못했어요 <button className="text-button" onClick={checkAgain}>다시 확인</button></p>}
+    {songStatus === 'failed' && <p className="song-note">지금은 확인할 수 없어요 <button className="text-button" onClick={checkAgain}>다시 확인</button></p>}
     {media?.guestUnconfirmed && <p className="song-note">요청한 참여자는 확인하지 못했어요</p>}
     {media?.approx && <p className="song-note">이미지는 참고용이에요</p>}
     {/* One line of why on the card; the rest opens on demand so the picture stays the main thing. A missing tag reads

@@ -112,3 +112,9 @@ test('keyboard focus stays visible, clear of the sticky bars, and is not lost',a
 test('small text on the coloured doors stays fully opaque',async({page})=>{
   await page.goto('/#/home');await expect(page.locator('.door.food small')).toHaveCSS('opacity','1');await expect(page.locator('.door.food small')).toHaveCSS('color','rgb(255, 255, 255)');
 });
+test('a custom colour as light as the surface still shows focus and button edges',async({page})=>{
+  await page.addInitScript(value=>localStorage.setItem('nowrecommend-prototype-v1',JSON.stringify(value)),{...seed,appearance:{mode:'light',accent:'#ffffff'}});
+  await page.goto('/#/recommend/food');await page.locator('.compose-panel textarea').focus();
+  const outline=await page.locator('.compose-panel').evaluate(n=>getComputedStyle(n).outlineColor);expect(outline).not.toBe('rgb(255, 255, 255)');
+  await expect(page.locator('.action-bar .button.primary')).not.toHaveCSS('box-shadow','none');
+});

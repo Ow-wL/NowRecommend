@@ -50,7 +50,7 @@ for(const width of [320,360,390])test(`music actions stay on one line each at ${
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const brokenWords=await page.locator('.result-grid h3').evaluateAll(titles=>titles.flatMap(h=>{const text=h.firstChild as Text;let at=0;return text.data.split(/\s+/).filter(word=>{const start=text.data.indexOf(word,at);at=start+word.length;const range=document.createRange();range.setStart(text,start);range.setEnd(text,at);return new Set([...range.getClientRects()].map(r=>Math.round(r.top))).size>1;});}));
   expect(brokenWords).toEqual([]);
-  const first=page.locator('.result-grid .item-card').first();const [heart,more,listen]=await Promise.all([first.locator('.save-button').boundingBox(),first.locator('.more-toggle').boundingBox(),first.locator('.listen-button').boundingBox()]);
-  expect(heart!.y).toBe(more!.y);expect(more!.x+more!.width).toBeLessThanOrEqual(heart!.x);expect(heart!.height).toBeGreaterThanOrEqual(44);expect(listen!.width).toBeGreaterThanOrEqual(170);
+  const {heart,more,listen}=await page.locator('.result-grid .item-card').first().evaluate(card=>{const box=(sel:string)=>card.querySelector(sel)!.getBoundingClientRect();return {heart:box('.save-button').toJSON(),more:box('.more-toggle').toJSON(),listen:box('.listen-button').toJSON()};});  // measured together: the cards rise in as they appear
+  expect(heart.y).toBeCloseTo(more.y,0);expect(more.x+more.width).toBeLessThanOrEqual(heart.x);expect(heart.height).toBeGreaterThanOrEqual(44);expect(listen.width).toBeGreaterThanOrEqual(170);
   await page.locator('.result-grid .more-toggle').first().click();await expect(page.locator('.more-menu')).toBeVisible();const menu=await page.locator('.more-menu').boundingBox();expect(menu!.x).toBeGreaterThanOrEqual(0);expect(menu!.x+menu!.width).toBeLessThanOrEqual(width);
 });

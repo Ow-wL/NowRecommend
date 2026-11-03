@@ -233,6 +233,8 @@ test('a failed store request says so and can be tried again, unlike a song that 
   await expect(card).not.toContainText('일치하는 정보를 찾지 못했어요');
   await page.route('https://itunes.apple.com/**', route => route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ results: [{ trackName: '다시 확인', artistName: '테스트 가수', trackViewUrl: 'https://music.apple.com/kr/album/x/1?i=2', artworkUrl100: 'https://example.test/100x100bb.jpg' }] }) }));
   await card.getByRole('button', { name: '다시 확인', exact: true }).click();
+  await expect(card.locator('h3')).toBeFocused();  // the button is gone, the keyboard place is not
   await expect(card.getByRole('link', { name: /Apple Music에서 듣기/ })).toHaveAttribute('href', 'https://music.apple.com/kr/song/x/2');
+  await expect(card.getByRole('status')).toContainText('Apple Music에서 곡을 찾았어요');
   await expect(card).not.toContainText('지금은 확인할 수 없어요');
 });
