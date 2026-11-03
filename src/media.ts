@@ -23,6 +23,12 @@ export function mediaFor(id: string): Media | undefined {
   return entry && !entry.check && /^https:\/\//.test(entry.image) ? entry : undefined;
 }
 
+/** An item's own image, or that of the general dish it belongs to (뿌링클 → 치킨), which is only ever a reference picture. */
+export function mediaOf(item: { id?: string; parentId?: string }): Media | undefined {
+  const own = item.id ? mediaFor(item.id) : undefined, parent = !own && item.parentId ? mediaFor(item.parentId) : undefined;
+  return own || (parent && { ...parent, approx: true });
+}
+
 /** The artist's name as the store lists it, from a catalog cover that was confirmed by hand ("이문세" is listed as "Lee Moon Sae"). */
 export function storeArtist(id: string): string | undefined {
   return table[id]?.match?.match(/^.* - (.+?) \[.*\]$/)?.[1];

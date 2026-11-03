@@ -211,6 +211,42 @@ test('an AI song the Apple store lists gets its cover and page; one it does not 
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'AI가 제안한 이유' })).toBeVisible();
 });
 
+test('AI food names detail menus, borrows the general dish photo, and can ask within a broad name', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const dish = (id: string, name: string, subtitle: string, extra: object = {}) => ({ item: { id, category: 'food', name, subtitle, description: '', tags: ['고소함'], ingredients: ['닭고기'], emoji: '', color: '', ...extra }, tasteReason: '고소한 맛에 가까워요', contextReason: '함께 먹기 좋아요', aiPick: true, confidence: 'high' });
+  const sentences: string[] = [];
+  await page.route(`${API}/api/recommend`, route => {
+    if (route.request().method() === 'POST') sentences.push(route.request().postDataJSON().raw);
+    const refined = sentences.at(-1)?.includes('중에서');
+    return fulfill(route, { results: refined ? [dish('ai-bburinkle', '뿌링클', 'BHC · 치킨', { parentId: 'f13' }), dish('ai-honey', '허니콤보', '교촌치킨 · 치킨', { parentId: 'f13' }), dish('ai-olive', '황금올리브', 'BBQ · 치킨', { parentId: 'f13' })]
+      : [{ ...dish('ai-chicken', '치킨', '치킨'), broad: true }, dish('ai-noodle', '들기름 막국수', '한식 · 차가운 면')], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 3, newCount: 3, catalogVersion: 'db-test', requestId: 'r' } });
+  });
+  await page.goto('/#/recommend/food');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.locator('.item-card').filter({ hasText: '들기름 막국수' })).toContainText('한식 · 차가운 면');
+  await expect(page.locator('.item-card').filter({ hasText: '들기름 막국수' }).locator('.refine-button')).toHaveCount(0);  // already one menu
+  await page.getByRole('button', { name: '치킨 세부 메뉴 보기' }).click();
+  await expect(page.locator('.result-grid h3')).toHaveText(['뿌링클', '허니콤보', '황금올리브']);
+  await expect(page.locator('h1')).toHaveText('치킨 중에서 골라줘');
+  await expect(page.locator('h1')).toBeFocused();
+  expect(sentences.at(-1)).toBe('치킨 중에서 골라줘');
+  const first = page.locator('.item-card').first();
+  await expect(first).toContainText('BHC · 치킨');
+  await expect(first).toContainText('이미지는 참고용이에요');  // the 치킨 photo stands in for 뿌링클
+  await expect(first.locator('img')).toHaveCount(1);
+});
+
+test('AI food with an exclusion says the check rests on estimated ingredients', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const item = { id: 'ai-safe', category: 'food', name: '메뉴', subtitle: '한식', description: '', tags: [], ingredients: [], emoji: '', color: '' };
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [{ item, tasteReason: 't', contextReason: 'c', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }));
+  await page.route(`${API}/api/parse`, route => fulfill(route, { conditions: { tags: [], excluded: ['밀'] }, source: 'rule', unparsed: [] }));
+  await page.goto('/#/recommend/food');
+  await page.getByLabel('지금의 상황').fill('밀가루 빼고 저녁');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.getByText('제외 조건은 AI가 추정한 재료로 확인했어요.')).toBeVisible();
+});
+
 test('a song not confirmed in the Korean store leads with a search and keeps the overseas page in the menu', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
   const item = { id: 'ai-해외곡', category: 'music', name: '해외곡', subtitle: '테스트 가수', description: '', tags: [], ingredients: [], emoji: '', color: '' };

@@ -17,9 +17,12 @@ from app.vocab import get_vocab
 from tests.conftest import FakeEmbedder, needs_db
 
 
-def test_engine_defaults_music_to_ai_food_to_catalog_and_favourites_to_catalog(monkeypatch):
+def test_engine_defaults_to_ai_except_favourites(monkeypatch):
+    monkeypatch.setattr(get_settings(), "food_engine", "ai")
     assert engine_for(RecommendRequest(category="music")) == "ai"
-    assert engine_for(RecommendRequest(category="food")) == "catalog"
+    assert engine_for(RecommendRequest(category="food")) == "ai"
+    assert engine_for(RecommendRequest(category="food", candidateIds=["f01"])) == "catalog"
+    assert engine_for(RecommendRequest(category="food", engine="catalog")) == "catalog"
     assert engine_for(RecommendRequest(category="food", engine="ai")) == "ai"
     assert engine_for(RecommendRequest(category="music", engine="catalog")) == "catalog"
     assert engine_for(RecommendRequest(category="music", candidateIds=["m01"])) == "catalog"
@@ -143,3 +146,27 @@ def test_food_and_favourites_keep_the_catalog_engine(catalog):
     assert food["meta"]["engine"] == "catalog" and saved["meta"]["engine"] == "catalog"
     assert len(model.payloads) == 1  # only the forced request reached the model
     assert forced["meta"]["engine"] == "ai" and forced["results"][0]["item"]["name"] == "새 메뉴" and forced["results"][0]["item"]["category"] == "food"
+
+
+def food_pick(name, detail="BHC · 치킨", ingredients=(), base="치킨", confidence="high", broad=False):
+    return {**pick(name, detail), "ingredients": list(ingredients), "baseDish": base, "broad": broad, "confidence": confidence}
+
+
+def test_food_picks_name_detail_menus_and_lend_the_general_dish_photo(catalog):
+    model = FakeModel({"picks": [food_pick("뿌링클", ingredients=["닭고기", "밀"]), food_pick("치킨 세트", detail="치킨", broad=True, base="없는 음식")]})
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "food", "raw": "치킨 중에서 골라줘", "engine": "ai", "count": 2}).json()
+    first, second = answer["results"]
+    assert first["item"]["subtitle"] == "BHC · 치킨" and first["item"]["ingredients"] == ["닭고기", "밀"]
+    assert first["item"]["parentId"] == "f13" and "broad" not in first
+    assert second["broad"] is True and "parentId" not in second["item"]
+    payload = model.payloads[0]
+    assert "치킨" in payload["baseDishes"] and "유제품" in payload["ingredientWords"]
+
+
+def test_a_pick_listing_an_excluded_ingredient_or_doubted_by_the_model_is_dropped(catalog):
+    model = FakeModel({"picks": [food_pick("밀 든 메뉴", ingredients=["밀"]), food_pick("자신 없는 메뉴", confidence="low"), food_pick("해물 메뉴", ingredients=["해산물"]), food_pick("안전한 메뉴", ingredients=["닭고기"])]})
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "food", "raw": "저녁", "engine": "ai", "conditions": {"excluded": ["밀", "해산물"]}}).json()
+    assert [r["item"]["name"] for r in answer["results"]] == ["안전한 메뉴"]
+    assert "excluded_value=3" in answer["meta"]["issues"]

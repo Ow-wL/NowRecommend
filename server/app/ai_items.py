@@ -52,21 +52,34 @@ def find_existing(session: Session, category: str, name: str, detail: str) -> It
     return (reviewed or rows or [None])[0]
 
 
+def parent_of(session: Session, category: str, base_dish: str) -> str | None:
+    """The reviewed general dish a detail menu belongs to, by the name the model chose from baseDishes."""
+    if not base_dish or category != "food":
+        return None
+    return session.scalars(select(Item.id).where(Item.category == "food", Item.status == "reviewed", func.lower(Item.name) == base_dish.lower())).first()
+
+
 def persist_picks(session: Session, category: str, picks: list[FreePick]) -> list[Item]:
     """One row per pick, in order: an existing catalog row when the name matches, else a new or reused AI draft."""
     rows: list[Item] = []
     vocab = get_vocab().for_category(category)
     for pick in picks:
         row = find_existing(session, category, pick.name, pick.detail) or session.get(Item, ai_item_id(category, pick.name, pick.detail))
+        ingredients = [i for i in pick.ingredients if i in vocab.excludableIngredients]
         if row is None:
             tags = [t for t in pick.tags if t in vocab.tags]
             row = Item(id=ai_item_id(category, pick.name, pick.detail), category=category, name=pick.name,
                        artist=pick.detail if category == "music" else None,
-                       subtitle=pick.detail if category == "music" else (trait_summary(tags, vocab.extraTags) if tags else pick.detail or "음식"),
+                       subtitle=pick.detail or (trait_summary(tags, vocab.extraTags) if tags else "음식"),
                        description=f"AI가 직접 고른 {'곡' if category == 'music' else '메뉴'}예요. 실제 정보는 검색으로 확인해주세요.",
-                       tags=tags, ingredients=[], emoji=EMOJI[category], color=COLOR[category],
+                       tags=tags, ingredients=ingredients, emoji=EMOJI[category], color=COLOR[category],
+                       release_year=pick.release_year, parent_id=parent_of(session, category, pick.base_dish),
                        status="draft", source="ai_draft", ai_fields=["name", "subtitle", "tags"], review_notes=[AI_PICK_NOTE])
             session.add(row)
+        elif row.status == "draft":  # an AI draft saved before these fields existed, or with less known
+            row.release_year = row.release_year or pick.release_year
+            row.ingredients = row.ingredients or ingredients
+            row.parent_id = row.parent_id or parent_of(session, category, pick.base_dish)
         rows.append(row)
     try:
         session.commit()
@@ -79,5 +92,5 @@ def persist_picks(session: Session, category: str, picks: list[FreePick]) -> lis
 def _detached(category: str, pick: FreePick) -> Item:
     """An unsaved row for the response when the insert failed; the id is still the stable hash."""
     return Item(id=ai_item_id(category, pick.name, pick.detail), category=category, name=pick.name, artist=pick.detail if category == "music" else None,
-                subtitle=pick.detail or "음식", description="AI가 직접 고른 항목이에요.", tags=list(pick.tags), ingredients=[],
-                emoji=EMOJI[category], color=COLOR[category], status="draft", source="ai_draft", ai_fields=[], review_notes=[])
+                subtitle=pick.detail or "음식", description="AI가 직접 고른 항목이에요.", tags=list(pick.tags), ingredients=list(pick.ingredients),
+                release_year=pick.release_year, emoji=EMOJI[category], color=COLOR[category], status="draft", source="ai_draft", ai_fields=[], review_notes=[])

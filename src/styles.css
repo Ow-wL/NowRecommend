@@ -294,6 +294,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .reasons .contrast { font-size: 13px; font-weight: 600; color: var(--accent); }
 .song-note { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; margin-top: 6px; font-size: 13px; font-weight: 500; color: var(--sun-ink); }
 .song-note .text-button { min-height: 32px; font-size: 13px; color: inherit; }
+.refine-button { align-self: flex-start; display: inline-flex; align-items: center; gap: 2px; margin-top: 6px; min-height: 36px; font-size: 14px; font-weight: 600; color: var(--accent); }
 .song-summary { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--sun-ink); }
 .listen-button.checking { background: var(--bg-elevated); color: var(--text-muted); font-size: 13px; font-weight: 500; cursor: default; }
 .reasons b { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); }

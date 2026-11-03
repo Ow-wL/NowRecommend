@@ -242,6 +242,15 @@ export default function App() {
       .catch(() => { if (token === requestCounter.current) setRequestError('server'); })
       .finally(() => { if (token === requestCounter.current) setBusy(false); });
   }
+  // "치킨" → its detail menus: a new request within that dish, keeping the conditions, so 뿌링클 and 허니콤보 come back by name.
+  function refineMenu(item: Item) {
+    const base = { ...newSession(item.category), raw: `${item.name} 중에서 골라줘`, conditions: cleanConditions(session.conditions) };
+    withBatch(base, store.profiles[item.category], current => {
+      setSession(current); record(current); setStep('results');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('main h1')?.focus());
+    });
+  }
   function restoreTemporary(id: string) {
     withBatch({...session,excludedIds:session.excludedIds.filter(v=>v !== id)},store.profiles[session.category],current=>{
       setSession(current);record(current,[{itemId:id,scope:'session',action:'restore',date:new Date().toISOString()}]);
@@ -326,7 +335,7 @@ export default function App() {
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
   const tabFilter = <div className="filter-tabs" role="group" aria-label="분야 필터">{(['all', 'food', 'music'] as const).map(f => <button key={f} aria-pressed={filter === f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f === 'all' ? '전체' : categoryLabel[f]}</button>)}</div>;
   const reportSongCheck = (id: string, status: SongStatus) => setSongChecks(all => all[id] === status ? all : { ...all, [id]: status });
-  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
+  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
 
   // Navigation: top bar on wide screens, bottom tab bar on phones (DESIGN.md §2). Same accessible names in both.
   const allNav: { page: Page; label: string; icon: typeof House; category?: Category }[] = [...navItems, ...myItems];
@@ -521,6 +530,7 @@ export default function App() {
             : <><strong>이전에 본 후보 {repeatedCount}개를 다시 보여드려요.</strong><p>아직 보지 않은 후보가 {unseenLeft}개 남아 있어요. 다른 추천 보기로 이어서 볼 수 있어요.</p></>}</div></div>}
           {offTopicCount > 0 && <div className="notice" role="status"><Info size={18} /><div><strong>고른 조건({session.conditions.tags.join(' · ')})에 맞는 새 후보가 부족해요.</strong><p>{offTopicCount === results.length ? '이번 후보는 모두' : `이번 후보 중 ${offTopicCount}개는`} 등록 특징에 고른 조건이 없어요. 카드의 조건 확인에서 차이를 볼 수 있어요.</p></div></div>}
           {/* Always on screen, so touch and keyboard users get it too. Exclusions only go as far as the registered data. */}
+          {category === 'food' && session.quality?.engine === 'ai' && session.conditions.excluded.length > 0 && <div className="notice warning" role="status"><Info size={18} /><div><strong>제외 조건은 AI가 추정한 재료로 확인했어요.</strong><p>실제 재료와 다를 수 있으니, 알레르기가 있다면 주문 전에 꼭 확인해주세요.</p></div></div>}
           {/* Said once for the whole list, when the checks have settled; the slot stays so the sentence is announced as it appears. */}
           {category === 'music' && <div role="status">{unconfirmedSongs > 0 && !results.some(r => songChecks[r.item.id] === 'checking') && <p className="song-summary">{results.length}곡 중 {unconfirmedSongs}곡은 곡 정보를 확인하지 못했어요</p>}</div>}
           <div className={`result-grid ${category}`}>{results.map(r => itemCard(r.item, r))}</div>

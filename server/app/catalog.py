@@ -17,7 +17,7 @@ SEED_FILE = Path(__file__).resolve().parents[1] / "data" / "seed_items.json"
 # Approved AI drafts (app.cli.review publish), loaded by app.cli.seed after the bundled seed so a fresh DB gets them too.
 REVIEWED_FILE = Path(__file__).resolve().parents[1] / "data" / "reviewed_items.json"
 SOURCES = ("seed", "ai_draft", "user_request")
-CONTENT_FIELDS = ("category", "name", "artist", "subtitle", "description", "tags", "ingredients", "emoji", "color")
+CONTENT_FIELDS = ("category", "name", "artist", "subtitle", "description", "tags", "ingredients", "emoji", "color", "release_year", "parent_id")
 # A food item's second line: its checkable traits, never a price (traitSummary in src/data.ts).
 TRAITS = ("매콤함", "담백함", "고소함", "상큼함", "따뜻함", "차가움", "국물", "채소")
 
@@ -129,8 +129,13 @@ def reviewed_items(session: Session, category: str | None = None) -> list[Item]:
 def public_item(row: Item) -> dict:
     """The frontend Item shape (src/data.ts). No price: food shows its traits as the subtitle."""
     item = {k: getattr(row, k) for k in ("id", "category", "name", "subtitle", "description", "tags", "ingredients", "emoji", "color")}
-    if row.category == "food":
+    # An AI pick keeps the line the model wrote ("BHC · 치킨"): it says which menu this is.
+    if row.category == "food" and not row.id.startswith("ai-"):
         item["subtitle"] = trait_summary(list(row.tags), get_vocab().food.extraTags)
+    if row.release_year:
+        item["releaseYear"] = row.release_year
+    if row.parent_id:
+        item["parentId"] = row.parent_id
     return item
 
 

@@ -33,7 +33,8 @@ def engine_for(request: RecommendRequest) -> str:
     """Favourites scope always ranks the saved items (catalog); otherwise the request's choice or the server default."""
     if request.candidateIds is not None:
         return "catalog"
-    return request.engine or (get_settings().music_engine if request.category == "music" else "catalog")
+    settings = get_settings()
+    return request.engine or (settings.music_engine if request.category == "music" else settings.food_engine)
 
 
 @dataclass
@@ -55,10 +56,13 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     liked, disliked = labels_for(session, profile.selected, category), labels_for(session, profile.disliked, category)
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
+    food = category == "food"
+    base_dishes = [r.name for r in reviewed_items(session) if r.category == "food"] if food else None
     payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
-                            [], disliked, avoid[-60:], wanted, [*vocab.conditionTags, *vocab.extraTags])
+                            [], disliked, avoid[-60:], wanted, [*vocab.conditionTags, *vocab.extraTags],
+                            base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None)
     validation = validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked], [*vocab.conditionTags, *vocab.extraTags],
-                               detail_required=category == "music")
+                               detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None)
     rows = persist_picks(session, category, validation.picks)
     # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too.
     blocked = {*request.seenIds, *request.excludedIds, *profile.disliked, *(r.id for r in pinned_rows)}
@@ -103,7 +107,8 @@ def recommend_ai(session: Session, request: RecommendRequest, model: JsonModel |
             taste = NO_TASTE_REASON
         item = public_item(row)
         results.append({"item": item, "tasteReason": taste, "contextReason": context,
-                        **({"confidence": confidence} if confidence else {}), **({"aiPick": True} if is_ai_pick(row.id) or pick else {})})
+                        **({"confidence": confidence} if confidence else {}), **({"aiPick": True} if is_ai_pick(row.id) or pick else {}),
+                        **({"broad": True} if pick and pick.broad else {})})
 
     request_id = uuid.uuid4()
     latency_ms = round((time.perf_counter() - started) * 1000)

@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Ban, Check, CircleDashed, Columns2, ExternalLink, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
+import { AlertTriangle, Ban, Check, ChevronRight, CircleDashed, Columns2, ExternalLink, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
 import type { Item } from '../data';
 import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
-import { mapSearch, mediaFor, overseasLink, songLink, youtubeSearch } from '../media';
+import { mapSearch, mediaFor, mediaOf, overseasLink, songLink, youtubeSearch } from '../media';
 import { useSongCheck, type SongStatus } from '../songCheck';
 import { ItemArt } from './ItemArt';
 
@@ -10,7 +10,9 @@ const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Ap
 
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
-export function RecommendationCard({ onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+export function RecommendationCard({ onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+  /** Asks again within this dish: 치킨 → 뿌링클, 황금올리브, 허니콤보. Only for a name that covers several menus. */
+  onRefine?: () => void;
   /** Reports the song check so the results can sum it up once. */
   onSongStatus?: (id: string, status: SongStatus) => void;
   item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string; contrast?: string }; checks?: ConditionCheck[]; familiar?: boolean;
@@ -33,7 +35,7 @@ export function RecommendationCard({ onSongStatus, item, saved, reasons, checks 
   const templated = !!reasons && /^(이번 조건|고른 조건|등록 정보)/.test(reasons.contextReason);
   const lead = reasons && (templated && item.description && !music ? item.description : reasons.contextReason);
   const song = music ? songLink(item.id) : undefined, overseas = music ? overseasLink(item.id) : undefined;
-  const media = mediaFor(item.id);
+  const media = mediaOf(item);
   const album = music ? mediaFor(item.id)?.album || mediaFor(item.id)?.link : undefined;
   const listen = music && (songStatus === 'checking' ? <span className="button listen-button checking"><span className="spinner" />곡 정보를 확인하고 있어요</span> : song
     ? <a className="button primary listen-button" href={song} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music에서 듣기 (새 탭)`}><Play size={15} fill="currentColor" />Apple Music에서 듣기</a>
@@ -77,6 +79,7 @@ export function RecommendationCard({ onSongStatus, item, saved, reasons, checks 
       <div className="mini-tags">{item.tags.slice(0, 3).map(t => <span key={t}>{t}</span>)}</div>
       <p className="item-description">{item.description}</p>
     </>}
+    {onRefine && <button className="text-button refine-button" onClick={onRefine}>{item.name} 세부 메뉴 보기 <ChevronRight size={15} /></button>}
     <div className="card-actions">
       {music && listen}
       {onSelect && <button className={`button ${music ? 'secondary' : 'primary'} select-button`} aria-label={`${item.name} ${music ? '오늘의 곡으로 기록' : '오늘은 이걸로'}`} onClick={onSelect}>{music ? '오늘의 곡으로' : '오늘은 이걸로'}</button>}

@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     # How POST /api/recommend answers music (2026-11-02, after the lab comparison): "ai" = the model names songs from its
     # own knowledge (llm/free.py), falling back to the catalog pipeline when it fails; "catalog" = the pipeline only.
     music_engine: str = "ai"
+    # The same choice for food (2026-11-03): the model names detail menus; exclusions are checked against the ingredients it lists.
+    food_engine: str = "ai"
     parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)

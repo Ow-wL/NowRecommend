@@ -2,7 +2,7 @@ import vocab from '../shared/vocab.json' with { type: 'json' };
 export type Category = 'food' | 'music';
 export const CATALOG_META = { version: '2026-10-26-sample-2', status: 'sample-unverified', source: '기존 프로토타입 카탈로그', reviewed: false } as const;
 // No price: there is no seller data, so the app never shows, filters or ranks by price (2026-10-27).
-export type Item = { id: string; category: Category; name: string; subtitle: string; description: string; tags: string[]; ingredients: string[]; emoji: string; color: string };
+export type Item = { releaseYear?: number; parentId?: string; id: string; category: Category; name: string; subtitle: string; description: string; tags: string[]; ingredients: string[]; emoji: string; color: string };
 // A food card's second line: the checkable traits (taste, temperature, form), never a price.
 const TRAITS = ['매콤함', '담백함', '고소함', '상큼함', '따뜻함', '차가움', '국물', '채소'];
 export const traitSummary = (tags: string[]) => TRAITS.filter(t => tags.includes(t)).slice(0, 3).join(' · ') || tags.find(t => vocab.food.extraTags.includes(t)) || '음식';
@@ -63,7 +63,8 @@ export const tagLabels: Record<Category, string[]> = { food: [...vocab.food.cond
 /** Items from older servers, caches, history and backups may still carry price fields; they are dropped here. */
 export function normalizeItem<T extends Item>(item: T): Item {
   const { price: _price, cost: _cost, ...rest } = item as T & { price?: unknown; cost?: unknown };
-  return rest.category === 'food' ? { ...rest, subtitle: traitSummary(rest.tags) } : rest;
+  // An AI pick keeps the line the model wrote ("BHC · 치킨"): it says which menu this is.
+  return rest.category === 'food' && !rest.id.startsWith('ai-') ? { ...rest, subtitle: traitSummary(rest.tags) } : rest;
 }
 export function validateCatalog(catalog: Item[] = items): string[] {
   const errors: string[] = [], ids = new Set<string>();

@@ -35,33 +35,44 @@ SYSTEM = {
 - name은 곡명만, detail은 대표 아티스트 이름만 쓴다.
 - excluded 예: "보컬"이 있으면 가사·노래가 없는 연주곡만, "높은 에너지"가 있으면 격하고 빠른 곡은 뺀다.
 - confidence는 그 곡이 실제로 있고 제목·아티스트가 맞다는 확신이다. 확실하면 high, 조금 헷갈리면 medium, 자신 없으면 low. low인 곡은 되도록 다른 곡으로 바꾼다.
+- releaseYear는 그 곡이 처음 발매된 해다. 리마스터나 재발매 연도를 쓰지 않는다.
+- releaseYears가 있으면 처음 발매된 해가 from 이상 to 이하인 곡만 추천한다. 범위를 벗어난 곡은 다른 조건에 맞아도 쓰지 않는다.
 - 한국 사용자 서비스다. 상황에 맞으면 한국 곡과 해외 곡을 섞되, 같은 아티스트를 두 번 넣지 않는다.""" + COMMON_RULES,
-    "food": """너는 음식 추천 서비스 '지금 추천'의 메뉴 큐레이터다. 정해진 목록 없이, 한국에서 실제로 흔히 파는 메뉴 중에서 추천한다.
+    "food": """너는 음식 추천 서비스 '지금 추천'의 메뉴 큐레이터다. 정해진 목록 없이, 한국에서 실제로 파는 메뉴 중에서 추천한다.
 
 음식 규칙
-- name은 메뉴 이름(예: 들기름 막국수), detail은 분류와 핵심 특징을 "한식 · 차가운 면" 처럼 10자 안팎으로 쓴다.
-- 실제로 있는 메뉴만 쓴다. 가게 이름이나 지어낸 조합은 쓰지 않는다.
+- name은 먹을 것을 바로 정할 수 있게 구체적인 상세 메뉴로 쓴다(예: "면 요리"가 아니라 "들기름 막국수"). 치킨·피자·버거처럼 프랜차이즈 대표 메뉴가 유명한 음식은 실제 판매 메뉴 이름으로 쓴다(예: 뿌링클, 황금올리브, 허니콤보).
+- detail은 브랜드가 있으면 "BHC · 치킨"처럼, 없으면 "한식 · 차가운 면"처럼 15자 안팎으로 쓴다.
+- situation이 치킨, 피자, 파스타처럼 넓은 메뉴를 말하면(예: "치킨 중에서 골라줘") 그 안의 서로 다른 상세 메뉴만 추천한다. 한 브랜드에 몰리지 않게 한다.
+- 실제로 있다고 확신하는 메뉴만 쓴다. 지어낸 메뉴나 조합은 쓰지 않는다.
+- baseDish는 baseDishes 중 이 메뉴가 속하는 가장 가까운 음식 이름을 그대로 쓴다. 맞는 것이 없으면 빈 문자열로 둔다.
+- ingredients는 ingredientWords 중 이 메뉴에 일반적으로 들어가는 것을 소스와 국물까지 생각해서 빠짐없이 고른다. 간장·고추장은 콩과 밀, 된장은 콩, 젓갈과 멸치 육수는 생선, 참기름은 참깨, 치즈와 버터는 유제품, 튀김옷은 밀과 달걀로 본다.
+- broad는 name이 여러 상세 메뉴를 묶는 넓은 이름이면 true, 그 자체로 하나의 메뉴면 false다.
 - excluded는 재료·특징 제외다(예: 유제품, 밀, 생선, 매콤함). 그 재료가 일반적인 조리법에 들어가는 메뉴는 추천하지 않는다. 확실하지 않으면 빼는 쪽을 택한다. 알레르기 안전을 보장하는 말은 쓰지 않는다.
 - 가격·예산·배달·영업 여부는 다루지 않으니 언급하지 않는다.
-- confidence는 그 메뉴가 실제로 흔히 있고 excluded를 지켰다는 확신이다. 확실하면 high, 조금 헷갈리면 medium, 자신 없으면 low.""" + COMMON_RULES,
+- confidence는 그 메뉴가 실제로 있고 excluded를 지켰다는 확신이다. 확실하면 high, 조금 헷갈리면 medium, 자신 없으면 low.""" + COMMON_RULES,
 }
 
 ITEM_WORD = {"music": "곡", "food": "메뉴"}
 
 
-def response_schema(allowed_tags: list[str]) -> dict:
+def response_schema(allowed_tags: list[str], ingredient_words: list[str] | None = None) -> dict:
+    fields: dict = {
+        "name": {"type": "string"}, "detail": {"type": "string"},
+        "tasteReason": {"type": "string"}, "contextReason": {"type": "string"},
+        "confidence": {"type": "string", "enum": list(CONFIDENCE)},
+        "tags": {"type": "array", "items": {"type": "string", "enum": allowed_tags}},
+    }
+    required = ["name", "detail", "tasteReason", "contextReason", "confidence", "tags"]
+    if ingredient_words:  # food
+        fields |= {"baseDish": {"type": "string"}, "broad": {"type": "boolean"},
+                   "ingredients": {"type": "array", "items": {"type": "string", "enum": ingredient_words}}}
+        required += ["baseDish", "broad", "ingredients"]
+    else:
+        fields["releaseYear"] = {"type": "integer"}
     return {
         "type": "object",
-        "properties": {"picks": {"type": "array", "items": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"}, "detail": {"type": "string"},
-                "tasteReason": {"type": "string"}, "contextReason": {"type": "string"},
-                "confidence": {"type": "string", "enum": list(CONFIDENCE)},
-                "tags": {"type": "array", "items": {"type": "string", "enum": allowed_tags}},
-            },
-            "required": ["name", "detail", "tasteReason", "contextReason", "confidence", "tags"],
-        }}},
+        "properties": {"picks": {"type": "array", "items": {"type": "object", "properties": fields, "required": required}}},
         "required": ["picks"],
     }
 
@@ -81,8 +92,12 @@ def split_label(label: str) -> tuple[str, str]:
 
 
 def build_payload(category: str, situation: str, wanted: list[str], excluded: list[str], liked_items: list[str], liked_tags: list[str],
-                  liked_text: list[str], disliked: list[str], avoid: list[str], count: int, allowed_tags: list[str]) -> dict:
+                  liked_text: list[str], disliked: list[str], avoid: list[str], count: int, allowed_tags: list[str],
+                  base_dishes: list[str] | None = None, ingredient_words: list[str] | None = None, release_years: dict | None = None) -> dict:
+    extra = {**({"baseDishes": base_dishes} if base_dishes else {}), **({"ingredientWords": ingredient_words} if ingredient_words else {}),
+             **({"releaseYears": release_years} if release_years else {})}
     return {
+        **extra,
         "category": "음악" if category == "music" else "음식",
         "situation": situation or "(문장 없음 — 고른 조건만 있음)",
         "wanted": wanted, "excluded": excluded,
@@ -99,6 +114,10 @@ class FreePick:
     context_reason: str
     confidence: str
     tags: list[str] = field(default_factory=list)
+    ingredients: list[str] = field(default_factory=list)
+    base_dish: str = ""
+    broad: bool = False
+    release_year: int | None = None
 
     @property
     def label(self) -> str:
@@ -122,10 +141,13 @@ def clean_name(value: object) -> str | None:
     return text[:NAME_LIMIT] if text else None
 
 
-def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[str] | None = None, detail_required: bool = True) -> FreeValidation:
+def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[str] | None = None, detail_required: bool = True,
+                  excluded_values: list[str] | None = None, years: tuple[int | None, int | None] | None = None) -> FreeValidation:
     """`blocked` are 'name - detail' labels (or bare names) that must not come back: avoided, disliked and liked items.
     A bare name in `blocked` blocks that name whatever its detail (so "Hype Boy" blocks it by any artist).
-    Food picks may come without a detail (`detail_required=False`); music needs the artist."""
+    Food picks may come without a detail (`detail_required=False`); music needs the artist.
+    `excluded_values` (the vocabulary's blocked values): a pick listing one as an ingredient or tag is dropped, and with any exclusion
+    in play so is one the model itself doubts. `years`: a song outside the range, or with no year to check, is dropped."""
     issues: Counter = Counter()
     blocked_pairs = {pick_key(*split_label(b)) for b in blocked}
     blocked_names = {pick_key(n) for n, d in map(split_label, blocked) if not d}
@@ -154,9 +176,19 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         tags = [t for t in dict.fromkeys(entry.get("tags") or []) if isinstance(t, str) and (allowed is None or t in allowed)]
         if allowed is not None and len(tags) < len(entry.get("tags") or []):
             issues["unknown_tag"] += 1
+        ingredients = [i for i in dict.fromkeys(entry.get("ingredients") or []) if isinstance(i, str)]
+        if excluded_values and ((set(excluded_values) & {*ingredients, *tags}) or confidence == "low"):
+            issues["excluded_value"] += 1
+            continue
+        year = entry.get("releaseYear")
+        year = year if isinstance(year, int) and 1900 <= year <= 2100 else None
+        if years and (year is None or (years[0] is not None and year < years[0]) or (years[1] is not None and year > years[1])):
+            issues["out_of_years"] += 1
+            continue
         seen.add(key)
         seen.add(pick_key(name))
-        picks.append(FreePick(name, detail, taste, context, confidence, tags[:6]))
+        base = clean_name(entry.get("baseDish")) or ""
+        picks.append(FreePick(name, detail, taste, context, confidence, tags[:6], ingredients, base, entry.get("broad") is True, year))
     if len(picks) > count:
         issues["extra"] += len(picks) - count
         picks = picks[:count]
@@ -167,6 +199,6 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
 
 def recommend_free(model: JsonModel, category: str, payload: dict) -> list:
     """Raw picks from the model; validate_free decides what survives."""
-    answer = model.generate_json(SYSTEM[category], payload, response_schema(payload["allowedTags"]))
+    answer = model.generate_json(SYSTEM[category], payload, response_schema(payload["allowedTags"], payload.get("ingredientWords")))
     picks = answer.get("picks")
     return picks if isinstance(picks, list) else []

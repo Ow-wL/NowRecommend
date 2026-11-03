@@ -27,6 +27,7 @@ class Item(Base):
         Index("items_unique_name", "category", text("lower(name)"), text("coalesce(lower(artist), '')"), unique=True),
         Index("items_ingredients", "ingredients", postgresql_using="gin"),
         Index("items_tags", "tags", postgresql_using="gin"),
+        Index("items_release_year", "category", "release_year"),
     )
 
     # Existing ids (f01, m01…) are kept so browser-stored tastes and history keep matching.
@@ -40,6 +41,8 @@ class Item(Base):
     ingredients: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
     emoji: Mapped[str] = mapped_column(Text)
     color: Mapped[str] = mapped_column(Text)
+    release_year: Mapped[int | None] = mapped_column(Integer)  # music: earliest year the store lists
+    parent_id: Mapped[str | None] = mapped_column(Text)  # food: the general dish a detail menu belongs to (뿌링클 → 치킨)
     status: Mapped[str] = mapped_column(Text, server_default="draft")
     source: Mapped[str] = mapped_column(Text)
     ai_fields: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")

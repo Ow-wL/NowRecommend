@@ -69,16 +69,11 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
                           "VALUES (:id, :c, :n, :s, :d, :t, :i, :p, :cost, :e, :col, 'reviewed', 'seed')"),
                      dict(zip(["id", "c", "n", "s", "d", "t", "i", "p", "cost", "e", "col"], OLD_ITEM)))
 
-    # 2. The compatible API starts: expand only. 0003 waits, the old query still works, and the new code runs too.
+    # 2. The compatible API starts: expand only. 0003 waits and the old query still works.
     started = migrate()
-    assert started.target is None and started.waiting == ["0003", "0004"] and current_revision() == "0002"  # 0004 (users) waits behind the contract
+    assert started.target is None and started.waiting == ["0003", "0004", "0005"] and current_revision() == "0002"  # 0004 (users) waits behind the contract
     assert {"price_label", "cost"} <= columns(migration_db)
     assert old_api_query(migration_db) == ("f01", "9,000–12,000원", 10000)
-    with sessionmaker(migration_db)() as session:
-        seed_items(session, get_vocab(), load_seed())  # the seed job of the new image, columns still present
-        food = [public_item(r) for r in reviewed_items(session, "food")]
-    assert len(food) == 16 and all("price" not in i and "원" not in i["subtitle"] for i in food)
-    assert old_api_query(migration_db) == ("f01", "9,000–12,000원", 10000)  # seeding never touches the old columns
 
     # The old seed job command (`alembic upgrade head`) on the new image stops at 0003 without changing anything.
     with pytest.raises(RuntimeError, match="contract migration"):
@@ -86,13 +81,17 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
     assert current_revision() == "0002" and {"price_label", "cost"} <= columns(migration_db)
 
     # 3. Contract, once no old revision runs: columns gone, values kept aside.
-    assert plan(include_contract=True).target == "0004"
+    assert plan(include_contract=True).target == "0005"
     migrate(include_contract=True)
-    assert current_revision() == "0004" and not {"price_label", "cost"} & columns(migration_db)
+    assert current_revision() == "0005" and not {"price_label", "cost"} & columns(migration_db)
     assert inspect(migration_db).has_table("users")
     with migration_db.connect() as conn:
         assert conn.execute(text("SELECT id, price_label, cost FROM items_price_backup")).all() == [("f01", "9,000–12,000원", 10000)]
     assert migrate().target is None  # nothing left; the API restarts cleanly
+    with sessionmaker(migration_db)() as session:
+        seed_items(session, get_vocab(), load_seed())  # the seed job of the new image
+        food = [public_item(r) for r in reviewed_items(session, "food")]
+    assert len(food) == 16 and all("price" not in i and "원" not in i["subtitle"] for i in food)
     # server-ci.yml runs `alembic check` at head: the backup table is operational (UNMANAGED_TABLES), not a model drift.
     command.check(alembic_config())
 
@@ -101,7 +100,12 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
     assert current_revision() == "0002" and old_api_query(migration_db) == ("f01", "9,000–12,000원", 10000)
     assert not inspect(migration_db).has_table("items_price_backup")
     migrate(include_contract=True)  # and forward again
-    assert current_revision() == "0004"
+    assert current_revision() == "0005"
+
+    # 5. The production path of 2026-11-03: a database at 0004 takes 0005 when the new image starts, with no contract step.
+    downgrade("0004")
+    assert current_revision() == "0004" and "release_year" not in columns(migration_db)
+    assert migrate().target == "0005" and current_revision() == "0005" and {"release_year", "parent_id"} <= columns(migration_db)
 
 
 def test_unknown_revision_is_reported_instead_of_guessed(migration_db):

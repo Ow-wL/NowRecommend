@@ -19,7 +19,9 @@ export type Session = { preset?: { name: string; key: string }; category: Catego
  * changes (withContrast); taste and context reasons only describe the card itself. */
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string; contrast?: string;
   /** AI engine only (server meta.engine 'ai'): how sure the model is that the item exists as named. */
-  confidence?: 'high' | 'medium' | 'low'; aiPick?: boolean };
+  confidence?: 'high' | 'medium' | 'low'; aiPick?: boolean;
+  /** AI food: the name covers several detail menus (치킨), so asking within it makes sense. */
+  broad?: boolean };
 export type Feedback = { itemId: string; scope: 'session' | 'long'; action: 'exclude' | 'restore'; date: string };
 export type Round = { id: string; date: string; raw: string; conditions: Conditions; results: Recommendation[]; feedback: Feedback[]; excludedIds: string[]; catalogVersion?: string; candidateScope?: 'favorites'; candidateIds?: string[] };
 export type Selection = { result: Recommendation; date: string; roundId: string };

@@ -6,9 +6,12 @@ import pytest
 from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import sessionmaker
 
-from app.config import get_settings
 from app.embeddings import normalize
 from app.models import EMBEDDING_DIM
+
+# The retrieval pipeline is tested through food requests; tests of the AI engine ask for it explicitly.
+os.environ["FOOD_ENGINE"] = "catalog"
+from app.config import get_settings  # noqa: E402 (after the environment above)
 
 DB_TESTS = os.environ.get("NOWREC_DB_TESTS") == "1"
 needs_db = pytest.mark.skipif(not DB_TESTS, reason="set NOWREC_DB_TESTS=1 with docker compose up db")

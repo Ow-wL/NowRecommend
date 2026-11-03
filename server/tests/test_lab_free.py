@@ -113,7 +113,7 @@ def test_food_free_route_uses_the_food_prompt_and_vocabulary(catalog):
         data = client.post("/api/lab/food/free", json=body).json()
         assert client.post("/api/lab/food/free", json={"conditions": {"tags": ["보컬"]}}).status_code == 422
     assert [r["name"] for r in data["results"]] == ["들기름 막국수"]  # 쌀국수 is the liked f01 → blocked
-    assert data["results"][0]["item"]["subtitle"] == "담백함 · 차가움"
+    assert data["results"][0]["item"]["subtitle"] == "한식 · 차가운 면"
     assert "메뉴 큐레이터" in model.systems[0] and model.payloads[0]["taste"]["liked"] == ["쌀국수"]
 
 
