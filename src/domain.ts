@@ -11,7 +11,7 @@ export type Profile = { selected: string[]; tags: string[]; disliked: string[];
 export type Conditions = { tags: string[]; excluded: string[] };
 export type ConditionEditor = { parsedRaw: string; automatic: Conditions; manual: Conditions; removedTags: string[]; removedExcluded: string[];
   /** How the server read `raw` ('local': server unreachable, browser rules kept). Applies only while raw matches. */
-  ai?: { raw: string; source: 'rule' | 'rule+ai' | 'local'; unparsed: string[] } };
+  ai?: { raw: string; source: 'rule' | 'rule+ai' | 'local' } };
 export type YearRange = { from?: number; to?: number };
 export type Session = { years?: YearRange; yearsFromText?: boolean; preset?: { name: string; key: string }; category: Category; raw: string; conditions: Conditions; excludedIds: string[]; revision: number; editor?: ConditionEditor; seenIds?: string[]; currentIds?: string[]; batchNewCount?: number;
   /** Cards of this round that had been seen before the round began (a reroll that ran out of unseen ones). */

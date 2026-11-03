@@ -107,6 +107,20 @@ async function submitSentence(page: Page, text = SENTENCE) {
 }
 const recommendRoute = (page: Page, sink: any[] = []) => page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sink.push(route.request().postDataJSON()); return fulfill(route, batch(['f02', 'f12', 'f09'])); });
 
+test('a menu name that became no condition is not reported as unused, because the sentence still goes to the recommendation', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const recommends: any[] = [];
+  await page.route(`${API}/api/parse`, route => fulfill(route, { conditions: { tags: [], excluded: [] }, unparsed: ['치킨'], source: 'rule+ai', ai: 'used' }));
+  await recommendRoute(page, recommends);
+  await submitSentence(page, '치킨 먹고 싶어');
+  await expect(page.locator('.result-grid h3')).toHaveCount(3);
+  expect(recommends[0].raw).toBe('치킨 먹고 싶어');
+  await page.getByRole('button', { name: '조건 바꾸기', exact: true }).click();
+  await expect(page.getByText('따로 표시할 조건은 없지만, 문장 내용을 읽고 추천해요.')).toBeVisible();
+  await expect(page.getByText('적용하지 않은 표현')).toHaveCount(0);
+  await expect(page.getByText('AI가 문장을 함께 해석했어요.')).toHaveCount(0);  // nothing to remove
+});
+
 test('reads missed words with the server and keeps the answer for the same sentence', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
   const parses: any[] = [], recommends: any[] = [];
@@ -118,7 +132,7 @@ test('reads missed words with the server and keeps the answer for the same sente
   await submitSentence(page);
   await expect(page.locator('.result-grid h3')).toHaveCount(3);
   await expect(page.getByText('AI가 문장을 함께 해석했어요.')).toBeVisible();
-  await expect(page.getByText('적용하지 않은 표현: 좋아서')).toBeVisible();
+  await expect(page.getByText('적용하지 않은 표현')).toHaveCount(0);
   expect(parses).toEqual([{ category: 'food', text: SENTENCE }]);
   expect(recommends[0].conditions.tags).toEqual(expect.arrayContaining(['담백함', '따뜻함']));
   expect(recommends[0].conditions.excluded).toEqual(['매콤함']);

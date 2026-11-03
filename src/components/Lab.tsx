@@ -123,8 +123,8 @@ export function Lab({ onTasteType, category, profile, items, onCategory, onEditT
     if (!raw.trim() || (parsed.editor?.ai?.raw === raw && parsed.editor.ai.source !== 'local')) { go(parsed); return; }
     setParsing(true); setSession(parsed);
     fetchParse(category, raw)
-      .then(r => go(applyParsed(parsed, raw, r.conditions, { raw, source: r.source, unparsed: r.unparsed })))
-      .catch(() => go(applyParsed(parsed, raw, null, { raw, source: 'local', unparsed: [] })));
+      .then(r => go(applyParsed(parsed, raw, r.conditions, { raw, source: r.source })))
+      .catch(() => go(applyParsed(parsed, raw, null, { raw, source: 'local' })));
   }
 
   // Clicks read the newest round (latest), not the last render, so they never undo an answer that just landed.
@@ -218,7 +218,7 @@ export function Lab({ onTasteType, category, profile, items, onCategory, onEditT
             {session.conditions.tags.map(t => <button className="chip selected" key={t} onClick={() => setSession(s => toggleCondition(s, t))} aria-label={`${t} 조건 삭제`}>{t}<X size={13} /></button>)}
             {session.conditions.excluded.map(t => <button className="chip exclude selected" key={t} onClick={() => setSession(s => toggleCondition(s, t, true))} aria-label={`${t} 제외 조건 삭제`}>{t} 제외<X size={13} /></button>)}
           </div> : <p className="muted small">비워두면 평소 취향으로 추천해요.</p>}
-          <ParseNotice ai={session.editor?.ai} raw={session.raw} />
+          <ParseNotice ai={session.editor?.ai} raw={session.raw} hasConditions={session.conditions.tags.length + session.conditions.excluded.length > 0} />
         </div>
         <label className="field-title lab-liked-label" htmlFor="lab-liked">{category === 'food' ? '목록에 없는 좋아하는 메뉴·식당 종류' : '목록에 없는 좋아하는 곡·아티스트'} <small>B에만 적용 · 쉼표로 구분, 최대 10개</small></label>
         <input id="lab-liked" className="lab-liked" maxLength={400} value={likedText} onChange={e => setLikedText(e.target.value)} placeholder={category === 'food' ? '예: 평양냉면, 마라탕, 베트남 음식' : '예: 검정치마, 잔나비 - 주저하는 연인들을 위해'} />

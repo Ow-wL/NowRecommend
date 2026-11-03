@@ -282,8 +282,8 @@ export default function App() {
     setParsing(true); setRequestError(false);
     const go = (next: Session) => { if (token !== requestCounter.current) return; setParsing(false); setSession(next); if (!conditionConflicts(next).length) run(false, false, false, next); };
     fetchParse(parsed.category, raw)
-      .then(r => go(applyParsed(parsed, raw, r.conditions, { raw, source: r.source, unparsed: r.unparsed })))
-      .catch(() => go(applyParsed(parsed, raw, null, { raw, source: 'local', unparsed: [] })));
+      .then(r => go(applyParsed(parsed, raw, r.conditions, { raw, source: r.source })))
+      .catch(() => go(applyParsed(parsed, raw, null, { raw, source: 'local' })));
   }
   function run(again = false, skipFailure = false, local = false, base: Session = session) {
     if (conditionConflicts(base).length) return;
@@ -503,9 +503,9 @@ export default function App() {
                 {conditionCount ? <div className="chips">
                   {session.conditions.tags.map(t => <button className="chip selected" key={t} onClick={() => conditionTag(t)} aria-label={`${t} 조건 삭제`}>{t}<X size={13} /></button>)}
                   {session.conditions.excluded.map(t => <button className="chip exclude selected" key={t} onClick={() => conditionTag(t, true)} aria-label={`${t} 제외 조건 삭제`}>{t} 제외<X size={13} /></button>)}
-                </div> : session.raw.trim() ? <p className="muted small">문장에서 반영할 조건을 찾지 못했어요. 아래에서 직접 고를 수 있어요.</p> : null}
+                </div> : session.raw.trim() ? <p className="muted small">{apiEnabled() && !(session.editor?.ai?.raw === session.raw && session.editor.ai.source === 'local') ? '따로 표시할 조건은 없지만, 문장 내용을 읽고 추천해요. 아래에서 조건을 직접 고를 수도 있어요.' : '문장에서 반영할 조건을 찾지 못했어요. 아래에서 직접 고를 수 있어요.'}</p> : null}
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} />
-                <ParseNotice ai={session.editor?.ai} raw={session.raw} />
+                <ParseNotice ai={session.editor?.ai} raw={session.raw} hasConditions={conditionCount > 0} />
               </div>
             </section>
             {category === 'music' && <section className="panel year-panel" aria-labelledby="year-title">
@@ -551,8 +551,7 @@ export default function App() {
               <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 바꾸기</button>
             </div>
           </div>
-          {/* The AI engine read the whole sentence itself, so no word of it went unused. */}
-          {session.quality?.engine !== 'ai' && <ParseNotice ai={session.editor?.ai} raw={session.raw} />}
+          {session.quality?.engine !== 'ai' && <ParseNotice ai={session.editor?.ai} raw={session.raw} hasConditions={conditionCount > 0} />}
           {!hasTaste(store.profiles[category]) && results.length > 0 && <p className="taste-hint">입력한 상황을 기준으로 골랐어요.{showLikeHint && ' 마음에 드는 항목은 더보기에서 취향에 더할 수 있어요.'}</p>}
           {familiarCount > 0 && <span className="result-mix">새로운 {category === 'food' ? '메뉴' : '곡'} {results.length - familiarCount} · 내 취향 {familiarCount}</span>}
           {results.length < (category === 'food' ? 3 : 5) && session.quality?.engine === 'ai' && <div className="notice warning"><Info size={18} /><div><strong>AI가 {results.length}{category === 'music' ? '곡' : '개'}만 골랐어요.</strong><p>조건에 맞지 않거나 이미 본 항목을 걸러낸 결과예요. 다른 추천 보기로 더 받을 수 있어요.</p></div></div>}
