@@ -246,7 +246,7 @@ test('what a person writes about a favourite reaches the AI: a reason and a type
   await page.getByRole('textbox', { name: `${first}을 좋아하는 이유` }).fill('바삭해서');
   await page.getByLabel('취향 항목 검색').fill('뿌링클');
   await page.getByRole('button', { name: /‘뿌링클’ 직접 추가/ }).click();
-  await page.getByRole('button', { name: '뿌링클 이유 고르기' }).or(page.getByRole('group', { name: '뿌링클 이유 고르기' }).getByRole('button', { name: '매콤해서' })).first().click();
+  await page.getByRole('group', { name: '뿌링클 이유 고르기' }).getByRole('button', { name: '매콤해서' }).click();
   await page.getByRole('button', { name: /저장하고 시작/ }).click();
   await page.getByRole('button', { name: /추천받기$/ }).click();
   await expect.poll(() => sent?.profile?.notes).toEqual([`${first}: 바삭해서`, '뿌링클: 매콤해서']);

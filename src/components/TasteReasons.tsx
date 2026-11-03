@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import type { Category, Item } from '../data';
 import type { CustomTaste } from '../domain';
@@ -25,6 +25,8 @@ export function TasteReasons({ category, items, custom, reasons, onReason, onCus
   onReason: (id: string, text: string) => void; onCustom: (next: CustomTaste[]) => void;
 }) {
   const [active, setActive] = useState('');
+  // Something just added is what the person is thinking about.
+  useEffect(() => { setActive(''); }, [items.length, custom.length]);
   if (!items.length && !custom.length) return null;
   const ids = [...items.map(i => i.id), ...custom.map(c => c.id)], open = ids.includes(active) ? active : ids[ids.length - 1];
   const written = items.filter(i => reasons[i.id]?.trim()).length + custom.filter(c => c.reason?.trim()).length;
