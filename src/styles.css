@@ -10,6 +10,8 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { min-height: 100%; background: var(--bg-canvas); }
+html { scroll-padding-top: calc(var(--appbar-height) + 12px); }
+html:has(.action-bar) { scroll-padding-bottom: 120px; }
 body { margin: 0; color: var(--text-primary); word-break: keep-all; overflow-wrap: anywhere; letter-spacing: -0.01em; }
 button, input, textarea, select { font: inherit; letter-spacing: inherit; color: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -131,7 +133,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .door.music { background: #2B46D6; }
 .door-copy { position: relative; z-index: 2; display: grid; justify-items: start; gap: 4px; max-width: 46%; }
 .door-copy strong { font-size: clamp(28px, 3vw, 38px); line-height: 1.2; font-weight: 800; letter-spacing: -0.035em; }
-.door-copy small { font-size: 14px; font-weight: 500; opacity: .92; }
+.door-copy small { font-size: 14px; font-weight: 500; }
 .door-go { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 11px 18px; border-radius: 999px; background: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .door.food .door-go { color: #B8360F; }
 .door.music .door-go { color: #2338B0; }
@@ -207,6 +209,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .compose-panel textarea { display: block; width: 100%; min-height: 96px; field-sizing: content; padding: 2px 0 6px; border: 0; border-radius: 0; background: transparent; font-size: clamp(20px, 2vw, 24px); line-height: 1.45; font-weight: 600; letter-spacing: -0.025em; resize: none; }
 .compose-panel textarea::placeholder { font-weight: 500; color: var(--text-muted); opacity: .75; }
 .compose-panel textarea:focus { outline: none; }
+.compose-panel:has(textarea:focus-visible) { outline: 2px solid var(--accent-fill); outline-offset: -1px; }
 .textarea-caption { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-top: 8px; }
 .textarea-caption > span { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; line-height: 44px; flex-shrink: 0; }
 .example-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -623,6 +626,8 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .in-flow .tabbar { display: none; }
   .in-flow .main-content { padding-bottom: 24px; }
   .action-bar { bottom: 12px; }
+  html:not(:has(.in-flow)) { scroll-padding-bottom: calc(var(--tabbar-height) + 20px); }
+  html:has(.action-bar) { scroll-padding-bottom: 120px; }
   .toast { bottom: calc(var(--tabbar-height) + 16px); }
   .in-flow .toast { bottom: 88px; }
   .comparison-toolbar.active { bottom: calc(var(--tabbar-height) + 12px); }

@@ -100,10 +100,12 @@ function MoreMenu({ label, children }: { label: string; children: ReactNode }) {
     if (!open) return;
     const outside = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); toggle.current?.focus(); } };
-    document.addEventListener('pointerdown', outside); root.current?.addEventListener('keydown', key);
+    // Tabbing past the last item closes the list. No related target (a click on Safari) is left to the other handlers.
+    const left = (e: FocusEvent) => { if (e.relatedTarget && !root.current?.contains(e.relatedTarget as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', outside); root.current?.addEventListener('keydown', key); root.current?.addEventListener('focusout', left);
     root.current?.querySelector<HTMLElement>('.more-menu :is(button:not(:disabled), a)')?.focus();
     const node = root.current;
-    return () => { document.removeEventListener('pointerdown', outside); node?.removeEventListener('keydown', key); };
+    return () => { document.removeEventListener('pointerdown', outside); node?.removeEventListener('keydown', key); node?.removeEventListener('focusout', left); };
   }, [open]);
   return <div className="more" ref={root}>
     <button ref={toggle} className="button secondary more-toggle" aria-label={label} aria-expanded={open} onClick={() => setOpen(o => !o)}><MoreHorizontal size={20} /></button>

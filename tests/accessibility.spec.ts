@@ -91,3 +91,24 @@ test('Enter, Space and rendered hover, pressed, focus and disabled controls',asy
   await page.locator('.more-conditions .chip:not(.exclude)').filter({hasText:/^매콤함$/}).click();await page.locator('.chip.exclude').filter({hasText:/^매콤함$/}).click();
   await expect(page.getByRole('button',{name:/추천받기$/})).toBeDisabled();await expect(page.getByRole('button',{name:/추천받기$/})).toHaveCSS('background-color','rgb(238, 234, 226)');
 });
+test('keyboard focus stays visible, clear of the sticky bars, and is not lost',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/#/home');await page.getByRole('button',{name:'담백한 저녁',exact:true}).focus();await page.keyboard.press('Enter');
+  await page.locator('.toast').getByRole('button',{name:'되돌리기'}).focus();await page.keyboard.press('Enter');
+  await expect(page.locator('.toast')).toHaveCount(0);await expect(page.locator('#main-content')).toBeFocused();
+  await page.goto('/#/recommend/food');await page.locator('.compose-panel textarea').focus();
+  await expect(page.locator('.compose-panel')).toHaveCSS('outline-style','solid');
+  await openConditions(page);await page.locator('.more-conditions > summary').focus();
+  for(let i=0;i<20;i++){
+    await page.keyboard.press('Tab');
+    const clear=await page.evaluate(()=>{const el=document.activeElement as HTMLElement,r=el.getBoundingClientRect(),top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!top&&(el===top||el.contains(top)||top.contains(el));});
+    expect(clear,await page.evaluate(()=>document.activeElement?.textContent)).toBe(true);
+  }
+  await page.getByLabel('지금의 상황').fill('따뜻한 저녁');await page.getByRole('button',{name:/추천받기$/}).click();
+  const toggle=page.locator('.result-grid .more-toggle').first();await toggle.focus();await page.keyboard.press('Enter');await expect(page.locator('.more-menu')).toBeVisible();
+  for(let i=0;i<12&&await page.locator('.more-menu').count();i++)await page.keyboard.press('Tab');
+  await expect(page.locator('.more-menu')).toHaveCount(0);await expect(toggle).not.toBeFocused();
+});
+test('small text on the coloured doors stays fully opaque',async({page})=>{
+  await page.goto('/#/home');await expect(page.locator('.door.food small')).toHaveCSS('opacity','1');await expect(page.locator('.door.food small')).toHaveCSS('color','rgb(255, 255, 255)');
+});
