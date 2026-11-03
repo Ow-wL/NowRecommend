@@ -2,6 +2,7 @@ import { AlertTriangle, Check, CircleDashed } from 'lucide-react';
 import { CATALOG_META, type Item } from '../data';
 import { useCatalog } from '../catalog';
 import { checkText, conditionChecks, NO_TASTE_REASON, type Conditions, type Recommendation } from '../domain';
+import { isAiPick } from '../knownItems';
 import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from '../media';
 import { ItemArt } from './ItemArt';
 // Why this one comes first: the cards keep only one line, so this is where the rest of the reason and each condition's
@@ -15,7 +16,8 @@ export function ItemDetails({item,reasons,conditions}: {item:Item;reasons?:Recom
       {item.category === 'music' ? <div className="listen-links">{song && <a className="button primary compact" href={song} target="_blank" rel="noopener noreferrer">Apple Music에서 듣기 (새 탭)</a>}<a className="button secondary compact" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer">YouTube에서 찾기 (새 탭)</a></div>
         : <div className="listen-links"><a className="button secondary compact" href={mapSearch(item)} target="_blank" rel="noopener noreferrer">네이버 지도에서 찾기 (새 탭)</a><a className="button secondary compact" href={recipeSearch(item)} target="_blank" rel="noopener noreferrer">만개의레시피에서 찾기 (새 탭)</a></div>}
     </div>
-    {reasons && <section className="details-why"><h3>추천 이유</h3>
+    {media?.guestUnconfirmed && <p className="song-note">요청한 참여자는 확인하지 못했어요</p>}
+    {reasons && <section className="details-why"><h3>{item.category === 'music' && isAiPick(item.id) && !song ? 'AI가 제안한 이유' : '추천 이유'}</h3>
       <div className="reasons">{reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}<p><b>이번 상황</b>{reasons.contextReason}</p>{reasons.contrast && <p><b>이 후보의 특징</b>{reasons.contrast}</p>}</div>
       {checks.length > 0 && <><h4>조건 확인</h4><ul className="condition-checks">{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>{c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}{checkText(c)}</li>)}</ul>
         {checks.some(c => c.state === 'untagged') && <p className="small muted">등록 정보 없음은 데이터에 그 특징이 없다는 뜻이고, 맞지 않는다는 뜻은 아니에요.</p>}</>}

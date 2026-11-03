@@ -203,6 +203,23 @@ test('an AI song the Apple store lists gets its cover and page; one it does not 
   await expect(found).not.toContainText('일치하는 정보를 찾지 못했어요');
   await expect(missing).toContainText('일치하는 정보를 찾지 못했어요');
   await expect(missing.getByRole('link', { name: /YouTube에서 찾기/ })).toBeVisible();
+  await expect(missing.locator('.lead')).toContainText('AI가 제안한 이유');
+  await expect(found.locator('.lead')).not.toContainText('AI가 제안한 이유');
+  await missing.getByRole('button', { name: '없는 곡 더보기' }).click();
+  await missing.getByRole('button', { name: '없는 곡 추천 이유 보기' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'AI가 제안한 이유' })).toBeVisible();
+});
+
+test('a song whose asked guest the store does not show says so and keeps its song page', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const item = { id: 'ai-참여곡', category: 'music', name: '참여곡 (feat. 손님)', subtitle: '테스트 가수', description: '', tags: [], ingredients: [], emoji: '', color: '' };
+  await page.route(`${API}/api/recommend`, route => fulfill(route, { results: [{ item, tasteReason: '좋아하는 분위기에 가까워요', contextReason: '지금 듣기 좋아요', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }));
+  await page.route('https://itunes.apple.com/**', route => route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ results: [{ trackName: '참여곡', artistName: '테스트 가수', trackViewUrl: 'https://music.apple.com/kr/album/x/1?i=2', artworkUrl100: 'https://example.test/100x100bb.jpg' }] }) }));
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  const card = page.locator('.item-card').first();
+  await expect(card).toContainText('요청한 참여자는 확인하지 못했어요');
+  await expect(card.getByRole('link', { name: /Apple Music에서 듣기/ })).toHaveAttribute('href', 'https://music.apple.com/kr/song/x/2');
 });
 
 test('a failed store request says so and can be tried again, unlike a song that is not listed', async ({ page }) => {

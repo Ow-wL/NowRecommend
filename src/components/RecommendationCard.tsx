@@ -50,11 +50,12 @@ export function RecommendationCard({ item, saved, reasons, checks = [], familiar
     </div>
     {songStatus === 'missing' && <p className="song-note">Apple Music 검색에서 일치하는 정보를 찾지 못했어요 <button className="text-button" onClick={retryCheck}>다시 확인</button></p>}
     {songStatus === 'failed' && <p className="song-note">지금은 확인할 수 없어요 <button className="text-button" onClick={retryCheck}>다시 확인</button></p>}
+    {media?.guestUnconfirmed && <p className="song-note">요청한 참여자는 확인하지 못했어요</p>}
     {media?.approx && <p className="song-note">이미지는 참고용이에요</p>}
     {/* One line of why on the card; the rest opens on demand so the picture stays the main thing. A missing tag reads
         "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits. */}
     {reasons ? <div className="reasons">
-      <p className="lead">{lead}</p>
+      <p className="lead">{(songStatus === 'missing' || songStatus === 'failed') && <b>AI가 제안한 이유</b>}{lead}</p>
       {reasons.contrast && !aiPick && <p className="contrast">{reasons.contrast}</p>}
       {(checks.length > 0 || reasons.tasteReason !== NO_TASTE_REASON || lead !== reasons.contextReason) && <details className="why"><summary>자세한 이유</summary><div className="why-body">
         {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>

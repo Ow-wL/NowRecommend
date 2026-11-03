@@ -595,6 +595,11 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .button.secondary:active:not(:disabled) { background: var(--bg-pressed); }
 
 /* ── Tablet and below ─────────────────────────────── */
+@media (min-width: 1101px) {
+  /* The heart sits at the end of the text column on this layout. */
+  .result-grid.music .item-head, .result-grid.music .song-note, .result-grid.music .reasons { padding-right: 52px; }
+}
+
 @media (max-width: 1100px) {
   .result-grid.food { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lab-composer { grid-template-columns: minmax(0, 1fr); }
@@ -682,6 +687,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .result-grid.music .item-title h3 { font-size: 16px; }
   .result-grid.music .reasons { grid-column: 1 / -1; margin-top: 6px; }
   .result-grid.music .reasons .lead { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .result-grid.music .reasons .lead:has(> b) { -webkit-line-clamp: 3; }
   .result-grid.music .why { display: none; }
   .result-grid.music .item-head { padding-right: 88px; }
   .result-grid.music .song-note { grid-column: 1 / -1; margin-top: 6px; }
@@ -695,6 +701,13 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .lab-actions > .button.primary { width: 100%; margin-left: 0; }
   .lab-column { padding: 18px; }
 }
+@media (max-width: 374px) {
+  .result-grid.music .item-head { padding-right: 0; }
+  .result-grid.music .card-actions .listen-button { flex: 1 0 100%; }
+  .result-grid.music .more { position: relative; top: auto; right: auto; margin-right: 52px; }
+  .result-grid.music .save-button { top: auto; right: 10px; bottom: 10px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }

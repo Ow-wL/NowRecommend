@@ -38,10 +38,19 @@ test('the mood picker opens in place, in view and above the save bar',async({pag
   expect(c!.y).toBeGreaterThanOrEqual(head!.y+head!.height);expect(c!.y+c!.height).toBeLessThanOrEqual(bar!.y);
   await chip.click();await expect(open).toContainText('1개');await page.getByRole('button',{name:'저장하고 시작'}).click();await expect(page.getByLabel('지금의 상황')).toBeVisible();
 });
+test('the heart keeps clear of the text on the wide music row',async({page})=>{
+  await page.setViewportSize({width:1280,height:800});await page.goto('/#/recommend/music');await page.getByRole('button',{name:/추천받기$/}).click();
+  const first=page.locator('.result-grid .item-card').first();const [heart,lead]=await Promise.all([first.locator('.save-button').boundingBox(),first.locator('.lead').boundingBox()]);
+  expect(lead!.x+lead!.width).toBeLessThanOrEqual(heart!.x);
+});
 for(const width of [320,360,390])test(`music actions stay on one line each at ${width}`,async({page})=>{
   await page.setViewportSize({width,height:800});await page.goto('/#/recommend/music');await page.getByRole('button',{name:/추천받기$/}).click();
   const sizes=await page.locator('.result-grid .card-actions .button:not(.more-toggle)').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().height));
   expect(sizes.length).toBeGreaterThan(0);sizes.forEach(h=>expect(h).toBeLessThanOrEqual(48));
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const brokenWords=await page.locator('.result-grid h3').evaluateAll(titles=>titles.flatMap(h=>{const text=h.firstChild as Text;let at=0;return text.data.split(/\s+/).filter(word=>{const start=text.data.indexOf(word,at);at=start+word.length;const range=document.createRange();range.setStart(text,start);range.setEnd(text,at);return new Set([...range.getClientRects()].map(r=>Math.round(r.top))).size>1;});}));
+  expect(brokenWords).toEqual([]);
+  const first=page.locator('.result-grid .item-card').first();const [heart,more,listen]=await Promise.all([first.locator('.save-button').boundingBox(),first.locator('.more-toggle').boundingBox(),first.locator('.listen-button').boundingBox()]);
+  expect(heart!.y).toBe(more!.y);expect(more!.x+more!.width).toBeLessThanOrEqual(heart!.x);expect(heart!.height).toBeGreaterThanOrEqual(44);expect(listen!.width).toBeGreaterThanOrEqual(170);
   await page.locator('.result-grid .more-toggle').first().click();await expect(page.locator('.more-menu')).toBeVisible();const menu=await page.locator('.more-menu').boundingBox();expect(menu!.x).toBeGreaterThanOrEqual(0);expect(menu!.x+menu!.width).toBeLessThanOrEqual(width);
 });

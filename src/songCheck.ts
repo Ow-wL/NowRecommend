@@ -7,7 +7,7 @@ import { addMedia, songLink, storeArtist, type Media } from './media';
 // An AI pick comes with a title and an artist and nothing else. The Apple store's search may list a result with the same
 // title and artist: that gives a cover and a song page. It does not prove the same recording, and no match does not prove
 // the song does not exist; the card says only what the search returned. A failed request means we do not know yet.
-const KEY = 'nowrecommend-song-check-v2';
+const KEY = 'nowrecommend-song-check-v3';
 const MAX_KEPT = 300;
 const DEADLINE_MS = 8000; // for the whole check, however many requests it takes
 export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string };
@@ -66,8 +66,10 @@ export async function lookupSong(title: string, artist: string, names: string[] 
   };
   const pick = (results: Hit[]) => {
     const usable = results.filter(r => names.some(n => artistMatches(n, r.artistName || '')) && mediaFromHit(r));
-    const hit = usable.find(r => matchRank(title, r.trackName || '', r.artistName) === 2) || usable.find(r => matchRank(title, r.trackName || '', r.artistName) === 1);
-    return hit && mediaFromHit(hit);
+    const rank = (r: Hit) => matchRank(title, r.trackName || '', r.artistName);
+    const sure = usable.find(r => rank(r) === 2), partial = usable.find(r => rank(r) === 1);
+    if (sure) return mediaFromHit(sure);
+    return partial && { ...mediaFromHit(partial)!, guestUnconfirmed: true };
   };
   const first = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));
   if (first || !(hangul.test(title) || names.length > 1)) return first;

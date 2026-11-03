@@ -6,7 +6,8 @@ import type { Item } from './data';
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
-export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; link?: string; album?: string; credit?: Credit };
+// `guestUnconfirmed`: same title and artist, but the guest the pick names is not shown on the store's result.
+export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; guestUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;

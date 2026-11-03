@@ -25,6 +25,15 @@ describe('song check', () => {
     expect(matchRank('Song (feat. A)', 'Song')).toBe(1);              // not shown: only if nothing better
     expect(matchRank('Song (feat. A)', 'Song (feat. B)')).toBe(0);    // a different guest is not a match
   });
+  it('marks a result that shows the song but not the asked guest', async () => {
+    const plain = { ...hit, trackName: 'Song' };
+    const shown = await lookupSong('Song (feat. A)', 'Yiruma', ['Yiruma'], vi.fn().mockResolvedValue(store([plain])) as typeof fetch);
+    expect(shown).toMatchObject({ link: 'https://music.apple.com/us/song/first-love/456', guestUnconfirmed: true });
+    const none = await lookupSong('Song', 'Yiruma', ['Yiruma'], vi.fn().mockResolvedValue(store([plain])) as typeof fetch);
+    expect(none?.guestUnconfirmed).toBeUndefined();
+    const other = await lookupSong('Song (feat. A)', 'Yiruma', ['Yiruma'], vi.fn().mockResolvedValue(store([{ ...hit, trackName: 'Song (feat. B)' }])) as typeof fetch);
+    expect(other).toBeUndefined();
+  });
   it('keeps a named version apart in both directions', () => {
     expect(matchRank('Song (Live)', 'Song (Live)')).toBe(2);
     expect(matchRank('Song (Live)', 'Song')).toBe(0);
