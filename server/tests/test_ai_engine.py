@@ -94,7 +94,7 @@ def test_music_answers_come_from_the_model_and_are_persisted_as_items(catalog):
     assert by_name["Blue in Green"]["id"] == "m11" and by_name["Spring Day"]["id"].startswith("ai-")
     assert by_name["Spring Day"]["subtitle"] == "BTS" and by_name["Spring Day"]["tags"] == ["차분함"]
     sent = model.payloads[0]
-    assert sent["taste"]["liked"] == ["밤편지 - 아이유"] and sent["taste"]["disliked"] == ["좋은 날 - 아이유"] and sent["count"] == 5
+    assert sent["taste"]["liked"] == ["밤편지 - 아이유"] and sent["taste"]["disliked"] == ["좋은 날 - 아이유"] and sent["count"] == 7
     assert sent["avoid"] == ["봄날 - BTS"]  # the seen m05, as a label
     drafts = catalog.scalars(select(Item).where(Item.status == "draft")).all()
     assert {d.name for d in drafts} == {"Spring Day", "새 곡", "Nocturne"} and all(d.source == "ai_draft" for d in drafts)
@@ -116,7 +116,7 @@ def test_seen_and_pinned_ai_picks_resolve_to_labels_on_the_next_round(catalog):
     second = FakeModel({"picks": [pick("Spring Day", "BTS"), pick("Through the Night", "IU"), pick("새 곡", "새 가수")]})
     with client_for(catalog, second) as client:
         data = client.post("/api/recommend", json=body(count=3, seenIds=[spring, love], pinnedIds=[love])).json()
-    assert second.payloads[0]["avoid"] == ["Spring Day - BTS", "Love poem - 아이유"] and second.payloads[0]["count"] == 2
+    assert second.payloads[0]["avoid"] == ["Spring Day - BTS", "Love poem - 아이유"] and second.payloads[0]["count"] == 4
     names = [r["item"]["name"] for r in data["results"]]
     assert names == ["Love poem", "Through the Night", "새 곡"]  # pinned first; the repeated Spring Day was blocked
     assert data["results"][0]["contextReason"] == "고정한 곡이라 그대로 두었어요" and "confidence" not in data["results"][0]
@@ -196,3 +196,10 @@ def test_written_reasons_reach_the_model_and_a_typed_favourite_is_not_recommende
     assert model.payloads[0]["taste"]["likedText"] == ["치킨: 바삭해서", "뿌링클"]
     assert [r["item"]["name"] for r in answer["results"]] == ["황금올리브"]
     assert answer["results"][0]["tasteReason"] != NO_TASTE_REASON
+
+
+def test_one_song_per_artist_while_there_are_spare_picks(catalog):
+    model = FakeModel({"picks": [pick("첫 곡", "같은 가수"), pick("둘째 곡", "같은 가수"), pick("다른 곡", "다른 가수")]})
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "music", "count": 2}).json()
+    assert [r["item"]["name"] for r in answer["results"]] == ["첫 곡", "다른 곡"]

@@ -541,7 +541,8 @@ export default function App() {
               <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 바꾸기</button>
             </div>
           </div>
-          <ParseNotice ai={session.editor?.ai} raw={session.raw} />
+          {/* The AI engine read the whole sentence itself, so no word of it went unused. */}
+          {session.quality?.engine !== 'ai' && <ParseNotice ai={session.editor?.ai} raw={session.raw} />}
           {!hasTaste(store.profiles[category]) && results.length > 0 && <p className="taste-hint">입력한 상황을 기준으로 골랐어요.{showLikeHint && ' 마음에 드는 항목은 더보기에서 취향에 더할 수 있어요.'}</p>}
           {familiarCount > 0 && <span className="result-mix">새로운 {category === 'food' ? '메뉴' : '곡'} {results.length - familiarCount} · 내 취향 {familiarCount}</span>}
           {results.length < (category === 'food' ? 3 : 5) && session.quality?.engine === 'ai' && <div className="notice warning"><Info size={18} /><div><strong>AI가 {results.length}{category === 'music' ? '곡' : '개'}만 골랐어요.</strong><p>조건에 맞지 않거나 이미 본 항목을 걸러낸 결과예요. 다른 추천 보기로 더 받을 수 있어요.</p></div></div>}

@@ -56,11 +56,14 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     liked, disliked = labels_for(session, profile.selected, category), labels_for(session, profile.disliked, category)
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
+    # Checks drop picks after the model answers, so it is asked for a few spare ones; only `wanted` go out.
+    filtered = bool(conditions.excluded or request.years)
+    asked = wanted + (3 if filtered else 2)
     food = category == "food"
     years = (request.years.start, request.years.end) if request.years and not food else None
     base_dishes = [r.name for r in reviewed_items(session) if r.category == "food"] if food else None
     payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
-                            profile.notes, disliked, avoid[-60:], wanted, [*vocab.conditionTags, *vocab.extraTags],
+                            profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],
                             base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None,
                             release_years={"from": years[0], "to": years[1]} if years else None)
     validation = validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],

@@ -71,6 +71,7 @@ def response_schema(allowed_tags: list[str], ingredient_words: list[str] | None 
         required += ["baseDish", "broad", "ingredients"]
     else:
         fields["releaseYear"] = {"type": "integer"}
+        required.append("releaseYear")
     return {
         "type": "object",
         "properties": {"picks": {"type": "array", "items": {"type": "object", "properties": fields, "required": required}}},
@@ -190,6 +191,11 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         seen.add(pick_key(name))
         base = clean_name(entry.get("baseDish")) or ""
         picks.append(FreePick(name, detail, taste, context, confidence, tags[:6], ingredients, base, entry.get("broad") is True, year))
+    # One song per artist while there are others to show; a repeat only fills in when picks would run short.
+    if detail_required:
+        artists: set[str] = set()
+        first = [p for p in picks if not (pick_key(p.detail) in artists or artists.add(pick_key(p.detail)))]
+        picks = [*first, *[p for p in picks if p not in first]]
     if len(picks) > count:
         issues["extra"] += len(picks) - count
         picks = picks[:count]

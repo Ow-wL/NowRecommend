@@ -371,7 +371,8 @@
       ],
       "ingredients": [],
       "emoji": "🌙",
-      "color": "#dfe5ed"
+      "color": "#dfe5ed",
+      "release_year": 2017
     },
     {
       "id": "m02",
@@ -389,7 +390,8 @@
       ],
       "ingredients": [],
       "emoji": "🌅",
-      "color": "#eddbc9"
+      "color": "#eddbc9",
+      "release_year": 2022
     },
     {
       "id": "m03",
@@ -407,7 +409,8 @@
       ],
       "ingredients": [],
       "emoji": "🫧",
-      "color": "#dce8ee"
+      "color": "#dce8ee",
+      "release_year": 2022
     },
     {
       "id": "m04",
@@ -425,7 +428,8 @@
       ],
       "ingredients": [],
       "emoji": "🪩",
-      "color": "#e6dfef"
+      "color": "#e6dfef",
+      "release_year": 2020
     },
     {
       "id": "m05",
@@ -443,7 +447,8 @@
       ],
       "ingredients": [],
       "emoji": "🌸",
-      "color": "#f0dfe5"
+      "color": "#f0dfe5",
+      "release_year": 2017
     },
     {
       "id": "m06",
@@ -461,7 +466,8 @@
       ],
       "ingredients": [],
       "emoji": "🎹",
-      "color": "#e0e8de"
+      "color": "#e0e8de",
+      "release_year": 2001
     },
     {
       "id": "m07",
@@ -480,7 +486,8 @@
       ],
       "ingredients": [],
       "emoji": "🌧️",
-      "color": "#dfe6ed"
+      "color": "#dfe6ed",
+      "release_year": 2003
     },
     {
       "id": "m08",
@@ -498,7 +505,8 @@
       ],
       "ingredients": [],
       "emoji": "🌿",
-      "color": "#e4ead7"
+      "color": "#e4ead7",
+      "release_year": 2001
     },
     {
       "id": "m09",
@@ -516,7 +524,8 @@
       ],
       "ingredients": [],
       "emoji": "☀️",
-      "color": "#f0e6c8"
+      "color": "#f0e6c8",
+      "release_year": 1999
     },
     {
       "id": "m10",
@@ -534,7 +543,8 @@
       ],
       "ingredients": [],
       "emoji": "🎷",
-      "color": "#eadbcf"
+      "color": "#eadbcf",
+      "release_year": 1959
     },
     {
       "id": "m11",
@@ -552,7 +562,8 @@
       ],
       "ingredients": [],
       "emoji": "💧",
-      "color": "#dde5e8"
+      "color": "#dde5e8",
+      "release_year": 1959
     },
     {
       "id": "m12",
@@ -589,7 +600,8 @@
       ],
       "ingredients": [],
       "emoji": "🌼",
-      "color": "#efead2"
+      "color": "#efead2",
+      "release_year": 2010
     },
     {
       "id": "m14",
@@ -607,7 +619,8 @@
       ],
       "ingredients": [],
       "emoji": "🍃",
-      "color": "#dfebdd"
+      "color": "#dfebdd",
+      "release_year": 1994
     },
     {
       "id": "m15",
@@ -625,7 +638,8 @@
       ],
       "ingredients": [],
       "emoji": "🕊️",
-      "color": "#e6e3df"
+      "color": "#e6e3df",
+      "release_year": 2019
     }
   ]
 }

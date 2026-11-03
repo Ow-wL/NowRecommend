@@ -7,7 +7,9 @@ export type Item = { releaseYear?: number; parentId?: string; id: string; catego
 const TRAITS = ['매콤함', '담백함', '고소함', '상큼함', '따뜻함', '차가움', '국물', '채소'];
 export const traitSummary = (tags: string[]) => TRAITS.filter(t => tags.includes(t)).slice(0, 3).join(' · ') || tags.find(t => vocab.food.extraTags.includes(t)) || '음식';
 const food = (id: string, name: string, emoji: string, description: string, tags: string[], ingredients: string[], color = '#f4e9d9'): Item => ({ id, category: 'food', name, subtitle: traitSummary(tags), description, tags, ingredients, emoji, color });
-const music = (id: string, name: string, artist: string, emoji: string, tags: string[], color: string): Item => ({ id, category: 'music', name, subtitle: artist, description: `${tags.slice(0, 2).join(' · ')} 분위기의 곡`, tags, ingredients: [], emoji, color });
+// First release, from the store (server/app/cli/years.py). A piece older than recording has none: its date would be one recording's.
+const RELEASE_YEARS: Record<string, number> = { m01: 2017, m02: 2022, m03: 2022, m04: 2020, m05: 2017, m06: 2001, m07: 2003, m08: 2001, m09: 1999, m10: 1959, m11: 1959, m13: 2010, m14: 1994, m15: 2019 };
+const music = (id: string, name: string, artist: string, emoji: string, tags: string[], color: string): Item => ({ id, ...(RELEASE_YEARS[id] ? { releaseYear: RELEASE_YEARS[id] } : {}), category: 'music', name, subtitle: artist, description: `${tags.slice(0, 2).join(' · ')} 분위기의 곡`, tags, ingredients: [], emoji, color });
 // 2026-10-26: added allergens hidden in sauces and condiments (간장·고추장·젓갈·쯔유·카레 루·치즈·햄).
 export const items: Item[] = [
   food('f01', '쌀국수', '🍜', '따뜻한 국물과 부드러운 면, 가볍게 즐기는 한 그릇.', ['담백함', '따뜻함', '혼자', '저녁', '점심', '국물'], ['소고기', '밀', '생선', '콩']),

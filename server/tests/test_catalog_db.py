@@ -110,3 +110,12 @@ def test_drafts_left_out_of_the_published_file_are_retired(db_session):
     assert retire_unpublished(db_session, ["m-0000aaaa"]) == ["m-0000bbbb"]
     assert db_session.get(Item, "m-0000bbbb").status == "rejected" and db_session.get(Item, "m-0000aaaa").status == "reviewed"
     assert db_session.get(Item, "m01").status == "reviewed"  # the bundled seed is never retired
+
+
+def test_a_saved_ai_pick_gives_way_when_the_catalog_adds_the_same_name(db_session):
+    vocab = get_vocab()
+    db_session.add(Item(id="ai-kimbap", category="food", name="김밥", subtitle="한식", description="AI", tags=[], ingredients=[], emoji="🍙", color="#fff", status="draft", source="ai_draft"))
+    db_session.commit()
+    item = {"id": "f-kimbap", "category": "food", "name": "김밥", "artist": None, "subtitle": "s", "description": "d", "tags": ["한식"], "ingredients": [], "emoji": "🍙", "color": "#fff"}
+    assert seed_items(db_session, vocab, [item]).inserted == 1
+    assert db_session.get(Item, "ai-kimbap") is None and db_session.get(Item, "f-kimbap").status == "reviewed"

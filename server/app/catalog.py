@@ -70,6 +70,15 @@ def seed_items(session: Session, vocab: Vocab, items: list[dict]) -> SeedResult:
         raise ValueError("시드 검증 실패: " + ", ".join(errors))
     existing = {row.id: row for row in session.scalars(select(Item).where(Item.id.in_([i["id"] for i in items])))}
     result = SeedResult()
+    # A dish or song may already be there unreviewed under another id, as a saved AI pick or an old draft (app.cli.draft). The
+    # catalog row replaces it: such a row only turned an id back into a name. Without this the unique name index stops the whole seed.
+    for item in items:
+        stale = session.scalars(select(Item).where(Item.category == item["category"], func.lower(Item.name) == item["name"].lower(),
+                                                   func.coalesce(func.lower(Item.artist), "") == (item.get("artist") or "").lower(),
+                                                   Item.id != item["id"], Item.status != "reviewed")).all()
+        for row in stale:
+            session.delete(row)
+    session.flush()
     for item in items:
         values = {k: item.get(k) for k in CONTENT_FIELDS}
         old = existing.get(item["id"])

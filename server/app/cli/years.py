@@ -4,6 +4,8 @@ Reads each song's page from src/media.json, asks the iTunes lookup API for its r
 artist's list for the same title: a re-release or a compilation carries a later date, so the earliest one wins. Songs with no
 song page are left without a year. --apply writes `release_year` into server/data/reviewed_items.json; the seed then loads
 it. The seed file mirrors src/data.ts, so its years are printed for that file instead. Run from a machine, not the API.
+Read the printed list before trusting it: store dates can be plain wrong (Take Five came back as 1939), and a piece older than
+recording has no release year worth claiming, so those were corrected or removed by hand on 2026-11-03.
 """
 import argparse
 import json
@@ -90,7 +92,7 @@ def main() -> None:
     print("seed:", json.dumps({i["id"]: years.get(i["id"]) for i in seed["items"] if i["category"] == "music"}))
     if args.apply:
         for item in reviewed["items"]:
-            if item["id"] in years:
+            if item["id"] in years and "release_year" not in item:  # a year already there may be a correction by hand
                 item["release_year"] = years[item["id"]]
         REVIEWED_FILE.write_text(json.dumps(reviewed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
