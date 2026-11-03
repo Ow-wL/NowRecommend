@@ -26,7 +26,7 @@ test('the reproduction sentence: kept, partial and unsupported conditions before
   await page.goto('/'); await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await page.getByLabel('지금의 상황').fill('혼자 먹을 만원 이하 저녁, 해산물은 빼고 맵지 않게, 배달 가능한 메뉴');
   await expect(page.locator('.condition-summary .chip')).toHaveText(['혼자', '저녁', '매콤함 제외', '해산물 제외']);
-  await expect(page.locator('.condition-note.partial')).toContainText('해산물 제외는 등록 재료의 생선만 확인해 뺄 수 있어요.');
+  await expect(page.locator('.condition-note.partial')).toContainText('해산물 제외는 등록 재료의 생선·해산물만 확인해 뺄 수 있어요.');
   await expect(page.locator('.condition-note.unsupported')).toContainText('‘만원 이하’ 가격 조건은 지원하지 않아요.');
   await expect(page.locator('.condition-note.unsupported')).toContainText('‘배달 가능한’ 배달·포장 가능 여부는 확인하지 않아요.');
   await page.getByRole('button', { name: /추천받기$/ }).click();

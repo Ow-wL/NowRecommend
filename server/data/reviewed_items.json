@@ -1,6 +1,1234 @@
 {
   "items": [
     {
+      "id": "f-kimbap",
+      "category": "food",
+      "name": "김밥",
+      "artist": null,
+      "subtitle": "고소함 · 채소",
+      "description": "속재료를 김과 밥에 돌돌 만, 언제 먹어도 든든한 한 줄.",
+      "tags": [
+        "고소함",
+        "채소",
+        "혼자",
+        "점심",
+        "한식",
+        "분식"
+      ],
+      "ingredients": [
+        "달걀",
+        "당근",
+        "돼지고기",
+        "생선",
+        "콩",
+        "참깨"
+      ],
+      "emoji": "🍙",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-jeyuk",
+      "category": "food",
+      "name": "제육볶음",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "매콤한 양념에 볶은 돼지고기로 밥이 절로 넘어가는 메뉴.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "콩",
+        "밀",
+        "참깨"
+      ],
+      "emoji": "🥘",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-bulgogi",
+      "category": "food",
+      "name": "불고기",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "달큰한 간장 양념이 밴 부드러운 소고기.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "소고기",
+        "콩",
+        "밀",
+        "참깨",
+        "당근",
+        "버섯"
+      ],
+      "emoji": "🥩",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-samgyeopsal",
+      "category": "food",
+      "name": "삼겹살",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "노릇하게 구운 돼지고기를 쌈에 싸 먹는 저녁.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "콩",
+        "참깨"
+      ],
+      "emoji": "🥓",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-doenjang",
+      "category": "food",
+      "name": "된장찌개",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함 · 국물",
+      "description": "구수한 된장 국물에 두부와 채소를 듬뿍.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "채소",
+        "혼자",
+        "점심",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "감자",
+        "버섯",
+        "생선"
+      ],
+      "emoji": "🍲",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-sundubu",
+      "category": "food",
+      "name": "순두부찌개",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 국물",
+      "description": "보들보들한 순두부에 칼칼한 국물.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "달걀",
+        "돼지고기",
+        "생선",
+        "해산물"
+      ],
+      "emoji": "🍲",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-budae",
+      "category": "food",
+      "name": "부대찌개",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 국물",
+      "description": "햄과 라면까지 넣어 함께 끓여 먹는 얼큰한 찌개.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "콩",
+        "밀",
+        "유제품"
+      ],
+      "emoji": "🍲",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-galbitang",
+      "category": "food",
+      "name": "갈비탕",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함 · 국물",
+      "description": "맑은 국물과 부드러운 갈비로 든든한 한 그릇.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "소고기",
+        "콩",
+        "달걀"
+      ],
+      "emoji": "🍖",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-samgyetang",
+      "category": "food",
+      "name": "삼계탕",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함 · 국물",
+      "description": "인삼과 찹쌀을 품은 닭 한 마리를 푹 고아낸 보양식.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "닭고기"
+      ],
+      "emoji": "🐔",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-naengmyeon",
+      "category": "food",
+      "name": "물냉면",
+      "artist": null,
+      "subtitle": "상큼함 · 차가움 · 국물",
+      "description": "살얼음 낀 새콤한 육수에 쫄깃한 면.",
+      "tags": [
+        "상큼함",
+        "차가움",
+        "국물",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "메밀",
+        "밀",
+        "소고기",
+        "달걀",
+        "콩"
+      ],
+      "emoji": "🍜",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-kalguksu",
+      "category": "food",
+      "name": "칼국수",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함 · 국물",
+      "description": "손으로 썬 듯한 면과 시원한 국물.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "밀",
+        "생선",
+        "콩",
+        "감자",
+        "당근",
+        "해산물"
+      ],
+      "emoji": "🍜",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-jokbal",
+      "category": "food",
+      "name": "족발",
+      "artist": null,
+      "subtitle": "고소함",
+      "description": "쫀득한 식감에 고소한 맛, 여럿이 나눠 먹기 좋은 메뉴.",
+      "tags": [
+        "고소함",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "콩",
+        "밀"
+      ],
+      "emoji": "🍖",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-bossam",
+      "category": "food",
+      "name": "보쌈",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함",
+      "description": "담백하게 삶은 돼지고기를 김치와 함께.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "콩",
+        "생선",
+        "해산물"
+      ],
+      "emoji": "🥬",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-dakgalbi",
+      "category": "food",
+      "name": "닭갈비",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 채소",
+      "description": "철판에 매콤하게 볶아 나눠 먹는 닭고기.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "채소",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "닭고기",
+        "콩",
+        "밀",
+        "참깨"
+      ],
+      "emoji": "🍗",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-jjimdak",
+      "category": "food",
+      "name": "찜닭",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "달짝지근한 간장 양념에 당면까지 푹 밴 닭 요리.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "닭고기",
+        "콩",
+        "밀",
+        "감자",
+        "당근"
+      ],
+      "emoji": "🍗",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-gamjatang",
+      "category": "food",
+      "name": "감자탕",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 국물",
+      "description": "뼈에 붙은 살코기와 감자를 얼큰한 국물에.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "감자",
+        "콩",
+        "참깨"
+      ],
+      "emoji": "🍲",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-yukgaejang",
+      "category": "food",
+      "name": "육개장",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 국물",
+      "description": "찢은 소고기와 채소가 어우러진 얼큰한 국.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "소고기",
+        "달걀",
+        "콩",
+        "버섯"
+      ],
+      "emoji": "🍲",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-kongnamul",
+      "category": "food",
+      "name": "콩나물국밥",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함 · 국물",
+      "description": "시원한 콩나물 국물에 밥을 말아 속을 푸는 한 그릇.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "달걀",
+        "생선"
+      ],
+      "emoji": "🍚",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-tteokguk",
+      "category": "food",
+      "name": "떡국",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함 · 국물",
+      "description": "맑은 국물에 쫄깃한 떡이 어우러진 한 그릇.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "소고기",
+        "달걀",
+        "콩",
+        "참깨"
+      ],
+      "emoji": "🥣",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-kimchifried",
+      "category": "food",
+      "name": "김치볶음밥",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "잘 익은 김치를 볶아 달걀을 올린 간단한 한 끼.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "달걀",
+        "돼지고기",
+        "콩",
+        "참깨",
+        "생선"
+      ],
+      "emoji": "🍳",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-jajang",
+      "category": "food",
+      "name": "짜장면",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "달큰한 춘장 소스를 비벼 먹는 대표 중화 면 요리.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "중식"
+      ],
+      "ingredients": [
+        "밀",
+        "콩",
+        "돼지고기",
+        "감자"
+      ],
+      "emoji": "🍝",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-jjamppong",
+      "category": "food",
+      "name": "짬뽕",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 국물",
+      "description": "해물과 채소를 볶아 낸 얼큰한 국물 면.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "점심",
+        "중식"
+      ],
+      "ingredients": [
+        "밀",
+        "해산물",
+        "돼지고기",
+        "콩",
+        "버섯",
+        "당근"
+      ],
+      "emoji": "🍜",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-tangsuyuk",
+      "category": "food",
+      "name": "탕수육",
+      "artist": null,
+      "subtitle": "상큼함 · 따뜻함",
+      "description": "바삭하게 튀긴 고기에 새콤달콤한 소스.",
+      "tags": [
+        "상큼함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "중식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "밀",
+        "콩",
+        "달걀",
+        "당근"
+      ],
+      "emoji": "🍖",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-mapo",
+      "category": "food",
+      "name": "마파두부",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "얼얼한 소스에 부드러운 두부를 볶아 밥에 곁들이는 요리.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "혼자",
+        "저녁",
+        "중식"
+      ],
+      "ingredients": [
+        "콩",
+        "돼지고기",
+        "밀"
+      ],
+      "emoji": "🌶️",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-friedrice",
+      "category": "food",
+      "name": "볶음밥",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "센 불에 고슬고슬 볶아 낸 밥 한 접시.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "중식"
+      ],
+      "ingredients": [
+        "달걀",
+        "콩",
+        "밀",
+        "당근",
+        "돼지고기"
+      ],
+      "emoji": "🍚",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-yangkkochi",
+      "category": "food",
+      "name": "양꼬치",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "향신료를 묻혀 직접 구워 먹는 꼬치.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "중식"
+      ],
+      "ingredients": [
+        "참깨"
+      ],
+      "emoji": "🍢",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-dimsum",
+      "category": "food",
+      "name": "딤섬",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함",
+      "description": "대나무 찜기에 쪄 낸 한입 크기 만두.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "함께",
+        "점심",
+        "중식"
+      ],
+      "ingredients": [
+        "밀",
+        "돼지고기",
+        "콩",
+        "해산물",
+        "참깨"
+      ],
+      "emoji": "🥟",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-ramen",
+      "category": "food",
+      "name": "라멘",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함 · 국물",
+      "description": "진한 국물과 쫄깃한 면, 차슈를 올린 일본식 면 요리.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "저녁",
+        "일식"
+      ],
+      "ingredients": [
+        "밀",
+        "돼지고기",
+        "달걀",
+        "콩",
+        "참깨",
+        "생선"
+      ],
+      "emoji": "🍜",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-tonkatsu",
+      "category": "food",
+      "name": "돈카츠",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "바삭한 튀김옷 속 두툼한 돼지고기.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "일식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "밀",
+        "달걀",
+        "콩",
+        "유제품"
+      ],
+      "emoji": "🍱",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-gyudon",
+      "category": "food",
+      "name": "규동",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "달큰하게 조린 소고기와 양파를 밥 위에.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "일식"
+      ],
+      "ingredients": [
+        "소고기",
+        "콩",
+        "밀",
+        "달걀"
+      ],
+      "emoji": "🍚",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-takoyaki",
+      "category": "food",
+      "name": "타코야키",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "겉은 바삭, 속은 촉촉한 문어 풀빵.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "간식",
+        "일식"
+      ],
+      "ingredients": [
+        "밀",
+        "달걀",
+        "해산물",
+        "생선",
+        "콩"
+      ],
+      "emoji": "🐙",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-hoedeopbap",
+      "category": "food",
+      "name": "회덮밥",
+      "artist": null,
+      "subtitle": "상큼함 · 차가움 · 채소",
+      "description": "신선한 회와 채소를 초고추장에 비벼 먹는 밥.",
+      "tags": [
+        "상큼함",
+        "차가움",
+        "채소",
+        "혼자",
+        "점심",
+        "일식"
+      ],
+      "ingredients": [
+        "생선",
+        "콩",
+        "밀",
+        "참깨"
+      ],
+      "emoji": "🍣",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-okonomiyaki",
+      "category": "food",
+      "name": "오코노미야키",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "양배추와 해물을 철판에 부쳐 소스를 뿌린 요리.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "일식"
+      ],
+      "ingredients": [
+        "밀",
+        "달걀",
+        "돼지고기",
+        "해산물",
+        "생선",
+        "콩"
+      ],
+      "emoji": "🥞",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-pizza",
+      "category": "food",
+      "name": "피자",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "늘어나는 치즈와 다양한 토핑, 함께 나눠 먹는 메뉴.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "유제품",
+        "토마토",
+        "돼지고기",
+        "버섯"
+      ],
+      "emoji": "🍕",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-burger",
+      "category": "food",
+      "name": "햄버거",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "두툼한 패티와 채소를 빵 사이에 끼운 한 끼.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "양식"
+      ],
+      "ingredients": [
+        "소고기",
+        "밀",
+        "유제품",
+        "달걀",
+        "토마토",
+        "콩"
+      ],
+      "emoji": "🍔",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-cream",
+      "category": "food",
+      "name": "크림 파스타",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "부드러운 크림 소스가 면에 감기는 파스타.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "유제품",
+        "달걀",
+        "돼지고기",
+        "버섯"
+      ],
+      "emoji": "🍝",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-salad",
+      "category": "food",
+      "name": "샐러드",
+      "artist": null,
+      "subtitle": "담백함 · 상큼함 · 차가움",
+      "description": "신선한 채소로 가볍게 채우는 한 끼.",
+      "tags": [
+        "담백함",
+        "상큼함",
+        "차가움",
+        "채소",
+        "혼자",
+        "점심",
+        "양식"
+      ],
+      "ingredients": [
+        "달걀",
+        "토마토",
+        "유제품"
+      ],
+      "emoji": "🥗",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-omurice",
+      "category": "food",
+      "name": "오므라이스",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "부드러운 달걀로 감싼 볶음밥에 소스를 듬뿍.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "양식"
+      ],
+      "ingredients": [
+        "달걀",
+        "토마토",
+        "유제품",
+        "닭고기",
+        "밀"
+      ],
+      "emoji": "🍳",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-taco",
+      "category": "food",
+      "name": "타코",
+      "artist": null,
+      "subtitle": "매콤함 · 상큼함",
+      "description": "또띠아에 고기와 살사를 올려 손으로 먹는 멕시코 요리.",
+      "tags": [
+        "상큼함",
+        "매콤함",
+        "함께",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "소고기",
+        "토마토",
+        "유제품"
+      ],
+      "emoji": "🌮",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-padthai",
+      "category": "food",
+      "name": "팟타이",
+      "artist": null,
+      "subtitle": "상큼함 · 따뜻함",
+      "description": "새콤달콤한 소스에 볶은 태국식 쌀국수.",
+      "tags": [
+        "상큼함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "아시안"
+      ],
+      "ingredients": [
+        "달걀",
+        "땅콩",
+        "해산물",
+        "생선",
+        "콩"
+      ],
+      "emoji": "🍜",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-buncha",
+      "category": "food",
+      "name": "분짜",
+      "artist": null,
+      "subtitle": "상큼함 · 차가움 · 채소",
+      "description": "숯불 고기와 쌀국수를 새콤한 소스에 적셔 먹는 베트남 요리.",
+      "tags": [
+        "상큼함",
+        "차가움",
+        "채소",
+        "혼자",
+        "점심",
+        "아시안"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "생선",
+        "땅콩",
+        "당근"
+      ],
+      "emoji": "🥢",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-nasigoreng",
+      "category": "food",
+      "name": "나시고렝",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "달콤 짭짤한 소스로 볶은 인도네시아식 볶음밥.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "아시안"
+      ],
+      "ingredients": [
+        "달걀",
+        "콩",
+        "해산물",
+        "닭고기",
+        "땅콩"
+      ],
+      "emoji": "🍛",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-indiancurry",
+      "category": "food",
+      "name": "인도 커리",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "향신료가 풍부한 커리를 난에 곁들인 한 끼.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "아시안"
+      ],
+      "ingredients": [
+        "유제품",
+        "닭고기",
+        "토마토",
+        "밀"
+      ],
+      "emoji": "🍛",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-ramyeon",
+      "category": "food",
+      "name": "라면",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함 · 국물",
+      "description": "꼬들꼬들한 면과 얼큰한 국물, 빠르게 먹는 한 그릇.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "국물",
+        "혼자",
+        "간식",
+        "분식"
+      ],
+      "ingredients": [
+        "밀",
+        "콩",
+        "달걀",
+        "소고기"
+      ],
+      "emoji": "🍜",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-sundae",
+      "category": "food",
+      "name": "순대",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "쫄깃한 당면 소를 채운 분식집 단골 메뉴.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "간식",
+        "분식"
+      ],
+      "ingredients": [
+        "돼지고기",
+        "콩"
+      ],
+      "emoji": "🌭",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-twigim",
+      "category": "food",
+      "name": "모둠 튀김",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "갓 튀겨 바삭한 채소와 해물 튀김.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "간식",
+        "분식"
+      ],
+      "ingredients": [
+        "밀",
+        "달걀",
+        "해산물",
+        "감자",
+        "당근"
+      ],
+      "emoji": "🍤",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-mandu",
+      "category": "food",
+      "name": "만두",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함",
+      "description": "속을 꽉 채워 찌거나 구운 한입 간식.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "혼자",
+        "간식",
+        "분식"
+      ],
+      "ingredients": [
+        "밀",
+        "돼지고기",
+        "콩",
+        "참깨"
+      ],
+      "emoji": "🥟",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-waffle",
+      "category": "food",
+      "name": "와플",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "바삭한 격자무늬에 시럽과 과일을 올린 디저트.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "간식",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "달걀",
+        "유제품"
+      ],
+      "emoji": "🧇",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-cake",
+      "category": "food",
+      "name": "조각 케이크",
+      "artist": null,
+      "subtitle": "고소함",
+      "description": "달콤한 크림과 부드러운 빵, 기분 전환용 한 조각.",
+      "tags": [
+        "고소함",
+        "함께",
+        "간식",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "달걀",
+        "유제품"
+      ],
+      "emoji": "🍰",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-bingsu",
+      "category": "food",
+      "name": "빙수",
+      "artist": null,
+      "subtitle": "차가움",
+      "description": "곱게 간 얼음에 팥과 고명을 올린 시원한 디저트.",
+      "tags": [
+        "차가움",
+        "함께",
+        "간식",
+        "한식"
+      ],
+      "ingredients": [
+        "유제품",
+        "콩"
+      ],
+      "emoji": "🍧",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
       "id": "m-03847fd1",
       "category": "music",
       "name": "첫눈처럼 너에게 가겠다",
