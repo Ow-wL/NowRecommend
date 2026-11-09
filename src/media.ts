@@ -1,14 +1,14 @@
 import media from './media.json';
 import type { Item } from './data';
 
-// Item images: food photos hand-picked from Unsplash and Wikimedia Commons with their credit, album covers from the
+// Item images: food photos hand-picked from Pexels (saved in public/food), Unsplash and Wikimedia Commons with their credit, album covers from the
 // iTunes Search API with the track's Apple Music page (server/app/cli/media.py). Images load from those hosts; an
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
 // `regionUnconfirmed`: a real page in another store whose Korean counterpart could not be confirmed, so it is not the main way to listen.
 // `guestUnconfirmed`: same title and artist, but the guest the pick names is not shown on the store's result.
-export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; guestUnconfirmed?: boolean; regionUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit; /** Apple's 30-second preview, when the store gave one. */ preview?: string };
+export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons' | 'pexels'; approx?: boolean; guestUnconfirmed?: boolean; regionUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit; /** Apple's 30-second preview, when the store gave one. */ preview?: string };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;
@@ -17,10 +17,13 @@ const found = new Map<string, Media>();
 export const addMedia = (id: string, entry: Media) => { found.set(id, entry); };
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
-/** Covers still marked for a person to confirm (`check`) are not shown. */
+const localPhoto = /^food\/[\w-]+\.jpg$/;
+/** Covers still marked for a person to confirm (`check`) are not shown. A photo saved with the site is served from its base path. */
 export function mediaFor(id: string): Media | undefined {
   const entry: Entry | undefined = table[id] || found.get(id);
-  return entry && !entry.check && /^https:\/\//.test(entry.image) ? entry : undefined;
+  if (!entry || entry.check) return undefined;
+  if (localPhoto.test(entry.image)) return { ...entry, image: import.meta.env.BASE_URL + entry.image };
+  return /^https:\/\//.test(entry.image) ? entry : undefined;
 }
 
 /** An item's own image, or that of the general dish it belongs to (뿌링클 → 치킨), which is only ever a reference picture. */

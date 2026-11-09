@@ -10,13 +10,13 @@
   }
  },
  "f02": {
-  "image": "https://images.unsplash.com/photo-1785735364482-0979a960c625?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f02.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@jcs_chen",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/AODR1DIRjXg"
+   "author": "Gu Ko",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/chopsticks-holding-freshly-cooked-asian-dish-36964131/"
   }
  },
  "f03": {
@@ -70,14 +70,14 @@
   }
  },
  "f08": {
-  "image": "https://images.unsplash.com/photo-1584509171119-9054d2d7d9a7?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f08.jpg",
+  "source": "pexels",
   "approx": true,
   "credit": {
-   "author": "@seontudio",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/BlUxJx3eNp0"
+   "author": "Hershe Girl Go",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/close-up-of-ramen-soup-5562807/"
   }
  },
  "f09": {
@@ -101,24 +101,24 @@
   }
  },
  "f11": {
-  "image": "https://images.unsplash.com/photo-1730900737734-f159ca5640c3?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f11.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@omertahacetin",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/Kgmk9NYGxNQ"
+   "author": "Hoony Kim",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/soup-on-plate-18283713/"
   }
  },
  "f12": {
-  "image": "https://images.unsplash.com/photo-1602881916963-5daf2d97c06e?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f12.jpg",
+  "source": "pexels",
   "approx": true,
   "credit": {
-   "author": "@phototastyfood",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/zhkhwGrqilw"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/a-close-up-shot-of-a-tofu-dish-8897415/"
   }
  },
  "f13": {
@@ -1733,13 +1733,13 @@
   }
  },
  "f-jeyuk": {
-  "image": "https://images.unsplash.com/photo-1735279852005-6a81f0482a49?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-jeyuk.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@usulankramas",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/_X5t13XsRyI"
+   "author": "Theodore Nguyen",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/delicious-korean-stir-fried-pork-dish-32087659/"
   }
  },
  "f-samgyeopsal": {
@@ -1753,23 +1753,23 @@
   }
  },
  "f-sundubu": {
-  "image": "https://images.unsplash.com/photo-1760228865341-675704c22a5b?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-sundubu.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@rawkkim",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/1_SenAyTAXg"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/close-up-photo-of-soup-in-black-bowl-8954509/"
   }
  },
  "f-samgyetang": {
-  "image": "https://images.unsplash.com/photo-1562749606-0a9eb5a8a0f3?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-samgyetang.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@cypriendlp",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/M-vG5uWAE0Q"
+   "author": "Richard L",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/traditional-korean-samgyetang-in-clay-pot-37614802/"
   }
  },
  "f-tteokguk": {
@@ -1793,33 +1793,34 @@
   }
  },
  "f-jajang": {
-  "image": "https://images.unsplash.com/photo-1626803774007-f92c2c32cbe7?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-jajang.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@ruthgeorgiev",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/sgvwdSJBHyk"
+   "author": "ROMAN ODINTSOV",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/bowl-of-soup-with-nood-5339076/"
   }
  },
  "f-tangsuyuk": {
-  "image": "https://images.unsplash.com/photo-1623689046286-01d812cc8bad?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-tangsuyuk.jpg",
+  "source": "pexels",
+  "approx": true,
   "credit": {
-   "author": "@israelalbornoz",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/8iiaALrjR54"
+   "author": "Kuiyibo Campos",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/a-plate-of-fried-food-with-a-leaf-on-it-27945810/"
   }
  },
  "f-mapo": {
-  "image": "https://images.unsplash.com/photo-1769065647078-f067eb768035?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-mapo.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@tuan1561",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/hGeGkdSOkCg"
+   "author": "Change C.C",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/a-stew-in-a-pot-20943936/"
   }
  },
  "f-friedrice": {
@@ -1883,13 +1884,13 @@
   }
  },
  "f-takoyaki": {
-  "image": "https://images.unsplash.com/photo-1652752731860-ef0cf518f13a?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-takoyaki.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@crypticsy",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/LipkIP4fXbM"
+   "author": "Cheng",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/delicious-homemade-takoyaki-in-oval-dish-29521278/"
   }
  },
  "f-hoedeopbap": {
@@ -1953,13 +1954,13 @@
   }
  },
  "f-omurice": {
-  "image": "https://images.unsplash.com/photo-1743148509702-2198b23ede1c?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-omurice.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@okuyama_leo",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/TdtoE7BE3z8"
+   "author": "Markus Winkler",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/meal-on-plate-19902239/"
   }
  },
  "f-taco": {
@@ -2014,14 +2015,13 @@
   }
  },
  "f-twigim": {
-  "image": "https://images.unsplash.com/photo-1600019229369-ef34b8700b3f?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
-  "approx": true,
+  "image": "food/f-twigim.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@ninjason",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/67G9k8_9xA4"
+   "author": "Lucas Mosesson",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/crispy-korean-street-food-display-at-market-35177611/"
   }
  },
  "f-mandu": {
@@ -2055,57 +2055,56 @@
   }
  },
  "f-bingsu": {
-  "image": "https://images.unsplash.com/photo-1771209802058-3b40ce534905?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-bingsu.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@yoonlog",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/BZDvXJ9blUQ"
+   "author": "MikeGz",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/cubes-of-mango-on-ice-18237484/"
   }
  },
  "f-doenjang": {
-  "image": "https://images.unsplash.com/photo-1543198453-ed52dc5cbfc0?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-doenjang.jpg",
+  "source": "pexels",
   "approx": true,
   "credit": {
-   "author": "@alexandwich",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/wLSYVyJuRFI"
+   "author": "Cynthia Ortega Espinosa",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/stew-with-cheese-13774721/"
   }
  },
  "f-galbitang": {
-  "image": "https://images.unsplash.com/photo-1746718547557-1a0e05bed94b?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-galbitang.jpg",
+  "source": "pexels",
   "approx": true,
   "credit": {
-   "author": "@sobalc",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/RGixR6QAk3o"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/stew-with-beef-8952367/"
   }
  },
  "f-dakgalbi": {
-  "image": "https://images.unsplash.com/photo-1689832832238-7d04910c63d9?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
-  "approx": true,
+  "image": "food/f-dakgalbi.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@bralro",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/LniQ7Z7rJPk"
+   "author": "Ruby Huang",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/traditional-korean-dak-galbi-in-pan-with-spatula-33085044/"
   }
  },
  "f-jjimdak": {
-  "image": "https://images.unsplash.com/photo-1524114664604-cd8133cd67ad?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-jjimdak.jpg",
+  "source": "pexels",
   "approx": true,
   "credit": {
-   "author": "@shootdelicious",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/Mspw00-Jlgo"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/close-up-shot-of-delicious-food-8995923/"
   }
  },
  "f-gamjatang": {
@@ -2119,44 +2118,45 @@
   }
  },
  "f-yukgaejang": {
-  "image": "https://images.unsplash.com/photo-1534939561126-855b8675edd7?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-yukgaejang.jpg",
+  "source": "pexels",
   "approx": true,
   "credit": {
-   "author": "@steven__chan",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/al9eh9QkdPA"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/a-bowl-of-delicious-red-soup-with-tube-ice-8883368/"
   }
  },
  "f-kongnamul": {
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Kongnamul_gukbap_20230408_001.jpg/960px-Kongnamul_gukbap_20230408_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "source": "commons",
+  "image": "food/f-kongnamul.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "Mobius6",
-   "license": "CC BY-SA 4.0",
-   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Kongnamul_gukbap_20230408_001.jpg"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/close-up-shot-of-food-in-a-hot-pot-8954364/"
   }
  },
  "f-kalguksu": {
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/Kalguksu_20230408_002.jpg/960px-Kalguksu_20230408_002.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "source": "commons",
+  "image": "food/f-kalguksu.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "Mobius6",
-   "license": "CC BY-SA 4.0",
-   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Kalguksu_20230408_002.jpg"
+   "author": "ROMAN ODINTSOV",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/traditional-asian-cuisine-serving-on-table-5339078/"
   }
  },
  "f-jokbal": {
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Jokbal_3.jpg/960px-Jokbal_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "source": "commons",
+  "image": "food/f-jokbal.jpg",
+  "source": "pexels",
+  "approx": true,
   "credit": {
-   "author": "wizdata",
-   "license": "CC0",
-   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "page": "https://commons.wikimedia.org/wiki/File:Jokbal_3.jpg"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/slices-of-fried-pork-belly-on-serving-plate-8995922/"
   }
  },
  "f-jjamppong": {
@@ -2170,13 +2170,14 @@
   }
  },
  "f-budae": {
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Budae_jjigae_%2828049377433%29.jpg/960px-Budae_jjigae_%2828049377433%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "source": "commons",
+  "image": "food/f-budae.jpg",
+  "source": "pexels",
+  "approx": true,
   "credit": {
-   "author": "T.Tseng",
-   "license": "CC BY 2.0",
-   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Budae_jjigae_(28049377433).jpg"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/seafood-based-dish-in-wok-8954298/"
   }
  },
  "f-sundae": {
@@ -2190,23 +2191,23 @@
   }
  },
  "f-ramyeon": {
-  "image": "https://images.unsplash.com/photo-1591814468924-caf88d1232e1?w=960&h=960&fit=crop&q=75&auto=format",
-  "source": "unsplash",
+  "image": "food/f-ramyeon.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "@cceee",
-   "license": "Unsplash License",
-   "licenseUrl": "https://unsplash.com/license",
-   "page": "https://unsplash.com/photos/GXhmQt6MFX8"
+   "author": "makafood",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/white-ceramic-bowl-with-noodles-8840777/"
   }
  },
  "f-bulgogi": {
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Korean.cuisine-Bulgogi-01.jpg/960px-Korean.cuisine-Bulgogi-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "source": "commons",
+  "image": "food/f-bulgogi.jpg",
+  "source": "pexels",
   "credit": {
-   "author": "by ayustety",
-   "license": "CC BY-SA 2.0",
-   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Korean.cuisine-Bulgogi-01.jpg"
+   "author": "Nadin Sh",
+   "license": "Pexels License",
+   "licenseUrl": "https://www.pexels.com/license/",
+   "page": "https://www.pexels.com/photo/bowl-of-marinated-beef-24738513/"
   }
  },
  "f-naengmyeon": {

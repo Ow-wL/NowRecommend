@@ -7,6 +7,8 @@ vi.mock('./media.json', () => ({ default: {
   m05: { image: 'https://example.test/d.jpg', source: 'itunes', album: 'https://music.apple.com/us/album/x/1' },
   m02: { image: 'https://example.test/guess.jpg', source: 'itunes', check: true },
   m03: { image: 'javascript:alert(1)', source: 'itunes' },
+  f02: { image: 'food/f02.jpg', source: 'pexels' },
+  f03: { image: 'food/../../secret.jpg', source: 'pexels' },
   f01: { image: 'https://images.unsplash.com/a.jpg', source: 'unsplash', credit: { author: 'A', license: 'CC0', licenseUrl: '', page: 'https://unsplash.com/photos/x' } },
 } }));
 
@@ -20,6 +22,8 @@ describe('item media', () => {
     expect(mediaFor('m02')).toBeUndefined(); // a guessed cover waits for a person
     expect(mediaFor('m03')).toBeUndefined();
     expect(mediaFor('missing')).toBeUndefined();
+    expect(mediaFor('f02')?.image).toBe(`${import.meta.env.BASE_URL}food/f02.jpg`); // saved with the site
+    expect(mediaFor('f03')).toBeUndefined();
   });
 
   it('finds a free-form song in the catalog regardless of case and spacing', () => {
