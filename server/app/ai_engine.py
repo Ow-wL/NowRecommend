@@ -45,9 +45,26 @@ class AiAnswer:
     error: str | None = None
 
 
-def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> AiAnswer:
+def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], disliked: list[str], avoid: list[str], wanted: int,
+              base_dishes: list[str] | None) -> FreeValidation:
+    """The model's answer after the server's checks, with no database: what production sends is what the evaluation measures."""
     category, conditions, profile = request.category, request.conditions, request.profile
     vocab = get_vocab().for_category(category)
+    # Checks drop picks after the model answers, so it is asked for a few spare ones; only `wanted` go out.
+    filtered = bool(conditions.excluded or request.years)
+    asked = wanted + (3 if filtered else 2)
+    food = category == "food"
+    years = (request.years.start, request.years.end) if request.years and not food else None
+    payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
+                            profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],
+                            base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None,
+                            release_years={"from": years[0], "to": years[1]} if years else None)
+    return validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
+                         detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years)
+
+
+def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> AiAnswer:
+    category, profile = request.category, request.profile
     pinned_rows = session.scalars(select(Item).where(Item.id.in_(request.pinnedIds), Item.category == category)).all() if request.pinnedIds else []
     pinned_rows.sort(key=lambda r: request.pinnedIds.index(r.id))
     wanted = request.result_count - len(pinned_rows)
@@ -56,18 +73,8 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     liked, disliked = labels_for(session, profile.selected, category), labels_for(session, profile.disliked, category)
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
-    # Checks drop picks after the model answers, so it is asked for a few spare ones; only `wanted` go out.
-    filtered = bool(conditions.excluded or request.years)
-    asked = wanted + (3 if filtered else 2)
-    food = category == "food"
-    years = (request.years.start, request.years.end) if request.years and not food else None
-    base_dishes = [r.name for r in reviewed_items(session) if r.category == "food"] if food else None
-    payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
-                            profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],
-                            base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None,
-                            release_years={"from": years[0], "to": years[1]} if years else None)
-    validation = validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
-                               detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years)
+    base_dishes = [r.name for r in reviewed_items(session) if r.category == "food"] if category == "food" else None
+    validation = ask_picks(request, model, liked, disliked, avoid, wanted, base_dishes)
     rows = persist_picks(session, category, validation.picks)
     # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too.
     blocked = {*request.seenIds, *request.excludedIds, *profile.disliked, *(r.id for r in pinned_rows)}
