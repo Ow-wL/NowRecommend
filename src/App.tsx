@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Mic, Play, RefreshCw, Search, Settings2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Mic, Play, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -20,6 +20,7 @@ import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './me
 import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
 import { useVoiceInput } from './voice';
+import { conditionLabels, shareResults, type ShareInput } from './share';
 import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
@@ -232,6 +233,12 @@ export default function App() {
     navigator.geolocation.getCurrentPosition(
       position => requestWeather(position.coords.latitude, position.coords.longitude).then(w => { setWeather(w); notify(`${weatherLabel(w)} · 지금 조건에 날씨를 반영했어요.`); }).catch(() => notify('날씨를 가져오지 못해 시간만 반영해요.')).finally(() => setWeatherBusy(false)),
       () => { setWeatherBusy(false); notify('위치를 확인하지 못해 시간만 반영해요.'); }, { timeout: 8000, maximumAge: 600000 });
+  }
+  // The share sheet where there is one, the clipboard elsewhere; either way the person hears what happened.
+  async function share(input: ShareInput) {
+    const outcome = await shareResults(input);
+    if (outcome === 'copied') notify('추천 내용을 복사했어요. 원하는 곳에 붙여 넣으세요.');
+    else if (outcome === 'failed') notify('이 환경에서는 공유하거나 복사할 수 없어요.');
   }
   function endRequest() { setActive(false); setSession(newSession(category)); setStep('input'); navigate('home'); notify('이번 요청을 종료했어요.'); }
   function editTaste(next: Category) { setShowAllChoices(false); setSelectedOnly(false); setTasteFilter(''); setTasteDecade(0); setCategory(next); setDraftProfile(store.profiles[next]); setEditingProfile(true); setQuery(''); navigate('onboard'); }
@@ -575,7 +582,10 @@ export default function App() {
                 <div className="mini-tags">{category === 'music' && session.years && <span>{yearLabel(session.years)}</span>}{session.conditions.tags.map(t => <span key={t}>{t}</span>)}{session.conditions.excluded.map(t => <span className="excluded-tag" key={t}>{t} 제외</span>)}{!conditionCount && !(category === 'music' && session.years) && <span>{hasTaste(store.profiles[category]) ? '평소 취향 기준' : '취향·조건 없음'}</span>}</div>
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} folded />
               </div>
-              <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 바꾸기</button>
+              <div className="result-actions">
+                <button className="text-button" disabled={busy || results.length === 0} onClick={() => share({ title: requestName, items: results.map(r => r.item), conditions: conditionLabels(session.conditions) })}><Share2 size={14} /> 공유</button>
+                <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 바꾸기</button>
+              </div>
             </div>
           </div>
           {session.quality?.engine !== 'ai' && <ParseNotice ai={session.editor?.ai} raw={session.raw} hasConditions={conditionCount > 0} />}
@@ -636,7 +646,7 @@ export default function App() {
           <div className="mini-tags">{completed.conditions.tags.map(t=><span key={t}>{t}</span>)}{completed.conditions.excluded.map(t=><span key={t}>{t} 제외</span>)}</div>
           {!store.profiles[chosen.category].selected.includes(chosen.id) && <button className="text-button like-chosen" onClick={() => likeItem(chosen)}><ThumbsUp size={15} />내 취향에 추가하고 다음 추천에 반영</button>}
           <ReviewForm key={completed.id} entry={completed} title="지금 느낌은 어때요?" intro="기록용이에요. 다음 추천과 평소 취향에는 반영하지 않아요. 나중에 추천 기록에서도 고칠 수 있어요." persisted={!storageWarning} onSave={(rating, note) => { setStore(s => ({ ...s, history: s.history.map(h => h.id === completed.id ? reviewSelection(h, rating, note) : h) })); notify('느낌을 기록했어요.'); }} />
-          <div className="card-actions"><button className="button secondary" onClick={()=>navigate('history')}>추천 기록 보기</button><div className="button-row"><button className="button secondary" onClick={()=>setHistoryPreview(completed)}>선택 변경</button><button className="button secondary" onClick={()=>start(completed.category,'',true)}>다른 상황으로 추천받기</button></div></div>
+          <div className="card-actions"><button className="button secondary" onClick={()=>navigate('history')}>추천 기록 보기</button><div className="button-row"><button className="button secondary" onClick={() => share({ title: '오늘의 선택', items: [chosen], conditions: conditionLabels(completed.conditions) })}><Share2 size={16} />공유</button><button className="button secondary" onClick={()=>setHistoryPreview(completed)}>선택 변경</button><button className="button secondary" onClick={()=>start(completed.category,'',true)}>다른 상황으로 추천받기</button></div></div>
         </section>
         </div>
       </div>; })()}

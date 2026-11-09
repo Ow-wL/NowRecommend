@@ -322,6 +322,8 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .result-head h1.long { font-size: clamp(20px, 2.2vw, 26px); line-height: 1.4; letter-spacing: -0.025em; }
 .result-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; }
 .result-summary-copy { flex: 1; min-width: 200px; }
+.result-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; }
+.result-actions .text-button:disabled { background: transparent !important; }
 .result-mix { display: block; margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
 
 .result-grid.food { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
