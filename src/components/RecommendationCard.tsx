@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle, Ban, Check, ChevronRight, CircleDashed, Columns2, ExternalLink, Flag, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
 import type { Item } from '../data';
-import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
+import { checkText, evidenceText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
 import { mapSearch, mediaFor, mediaOf, overseasLink, songLink, youtubeSearch } from '../media';
 import { useSongCheck, type SongStatus } from '../songCheck';
 import { ItemArt } from './ItemArt';
@@ -35,6 +35,7 @@ export function RecommendationCard({ past, onReport, reported = false, onRefine,
   const doubtful = item.category !== 'music' && !!confidence && confidence !== 'high';
   const saveLabel = saved ? persisted ? '저장됨' : '임시 저장' : '저장';
   const music = item.category === 'music';
+  const evidence = reasons ? evidenceText(checks, { aiPick, storeFound: songStatus === 'found' }) : '';
   const saveButton = <button className={`icon-button save-button ${saved ? 'saved' : ''}`} aria-label={`${item.name} ${saved ? '저장 해제' : '저장'}`} aria-pressed={saved} title={saveLabel} onClick={onSave}><Heart size={20} fill={saved ? 'currentColor' : 'none'} /><span className="sr-only">{saveLabel}</span></button>;
   // The template sentence reads the same on every card, so the dish's own line says more about why this one.
   const templated = !!reasons && /^(이번 조건|고른 조건|등록 정보)/.test(reasons.contextReason);
@@ -74,6 +75,7 @@ export function RecommendationCard({ past, onReport, reported = false, onRefine,
     {reasons ? <div className="reasons">
       <p className="lead">{(songStatus === 'missing' || songStatus === 'failed') && <b>AI가 제안한 이유</b>}{lead}</p>
       {reasons.contrast && !aiPick && <p className="contrast">{reasons.contrast}</p>}
+      {evidence && <p className="card-evidence">{evidence}</p>}
       {(checks.length > 0 || reasons.tasteReason !== NO_TASTE_REASON || lead !== reasons.contextReason) && <details className="why"><summary>자세한 이유</summary><div className="why-body">
         {checks.length > 0 && <ul className="condition-checks" aria-label={`${item.name} 조건 확인`}>{checks.map(c => <li key={c.label} className={`${c.kind} ${c.state}`}>
           {c.state === 'met' ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : c.state === 'partial' ? <AlertTriangle size={13} aria-hidden="true" /> : <CircleDashed size={13} aria-hidden="true" />}

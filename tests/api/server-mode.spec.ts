@@ -401,3 +401,31 @@ test('a failed store request says so and can be tried again, unlike a song that 
   await expect(card.getByRole('status')).toContainText('Apple Music에서 곡을 찾았어요');
   await expect(card).not.toContainText('지금은 확인할 수 없어요');
 });
+
+test('past choices and ratings shape the request, in fields the server already reads, and the note stays home', async ({ page }) => {
+  const entry = (id: string, item: Item, daysAgo: number, rating?: string) => {
+    const date = new Date(Date.now() - daysAgo * 86400000).toISOString(), conditions = { tags: [], excluded: [] }, result = { item, tasteReason: '', contextReason: '' };
+    return { id, date, category: 'food', raw: '저녁', conditions, resultIds: [item.id], rounds: [{ id: 'r1', date, raw: '저녁', conditions, results: [result], feedback: [], excludedIds: [], catalogVersion: 'x' }], selected: { result, roundId: 'r1', date },
+      ...(rating ? { review: { rating, note: '혼자만 볼 메모', date, itemId: item.id, roundId: 'r1' } } : {}) };
+  };
+  await page.addInitScript(v => { if (!localStorage.getItem('nowrecommend-prototype-v1')) localStorage.setItem('nowrecommend-prototype-v1', JSON.stringify(v)); },
+    { version: 2, name: '검증', profiles: { food: { selected: [], tags: [], disliked: [] }, music: { selected: [], tags: [], disliked: [] } }, favorites: [], history: [entry('a', food('f01'), 1), entry('b', food('f04'), 20, 'poor'), entry('c', food('f02'), 20, 'good')] });
+  await catalogRoute(page);
+  const bodies: any[] = [];
+  await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') bodies.push(route.request().postDataJSON()); return fulfill(route, batch(['f12', 'f05', 'f06'])); });
+  await requestFood(page);
+  await expect(page.locator('.taste-hint', { hasText: '뒤로 미뤘어요' })).toHaveText('최근 7일 동안 고른 1개와 아쉬웠던 1개는 뒤로 미뤘어요.');
+  expect([...bodies[0].seenIds].sort()).toEqual(['f01', 'f04']);
+  expect(bodies[0].profile.notes).toEqual([`${food('f02').name}: 먹어 보니 좋았어요`]);
+  expect(bodies[0].profile.tags.length).toBeGreaterThan(0);
+  expect(JSON.stringify(bodies[0])).not.toContain('혼자만 볼 메모');
+
+  // The next set still counts only what this request showed.
+  await page.getByRole('button', { name: /다른 추천|다시 추천|새로운 추천/ }).first().click();
+  await expect.poll(() => bodies.length).toBe(2);
+  expect([...bodies[1].seenIds].sort()).toEqual(['f01', 'f04', 'f05', 'f06', 'f12']);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('nowrecommend-prototype-v1')!).profiles.food);
+  expect(stored).toMatchObject({ tags: [], selected: [] });
+  expect(stored.ratedNotes).toBeUndefined();
+});
+

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { capFamiliar, changeText, checkText, inYears, parseYears, yearLabel, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session } from './domain';
+import { capFamiliar, changeText, checkText, inYears, parseYears, yearLabel, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session, evidenceText } from './domain';
 import { items } from './data';
 const session = (changes: Partial<Session> = {}): Session => ({ category: 'food', raw: '', conditions: emptyConditions(), excludedIds: [], revision: 0, ...changes });
 describe('release years', () => {
@@ -104,5 +104,20 @@ describe('discovery and reasons', () => {
     // on the registered data only, and a partial one never reads as applied.
     expect(checks.map(checkText)).toEqual(['혼자 맞음', '점심: 등록 정보 없음', '맵지 않음, 등록 정보 기준 적용', '해산물 제외 일부만 확인']);
     expect(checkText(checks[3])).not.toContain('적용');
+  });
+});
+
+describe('the evidence line on a card', () => {
+  const want = (state: 'met' | 'untagged') => ({ label: 't', value: 't', kind: 'want' as const, state });
+  const none = { aiPick: false, storeFound: false };
+  it('counts wanted conditions only and names the registered data', () => {
+    expect(evidenceText([want('met'), want('untagged'), { label: 'x 제외', value: 'x', kind: 'exclude', state: 'met' }], none)).toBe('조건 2개 중 1개 확인 · 등록 정보 기준');
+  });
+  it('says nothing about registered data when no condition was given', () => {
+    expect(evidenceText([], none)).toBe('');
+  });
+  it('never presents an AI pick as registered data', () => {
+    expect(evidenceText([want('met')], { aiPick: true, storeFound: false })).toBe('조건 1개 중 1개 확인 · AI 추정');
+    expect(evidenceText([], { aiPick: true, storeFound: true })).toBe('AI 추천 · Apple Music에서 찾은 곡');
   });
 });

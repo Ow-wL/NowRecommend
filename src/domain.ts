@@ -415,6 +415,15 @@ export function conditionChecks(item: Item, conditions: Conditions): ConditionCh
   return [...conditions.tags.map(t => ({ label: t, value: t, kind: 'want' as const, state: item.tags.includes(t) ? 'met' as const : 'untagged' as const })),
     ...conditions.excluded.map(v => ({ value: v, kind: 'exclude' as const, ...exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외`, state: 'met' as const } }))];
 }
+/** One line on the card: how much of the request this answers, and what that rests on. "확인" because a tag that is missing
+ * is not the same as not fitting (see ConditionCheck). An AI pick's tags are the model's own, so it never reads as registered data;
+ * a store match is said as a match, which is not proof of the same recording (songCheck.ts). */
+export function evidenceText(checks: ConditionCheck[], source: { aiPick: boolean; storeFound: boolean }): string {
+  const wanted = checks.filter(c => c.kind === 'want');
+  const count = wanted.length ? `조건 ${wanted.length}개 중 ${wanted.filter(c => c.state === 'met').length}개 확인` : '';
+  const basis = source.aiPick ? (source.storeFound ? 'AI 추천 · Apple Music에서 찾은 곡' : 'AI 추정') : wanted.length ? '등록 정보 기준' : '';
+  return [count, basis].filter(Boolean).join(' · ');
+}
 /** What a check says, for screen readers and the comparison table. A partial exclusion never reads as applied. */
 export function checkText(c: ConditionCheck): string {
   if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.label}, 등록 정보 기준 적용`;
