@@ -471,6 +471,15 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .list-copy small { color: var(--text-muted); }
 .my-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 24px; }
 .taste-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* Small facts from the person's own records, above the two taste panels. Soft category colours, one line each. */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: -12px 0 24px; }
+.stat-card { display: grid; gap: 2px; padding: 16px 18px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-card); color: var(--text-secondary); }
+.stat-card > svg { color: var(--text-muted); margin-bottom: 6px; }
+.stat-card b { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); overflow-wrap: anywhere; }
+.stat-card span { font-size: 13px; color: var(--text-muted); }
+.stat-card.sun { background: var(--sun-soft); border-color: transparent; } .stat-card.sun > svg, .stat-card.sun b { color: var(--sun-ink); }
+.stat-card.food { background: var(--food-soft); border-color: transparent; } .stat-card.food > svg, .stat-card.food b { color: var(--food-ink); }
+.stat-card.music { background: var(--music-soft); border-color: transparent; } .stat-card.music > svg, .stat-card.music b { color: var(--music-ink); }
 .taste-panel { padding: 28px; border-radius: var(--radius-large); }
 .taste-panel:nth-child(1) { background: var(--food-soft); --accent: var(--food-ink); --bg-soft: var(--bg-surface); }
 .taste-panel:nth-child(2) { background: var(--music-soft); --accent: var(--music-ink); --bg-soft: var(--bg-surface); }
@@ -711,6 +720,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .login-wall { display: none; }
   .login-body { padding: 32px 24px; }
   .taste-grid, .lab-grid { grid-template-columns: minmax(0, 1fr); }
+  .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-section { margin-top: 56px; }
   .completion { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .history-row { grid-template-columns: 56px minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px; }

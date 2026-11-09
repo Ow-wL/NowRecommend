@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, Play, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -22,6 +22,7 @@ import { momentPreset, slotLabel, timeSlot } from './moment';
 import { useVoiceInput } from './voice';
 import { conditionLabels, shareResults, shareText, appAddress, type ShareInput } from './share';
 import { stopPreview } from './preview';
+import { computeStats, slotSentence } from './stats';
 import { PreviewButton } from './components/PreviewButton';
 import { Playlist } from './components/Playlist';
 import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
@@ -116,6 +117,7 @@ export default function App() {
   const [detail,setDetail]=useState<{item:Item;reasons?:Recommendation}|null>(null);
   const [compareOpen,setCompareOpen]=useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
+  const stats = useMemo(() => computeStats(store.history), [store.history]);
   const [deleteId, setDeleteId] = useState('');
   const [tasteFilter, setTasteFilter] = useState('');
   const [showAllChoices, setShowAllChoices] = useState(false);
@@ -683,6 +685,13 @@ export default function App() {
       </>}
       {page === 'taste' && <>
         <div className="page-heading"><h1>내 취향</h1><p>취향은 다음 추천의 기준이 되고, 즐겨찾기는 다시 보고 싶은 항목을 모아 둬요.</p></div>
+        {stats.chosen > 0 && <section className="stats-row" aria-label="내 기록 요약">
+          <div className="stat-card sun"><CalendarDays size={18} /><b>{stats.thisMonth}번</b><span>이번 달에 골랐어요{stats.chosen !== stats.thisMonth ? ` · 전체 ${stats.chosen}번` : ''}</span></div>
+          <div className="stat-card food"><Utensils size={18} /><b>{stats.byCategory.food} · {stats.byCategory.music}</b><span>음식 · 음악 선택 횟수</span></div>
+          {stats.traits.length > 0 && <div className="stat-card music"><Sparkles size={18} /><b>{stats.traits.join(' · ')}</b><span>자주 고른 특징</span></div>}
+          {stats.slot && <div className="stat-card"><Clock3 size={18} /><b>{slotSentence(stats.slot)}</b><span>선택한 시각 기준</span></div>}
+          {stats.satisfied && <div className="stat-card"><SmilePlus size={18} /><b>{stats.satisfied.good} / {stats.satisfied.rated}</b><span>느낌을 남긴 선택 중 만족</span></div>}
+        </section>}
         <div className="taste-grid">{(['food', 'music'] as Category[]).map(c => <section className="taste-panel" key={c}>
           <div className="section-heading"><h2>{categoryLabel[c]}</h2><button className="text-button" onClick={() => editTaste(c)}>{hasTaste(store.profiles[c]) ? '편집하기' : '등록하기'}</button></div>
           {store.profiles[c].selected.length > 0 ? <div className="taste-tiles">{store.profiles[c].selected.map(id => { const i = resolveItem(items, id); return i ? <span className="taste-tile" key={id}><ItemArt item={i} size="tile" /><small>{i.name}</small>{store.profiles[c].reasons?.[id]?.trim() && <small className="taste-reason">{store.profiles[c].reasons![id]}</small>}</span> : null; })}</div>
