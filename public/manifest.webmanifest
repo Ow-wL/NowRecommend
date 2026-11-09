@@ -1,0 +1,16 @@
+{
+  "name": "지금 추천",
+  "short_name": "지금 추천",
+  "description": "취향과 지금 상황으로 음식과 음악을 골라주는 서비스.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F5F0",
+  "theme_color": "#F7F5F0",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
