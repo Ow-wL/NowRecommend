@@ -476,7 +476,7 @@ export default function App() {
               <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : '취향 없이도 바로'}</small>
               <span className="door-go">{categoryLabel[c]} 추천받기 <ArrowRight size={17} /></span>
             </span>
-            <span className="door-art" aria-hidden="true">{[0, 1, 2].map(col => { const set = showcase(c, 9).filter((_, n) => n % 3 === col); return <span className="door-col" key={col}>{[...set, ...set, ...set].map((i, n) => <ItemArt key={`${i.id}-${n}`} item={i} size="tile" eager={n < set.length} />)}</span>; })}</span>
+            <span className="door-art" aria-hidden="true">{[0, 1].map(col => { const set = showcase(c, 8).filter((_, n) => n % 2 === col); return <span className="door-col" key={col}>{[...set, ...set, ...set].map((i, n) => <ItemArt key={`${i.id}-${n}`} item={i} size="tile" eager={n < set.length} />)}</span>; })}</span>
           </button>
           {presetList(c)}
         </div>)}</section>

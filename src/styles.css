@@ -34,9 +34,9 @@ main h1:focus { outline: none; }
 input, textarea, select { background: var(--fill-1); border: 1px solid transparent; border-radius: var(--radius); padding: 12px 16px; max-width: 100%; min-height: 50px; transition: border-color var(--fast); }
 input:hover, textarea:hover, select:hover { border-color: var(--border-control); }
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
-input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent-fill); outline-offset: -1px; border-color: transparent; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
 input:-webkit-autofill { -webkit-text-fill-color: var(--text-primary); box-shadow: 0 0 0 1000px var(--bg-surface) inset; }
-input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-height: 0; }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-height: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .skip-link { position: fixed; top: 8px; left: 16px; z-index: 100; padding: 12px; background: var(--bg-surface); border-radius: var(--radius); clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; }
 .skip-link:focus { clip-path: none; width: auto; height: auto; overflow: visible; box-shadow: var(--shadow-raised); }
@@ -145,25 +145,29 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .door-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
 /* A door is a wall of what is behind it, slowly moving, with one sheet of glass in front holding the words. */
-.door { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; height: clamp(440px, calc(100vh - 290px), 640px); padding: 12px; overflow: hidden; border-radius: var(--radius-large); text-align: left; color: #fff; transition: transform var(--normal) var(--ease); }
-.door.food { background: var(--food); }
-.door.music { background: #2B46D6; }
-.door-art { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 10px; }
+.door { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; height: clamp(440px, calc(100vh - 290px), 640px); padding: 14px; overflow: hidden; border-radius: var(--radius-large); text-align: left; color: var(--text-primary); transition: transform var(--normal) var(--ease); }
+.door.food { background: var(--food-tint); }
+.door.music { background: var(--music-tint); }
+.door-art { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 0 14px; }
 /* Three copies of one set, moved by exactly one set, so the loop has no seam. The padding makes the last gap count. */
-.door-col { display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; animation: door-drift 84s linear infinite; will-change: transform; }
+.door-col { display: flex; flex-direction: column; gap: 14px; padding-bottom: 14px; animation: door-drift 84s linear infinite; will-change: transform; }
 .door-col:nth-child(2) { animation-direction: reverse; animation-duration: 100s; }
-.door-col:nth-child(3) { animation-duration: 72s; }
 @keyframes door-drift { to { transform: translateY(-33.3333%); } }
-.door-art .item-art { flex: none; border-radius: 16px; }
-/* Tinted dark enough for white text even over a bright photo passing behind. */
-.door-copy { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 12px; width: 100%; padding: 18px 14px 18px 24px; border-radius: 18px; -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 24%), inset 0 0 0 .5px rgb(255 255 255 / 16%); }
-.door.food .door-copy { background: rgb(96 24 6 / 70%); }
-.door.music .door-copy { background: rgb(18 28 110 / 70%); }
+.door-art .item-art { flex: none; border-radius: 22px; }
+/* Calmer than the photos are on a result card: here they are the wallpaper. */
+.door-art img { filter: saturate(.82) brightness(1.05); }
+/* Frosted thick enough for dark text even over a dark photo passing behind. */
+.door-copy { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 12px; width: 100%; padding: 18px 14px 18px 24px; border-radius: 18px; -webkit-backdrop-filter: blur(28px) saturate(130%); backdrop-filter: blur(28px) saturate(130%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), 0 8px 28px rgb(60 40 30 / 8%); }
+.door.food .door-copy { background: rgb(255 249 246 / 86%); }
+.door.music .door-copy { background: rgb(248 251 255 / 86%); }
+:root[data-theme="dark"] .door.food .door-copy { background: rgb(46 33 28 / 78%); }
+:root[data-theme="dark"] .door.music .door-copy { background: rgb(29 40 56 / 78%); }
+:root[data-theme="dark"] .door-copy { box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%); }
 .door-copy strong { grid-column: 1; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.18; font-weight: 700; letter-spacing: -0.032em; }
-.door-copy small { grid-column: 1; font-size: 15px; font-weight: 400; letter-spacing: -0.014em; }
-.door-go { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 6px; padding: 13px 20px; border-radius: 999px; background: #fff; font-size: 15px; font-weight: 600; white-space: nowrap; }
-.door.food .door-go { color: #B8360F; }
-.door.music .door-go { color: #2338B0; }
+.door-copy small { grid-column: 1; color: var(--text-secondary); font-size: 15px; font-weight: 400; letter-spacing: -0.014em; }
+.door-go { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 6px; padding: 13px 20px; border-radius: 999px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.door.food .door-go { background: var(--food-fill); color: var(--food-on); }
+.door.music .door-go { background: var(--music-fill); color: var(--music-on); }
 .door-go svg { transition: transform var(--normal) var(--ease); }
 .door-group .chip { background: var(--bg-soft); color: var(--accent); }
 /* The chips speak for themselves; the heading stays for screen readers. */
@@ -201,7 +205,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 24px 16px; align-items: start; }
 .selection-card { position: relative; display: block; width: 100%; text-align: left; }
 .selection-card .item-art { transition: box-shadow var(--fast), transform var(--fast); }
-.selection-card.selected .item-art { box-shadow: 0 0 0 3px var(--bg-canvas), 0 0 0 6px var(--accent-fill); }
+.selection-card.selected .item-art { box-shadow: 0 0 0 3px var(--bg-canvas), 0 0 0 6px var(--accent); }
 .selection-check { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgb(255 255 255 / 55%); box-shadow: inset 0 0 0 2px #fff, 0 1px 5px rgb(0 0 0 / 35%); }
 .selection-card.selected .selection-check { background: var(--accent-fill); color: var(--text-on-accent); box-shadow: inset 0 0 0 2px #fff, 0 2px 6px rgb(0 0 0 / 22%); }
 .selection-name { display: block; margin-top: 12px; }
@@ -235,7 +239,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .compose-panel textarea { display: block; width: 100%; min-height: 96px; field-sizing: content; padding: 2px 0 6px; border: 0; border-radius: 0; background: transparent; font-size: clamp(20px, 2vw, 24px); line-height: 1.45; font-weight: 600; letter-spacing: -0.025em; resize: none; }
 .compose-panel textarea::placeholder { font-weight: 500; color: var(--text-muted); opacity: .75; }
 .compose-panel textarea:focus { outline: none; }
-.compose-panel:has(textarea:focus-visible) { outline: 2px solid var(--accent-fill); outline-offset: -1px; }
+.compose-panel:has(textarea:focus-visible) { outline: 2px solid var(--accent); outline-offset: -1px; }
 .textarea-caption { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-top: 8px; }
 .textarea-caption > span { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; line-height: 44px; flex-shrink: 0; }
 .example-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -295,7 +299,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .type-question h2 { margin: 8px 0 20px; }
 .type-question small { color: var(--text-muted); font-size: 13px; }
 .type-progress { height: 8px; margin-bottom: 14px; overflow: hidden; border-radius: 999px; background: var(--fill-1); }
-.type-progress span { display: block; height: 100%; background: var(--accent-fill); transition: width var(--normal) var(--ease); }
+.type-progress span { display: block; height: 100%; background: var(--accent); transition: width var(--normal) var(--ease); }
 .type-choices { display: grid; gap: 10px; margin-bottom: 16px; }
 .type-choice { min-height: 64px; padding: 14px 20px; font-size: 16px; font-weight: 600; text-align: left; border-radius: 20px; background: var(--fill-1); }
 .type-code { display: flex; gap: 8px; margin: 0 0 14px; }
@@ -360,7 +364,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; margin-top: 24px; }
 .item-card { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 10px; border-radius: var(--radius-card); }
 .item-card:has(.more-menu) { z-index: 31; }
-.item-card.pinned { box-shadow: 0 0 0 2px var(--accent-fill), var(--shadow-card); }
+.item-card.pinned { box-shadow: 0 0 0 2px var(--accent), var(--shadow-card); }
 .art-frame { position: relative; }
 .collection-grid .item-art { aspect-ratio: 1; }
 .lab-song .item-rank { font-size: 15px; font-weight: 600; color: var(--text-muted); min-width: 18px; font-variant-numeric: tabular-nums; }
@@ -368,7 +372,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .art-frame .save-button { position: absolute; right: 8px; top: 8px; z-index: 1; }
 .save-button[aria-pressed="true"] svg { animation: pop 260ms var(--ease); }
 @keyframes pop { 40% { transform: scale(1.3); } }
-.save-button.saved { color: var(--food); }
+.save-button.saved { color: var(--food-ink); }
 .item-body { display: flex; flex-direction: column; flex: 1; padding: 14px 8px 6px; min-width: 0; }
 .item-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; align-items: start; }
 .item-badges { grid-column: 1; display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; font-size: 12px; font-weight: 600; }
@@ -488,7 +492,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .find-field > svg { flex-shrink: 0; }
 .find-field input { flex: 1; min-width: 0; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--text-primary); }
 .find-field input:focus { outline: none; }
-.find-field:focus-within { box-shadow: 0 0 0 2px var(--accent-fill); }
+.find-field:focus-within { box-shadow: 0 0 0 2px var(--accent); }
 .history-tools .button.active { background: var(--bg-soft); color: var(--accent); border-color: transparent; }
 .calendar { max-width: 520px; margin-bottom: 24px; padding: 14px 16px 16px; border-radius: var(--radius-card); }
 .calendar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -502,13 +506,13 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .cal-day.today { box-shadow: inset 0 0 0 1.5px var(--border-control); }
 .cal-dots { display: flex; gap: 3px; height: 6px; }
 .cal-dot { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--border-control); }
-.cal-dot.food { background: var(--food); } .cal-dot.music { background: var(--music); }
+.cal-dot.food { background: var(--food-ink); } .cal-dot.music { background: var(--music-ink); }
 .cal-day[aria-pressed="true"] .cal-dot { background: var(--text-on-accent); }
 /* Recording by hand */
 .manual-record .find-field { margin-top: 4px; }
 .manual-list { display: grid; gap: 6px; margin-top: 12px; max-height: 300px; overflow: auto; padding: 2px; }
 .manual-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px 8px 8px; text-align: left; border-radius: 14px; background: var(--fill-1); }
-.manual-item[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent-fill); color: var(--accent); }
+.manual-item[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
 .manual-item .item-art.thumb { width: 48px; min-width: 48px; }
 .manual-item .list-copy { flex: 1; min-width: 0; }
 .manual-item .list-copy b { display: block; font-weight: 600; } .manual-item .list-copy small { display: block; color: var(--text-muted); }
@@ -568,7 +572,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .login-panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: 8px auto 0; max-width: 1000px; overflow: hidden; border-radius: var(--radius-large); }
 .login-body { padding: 56px 48px; }
 .login-body > p { margin: 8px 0 28px; font-size: 15px; }
-.login-wall { display: grid; grid-template-columns: repeat(2, 1fr); align-content: center; gap: 14px; padding: 36px; background: var(--food); }
+.login-wall { display: grid; grid-template-columns: repeat(2, 1fr); align-content: center; gap: 14px; padding: 36px; background: var(--food-tint); }
 .auth-tabs { display: flex; margin-bottom: 24px; }
 .auth-tabs button, .settings-tabs button { flex: 1; }
 .auth-form { display: grid; }
@@ -731,7 +735,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .button.secondary:hover:not(:disabled), .chip:hover:not(:disabled):not(.selected) { background: var(--fill-2); }
   .filter-tabs button:hover:not(.active), .lab-mark:hover:not([aria-pressed="true"]) { background: var(--fill-1); }
   .icon-button:hover { background: var(--fill-2); color: var(--text-primary); }
-  .save-button:hover { background: var(--glass-hover); color: var(--food); }
+  .save-button:hover { background: var(--glass-hover); color: var(--food-ink); }
   .more-menu button:hover:not(:disabled), .more-menu a:hover { background: var(--fill-2); }
   .text-button:hover { text-decoration: underline; text-underline-offset: 3px; }
   .back-link:hover { color: var(--text-primary); }
@@ -747,9 +751,6 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 
 /* ── Tablet and below ─────────────────────────────── */
 /* A chosen colour can be as light or dark as the surface: edges take its readable variant and filled controls keep an outline. */
-:root[data-custom-accent] :is(input, textarea, select):focus, :root[data-custom-accent] .compose-panel:has(textarea:focus-visible) { outline-color: var(--accent); }
-:root[data-custom-accent] .selection-card.selected .item-art { box-shadow: 0 0 0 3px var(--bg-canvas), 0 0 0 6px var(--accent); }
-:root[data-custom-accent] .item-card.pinned { box-shadow: 0 0 0 2px var(--accent), var(--shadow-card); }
 :root[data-custom-accent] :is(.button.primary:not(:disabled), .lab-mark[aria-pressed="true"]) { box-shadow: inset 0 0 0 1px var(--accent); }
 
 @media (min-width: 1101px) {
@@ -804,9 +805,9 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .home-hero { display: block; padding: 8px 0 18px; }
   .home-hero .moment-note { margin: 12px 0 0; }
   .door { height: 208px; padding: 8px; border-radius: 24px; }
-  .door-art { gap: 6px; padding: 0 6px; }
-  .door-col { gap: 6px; padding-bottom: 6px; }
-  .door-art .item-art { border-radius: 12px; }
+  .door-art { gap: 8px; padding: 0 8px; }
+  .door-col { gap: 8px; padding-bottom: 8px; }
+  .door-art .item-art { border-radius: 16px; }
   .door-copy { padding: 11px 9px 11px 16px; border-radius: 16px; }
   .door-copy strong { font-size: 20px; }
   .door-copy small { font-size: 13px; }

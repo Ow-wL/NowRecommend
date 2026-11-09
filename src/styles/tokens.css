@@ -7,10 +7,13 @@
   --text-primary: #1C1C1E; --text-secondary: #3C3C43; --text-muted: #5E5E63;
   /* Pages that belong to no category act in ink. A food or music screen (.cat-*) acts in its colour. */
   --accent: #1C1C1E; --accent-fill: #1C1C1E; --accent-hover: #3A3A3C; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #E5E5EA;
-  --food: #D4411A; --food-soft: #FFEDE4; --food-ink: #B8360F;
-  --music: #2B46D6; --music-soft: #E9EDFF; --music-ink: #2338B0;
-  --sun: #F6B73C; --sun-soft: #FFF4D6; --sun-ink: #6B4A00;
-  --success: #0B6B45; --warning: #7A5200; --bg-warning: #FFF4D6; --danger: #C2161F; --bg-danger: #FDECEC;
+  /* Peach and sky. -fill is a pastel that carries dark -on text; anything that must stand out from its surface on its own (focus, selection, progress) uses -ink. */
+  --food: #F4A78F; --food-soft: #FFF1EA; --food-tint: #FFE4D9; --food-ink: #A5472A;
+  --food-fill: #FFDCCD; --food-fill-hover: #FFCFBC; --food-fill-pressed: #FFC2AB; --food-on: #6E2A12;
+  --music: #9EC3EE; --music-soft: #EDF4FD; --music-tint: #DCEAFB; --music-ink: #2F5F9E;
+  --music-fill: #D6E6FA; --music-fill-hover: #C7DCF7; --music-fill-pressed: #B7D1F3; --music-on: #1F4478;
+  --sun: #F7D58C; --sun-soft: #FFF6DF; --sun-ink: #6B4A00;
+  --success: #2F7A5B; --warning: #7A5200; --bg-warning: #FFF6DF; --danger: #B93A3F; --bg-danger: #FDEEEE;
   --focus: #1C1C1E; --overlay: rgb(0 0 0 / 32%);
   --bg-inverse: #1C1C1E; --text-inverse: #FFFFFF;
 
@@ -43,10 +46,12 @@
   --line: rgb(235 235 245 / 14%); --border-subtle: rgb(235 235 245 / 14%); --border-control: #8E8E93;
   --text-primary: #F5F5F7; --text-secondary: #D1D1D6; --text-muted: #AEAEB2;
   --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C;
-  --food-soft: #3A2218; --food-ink: #FF9470;
-  --music: #3B57E8; --music-soft: #1E2550; --music-ink: #A5B4FF;
+  --food-soft: #33241F; --food-tint: #3D2A23; --food-ink: #FFB9A3;
+  --food-fill: #F7BFAC; --food-fill-hover: #FACDBD; --food-fill-pressed: #EDAE99; --food-on: #3A1508;
+  --music-soft: #1D2A3B; --music-tint: #223347; --music-ink: #ABCBF3;
+  --music-fill: #B0CEF4; --music-fill-hover: #C0D8F7; --music-fill-pressed: #9DC0EC; --music-on: #10294D;
   --sun-soft: #33290F; --sun-ink: #F6CF7E;
-  --success: #5BD39A; --warning: #F0C25A; --bg-warning: #33290F; --danger: #FF8A8F; --bg-danger: #3A2022;
+  --success: #7FD3AE; --warning: #F0C25A; --bg-warning: #33290F; --danger: #F4A0A3; --bg-danger: #3A2022;
   --focus: #F5F5F7; --overlay: rgb(0 0 0 / 56%);
   --bg-inverse: #F5F5F7; --text-inverse: #1C1C1E;
 
@@ -73,9 +78,8 @@
   :root, :root[data-theme="dark"] { --glass-bar: var(--bg-surface); --glass-sheet: var(--bg-surface); --glass-inverse: var(--bg-inverse); }
 }
 /* Category scope: a screen, a nav link or a saved card. A colour the person picked in settings wins everywhere. */
-:root:not([data-custom-accent]) .cat-food, :root:not([data-custom-accent]) .item-card.food { --accent: var(--food-ink); --accent-fill: #D4411A; --accent-hover: #BD3813; --accent-pressed: #A5300F; --text-on-accent: #FFFFFF; --bg-soft: var(--food-soft); --bg-selected: var(--food-soft); }
-:root:not([data-custom-accent]) .cat-music, :root:not([data-custom-accent]) .item-card.music { --accent: var(--music-ink); --accent-fill: #2B46D6; --accent-hover: #2339BB; --accent-pressed: #1C2F9E; --text-on-accent: #FFFFFF; --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
-:root[data-theme="dark"]:not([data-custom-accent]) .cat-music, :root[data-theme="dark"]:not([data-custom-accent]) .item-card.music { --accent-fill: #3B57E8; --accent-hover: #2F49CF; --accent-pressed: #2840B8; }
+:root:not([data-custom-accent]) .cat-food, :root:not([data-custom-accent]) .item-card.food { --accent: var(--food-ink); --accent-fill: var(--food-fill); --accent-hover: var(--food-fill-hover); --accent-pressed: var(--food-fill-pressed); --text-on-accent: var(--food-on); --bg-soft: var(--food-soft); --bg-selected: var(--food-soft); }
+:root:not([data-custom-accent]) .cat-music, :root:not([data-custom-accent]) .item-card.music { --accent: var(--music-ink); --accent-fill: var(--music-fill); --accent-hover: var(--music-fill-hover); --accent-pressed: var(--music-fill-pressed); --text-on-accent: var(--music-on); --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
 /* Settings, account and confirmation dialogs belong to no category, wherever they open from. */
 :root:not([data-custom-accent]) .neutral-scope { --accent: #1C1C1E; --accent-fill: #1C1C1E; --accent-hover: #3A3A3C; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #E5E5EA; --bg-selected: #E5E5EA; }
 :root[data-theme="dark"]:not([data-custom-accent]) .neutral-scope { --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C; --bg-selected: #3A3A3C; }

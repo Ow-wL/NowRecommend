@@ -85,8 +85,8 @@ test('Enter, Space and rendered hover, pressed, focus and disabled controls',asy
   await openConditions(page);
   const chip=page.getByRole('button',{name:'담백함',exact:true});await chip.focus();await page.keyboard.press('Space');await expect(chip).toHaveAttribute('aria-pressed','true');
   const next=page.getByRole('button',{name:/추천받기$/});await next.focus();await expect(next).toHaveCSS('outline-color','rgb(28, 28, 30)');
-  await next.hover();await expect(next).toHaveCSS('background-color','rgb(189, 56, 19)');
-  await page.mouse.down();await expect(next).toHaveCSS('background-color','rgb(165, 48, 15)');await page.mouse.up();
+  await next.hover();await expect(next).toHaveCSS('background-color','rgb(255, 207, 188)');
+  await page.mouse.down();await expect(next).toHaveCSS('background-color','rgb(255, 194, 171)');await page.mouse.up();
   const save=page.locator('.save-button').first();await save.focus();await page.keyboard.press('Space');await expect(save).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'조건 바꾸기',exact:true}).click();await openConditions(page);
   // A conflict (매콤함 wanted and excluded) is now what disables the button; there is no budget input any more.
@@ -112,7 +112,7 @@ test('keyboard focus stays visible, clear of the sticky bars, and is not lost',a
   await expect(page.locator('.more-menu')).toHaveCount(0);await expect(toggle).not.toBeFocused();
 });
 test('small text on the coloured doors stays fully opaque',async({page})=>{
-  await page.goto('/#/home');await expect(page.locator('.door.food small')).toHaveCSS('opacity','1');await expect(page.locator('.door.food small')).toHaveCSS('color','rgb(255, 255, 255)');
+  await page.goto('/#/home');await expect(page.locator('.door.food small')).toHaveCSS('opacity','1');await expect(page.locator('.door.food small')).toHaveCSS('color','rgb(60, 60, 67)');
 });
 test('a custom colour as light as the surface still shows focus and button edges',async({page})=>{
   await page.addInitScript(value=>localStorage.setItem('nowrecommend-prototype-v1',JSON.stringify(value)),{...seed,appearance:{mode:'light',accent:'#ffffff'}});

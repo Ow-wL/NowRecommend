@@ -4,7 +4,7 @@ import { sides, typeName } from './tasteType';
 // The taste type as a square picture to post: the four letters, the type's name, what each letter means, and where it came
 // from. Drawn in the browser on a canvas, so nothing leaves the device until the person shares it.
 const SIZE = 1080;
-const COLORS: Record<Category, { bg: string; ink: string; fill: string }> = { food: { bg: '#FFEDE4', ink: '#B8360F', fill: '#D4411A' }, music: { bg: '#E9EDFF', ink: '#2338B0', fill: '#2B46D6' } };
+const COLORS: Record<Category, { bg: string; ink: string; fill: string; on: string }> = { food: { bg: '#FFE4D9', ink: '#A5472A', fill: '#FFDCCD', on: '#6E2A12' }, music: { bg: '#DCEAFB', ink: '#2F5F9E', fill: '#D6E6FA', on: '#1F4478' } };
 const FONT = "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 function rounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -26,7 +26,7 @@ export function drawTypeCard(canvas: HTMLCanvasElement, category: Category, code
   code.split('').forEach((letter, n) => {
     const x = 144 + n * 196, y = 224;
     ctx.fillStyle = colour.fill; rounded(ctx, x, y, 164, 184, 40); ctx.fill();
-    ctx.fillStyle = '#FFFFFF'; ctx.font = `800 112px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(letter, x + 82, y + 98);
+    ctx.fillStyle = colour.on; ctx.font = `800 112px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(letter, x + 82, y + 98);
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   });
   ctx.fillStyle = '#1D1B18'; ctx.font = `800 66px ${FONT}`;
