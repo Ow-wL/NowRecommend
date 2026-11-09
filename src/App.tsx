@@ -422,8 +422,8 @@ export default function App() {
   const resumeName = session.raw || presetLabel(session) || '직접 고른 조건';
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
-  // The home doors and the login wall show real photos and covers; typeset covers only fill what is missing.
-  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f-jajang', 'f05', 'f-omurice', 'f13', 'f-mapo', 'f11', 'f10', 'f16', 'f06', 'f09', 'f14'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
+  // The home doors and the login wall show real photos and covers, the first of each list on the door; typeset covers only fill what is missing.
+  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f05', 'f13'] : ['m05', 'm03', 'm06'];
     const own = items.filter(i => i.category === c), withArt = own.filter(i => mediaFor(i.id));
     return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt, ...own].filter((i, n, all) => all.indexOf(i) === n).slice(0, count); };
   const browseTags = category === 'music' ? ['발라드', '팝', '록', '재즈', '피아노', '어쿠스틱', '연주곡', '차분함', '활기참'] : ['한식', '중식', '일식', '양식', '아시안', '분식', '간식', '국물', '매콤함', '담백함'];
@@ -461,25 +461,20 @@ export default function App() {
 
       <div className="page-view" key={viewKey} data-direction={motion.current.direction}>
       {page === 'home' && <>
-        <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1>
-          <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>
-        </section>
+        <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1></section>
         {active && requestHasContent && <section className={`resume-banner cat-${session.category}`}>
           <p className="resume-copy"><span>진행 중</span> <strong>{resumeName}</strong></p>
           <button className="text-button resume-end" onClick={endRequest}>요청 종료</button>
           <button className="button primary compact" onClick={() => start(session.category)}>이어서 보기</button>
         </section>}
-        <section className="doors" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <div className={`door-group cat-${c}`} key={c}>
-          <button className={`door ${c}`} onClick={() => start(c)}>
-            <span className="door-copy">
-              <strong>{c === 'food' ? '오늘 뭐 먹지' : '지금 뭐 듣지'}</strong>
-              <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : '취향 없이도 바로'}</small>
-              <span className="door-go">{categoryLabel[c]} 추천받기 <ArrowRight size={17} /></span>
-            </span>
-            <span className="door-art" aria-hidden="true">{[0, 1].map(col => { const set = showcase(c, 8).filter((_, n) => n % 2 === col); return <span className="door-col" key={col}>{[...set, ...set, ...set].map((i, n) => <ItemArt key={`${i.id}-${n}`} item={i} size="tile" eager={n < set.length} />)}</span>; })}</span>
-          </button>
-          {presetList(c)}
-        </div>)}</section>
+        <section className="doors" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <button className={`door ${c}`} key={c} onClick={() => start(c)}>
+          <span className="door-copy">
+            <strong>{categoryLabel[c]}</strong>
+            <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : c === 'food' ? '오늘의 한 끼를 골라요' : '지금 들을 곡을 골라요'}</small>
+            <span className="door-go">추천받기 <ArrowRight size={17} /></span>
+          </span>
+          <ItemArt item={showcase(c, 1)[0]} size="hero" eager />
+        </button>)}</section>
         {store.history.some(h => h.selected) && <section className="home-section">
           <div className="section-heading"><h2>최근 선택</h2><button className="text-button" onClick={() => navigate('history')}>전체 기록</button></div>
           <div className="recent-list">{store.history.filter(h=>h.selected).slice(0,6).map(h => <button className="recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
@@ -579,6 +574,7 @@ export default function App() {
               {(category === 'food' ? [{label:'상황', values:['혼자','함께','점심','저녁']}, {label:'원하는 맛·특징', values:options.food.filter(t => !['혼자','함께','점심','저녁'].includes(t))}] : [{label:'활동',values:['과제','휴식','산책','운동']},{label:'분위기',values:options.music.filter(t => !['과제','휴식','산책','운동','보컬','연주곡'].includes(t))},{label:'보컬',values:['보컬','연주곡']}]).map(group => <div className="chip-group" key={group.label}><h3>{group.label}</h3>{chips(group.values,session.conditions.tags,v=>conditionTag(v))}</div>)}
               <div className="chip-group"><h3>반드시 제외 <small>선호 조건보다 먼저 적용해요</small></h3>{chips(exclusions[category], session.conditions.excluded, v => conditionTag(v, true), 'exclude')}</div>
               <div className="preset-panel">
+                <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>
                 {presetList(category)}
                 <button className="text-button" disabled={conflicts.length>0 || (store.presets || []).filter(p=>p.category===category).length>=20} onClick={()=>{setPresetName('');setSavePresetOpen(true);}}>현재 조건을 프리셋으로 저장</button>
               </div>

@@ -95,7 +95,7 @@ test('Enter, Space and rendered hover, pressed, focus and disabled controls',asy
 });
 test('keyboard focus stays visible, clear of the sticky bars, and is not lost',async({page})=>{
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/#/home');await page.getByRole('button',{name:'담백한 저녁',exact:true}).focus();await page.keyboard.press('Enter');
+  await page.goto('/#/recommend/food');await openConditions(page);await page.getByRole('button',{name:'담백한 저녁',exact:true}).focus();await page.keyboard.press('Enter');
   await page.locator('.toast').getByRole('button',{name:'되돌리기'}).focus();await page.keyboard.press('Enter');
   await expect(page.locator('.toast')).toHaveCount(0);await expect(page.locator('#main-content')).toBeFocused();
   await page.goto('/#/recommend/food');await page.locator('.compose-panel textarea').focus();

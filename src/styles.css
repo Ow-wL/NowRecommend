@@ -130,11 +130,10 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .form-divider { border-top: 1px solid var(--line); margin: 28px 0; }
 
 /* ── Home ─────────────────────────────────────────── */
-/* One sentence and the hour, on one line, so the two doors fill the first screen. */
-.home-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding: clamp(12px, 2vw, 24px) 0 clamp(20px, 2.4vw, 28px); }
-.home-hero h1 { font-size: clamp(34px, 4.6vw, 60px); line-height: 1.12; font-weight: 700; letter-spacing: -0.04em; }
+/* One sentence, then the two choices. Nothing else competes on the first screen. */
+.home-hero { padding: clamp(20px, 3.4vw, 44px) 0 clamp(24px, 3vw, 36px); text-align: center; }
+.home-hero h1 { font-size: clamp(34px, 4.6vw, 56px); line-height: 1.14; font-weight: 700; letter-spacing: -0.04em; }
 .home-hero h1 span { display: inline-block; }
-.home-hero .moment-note { margin: 0 0 8px; }
 /* One line: what is open, and how to get back to it. */
 .resume-banner { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 20px; margin-bottom: 16px; border-radius: 999px; }
 .resume-copy { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
@@ -143,37 +142,20 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .resume-end { color: var(--text-muted); font-weight: 500; flex-shrink: 0; }
 /* The two doors: words on the left, one main picture on the right with two smaller ones for depth. */
 .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.door-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
-/* A door is a wall of what is behind it, slowly moving, with one sheet of glass in front holding the words. */
-.door { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; height: clamp(440px, calc(100vh - 290px), 640px); padding: 14px; overflow: hidden; border-radius: var(--radius-large); text-align: left; color: var(--text-primary); transition: transform var(--normal) var(--ease); }
+/* A door says one thing: a word, what it does, and one picture. The picture's size follows the screen height so both buttons stay on the first screen. */
+.door { --art: clamp(170px, calc(100vh - 520px), 360px); display: flex; flex-direction: column; align-items: center; gap: 28px; width: 100%; padding: clamp(32px, 3.4vw, 44px) 32px 36px; border-radius: var(--radius-large); text-align: center; color: var(--text-primary); transition: transform var(--normal) var(--ease); }
 .door.food { background: var(--food-tint); }
 .door.music { background: var(--music-tint); }
-.door-art { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 0 14px; }
-/* Three copies of one set, moved by exactly one set, so the loop has no seam. The padding makes the last gap count. */
-.door-col { display: flex; flex-direction: column; gap: 14px; padding-bottom: 14px; animation: door-drift 84s linear infinite; will-change: transform; }
-.door-col:nth-child(2) { animation-direction: reverse; animation-duration: 100s; }
-@keyframes door-drift { to { transform: translateY(-33.3333%); } }
-.door-art .item-art { flex: none; border-radius: 22px; }
-/* Calmer than the photos are on a result card: here they are the wallpaper. */
-.door-art img { filter: saturate(.82) brightness(1.05); }
-/* Frosted thick enough for dark text even over a dark photo passing behind. */
-.door-copy { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 12px; width: 100%; padding: 18px 14px 18px 24px; border-radius: 18px; -webkit-backdrop-filter: blur(28px) saturate(130%); backdrop-filter: blur(28px) saturate(130%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), 0 8px 28px rgb(60 40 30 / 8%); }
-.door.food .door-copy { background: rgb(255 249 246 / 86%); }
-.door.music .door-copy { background: rgb(248 251 255 / 86%); }
-:root[data-theme="dark"] .door.food .door-copy { background: rgb(46 33 28 / 78%); }
-:root[data-theme="dark"] .door.music .door-copy { background: rgb(29 40 56 / 78%); }
-:root[data-theme="dark"] .door-copy { box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%); }
-.door-copy strong { grid-column: 1; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.18; font-weight: 700; letter-spacing: -0.032em; }
-.door-copy small { grid-column: 1; color: var(--text-secondary); font-size: 15px; font-weight: 400; letter-spacing: -0.014em; }
-.door-go { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 6px; padding: 13px 20px; border-radius: 999px; font-size: 15px; font-weight: 600; white-space: nowrap; }
-.door.food .door-go { background: var(--food-fill); color: var(--food-on); }
-.door.music .door-go { background: var(--music-fill); color: var(--music-on); }
+.door-copy { display: flex; flex-direction: column; align-items: center; word-break: keep-all; }
+.door-copy strong { font-size: clamp(32px, 3.6vw, 44px); line-height: 1.16; font-weight: 700; letter-spacing: -0.036em; }
+.door-copy small { margin-top: 6px; color: var(--text-secondary); font-size: 16px; font-weight: 400; letter-spacing: -0.014em; }
+.door-go { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; padding: 12px 22px; border-radius: 999px; background: var(--card); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.door.food .door-go { color: var(--food-ink); }
+.door.music .door-go { color: var(--music-ink); }
 .door-go svg { transition: transform var(--normal) var(--ease); }
-.door-group .chip { background: var(--bg-soft); color: var(--accent); }
-/* The chips speak for themselves; the heading stays for screen readers. */
-.door-group .preset-section h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.lab-link { margin-top: 28px; }
-.lab-link .text-button { justify-content: space-between; min-height: 68px; padding: 0 24px; border-radius: var(--radius-card); color: var(--text-primary); font-size: 16px; font-weight: 600; letter-spacing: -0.016em; background: var(--card); box-shadow: var(--shadow-card); }
+.door .item-art { flex: none; width: min(var(--art), 100%); aspect-ratio: 1; border-radius: 32px; box-shadow: 0 18px 40px rgb(60 40 30 / 14%); }
+.lab-link { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 24px; margin-top: 20px; }
+.lab-link .text-button { color: var(--text-muted); font-weight: 500; }
 .home-section { margin-top: 64px; }
 .home-section .section-heading { margin-bottom: 20px; }
 .recent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
@@ -312,7 +294,6 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .type-card { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px 20px; align-items: center; margin: 24px 0 0; padding: 14px; background: var(--fill-1); border-radius: 20px; }
 .type-card img { display: block; width: 100%; aspect-ratio: 1; border-radius: 14px; box-shadow: 0 6px 18px rgb(0 0 0 / 12%); }
 .type-card figcaption { display: grid; gap: 10px; font-size: 14px; color: var(--text-secondary); }
-.lab-link { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .year-panel { margin-top: 12px; padding: 20px 28px; border-radius: var(--radius-card); }
 .year-panel h3 { margin-bottom: 10px; font-size: 15px; font-weight: 600; }
 .year-range { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
@@ -740,7 +721,6 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .text-button:hover { text-decoration: underline; text-underline-offset: 3px; }
   .back-link:hover { color: var(--text-primary); }
   .door:hover .door-go svg { transform: translateX(4px); }
-  .door:hover .door-col { animation-play-state: paused; }
   .item-art-link:hover img, .recent-choice:hover img { transform: scale(1.04); }
   .selection-card:hover .item-art { transform: translateY(-3px); }
   .list-row:hover b, .feedback-option:hover b { color: var(--accent); }
@@ -800,23 +780,15 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .history-row > .icon-button { grid-column: 3; grid-row: 1; }
 }
 @media (max-width: 640px) {
-  .doors { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .doors { gap: 12px; }
-  .home-hero { display: block; padding: 8px 0 18px; }
-  .home-hero .moment-note { margin: 12px 0 0; }
-  .door { height: 208px; padding: 8px; border-radius: 24px; }
-  .door-art { gap: 8px; padding: 0 8px; }
-  .door-col { gap: 8px; padding-bottom: 8px; }
-  .door-art .item-art { border-radius: 16px; }
-  .door-copy { padding: 11px 9px 11px 16px; border-radius: 16px; }
-  .door-copy strong { font-size: 20px; }
-  .door-copy small { font-size: 13px; }
-  .door-go { padding: 10px 14px; font-size: 13px; }
-  /* One line of chips that slides, so the second door still shows on the first screen. */
-  .door-group .chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); scrollbar-width: none; }
-  .door-group .chips::-webkit-scrollbar { display: none; }
-  .door-group .chip { flex: none; white-space: nowrap; }
-  .lab-link { margin-top: 20px; }
+  .doors { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .home-hero { padding: 12px 0 20px; }
+  /* Side by side inside the door on a phone, so both doors fit on the first screen. */
+  .door { --art: clamp(104px, 32vw, 150px); flex-direction: row; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 22px 22px 26px; border-radius: 28px; text-align: left; }
+  .door-copy { align-items: flex-start; }
+  .door-copy strong { font-size: 32px; }
+  .door-copy small { font-size: 14px; }
+  .door-go { margin-top: 14px; padding: 10px 16px; font-size: 14px; }
+  .door .item-art { border-radius: 24px; box-shadow: 0 10px 24px rgb(60 40 30 / 14%); }
   .resume-banner { padding-left: 14px; gap: 8px; }
   .resume-end { display: none; }
   .taste-panel { padding: 22px; }
@@ -891,6 +863,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 
 /* ── This hour's condition ───────────────────────── */
 .moment-note { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding: 4px 8px 4px 14px; border-radius: 999px; background: var(--sun-soft); color: var(--sun-ink); font-size: 13px; font-weight: 500; }
+.preset-panel .moment-note { margin: 0 0 14px; }
 .moment-note .text-button { min-height: 32px; font-size: 13px; color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .moment-note .text-button:disabled { background: transparent !important; color: inherit !important; opacity: .6; }
 .chip.now { background: var(--sun-soft); color: var(--sun-ink); font-weight: 600; }
@@ -979,6 +952,5 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .door-col { animation: none; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
 }

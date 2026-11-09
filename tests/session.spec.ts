@@ -9,7 +9,7 @@ test('resuming an unfinished food request does not reuse a music profile draft',
   await page.getByRole('button',{name:'지금 추천 홈',exact:true}).click();
   // A request with nothing in it is not offered for resuming; starting food again resumes the same scope.
   await expect(page.getByRole('button',{name:'이어서 보기'})).toHaveCount(0);
-  await page.getByRole('button',{name:/음식 추천받기/}).click();await page.getByRole('button',{name:'취향 추가',exact:true}).click();
+  await page.locator('.door.food').click();await page.getByRole('button',{name:'취향 추가',exact:true}).click();
   await expect(page.getByRole('heading',{name:'평소 좋아하는 음식을 골라주세요.'})).toBeVisible();
   await expect(page.locator('.selection-card.selected')).toHaveCount(0);
 });
