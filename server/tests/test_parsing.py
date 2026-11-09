@@ -91,7 +91,7 @@ def test_merge_drops_music_exclusions_the_sentence_does_not_ask_for():
 
 
 @pytest.mark.parametrize("sentence, excluded", [
-    ("땅콩 알러지 있어", ["땅콩"]), ("유당불내증 있어요", ["유제품"]), ("고기 안 들어간 걸로", ["소고기", "돼지고기", "닭고기"]),
+    ("땅콩 알러지 있어", ["땅콩"]), ("유당불내증 있어요", ["유제품"]), ("고기 안 들어간 걸로", ["소고기", "돼지고기", "닭고기", "양고기"]),
     ("우유 들어가면 안 돼", ["유제품"]), ("글루텐 프리로", ["밀"]), ("돼지고기 금지", ["돼지고기"]), ("비건 메뉴", ["소고기"]),
 ])
 def test_merge_keeps_food_exclusions_the_rules_missed(sentence, excluded):

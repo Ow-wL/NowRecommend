@@ -176,7 +176,7 @@ def test_vegan_is_a_hard_filter_before_the_model(catalog):
     conditions = parse_rules(raw, "food").conditions()
     model = FakeModel(lambda payload: {"picks": [{"id": i, "tasteReason": "취향", "contextReason": "상황"} for i in ("f02", "f16", "f12")]})
     response = post(catalog, model, raw=raw, conditions=conditions, profile={"selected": [], "tags": [], "disliked": []})
-    assert conditions["excluded"] == ["소고기", "돼지고기", "닭고기", "생선", "해산물", "유제품", "달걀"]
+    assert conditions["excluded"] == ["소고기", "돼지고기", "닭고기", "양고기", "생선", "해산물", "유제품", "달걀"]
     assert [c["id"] for c in model.payloads[0]["candidates"]] == ["f12"] and model.payloads[0]["avoid"] == []
     assert ids(response) == ["f12"] and response["meta"]["eligibleCount"] == 1
     assert "unknown_id=2" in log_for(catalog, response).error
