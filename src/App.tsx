@@ -423,7 +423,7 @@ export default function App() {
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
   // The home doors and the login wall show real photos and covers; typeset covers only fill what is missing.
-  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f05', 'f13', 'f06', 'f09', 'f10'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
+  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f01', 'f05', 'f13', 'f06', 'f09', 'f10'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
     const own = items.filter(i => i.category === c), withArt = own.filter(i => mediaFor(i.id));
     return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt, ...own].filter((i, n, all) => all.indexOf(i) === n).slice(0, count); };
   const browseTags = category === 'music' ? ['발라드', '팝', '록', '재즈', '피아노', '어쿠스틱', '연주곡', '차분함', '활기참'] : ['한식', '중식', '일식', '양식', '아시안', '분식', '간식', '국물', '매콤함', '담백함'];
