@@ -19,6 +19,8 @@ for (const width of [390, 1440]) {
       await page.getByRole('button', { name: /추천받기$/ }).click();
       await expect(page.locator('.result-grid .item-card')).toHaveCount(category === 'food' ? 3 : 5);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      // Cards rise in one after another (DESIGN.md §0.2); measure once they have settled.
+      await page.locator('.result-grid').evaluate(grid => Promise.all(grid.getAnimations({ subtree: true }).map(a => a.finished)));
       const cards = await page.locator('.result-grid .item-card').evaluateAll(nodes => nodes.map(n => { const b = n.getBoundingClientRect(); return { x: b.x, y: b.y }; }));
       // Food: three across on a wide screen, stacked on a phone. Music: always a list of rows.
       if (category === 'food' && width === 1440) expect(new Set(cards.map(b => b.y)).size).toBe(1);

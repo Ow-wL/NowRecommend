@@ -31,7 +31,7 @@ import { recordRound, selectResult,reviewSelection } from './history';
 import { HistoryDetails } from './components/HistoryDetails';
 import { Modal } from './components/Modal';
 import { RecommendationCard } from './components/RecommendationCard';
-import { parseRoute, routeFor, viewReducer, type Page, type Step } from './navigation';
+import { navigationDirection, parseRoute, routeFor, viewReducer, type Page, type Step, type View } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
 import { isAiPick, rememberItems, resolveItem } from './knownItems';
 import { keepLocalCopy, mergeOnLogin, readAccount, writeAccount, type Account } from './account';
@@ -66,6 +66,10 @@ export default function App() {
   const [initial] = useState(readTab);
   const [view, dispatchView] = useReducer(viewReducer, { ...initial.view, ...parseRoute(window.location.hash), step: /#\/(recommend|onboard)\//.test(window.location.hash) ? parseRoute(window.location.hash).step : initial.view.step, category: /#\/(recommend|onboard)\//.test(window.location.hash) ? parseRoute(window.location.hash).category : initial.session.category });
   const { page, category, step } = view;
+  // One key per screen: a new key remounts the content so its entrance plays, in the direction the move reads as (navigation.ts).
+  const viewKey = ['recommend', 'onboard'].includes(page) ? `${page}/${category}/${step}` : page;
+  const motion = useRef<{ key: string; view: View; direction: 'forward' | 'back' }>({ key: viewKey, view, direction: 'forward' });
+  if (motion.current.key !== viewKey) motion.current = { key: viewKey, view, direction: navigationDirection(motion.current.view, view) };
   const setPage = (page: Page) => dispatchView({ page });
   const setCategory = (category: Category) => dispatchView({ category });
   const setStep = (step: Step) => dispatchView({ step });
@@ -411,6 +415,7 @@ export default function App() {
       {storageBlocked && <div className="notice warning"><div><strong>저장된 데이터가 손상되어 원본을 보호하고 있어요.</strong><p>현재 변경은 영구 저장하지 않아요. 원본을 내려받아 보관한 뒤 설정에서 초기화할 수 있어요.</p><button className="button secondary" onClick={() => downloadRecovery(loaded.raw || '')}>손상 원본 내려받기</button><button className="text-button" onClick={()=>setDialog('reset')}>초기화 확인</button></div></div>}
       {storageWarning && !storageBlocked && <div className="notice warning">이번 변경을 브라우저에 저장하지 못했어요. 화면에는 반영되지만 새로고침하면 변경 내용이 사라질 수 있어요. <button className="button secondary" onClick={()=>setStorageWarning(!writeStore(store))}>저장 재시도</button></div>}
 
+      <div className="page-view" key={viewKey} data-direction={motion.current.direction}>
       {page === 'home' && <>
         <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1></section>
         {active && requestHasContent && <section className={`resume-banner cat-${session.category}`}>
@@ -665,6 +670,7 @@ export default function App() {
         </div>
         <div className="login-wall" aria-hidden="true">{showcase('food', 3).flatMap((f, n) => [f, showcase('music', 3)[n]]).filter(Boolean).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
       </div>}
+      </div>
     </main>
     <nav className="tabbar" aria-label="하단 메뉴">{allNav.filter(n => n.page !== 'history').map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
     {toast && !reportItem && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); dismissToast(); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={dismissToast}><X size={15} /></button></div>}
