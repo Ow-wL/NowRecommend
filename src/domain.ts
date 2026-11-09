@@ -328,7 +328,7 @@ export function capFamiliar<T extends { id: string }>(ordered: T[], liked: strin
 
 // Reason templates, worded exactly like server/app/retrieval/reasons.py. They say what is true of this card alone and
 // never claim a taste that was not registered; how it differs from the others is contrastReason's job.
-const FOOD_TRAIT_WORDS: Record<string, string> = { 매콤함: '매콤한', 담백함: '담백한', 고소함: '고소한', 상큼함: '상큼한', 따뜻함: '따뜻한', 차가움: '차가운', 국물: '국물 있는', 채소: '채소가 많은' };
+export const FOOD_TRAIT_WORDS: Record<string, string> = { 매콤함: '매콤한', 담백함: '담백한', 고소함: '고소한', 상큼함: '상큼한', 따뜻함: '따뜻한', 차가움: '차가운', 국물: '국물 있는', 채소: '채소가 많은' };
 const MUSIC_DISTINCT = ['재즈', '피아노', '어쿠스틱', '록', '발라드', '팝', '연주곡', '보컬'];
 export const NO_TASTE_REASON = '등록된 취향이 없어 취향은 반영하지 않았어요';
 export function templateReasons(item: Item, profile: Profile, preferred: Set<string>, conditions: Conditions, category: Category) {

@@ -19,6 +19,9 @@ import { ItemArt } from './components/ItemArt';
 import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './media';
 import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
+import { recordPair, type Pair, type PairRequest } from './pairing';
+import { Pairing } from './components/Pairing';
+import { DoorMark } from './components/DoorMark';
 import { useVoiceInput } from './voice';
 import { applySuggestion, typoSuggestions } from './typo';
 import { conditionLabels, shareResults, shareText, appAddress, type ShareInput } from './share';
@@ -368,6 +371,11 @@ export default function App() {
     setStep('input'); setPresetPreview(null);
     notify('선택한 조건을 적용했어요.', () => setSession(before));
   }
+  function choosePair(pair: Pair, request: PairRequest) {
+    const made = recordPair(store.history, request, pair, store.profiles, items);
+    setStore(s => ({ ...s, history: made.history }));
+    notify('추천 기록에 남겼어요.', () => setStore(s => ({ ...s, history: s.history.filter(h => !made.ids.includes(h.id)) })));
+  }
   function chooseQuickCondition(preset: Preset) {
     const writing = active && session.category === preset.category && (session.raw.trim() || session.conditions.tags.length || session.conditions.excluded.length);
     if (writing) setPresetPreview(preset); else applyQuickCondition(preset);
@@ -391,7 +399,7 @@ export default function App() {
   }
   const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} now={momentPreset(c, slot, weather)} onPreview={chooseQuickCondition} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
 
-  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', admin: '오류 신고 관리', lab: 'AI 실험실' };
+  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', admin: '오류 신고 관리', lab: 'AI 실험실', pair: '같이 추천' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
   const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
@@ -422,7 +430,7 @@ export default function App() {
   const resumeName = session.raw || presetLabel(session) || '직접 고른 조건';
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
-  // The home doors and the login wall show real photos and covers, the first of each list on the door; typeset covers only fill what is missing.
+  // The login wall shows real photos and covers; typeset covers only fill what is missing.
   const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f05', 'f13'] : ['m05', 'm03', 'm06'];
     const own = items.filter(i => i.category === c), withArt = own.filter(i => mediaFor(i.id));
     return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt, ...own].filter((i, n, all) => all.indexOf(i) === n).slice(0, count); };
@@ -438,7 +446,7 @@ export default function App() {
   // Twelve to start with, plus anything already picked; searching or filtering shows every match.
   const shownChoices = showAllChoices || query || activeFilter || tasteDecade || selectedOnly ? visibleChoices : visibleChoices.filter((i, n) => n < 24 || draftProfile.selected.includes(i.id));
 
-  return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} ${page === 'lab' ? ` cat-${labCategory}` : page === 'complete' ? ` cat-${completed?.category || category}` : ['recommend', 'onboard'].includes(page) ? ` cat-${category}` : ''}`}>
+  return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} ${page === 'pair' ? ' cat-pair' : page === 'lab' ? ` cat-${labCategory}` : page === 'complete' ? ` cat-${completed?.category || category}` : ['recommend', 'onboard'].includes(page) ? ` cat-${category}` : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus();}}>본문 바로가기</a>
     <header className="appbar">
       <div className="appbar-inner">
@@ -473,8 +481,17 @@ export default function App() {
             <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : c === 'food' ? '오늘의 한 끼를 골라요' : '지금 들을 곡을 골라요'}</small>
             <span className="door-go">추천받기 <ArrowRight size={17} /></span>
           </span>
-          <ItemArt item={showcase(c, 1)[0]} size="hero" eager />
-        </button>)}</section>
+          <DoorMark kind={c} />
+        </button>)}
+          <button className="door pair" onClick={() => navigate('pair')}>
+            <span className="door-copy">
+              <strong>음식 + 음악</strong>
+              <small>어울리는 둘을 함께 골라요</small>
+              <span className="door-go">같이 추천받기 <ArrowRight size={17} /></span>
+            </span>
+            <DoorMark kind="pair" />
+          </button>
+        </section>
         {store.history.some(h => h.selected) && <section className="home-section">
           <div className="section-heading"><h2>최근 선택</h2><button className="text-button" onClick={() => navigate('history')}>전체 기록</button></div>
           <div className="recent-list">{store.history.filter(h=>h.selected).slice(0,6).map(h => <button className="recent-choice" key={h.id} onClick={()=>setHistoryPreview(h)}>
@@ -674,6 +691,8 @@ export default function App() {
         onRecommend={(c, code) => { const base = { ...newSession(c), ...requestForType(c, code) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
       {page === 'lab' && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
+      {page === 'pair' && <Pairing items={items} profiles={store.profiles} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
+
       {page === 'history' && <>
         <div className="page-heading with-action"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1><button className="button secondary compact" onClick={() => setManualOpen(true)}><PenLine size={15} />직접 기록</button></div>
         {tabFilter}

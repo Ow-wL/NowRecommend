@@ -141,21 +141,42 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .resume-copy strong { font-weight: 600; color: var(--text-primary); }
 .resume-end { color: var(--text-muted); font-weight: 500; flex-shrink: 0; }
 /* The two doors: words on the left, one main picture on the right with two smaller ones for depth. */
-.doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-/* A door says one thing: a word, what it does, and one picture. The picture's size follows the screen height so both buttons stay on the first screen. */
-.door { --art: clamp(170px, calc(100vh - 520px), 360px); display: flex; flex-direction: column; align-items: center; gap: 28px; width: 100%; padding: clamp(32px, 3.4vw, 44px) 32px 36px; border-radius: var(--radius-large); text-align: center; color: var(--text-primary); transition: transform var(--normal) var(--ease); }
+.doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+/* A door says one thing: a word, what it does, and one drawn mark. The mark's size follows the screen height so every button stays on the first screen. */
+.door { --art: clamp(150px, calc(100vh - 540px), 280px); display: flex; flex-direction: column; align-items: center; gap: 28px; width: 100%; padding: clamp(28px, 3.4vw, 44px) clamp(16px, 2.4vw, 32px) 36px; border-radius: var(--radius-large); text-align: center; color: var(--text-primary); transition: transform var(--normal) var(--ease); }
 .door.food { background: var(--food-tint); }
 .door.music { background: var(--music-tint); }
+.door.pair { background: var(--pair-tint); }
 .door-copy { display: flex; flex-direction: column; align-items: center; word-break: keep-all; }
 .door-copy strong { font-size: clamp(32px, 3.6vw, 44px); line-height: 1.16; font-weight: 700; letter-spacing: -0.036em; }
 .door-copy small { margin-top: 6px; color: var(--text-secondary); font-size: 16px; font-weight: 400; letter-spacing: -0.014em; }
 .door-go { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; padding: 12px 22px; border-radius: 999px; background: var(--card); font-size: 15px; font-weight: 600; white-space: nowrap; }
 .door.food .door-go { color: var(--food-ink); }
 .door.music .door-go { color: var(--music-ink); }
+.door.pair .door-go { color: var(--pair-ink); }
 .door-go svg { transition: transform var(--normal) var(--ease); }
-.door .item-art { flex: none; width: min(var(--art), 100%); aspect-ratio: 1; border-radius: 32px; box-shadow: 0 18px 40px rgb(60 40 30 / 14%); }
+.door-mark { flex: none; display: block; width: min(var(--art), 100%); height: auto; }
 .lab-link { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 24px; margin-top: 20px; }
 .lab-link .text-button { color: var(--text-muted); font-weight: 500; }
+/* A pair: the dish and the song side by side, one line on why, two actions. */
+.pair-page { max-width: 880px; margin-inline: auto; padding-top: 8px; }
+.pair-title { margin-top: 8px; font-size: clamp(28px, 3.4vw, 40px); line-height: 1.2; font-weight: 700; letter-spacing: -0.034em; outline: none; word-break: keep-all; }
+.pair-intro { margin: 8px 0 28px; font-size: 16px; color: var(--text-secondary); }
+.pair-submit { width: 100%; min-height: 56px; margin-top: 16px; font-size: 17px; }
+.pair-list { display: grid; gap: 16px; }
+.pair-card { display: grid; gap: 20px; padding: 24px; border-radius: var(--radius-card); background: var(--card); box-shadow: var(--shadow-card); }
+.pair-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.pair-side { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 16px; }
+.pair-side .item-art { border-radius: 20px; }
+.pair-text h2 { font-size: 20px; line-height: 1.3; font-weight: 700; letter-spacing: -0.024em; word-break: keep-all; }
+.pair-text p { margin-top: 2px; font-size: 14px; color: var(--text-muted); }
+.pair-text .text-button { min-height: 36px; margin-top: 2px; }
+.pair-why { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 14px 18px; border-radius: 16px; background: var(--sun-soft); color: var(--text-primary); font-size: 15px; font-weight: 500; }
+.pair-why ul { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--pair-ink); font-size: 13px; font-weight: 600; list-style: none; }
+.pair-why li { display: inline-flex; align-items: center; gap: 4px; }
+.pair-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.pair-actions .button { gap: 6px; white-space: nowrap; }
+.pair-more { display: flex; justify-content: center; margin-top: 20px; }
 .home-section { margin-top: 64px; }
 .home-section .section-heading { margin-bottom: 20px; }
 .recent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
@@ -783,12 +804,14 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .doors { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .home-hero { padding: 12px 0 20px; }
   /* Side by side inside the door on a phone, so both doors fit on the first screen. */
-  .door { --art: clamp(104px, 32vw, 150px); flex-direction: row; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 22px 22px 26px; border-radius: 28px; text-align: left; }
+  .pair-sides { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .pair-side { grid-template-columns: 72px minmax(0, 1fr); gap: 14px; }
+  .pair-card { padding: 18px; }
+  .door { --art: clamp(92px, 28vw, 130px); flex-direction: row; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 22px 22px 26px; border-radius: 28px; text-align: left; }
   .door-copy { align-items: flex-start; }
   .door-copy strong { font-size: 32px; }
   .door-copy small { font-size: 14px; }
   .door-go { margin-top: 14px; padding: 10px 16px; font-size: 14px; }
-  .door .item-art { border-radius: 24px; box-shadow: 0 10px 24px rgb(60 40 30 / 14%); }
   .resume-banner { padding-left: 14px; gap: 8px; }
   .resume-end { display: none; }
   .taste-panel { padding: 22px; }

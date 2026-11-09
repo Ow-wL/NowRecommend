@@ -13,6 +13,7 @@
   --music: #9EC3EE; --music-soft: #EDF4FD; --music-tint: #DCEAFB; --music-ink: #2F5F9E;
   --music-fill: #D6E6FA; --music-fill-hover: #C7DCF7; --music-fill-pressed: #B7D1F3; --music-on: #1F4478;
   --sun: #F7D58C; --sun-soft: #FFF6DF; --sun-ink: #6B4A00;
+  --pair-tint: #FFF0CC; --pair-ink: #7A5200; --pair-fill: #FBE3AE; --pair-fill-hover: #F8DA98; --pair-fill-pressed: #F4D083; --pair-on: #5A3E00;
   --success: #2F7A5B; --warning: #7A5200; --bg-warning: #FFF6DF; --danger: #B93A3F; --bg-danger: #FDEEEE;
   --focus: #1C1C1E; --overlay: rgb(0 0 0 / 32%);
   --bg-inverse: #1C1C1E; --text-inverse: #FFFFFF;
@@ -51,6 +52,7 @@
   --music-soft: #1D2A3B; --music-tint: #223347; --music-ink: #ABCBF3;
   --music-fill: #B0CEF4; --music-fill-hover: #C0D8F7; --music-fill-pressed: #9DC0EC; --music-on: #10294D;
   --sun-soft: #33290F; --sun-ink: #F6CF7E;
+  --pair-tint: #362C14; --pair-ink: #F6CF7E; --pair-fill: #F6CF7E; --pair-fill-hover: #F9DA97; --pair-fill-pressed: #EBBF66; --pair-on: #33290F;
   --success: #7FD3AE; --warning: #F0C25A; --bg-warning: #33290F; --danger: #F4A0A3; --bg-danger: #3A2022;
   --focus: #F5F5F7; --overlay: rgb(0 0 0 / 56%);
   --bg-inverse: #F5F5F7; --text-inverse: #1C1C1E;
@@ -80,6 +82,7 @@
 /* Category scope: a screen, a nav link or a saved card. A colour the person picked in settings wins everywhere. */
 :root:not([data-custom-accent]) .cat-food, :root:not([data-custom-accent]) .item-card.food { --accent: var(--food-ink); --accent-fill: var(--food-fill); --accent-hover: var(--food-fill-hover); --accent-pressed: var(--food-fill-pressed); --text-on-accent: var(--food-on); --bg-soft: var(--food-soft); --bg-selected: var(--food-soft); }
 :root:not([data-custom-accent]) .cat-music, :root:not([data-custom-accent]) .item-card.music { --accent: var(--music-ink); --accent-fill: var(--music-fill); --accent-hover: var(--music-fill-hover); --accent-pressed: var(--music-fill-pressed); --text-on-accent: var(--music-on); --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
+:root:not([data-custom-accent]) .cat-pair { --accent: var(--pair-ink); --accent-fill: var(--pair-fill); --accent-hover: var(--pair-fill-hover); --accent-pressed: var(--pair-fill-pressed); --text-on-accent: var(--pair-on); --bg-soft: var(--sun-soft); --bg-selected: var(--sun-soft); }
 /* Settings, account and confirmation dialogs belong to no category, wherever they open from. */
 :root:not([data-custom-accent]) .neutral-scope { --accent: #1C1C1E; --accent-fill: #1C1C1E; --accent-hover: #3A3A3C; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #E5E5EA; --bg-selected: #E5E5EA; }
 :root[data-theme="dark"]:not([data-custom-accent]) .neutral-scope { --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C; --bg-selected: #3A3A3C; }
