@@ -27,7 +27,7 @@ export function validRemoteBatch(v: any): v is RemoteBatch {
 function tasteNotes(profile: Profile) {
   const named = (name: string, reason?: string) => (reason?.trim() ? `${name}: ${reason.trim()}` : name).slice(0, 120);
   const notes = [...profile.selected.flatMap(id => { const reason = profile.reasons?.[id]?.trim(), item = knownCatalogItems().find(i => i.id === id); return reason && item ? [named(item.name, reason)] : []; }),
-    ...(profile.custom || []).map(c => named(c.name, c.reason))].slice(0, 40);
+    ...(profile.custom || []).map(c => named(c.name, c.reason)), ...(profile.ratedNotes || []).map(n => n.slice(0, 120))].slice(0, 40);
   const customNames = (profile.custom || []).map(c => c.name.slice(0, 120)).slice(0, 30);
   return { ...(notes.length ? { notes } : {}), ...(customNames.length ? { customNames } : {}) };
 }

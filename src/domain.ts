@@ -4,7 +4,7 @@ import { getCatalog } from './catalog';
 const catalogItems = () => getCatalog().items;
 /** Something the person likes that the catalog does not list, in their own words. */
 export type CustomTaste = { id: string; name: string; reason?: string };
-export type Profile = { selected: string[]; tags: string[]; disliked: string[];
+export type Profile = { /** Added for one ranking from the ratings (signals.ts); never stored. */ ratedNotes?: string[]; selected: string[]; tags: string[]; disliked: string[];
   /** Why they like a selected item, by item id, in their own words (optional; read by the AI engine). */
   reasons?: Record<string, string>; custom?: CustomTaste[] };
 // Price and budget were removed on 2026-10-27; stored conditions may still carry `maxPrice`, which cleanConditions drops.

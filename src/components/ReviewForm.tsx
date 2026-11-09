@@ -1,7 +1,7 @@
 import {useState,useEffect,useId} from 'react';
 import type {HistoryEntry,Review} from '../domain';
 export const ratingLabel={good:'만족',neutral:'보통',poor:'아쉬움'};
-export function ReviewForm({entry,onSave,persisted=true,title='지난 선택의 느낌',intro='기록용이에요. 다음 추천과 평소 취향에는 반영하지 않아요. 취향에 반영하려면 추천 카드의 더보기에서 ‘내 취향에 추가’를 눌러주세요. 선택 변경·취소 시 이 항목의 느낌도 지워져요.'}: {entry:HistoryEntry;onSave:(rating:Review['rating'],note:string)=>void;persisted?:boolean;title?:string;intro?:string}) {
+export function ReviewForm({entry,onSave,persisted=true,title='지난 선택의 느낌',intro='만족을 고르면 비슷한 것을 먼저 찾고, 아쉬움을 고르면 이 항목을 뒤로 미뤄요. 메모는 기록용이에요. 선택 변경·취소 시 이 항목의 느낌도 지워져요.'}: {entry:HistoryEntry;onSave:(rating:Review['rating'],note:string)=>void;persisted?:boolean;title?:string;intro?:string}) {
   const radioName=useId();  // two forms on one screen (completion page + history dialog) must not share a radio group
   const [rating,setRating]=useState<Review['rating']>(entry.review?.rating),[note,setNote]=useState(entry.review?.note || ''),[saved,setSaved]=useState(false);
   useEffect(()=>{setRating(entry.review?.rating);setNote(entry.review?.note || '');setSaved(false);},[entry.id,entry.selected?.roundId,entry.selected?.result.item.id]);
