@@ -13,7 +13,12 @@ const ICONS: Record<string, string> = {
 // The set is warm and red-leaning, so the tiles stay on hues it stands out from. The hue follows the dish, not the icon:
 // two noodle dishes share a bowl but not a tile.
 const HUES = ['#F6B73C', '#62B96A', '#4D9DE0', '#9B7BE0'];
-const hueOf = (key: string) => HUES[[...key].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) >>> 0, 7) % HUES.length];
+// FNV-1a with a final mix: ids that differ only in the last digit (f01, f09) must not land on the same hue.
+const hueOf = (key: string) => {
+  let hash = [...key].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261);
+  hash = Math.imul(hash ^ (hash >>> 13), 0x5bd1e995);
+  return HUES[((hash ^ (hash >>> 15)) >>> 0) % HUES.length];
+};
 // The catalog's emoji was picked as a hint, and some have no good object of their own: 삼계탕 is not a live chicken.
 const ALIASES: Record<string, string> = { '🍥': '🍜', '🥢': '🍜', '🌶️': '🍲', '🍄': '🍚', '🐔': '🍲', '🐙': '🍡', '🥬': '🥩' };
 const BY_ID: Record<string, string> = { f07: '🍚', 'f-tangsuyuk': '🍤' };

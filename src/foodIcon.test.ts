@@ -13,7 +13,8 @@ it('gives every bundled dish a pinned 3D icon and a tile hue', () => {
 });
 it('tints by dish, so dishes sharing an icon can differ, and the same dish never changes', () => {
   const hues = items.filter(i => i.category === 'food').map(i => foodIcon(i).hue);
-  expect(new Set(hues).size).toBeGreaterThan(1);
+  expect(new Set(hues).size).toBe(4);
+  expect(foodIcon({ id: 'f01', name: '쌀국수' }).hue).not.toBe(foodIcon({ id: 'f09', name: '우동' }).hue);
   expect(foodIcon({ id: 'f01', name: '쌀국수' }).hue).toBe(foodIcon({ id: 'f01', name: '다른 이름' }).hue);
 });
 it('builds the file name from the folder name', () => {
