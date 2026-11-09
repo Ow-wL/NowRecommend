@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, MapPin, Play, RefreshCw } from 'lucide-react';
 import type { Category, Item } from '../data';
 import type { Preset, Profile } from '../domain';
 import { mapSearch, mediaOf, songLink, youtubeSearch } from '../media';
+import { deferred, type Signals } from '../signals';
 import { describePair, pairRequest, recommendPairs, replaceSong, withSeen, type Pair, type PairRequest, type Seen } from '../pairing';
 import { ItemArt } from './ItemArt';
 import { PreviewButton } from './PreviewButton';
@@ -28,8 +29,8 @@ function keep(round: Round | null) {
   } catch { /* Only costs the return trip. */ }
 }
 
-export function Pairing({ items, profiles, moment, onChoose, onHome, notify }: {
-  items: Item[]; profiles: Record<Category, Profile>; moment: Record<Category, Preset>;
+export function Pairing({ items, profiles, signals, moment, onChoose, onHome, notify }: {
+  items: Item[]; profiles: Record<Category, Profile>; signals: Record<Category, Signals>; moment: Record<Category, Preset>;
   onChoose: (pair: Pair, request: PairRequest) => void; onHome: () => void; notify: (message: string) => void;
 }) {
   const [raw, setRaw] = useState('');
@@ -39,7 +40,8 @@ export function Pairing({ items, profiles, moment, onChoose, onHome, notify }: {
   useEffect(() => { if (focusHeading.current) { focusHeading.current = false; heading.current?.focus(); window.scrollTo(0, 0); } }, [round]);
   const setRound = (next: Round | null) => { keep(next); setRoundState(next); };
 
-  function ask(request: PairRequest, seen: Seen = { food: [], music: [] }) {
+  // Past choices start out as already shown, so a new set leads with something else.
+  function ask(request: PairRequest, seen: Seen = { food: deferred(signals.food, request.raw).map(i => i.id), music: deferred(signals.music, request.raw).map(i => i.id) }) {
     const pairs = recommendPairs(request, profiles, items, seen);
     if (!pairs.length) { notify('조건에 맞는 조합을 찾지 못했어요. 제외 조건을 줄여 보세요.'); return; }
     focusHeading.current = true; setChosen([]);

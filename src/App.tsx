@@ -11,7 +11,7 @@ import { ParseNotice } from './components/ParseNotice';
 import { LoadingResults } from './components/LoadingResults';
 import { ReviewForm } from './components/ReviewForm';
 import { QualityNotice } from './components/QualityNotice';
-import { emptyStore, yearLabel, presetKey, presetLabel, parseConditions, unsupportedConditions, createEditor, changeText, applyParsed, toggleCondition, conditionConflicts, conditionChecks, cleanConditions, eligibleCandidates, recommend, nextBatch, applyBatch, replaceCandidate, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset, type YearRange, type Store } from './domain';
+import { emptyStore, yearLabel, presetKey, presetLabel, parseConditions, unsupportedConditions, createEditor, changeText, applyParsed, toggleCondition, conditionConflicts, conditionChecks, cleanConditions, eligibleCandidates, recommend, applyBatch, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset, type YearRange, type Store } from './domain';
 import { ConditionNotes } from './components/ConditionNotes';
 import { Comparison } from './components/Comparison';
 import { Lab } from './components/Lab';
@@ -20,6 +20,7 @@ import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './me
 import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
 import { recordPair, type Pair, type PairRequest } from './pairing';
+import { deferred, RECENT_DAYS, rankingSession, signalsFrom } from './signals';
 import { Pairing } from './components/Pairing';
 import { DoorMark } from './components/DoorMark';
 import { useVoiceInput } from './voice';
@@ -299,10 +300,12 @@ export default function App() {
   // Offline (no VITE_API_BASE_URL) or an explicit fallback computes locally and synchronously, exactly as before.
   // With the API server, the request is async: stale answers are dropped via requestCounter and failures offer a retry.
   function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
-    if (!apiEnabled() || local) { done({ ...nextBatch(base, profile), source: local ? 'local' : undefined, quality: undefined }); return; }
+    // Past choices steer this ranking only; `base` is what the request keeps.
+    const ranked = rankingSession(base, signalsFrom(store.history, base.category, base.id));
+    if (!apiEnabled() || local) { done({ ...applyBatch(base, recommend({ ...ranked, currentIds: undefined, snapshot: undefined }, profile)), source: local ? 'local' : undefined, quality: undefined }); return; }
     const token = ++requestCounter.current;
     setBusy(true); setRequestError(false);
-    fetchRecommendations(base, profile)
+    fetchRecommendations(ranked, profile)
       .then(remote => { if (token === requestCounter.current) { rememberItems(remote.results.map(r => r.item), items); done({ ...applyBatch(base, remote.results), source: 'server', quality: qualityOf(remote.meta) }); } })
       .catch(() => { if (token === requestCounter.current) setRequestError('server'); })
       .finally(() => { if (token === requestCounter.current) setBusy(false); });
@@ -384,11 +387,12 @@ export default function App() {
   function replaceOne(id:string) {
     const done=(next:Session|null)=>{if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.');};
     const profile=store.profiles[session.category];
-    if(!apiEnabled()){done(replaceCandidate(session,profile,id));return;}
+    const ranked = rankingSession(session, signalsFrom(store.history, session.category, session.id));
+    if(!apiEnabled()){done(canReplace(session,results,id) ? applyReplacement(session,results,id,recommend(replacementRequest(ranked,results),profile)) : null);return;}
     if(!canReplace(session,results,id))return;
     const base=session,current=results,token=++requestCounter.current;
     setBusy(true);setRequestError(false);
-    fetchRecommendations(replacementRequest(base,current),profile,{count:1})
+    fetchRecommendations(replacementRequest({ ...base, seenIds: ranked.seenIds },current),profile,{count:1})
       .then(remote=>{if(token===requestCounter.current){rememberItems(remote.results.map(r=>r.item),items);const next=applyReplacement(base,current,id,remote.results);done(next && {...next,source:'server',quality:qualityOf(remote.meta)});}})
       .catch(()=>{if(token===requestCounter.current)setRequestError('server');})
       .finally(()=>{if(token===requestCounter.current)setBusy(false);});
@@ -405,7 +409,9 @@ export default function App() {
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
   const tabFilter = <div className="filter-tabs" role="group" aria-label="분야 필터">{(['all', 'food', 'music'] as const).map(f => <button key={f} aria-pressed={filter === f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f === 'all' ? '전체' : categoryLabel[f]}</button>)}</div>;
   const reportSongCheck = (id: string, status: SongStatus) => setSongChecks(all => all[id] === status ? all : { ...all, [id]: status });
-  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} onReport={apiEnabled() && !!reasons ? () => setReportItem(item) : undefined} reported={reportedIds.includes(item.id)} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
+  const signals = signalsFrom(store.history, session.category, session.id);
+  const pushedBack = deferred(signals, session.raw);
+  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} recent={!!reasons && signals.recent.some(i => i.id === item.id)} onReport={apiEnabled() && !!reasons ? () => setReportItem(item) : undefined} reported={reportedIds.includes(item.id)} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
 
   // Navigation: top bar on wide screens, bottom tab bar on phones (DESIGN.md §2). Same accessible names in both.
   const allNav: { page: Page; label: string; icon: typeof House; category?: Category }[] = [...navItems, ...myItems];
@@ -624,6 +630,7 @@ export default function App() {
           </div>
           {session.quality?.engine !== 'ai' && <ParseNotice ai={session.editor?.ai} raw={session.raw} hasConditions={conditionCount > 0} />}
           {!hasTaste(store.profiles[category]) && results.length > 0 && <p className="taste-hint">입력한 상황을 기준으로 골랐어요.{showLikeHint && ' 마음에 드는 항목은 더보기에서 취향에 더할 수 있어요.'}</p>}
+          {pushedBack.length > 0 && results.length > 0 && <p className="taste-hint">최근 {RECENT_DAYS}일 동안 고른 {pushedBack.length}개는 뒤로 미뤘어요.</p>}
           {familiarCount > 0 && <span className="result-mix">새로운 {category === 'food' ? '메뉴' : '곡'} {results.length - familiarCount} · 내 취향 {familiarCount}</span>}
           {results.length < (category === 'food' ? 3 : 5) && session.quality?.engine === 'ai' && <div className="notice warning"><Info size={18} /><div><strong>AI가 {results.length}{category === 'music' ? '곡' : '개'}만 골랐어요.</strong><p>조건에 맞지 않거나 이미 본 항목을 걸러낸 결과예요. 다른 추천 보기로 더 받을 수 있어요.</p></div></div>}
           {results.length < (category === 'food' ? 3 : 5) && session.quality?.engine !== 'ai' && <div className="notice warning"><Info size={18} /><div><strong>{results.length ? '조건에 맞는 후보가 조금 부족해요.' : '지금 조건에 맞는 후보가 없어요.'}</strong><p>등록 데이터에서 필수 제외·장기 비선호·이번 요청 제외를 적용한 후보는 {candidateStatus.count}개예요. 필수 제외는 자동으로 완화하지 않아요.</p><button className="text-button" onClick={() => setStep('input')}>조건 조정하기 <ArrowRight size={14} /></button>{session.excludedIds.length > 0 && <button className="text-button" onClick={() => restoreTemporary(session.excludedIds[session.excludedIds.length - 1])}>마지막으로 제외한 항목 되돌리기</button>}</div></div>}
@@ -691,7 +698,7 @@ export default function App() {
         onRecommend={(c, code) => { const base = { ...newSession(c), ...requestForType(c, code) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
       {page === 'lab' && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
-      {page === 'pair' && <Pairing items={items} profiles={store.profiles} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
+      {page === 'pair' && <Pairing items={items} profiles={store.profiles} signals={{ food: signalsFrom(store.history, 'food'), music: signalsFrom(store.history, 'music') }} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
 
       {page === 'history' && <>
         <div className="page-heading with-action"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1><button className="button secondary compact" onClick={() => setManualOpen(true)}><PenLine size={15} />직접 기록</button></div>

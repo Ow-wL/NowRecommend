@@ -11,7 +11,9 @@ const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Ap
 
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
-export function RecommendationCard({ onReport, reported = false, onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+export function RecommendationCard({ recent = false, onReport, reported = false, onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+  /** Chosen within the last days, and still here because the list ran short. */
+  recent?: boolean;
   /** Flags a wrong picture or wrong facts; absent without a server to send it to. */
   onReport?: () => void; reported?: boolean;
   /** Asks again within this dish: 치킨 → 뿌링클, 황금올리브, 허니콤보. Only for a name that covers several menus. */
@@ -60,7 +62,7 @@ export function RecommendationCard({ onReport, reported = false, onRefine, onSon
         <p className="item-subtitle">{item.subtitle}{music && item.releaseYear ? ` · ${item.releaseYear}` : ''}</p>
       </div>
       {music && saveButton}
-      {(pinned || familiar || doubtful) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubtful && <span className="check-badge">정보 확인 필요</span>}</span>}
+      {(pinned || familiar || doubtful || recent) && <span className="item-badges">{familiar && <span className="familiar-badge">내 취향</span>}{recent && <span className="recent-badge">최근 선택</span>}{pinned && <span className="pin-badge"><Pin size={12} />고정</span>}{doubtful && <span className="check-badge">정보 확인 필요</span>}</span>}
     </div>
     {songStatus !== 'known' && <span className="sr-only" role="status">{retried && SONG_NEWS[songStatus]}</span>}
     {songStatus === 'missing' && <p className="song-note">Apple Music 검색에서 일치하는 정보를 찾지 못했어요 <button className="text-button" onClick={checkAgain}>다시 확인</button></p>}
