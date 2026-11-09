@@ -29,6 +29,6 @@ export function updateReport(token: string, id: string, update: { status?: Repor
 
 export function kindLabel(kind: ReportKind, category: Category): string {
   const food = category === 'food';
-  return { wrong_image: food ? '아이콘이 메뉴와 달라요' : '앨범 표지가 달라요', wrong_info: food ? '메뉴 정보나 재료가 틀려요' : '곡 정보나 링크가 틀려요', not_exist: food ? '없는 메뉴예요' : '없는 곡이에요', other: '기타' }[kind];
+  return { wrong_image: food ? '사진이 메뉴와 달라요' : '앨범 표지가 달라요', wrong_info: food ? '메뉴 정보나 재료가 틀려요' : '곡 정보나 링크가 틀려요', not_exist: food ? '없는 메뉴예요' : '없는 곡이에요', other: '기타' }[kind];
 }
 export const reportKinds = KINDS;

@@ -24,7 +24,7 @@ export function ReportDialog({ item, token, onClose, onSent }: { item: Item; tok
         {reportKinds.map(k => <label key={k} className="report-kind"><input type="radio" name="report-kind" checked={kind === k} onChange={() => setKind(k)} />{kindLabel(k, item.category)}</label>)}
       </fieldset>
       <label className="field-title" htmlFor="report-note">자세한 내용 {kind !== 'other' && <small>선택</small>}</label>
-      <textarea id="report-note" rows={3} maxLength={NOTE_LIMIT} value={note} onChange={e => setNote(e.target.value)} placeholder={item.category === 'food' ? '예: 빙수인데 다른 음식 아이콘이 나와요' : '예: 다른 가수의 곡으로 연결돼요'} />
+      <textarea id="report-note" rows={3} maxLength={NOTE_LIMIT} value={note} onChange={e => setNote(e.target.value)} placeholder={item.category === 'food' ? '예: 인절미 빙수인데 딸기 빙수 사진이 나와요' : '예: 다른 가수의 곡으로 연결돼요'} />
       {error && <div className="error-box" role="alert">{error}</div>}
       <div className="modal-actions"><button type="button" className="button secondary" onClick={onClose}>취소</button><button className="button primary" disabled={!ready}>{busy && <span className="spinner" />}신고 보내기</button></div>
     </form>

@@ -45,7 +45,7 @@ export function RecommendationCard({ onReport, reported = false, onRefine, onSon
     : <a className="button primary listen-button" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><Search size={16} />YouTube에서 찾기</a>);
   // Album artwork links to Apple Music (the artwork terms); it is never the only way to listen.
   const art = album ? <a className="item-art-link" href={song || album} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><ItemArt item={item} size="tile" /></a>
-    : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 자세히 보기`} tabIndex={-1}><ItemArt item={item} size={music ? 'tile' : 'card'} /></button>
+    : onDetails ? <button className="item-art-link" onClick={onDetails} aria-label={`${item.name} 사진 크게 보기`} tabIndex={-1}><ItemArt item={item} size={music ? 'tile' : 'card'} /></button>
     : <ItemArt item={item} size={music ? 'tile' : 'card'} />;
   return <article className={`item-card ${item.category}${pinned ? ' pinned' : ''}${reasons ? '' : ' plain'}${aiPick ? ' ai-pick' : ''}`}>
     <div className="art-frame">
@@ -66,6 +66,7 @@ export function RecommendationCard({ onReport, reported = false, onRefine, onSon
     {songStatus === 'missing' && <p className="song-note">Apple Music 검색에서 일치하는 정보를 찾지 못했어요 <button className="text-button" onClick={checkAgain}>다시 확인</button></p>}
     {songStatus === 'failed' && <p className="song-note">지금은 확인할 수 없어요 <button className="text-button" onClick={checkAgain}>다시 확인</button></p>}
     {media?.guestUnconfirmed && <p className="song-note">요청한 참여자는 확인하지 못했어요</p>}
+    {media?.approx && <p className="song-note">이미지는 참고용이에요</p>}
     {/* One line of why on the card; the rest opens on demand so the picture stays the main thing. A missing tag reads
         "미등록" (the data does not say), not "해당 없음": the reason may still judge that it fits. */}
     {reasons ? <div className="reasons">
