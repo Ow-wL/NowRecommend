@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, PenLine, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -23,6 +23,9 @@ import { useVoiceInput } from './voice';
 import { conditionLabels, shareResults, shareText, appAddress, type ShareInput } from './share';
 import { stopPreview } from './preview';
 import { computeStats, slotSentence } from './stats';
+import { dayLabel, matchesHistory, monthOf, seoulDay } from './calendar';
+import { HistoryCalendar } from './components/HistoryCalendar';
+import { ManualRecord } from './components/ManualRecord';
 import { PreviewButton } from './components/PreviewButton';
 import { Playlist } from './components/Playlist';
 import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
@@ -37,7 +40,7 @@ import { requestForType } from './tasteType';
 import type { SongStatus } from './songCheck';
 import { readStoreResult, writeStore, replaceStore, downloadRecovery, clearDamagedStore } from './storage';
 import { DataManagement } from './components/DataManagement';
-import { recordRound, selectResult,reviewSelection } from './history';
+import { recordRound, selectResult,reviewSelection, addManual, MANUAL_RAW } from './history';
 import { HistoryDetails } from './components/HistoryDetails';
 import { Modal } from './components/Modal';
 import { RecommendationCard } from './components/RecommendationCard';
@@ -118,6 +121,11 @@ export default function App() {
   const [compareOpen,setCompareOpen]=useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const stats = useMemo(() => computeStats(store.history), [store.history]);
+  // Finding a record: by words, by day on the calendar, or both. Cleared on every navigation like the category filter.
+  const [historyQuery, setHistoryQuery] = useState(''), [historyDay, setHistoryDay] = useState(''), [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => monthOf(seoulDay(new Date())));
+  const [manualOpen, setManualOpen] = useState(false);
+  const shownHistory = store.history.filter(h => (filter === 'all' || h.category === filter) && matchesHistory(h, historyQuery) && (!historyDay || seoulDay(h.date) === historyDay));
   const [deleteId, setDeleteId] = useState('');
   const [tasteFilter, setTasteFilter] = useState('');
   const [showAllChoices, setShowAllChoices] = useState(false);
@@ -226,7 +234,7 @@ export default function App() {
   const notify = (message: string, undo?: () => void) => {setToastPaused(false);setToast({ message: storageWarning ? '화면에 반영했지만 브라우저에는 저장하지 못했어요.' : message, undo });};
   // The buttons pressed here disappear with the toast, so a keyboard user continues from the page instead of the top of the document.
   const dismissToast = () => { setToast(null); document.getElementById('main-content')?.focus({ preventScroll: true }); };
-  function navigate(next: Page) { requestCounter.current++; setBusy(false); setParsing(false); setRequestError(false); setToast(null); setPage(next); setQuery(''); setTasteFilter(''); setTasteDecade(0); setFilter('all'); }
+  function navigate(next: Page) { requestCounter.current++; setBusy(false); setParsing(false); setRequestError(false); setToast(null); setPage(next); setQuery(''); setTasteFilter(''); setTasteDecade(0); setFilter('all'); setHistoryQuery(''); setHistoryDay(''); }
   // A request starts at the composer. Taste is offered there and never stands in the way.
   function start(next: Category, raw = '', forceNew = false) {
     if (!forceNew && !raw && active && session.category === next) { setCategory(next); navigate('recommend'); return; }
@@ -349,7 +357,7 @@ export default function App() {
     });
   }
   // Re-recommending reuses the sentence and the stored tags/exclusions only; a past budget is never applied again.
-  function reuse(entry: HistoryEntry) { const raw = entry.raw === '직접 선택한 조건' ? '' : entry.raw; setHistoryPreview(null); start(entry.category, raw, true); setSession({ ...newSession(entry.category), category: entry.category, raw, conditions: cleanConditions(entry.conditions), excludedIds: [], revision: 0, ...(entry.years ? { years: entry.years } : {}) }); }
+  function reuse(entry: HistoryEntry) { const raw = entry.raw === '직접 선택한 조건' || entry.raw === MANUAL_RAW ? '' : entry.raw; setHistoryPreview(null); start(entry.category, raw, true); setSession({ ...newSession(entry.category), category: entry.category, raw, conditions: cleanConditions(entry.conditions), excludedIds: [], revision: 0, ...(entry.years ? { years: entry.years } : {}) }); }
   function applyQuickCondition(preset: Preset) {
     const before = active && session.category === preset.category ? session : newSession(preset.category);
     start(preset.category, '', true);
@@ -667,9 +675,15 @@ export default function App() {
       {page === 'lab' && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
       {page === 'history' && <>
-        <div className="page-heading"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1></div>
+        <div className="page-heading with-action"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1><button className="button secondary compact" onClick={() => setManualOpen(true)}><PenLine size={15} />직접 기록</button></div>
         {tabFilter}
-        {historyGroups(store.history.filter(h => filter === 'all' || h.category === filter)).map(([day, entries]) => <section className="history-group" key={day}>
+        {store.history.length > 0 && <div className="history-tools">
+          <label className="search-field"><Search size={16} /><input type="search" value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} placeholder="문장이나 메뉴·곡 이름으로 찾기" aria-label="기록 검색" /></label>
+          <button className={`button secondary compact${calendarOpen ? ' active' : ''}`} aria-pressed={calendarOpen} onClick={() => setCalendarOpen(open => !open)}><CalendarDays size={15} />달력</button>
+          {historyDay && <button className="chip selected" onClick={() => setHistoryDay('')} aria-label={`${dayLabel(historyDay)} 필터 해제`}>{dayLabel(historyDay)}<X size={13} /></button>}
+        </div>}
+        {calendarOpen && store.history.length > 0 && <HistoryCalendar year={calendarMonth.year} month={calendarMonth.month} entries={store.history.filter(h => filter === 'all' || h.category === filter)} selectedDay={historyDay} onSelect={setHistoryDay} onMonth={(year, month) => setCalendarMonth({ year, month })} />}
+        {historyGroups(shownHistory).map(([day, entries]) => <section className="history-group" key={day}>
           <h2>{day}</h2>
           <div className="history-list">{entries.map(h => <article className="history-row" key={h.id}>
           {(() => { const shown = h.selected?.result.item || h.rounds.at(-1)?.results[0]?.item; return shown ? <ItemArt item={shown} size="thumb" /> : <span className={`small-icon ${h.category}`}>{h.category === 'food' ? <Utensils size={18} /> : <Headphones size={18} />}</span>; })()}
@@ -681,7 +695,8 @@ export default function App() {
           <button className="button secondary compact" onClick={() => reuse(h)}>같은 조건으로 새 추천</button>
           <button className="icon-button" aria-label={`${h.raw} 기록 삭제`} onClick={() => { setDeleteId(h.id); setDialog('deleteHistory'); }}><Trash2 size={16} /></button>
         </article>)}</div></section>)}
-        {!store.history.some(h => filter === 'all' || h.category === filter) && <div className="empty-state"><span><Clock3 size={30} /></span><h3>아직 기록이 없어요.</h3><p>추천받은 상황과 결과를 여기에서 다시 볼 수 있어요.</p><button className="button primary" onClick={() => start(filter === 'music' ? 'music' : 'food')}>추천 시작하기 <ArrowRight size={16} /></button></div>}
+        {shownHistory.length === 0 && store.history.length > 0 && <div className="empty-state"><span><Search size={30} /></span><h3>맞는 기록이 없어요.</h3><p>검색어나 날짜, 분야를 바꿔보세요.</p><button className="button secondary" onClick={() => { setHistoryQuery(''); setHistoryDay(''); setFilter('all'); }}>조건 지우기</button></div>}
+        {store.history.length === 0 && <div className="empty-state"><span><Clock3 size={30} /></span><h3>아직 기록이 없어요.</h3><p>추천받은 상황과 결과를 여기에서 다시 볼 수 있어요.</p><button className="button primary" onClick={() => start(filter === 'music' ? 'music' : 'food')}>추천 시작하기 <ArrowRight size={16} /></button></div>}
       </>}
       {page === 'taste' && <>
         <div className="page-heading"><h1>내 취향</h1><p>취향은 다음 추천의 기준이 되고, 즐겨찾기는 다시 보고 싶은 항목을 모아 둬요.</p></div>
@@ -728,6 +743,7 @@ export default function App() {
     {presetPreview && <Modal title="조건을 바꿀까요?" onClose={()=>setPresetPreview(null)}><p className="modal-description">작성 중인 조건을 ‘{presetPreview.name}’으로 바꿀까요?</p><ConditionsSummary conditions={presetPreview.conditions}/><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={()=>setPresetPreview(null)}>취소</button><button className="button primary" onClick={()=>applyQuickCondition(presetPreview)}>이 조건 적용</button></div></Modal>}
     {reportItem && <ReportDialog item={reportItem} token={account?.token} onClose={() => setReportItem(null)} onSent={() => { setReportedIds(ids => [...ids, reportItem.id]); setReportItem(null); notify('신고를 보냈어요. 확인 후 고칠게요.'); }} />}
     {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons} conditions={session.conditions} onReport={apiEnabled() ? () => { const it = detail.item; setDetail(null); setReportItem(it); } : undefined}/></Modal>}
+    {manualOpen && <Modal title="직접 기록" onClose={() => setManualOpen(false)}><ManualRecord items={items} category={filter === 'all' ? 'food' : filter} onSave={entry => { setStore(s => ({ ...s, history: addManual(s.history, entry) })); setManualOpen(false); notify(`${entry.selected!.result.item.name}을(를) 기록했어요.`); }} /></Modal>}
     {playlistOpen && <Modal title="이번 추천 플레이리스트" onClose={() => setPlaylistOpen(false)}><Playlist results={results}
       onCopy={() => navigator.clipboard.writeText(`${shareText({ title: requestName, items: results.map(r => r.item) })}\n${appAddress()}`).then(() => notify('곡 목록을 복사했어요.'), () => notify('이 환경에서는 복사할 수 없어요.'))}
       onShare={() => void share({ title: requestName, items: results.map(r => r.item), conditions: conditionLabels(session.conditions) })} /></Modal>}

@@ -444,6 +444,40 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .favorite-filters label { flex: 1; min-width: 200px; display: grid; gap: 6px; font-size: 13px; color: var(--text-muted); }
 .favorite-filters input, .favorite-filters select { width: 100%; font-size: 15px; color: var(--text-primary); }
+.page-heading.with-action { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.page-heading.with-action .button { flex-shrink: 0; margin-top: 4px; }
+/* Finding a record: words, a day, or both. */
+.history-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -12px 0 20px; }
+.search-field { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; padding: 0 14px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: 999px; color: var(--text-muted); }
+.search-field input { flex: 1; min-width: 0; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--text-primary); }
+.search-field input:focus { outline: none; }
+.search-field:focus-within { border-color: var(--accent-fill); box-shadow: 0 0 0 1px var(--accent-fill); }
+.history-tools .button.active { background: var(--bg-soft); color: var(--accent); border-color: transparent; }
+.calendar { max-width: 520px; margin-bottom: 24px; padding: 14px 16px 16px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.calendar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.calendar-head b { font-size: 15px; font-weight: 700; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.calendar-grid .weekday { padding: 4px 0; text-align: center; font-size: 12px; color: var(--text-muted); }
+.cal-day { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 46px; border-radius: 12px; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.cal-day:disabled { background: transparent !important; color: var(--text-muted) !important; opacity: .55; cursor: default; }
+.cal-day:not(:disabled):hover { background: var(--bg-hover); }
+.cal-day[aria-pressed="true"] { background: var(--accent-fill); color: var(--text-on-accent); font-weight: 700; }
+.cal-day.today { box-shadow: inset 0 0 0 1.5px var(--border-control); }
+.cal-dots { display: flex; gap: 3px; height: 6px; }
+.cal-dot { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--border-control); }
+.cal-dot.food { background: var(--food); } .cal-dot.music { background: var(--music); }
+.cal-day[aria-pressed="true"] .cal-dot { background: var(--text-on-accent); }
+/* Recording by hand */
+.manual-record .search-field { margin-top: 4px; }
+.manual-list { display: grid; gap: 6px; margin-top: 12px; max-height: 300px; overflow: auto; padding: 2px; }
+.manual-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px 8px 8px; text-align: left; border-radius: 14px; background: var(--bg-elevated); }
+.manual-item[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent-fill); color: var(--accent); }
+.manual-item .item-art.thumb { width: 48px; min-width: 48px; }
+.manual-item .list-copy { flex: 1; min-width: 0; }
+.manual-item .list-copy b { display: block; font-weight: 600; } .manual-item .list-copy small { display: block; color: var(--text-muted); }
+.manual-review { margin: 16px 0 0; padding: 0; border: 0; }
+.manual-review legend { padding: 0; margin-bottom: 8px; font-size: 13px; color: var(--text-muted); }
+.manual-review textarea { width: 100%; margin-top: 10px; background: var(--bg-elevated); }
 .history-group + .history-group { margin-top: 32px; }
 .history-group > h2 { margin-bottom: 12px; font-size: 15px; font-weight: 600; color: var(--text-muted); letter-spacing: -0.01em; }
 .history-list { display: grid; gap: 8px; }

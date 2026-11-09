@@ -1,5 +1,6 @@
 import type { Feedback, HistoryEntry, Recommendation, Session } from './domain';
-import { presetLabel } from './domain';
+import { emptyConditions, presetLabel } from './domain';
+import type { Item } from './data';
 import { getCatalog } from './catalog';
 export function recordRound(history: HistoryEntry[], session: Session, results: Recommendation[], feedback: Feedback[] = [], date = new Date().toISOString()): HistoryEntry[] {
   if (!session.id || !session.roundId) return history;
@@ -20,3 +21,12 @@ export function reviewSelection(entry:HistoryEntry,rating:'good'|'neutral'|'poor
   const text=note.trim().slice(0,200);
   return {...entry,review:!rating && !text?undefined:{rating,note:text,date:new Date().toISOString(),itemId:entry.selected.result.item.id,roundId:entry.selected.roundId}};
 }
+
+/** A choice made without a recommendation, written down by hand. It has no rounds, so nothing about conditions is claimed. */
+export const MANUAL_RAW = '직접 기록';
+export function manualEntry(item: Item, review?: { rating?: 'good' | 'neutral' | 'poor'; note: string }, date = new Date().toISOString()): HistoryEntry {
+  const result: Recommendation = { item: structuredClone(item), tasteReason: '추천 없이 직접 기록한 선택이에요', contextReason: '당시 상황은 적지 않았어요' };
+  const entry: HistoryEntry = { id: crypto.randomUUID(), date, category: item.category, raw: MANUAL_RAW, conditions: emptyConditions(), resultIds: [item.id], rounds: [], selected: { result, roundId: 'manual', date } };
+  return review ? reviewSelection(entry, review.rating, review.note) : entry;
+}
+export const addManual = (history: HistoryEntry[], entry: HistoryEntry): HistoryEntry[] => [entry, ...history].slice(0, 50);
