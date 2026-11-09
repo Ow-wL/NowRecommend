@@ -862,6 +862,10 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .chip.now { background: var(--sun-soft); color: var(--sun-ink); font-weight: 600; }
 .chip.now svg { flex-shrink: 0; }
 
+/* ── Typo hint ───────────────────────────────────── */
+.typo-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 14px; color: var(--text-secondary); }
+.typo-hint .chip.small { background: var(--sun-soft); color: var(--sun-ink); font-weight: 600; }
+
 /* ── Voice input ─────────────────────────────────── */
 .field-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .field-head .field-title { margin-bottom: 0; }

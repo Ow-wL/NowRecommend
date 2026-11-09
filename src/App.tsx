@@ -20,6 +20,7 @@ import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './me
 import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
 import { useVoiceInput } from './voice';
+import { applySuggestion, typoSuggestions } from './typo';
 import { conditionLabels, shareResults, shareText, appAddress, type ShareInput } from './share';
 import { stopPreview } from './preview';
 import { computeStats, slotSentence } from './stats';
@@ -125,6 +126,8 @@ export default function App() {
   const [historyQuery, setHistoryQuery] = useState(''), [historyDay, setHistoryDay] = useState(''), [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => monthOf(seoulDay(new Date())));
   const [manualOpen, setManualOpen] = useState(false);
+  // A slip in the sentence, with the word it probably meant; applied only by a tap.
+  const typos = useMemo(() => typoSuggestions(session.raw, category), [session.raw, category]);
   const shownHistory = store.history.filter(h => (filter === 'all' || h.category === filter) && matchesHistory(h, historyQuery) && (!historyDay || seoulDay(h.date) === historyDay));
   const [deleteId, setDeleteId] = useState('');
   const [tasteFilter, setTasteFilter] = useState('');
@@ -547,6 +550,7 @@ export default function App() {
                 <div className={`example-row${session.raw ? ' quiet' : ''}`}>{(category === 'food' ? ['혼자 먹을 담백한 저녁', '친구랑 먹을 매콤한 국물', '맵지 않고 따뜻한 점심'] : ['과제할 때 듣는 연주곡', '산책할 때 활기찬 음악']).map(text => <button key={text} onClick={() => setSession(s => changeText(s, text))}>{text}</button>)}</div>
                 <span>{session.raw.length}/300</span>
               </div>
+              {typos.length > 0 && <p className="typo-hint" role="status">혹시 {typos.map((s, n) => <span key={s.from}>{n > 0 && ', '}<button type="button" className="chip small" onClick={() => setSession(current => changeText(current, applySuggestion(current.raw, s)))} aria-label={`${s.from}을 ${s.to}으로 고치기`}>{s.to}</button></span>)} 말씀이신가요?</p>}
               <div className="condition-summary">
                 {conditionCount > 0 && <h3>{session.raw.trim() ? '이렇게 이해했어요. 다른 조건은 수정해 주세요.' : '고른 조건'}</h3>}
                 {conditionCount ? <div className="chips">
