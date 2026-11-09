@@ -11,7 +11,7 @@ const KEY = 'nowrecommend-song-check-v4';
 const MAX_KEPT = 300;
 const DEADLINE_MS = 8000; // for the whole check, however many requests it takes
 const SAME_LENGTH_MS = 3000; // two listings of one recording differ by a little at most
-export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string; artistId?: number; trackTimeMillis?: number; collectionName?: string };
+export type Hit = { trackName?: string; artistName?: string; trackViewUrl?: string; artworkUrl100?: string; previewUrl?: string; artistId?: number; trackTimeMillis?: number; collectionName?: string };
 export type SongStatus = 'known' | 'checking' | 'found' | 'missing' | 'failed';
 
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
@@ -48,7 +48,7 @@ export function songPage(trackViewUrl = ''): string | undefined {
 }
 export function mediaFromHit(hit: Hit): Media | undefined {
   const link = songPage(hit.trackViewUrl), art = hit.artworkUrl100 || '';
-  return link && /^https:\/\//.test(art) ? { image: art.replace('100x100bb', '600x600bb'), source: 'itunes', link } : undefined;
+  return link && /^https:\/\//.test(art) ? { image: art.replace('100x100bb', '600x600bb'), source: 'itunes', link, ...(hit.previewUrl && /^https:\/\/[^/]*\.apple\.com\//.test(hit.previewUrl) ? { preview: hit.previewUrl } : {}) } : undefined;
 }
 const hangul = /[가-힣]/;
 /** Every spelling we know for an artist, the store's own first. Only confirmed catalog covers feed this, never a guess. */

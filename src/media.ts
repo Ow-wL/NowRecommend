@@ -8,7 +8,7 @@ export type Credit = { author: string; license: string; licenseUrl: string; page
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
 // `regionUnconfirmed`: a real page in another store whose Korean counterpart could not be confirmed, so it is not the main way to listen.
 // `guestUnconfirmed`: same title and artist, but the guest the pick names is not shown on the store's result.
-export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; guestUnconfirmed?: boolean; regionUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit };
+export type Media = { image: string; source: 'itunes' | 'unsplash' | 'commons'; approx?: boolean; guestUnconfirmed?: boolean; regionUnconfirmed?: boolean; link?: string; album?: string; credit?: Credit; /** Apple's 30-second preview, when the store gave one. */ preview?: string };
 type Entry = Media & { check?: boolean; match?: string };
 
 const table = media as Record<string, Entry>;

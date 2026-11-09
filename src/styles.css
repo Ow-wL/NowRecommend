@@ -421,6 +421,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 
 /* ── Completion ───────────────────────────────────── */
 .completion { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(24px, 4vw, 48px); align-items: center; margin-top: 8px; padding: clamp(16px, 2vw, 28px); background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-large); }
+.completion-art { position: relative; }
 .completion-art .item-art { aspect-ratio: 1; border-radius: var(--radius-card); }
 .completion-body h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--accent); line-height: 1.5; }
 .completion-panel { margin-top: 4px; }
@@ -770,6 +771,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .result-grid.music { gap: 8px; }
   .result-grid.music .item-card { grid-template-columns: 56px minmax(0, 1fr); gap: 2px 12px; padding: 10px; }
   .result-grid.music .art-frame { grid-row: 1; }
+  .preview-button { width: 30px; height: 30px; right: 2px; bottom: 2px; }
   .result-grid.music .item-head { grid-column: 2; align-self: center; }
   .result-grid.music .item-title h3 { font-size: 16px; }
   .result-grid.music .reasons { grid-column: 1 / -1; margin-top: 6px; }
@@ -809,6 +811,16 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .voice-button.listening { background: var(--bg-danger); color: var(--danger); }
 .voice-button.listening svg { animation: pulse 1s ease-in-out infinite; }
 .voice-interim { margin: 0 0 6px; font-size: 15px; color: var(--text-muted); }
+
+/* ── Song preview ────────────────────────────────── */
+/* A round button on the cover. Thirty seconds from Apple's preview; the full song is still the listen button's job. */
+.preview-button { position: absolute; right: 5px; bottom: 5px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-height: 0; border-radius: 50%; background: rgb(255 255 255 / 94%); color: #1D1B18; box-shadow: 0 2px 8px rgb(0 0 0 / 24%); }
+.preview-button:hover { background: #fff; }
+.preview-button.playing { background: var(--accent-fill); color: var(--text-on-accent); }
+.preview-button.unavailable, .preview-button.failed { color: var(--text-muted); }
+.preview-button .spinner { width: 15px; height: 15px; }
+.preview-button.large { width: 56px; height: 56px; right: 14px; bottom: 14px; }
+.preview-button.large .spinner { width: 20px; height: 20px; }
 
 /* ── Loading results ──────────────────────────────── */
 /* While the server works: the running step, and the shape of the cards to come. A soft pulse, no shimmer gradient. */

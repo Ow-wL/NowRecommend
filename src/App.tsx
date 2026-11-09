@@ -21,6 +21,8 @@ import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
 import { useVoiceInput } from './voice';
 import { conditionLabels, shareResults, type ShareInput } from './share';
+import { stopPreview } from './preview';
+import { PreviewButton } from './components/PreviewButton';
 import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
@@ -211,6 +213,8 @@ export default function App() {
   function signOut() { writeAccount(null); setAccount(null); setSyncState('idle'); setDialog(null); notify('로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.'); }
   useEffect(() => { if (!toast || toastPaused || reportItem || dialog || feedbackItem || historyPreview || presetPreview || savePresetOpen || detail || compareOpen) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast, toastPaused, dialog, feedbackItem, historyPreview, presetPreview, savePresetOpen, detail, compareOpen, reportItem]);
   useEffect(() => { if (previousPage.current !== page) { window.scrollTo({ top: 0, behavior: 'instant' }); previousPage.current = page; } }, [page]);
+  // A preview belongs to the screen it started on.
+  useEffect(() => { stopPreview(); }, [page, step]);
   useEffect(() => () => { requestCounter.current++; }, []);
   useEffect(() => { if (page === 'recommend' && step === 'results' && showLikeHint) { try { localStorage.setItem('nowrecommend-like-hint-seen', '1'); } catch { /* it just shows again */ } } }, [page, step, showLikeHint]);
   useEffect(()=>{ const frame=requestAnimationFrame(()=>{window.scrollTo({top:0,behavior:'instant'});const title=document.querySelector<HTMLElement>('main h1');title?.setAttribute('tabindex','-1');title?.focus({preventScroll:true});});return ()=>cancelAnimationFrame(frame);},[page,step]);
@@ -625,7 +629,7 @@ export default function App() {
       </>}
 
       {page === 'complete' && completed?.selected && (() => { const chosen = completed.selected.result.item, song = chosen.category === 'music' ? songLink(chosen.id) : undefined; return <div className="completion">
-        <div className="completion-art"><ItemArt item={chosen} size="hero" /></div>
+        <div className="completion-art"><ItemArt item={chosen} size="hero" />{chosen.category === 'music' && <PreviewButton item={chosen} size="large" />}</div>
         <div className="completion-body">
         <h1>선택을 기록했어요</h1>
         <section className="completion-panel">

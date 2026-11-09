@@ -5,6 +5,7 @@ import { checkText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
 import { mapSearch, mediaFor, mediaOf, overseasLink, songLink, youtubeSearch } from '../media';
 import { useSongCheck, type SongStatus } from '../songCheck';
 import { ItemArt } from './ItemArt';
+import { PreviewButton } from './PreviewButton';
 
 const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Apple Music에서 곡을 찾았어요', missing: 'Apple Music 검색에서 일치하는 정보를 찾지 못했어요', failed: '지금은 확인할 수 없어요' };
 
@@ -50,6 +51,7 @@ export function RecommendationCard({ onReport, reported = false, onRefine, onSon
     <div className="art-frame">
       {art}
       {!music && saveButton}
+      {music && <PreviewButton item={item} />}
     </div>
     <div className="item-body">
     <div className="item-head">
