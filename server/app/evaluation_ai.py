@@ -64,7 +64,7 @@ def answer_ai(data: dict, case: dict, model: JsonModel, labels: dict[str, str], 
             validation = ask_picks(request, model, liked, [], [labels[i] for i in request.seenIds], request.result_count, dishes if case["category"] == "food" else None)
             ms = (time.perf_counter() - started) * 1000
             if validation.picks:
-                return {"wanted": request.result_count, "ms": ms, "failures": failures, "issues": dict(validation.issues), "picks": [asdict(p) for p in validation.picks]}
+                return {"wanted": request.result_count, "ms": ms, "failures": failures, "issues": dict(validation.issues), "dropped": validation.dropped_by_name, "picks": [asdict(p) for p in validation.picks]}
             failures.append("Empty")
         except Exception as exc:
             ms = (time.perf_counter() - started) * 1000

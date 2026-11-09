@@ -16,7 +16,7 @@ def check(raw, excluded, count=None, dishes=None):
 
 def test_a_dish_is_dropped_by_its_name_even_when_the_model_lists_no_such_ingredient():
     result = check([pick("마르게리타 피자", ingredients=["밀", "토마토"]), pick("알리오 올리오", ingredients=["밀"])], ["유제품"], 1)
-    assert names(result) == ["알리오 올리오"] and result.issues["excluded_by_name"] == 1
+    assert names(result) == ["알리오 올리오"] and result.issues["excluded_by_name"] == 1 and result.dropped_by_name == ["마르게리타 피자"]
 
 
 def test_the_detail_counts_too():

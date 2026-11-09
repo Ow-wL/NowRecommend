@@ -52,8 +52,9 @@ def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], dis
     vocab = get_vocab().for_category(category)
     # Checks drop picks after the model answers, so it is asked for a few spare ones; only `wanted` go out.
     filtered = bool(conditions.excluded or request.years)
-    asked = wanted + (3 if filtered else 2)
     food = category == "food"
+    # The name check drops more dishes than the model expects: a vegan request lost five of six (2026-11-10).
+    asked = wanted + (6 if food and conditions.excluded else 3 if filtered else 2)
     years = (request.years.start, request.years.end) if request.years and not food else None
     payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
                             profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],

@@ -132,6 +132,7 @@ class FreePick:
 class FreeValidation:
     picks: list[FreePick]
     issues: Counter = field(default_factory=Counter)
+    dropped_by_name: list[str] = field(default_factory=list)  # to read how often the name check is wrong
 
     def summary(self) -> str | None:
         return ",".join(f"{k}={v}" for k, v in sorted(self.issues.items())) or None
@@ -156,6 +157,7 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
     2026-11-10), so the name is checked apart from it: against the table of plain facts, and against `dishes`, the reviewed tags and ingredients
     of a dish with exactly this name. `years`: a song outside the range, or with no year to check, is dropped."""
     issues: Counter = Counter()
+    dropped_by_name: list[str] = []
     known_dishes = {pick_key(n): set(v) for n, v in (dishes or {}).items()}
     blocked_pairs = {pick_key(*split_label(b)) for b in blocked}
     blocked_names = {pick_key(n) for n, d in map(split_label, blocked) if not d}
@@ -190,6 +192,7 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
             continue
         if excluded_values and set(excluded_values) & (name_attributes(f"{name} {detail}") | known_dishes.get(pick_key(name), set())):
             issues["excluded_by_name"] += 1
+            dropped_by_name.append(name)
             continue
         year = entry.get("releaseYear")
         year = year if isinstance(year, int) and 1900 <= year <= 2100 else None
@@ -210,7 +213,7 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         picks = picks[:count]
     if len(picks) < count:
         issues["short"] += count - len(picks)
-    return FreeValidation(picks, +issues)
+    return FreeValidation(picks, +issues, dropped_by_name)
 
 
 def recommend_free(model: JsonModel, category: str, payload: dict) -> list:

@@ -72,7 +72,7 @@ def test_taste_cases_come_in_pairs_with_the_same_request_and_different_tastes():
     assert groups and all(len(g) == 2 and g[0]["text"] == g[1]["text"] and g[0]["persona"] != g[1]["persona"] for g in groups.values())
 
 
-@pytest.mark.parametrize("text,attribute", [("칼국수", "밀"), ("돈까스 정식", "돼지고기"), ("크림 파스타", "유제품"), ("참치마요 덮밥", "생선"), ("제육볶음", "매콤함"), ("막국수", "메밀"), ("순두부찌개", "콩"), ("닭곰탕", "닭고기"), ("차돌된장찌개", "소고기")])
+@pytest.mark.parametrize("text,attribute", [("칼국수", "밀"), ("돈까스 정식", "돼지고기"), ("크림 파스타", "유제품"), ("참치마요 덮밥", "생선"), ("제육볶음", "매콤함"), ("막국수", "메밀"), ("들기름 막국수", "밀"), ("평양냉면", "밀"), ("순두부찌개", "콩"), ("닭곰탕", "닭고기"), ("차돌된장찌개", "소고기")])
 def test_the_table_recognises_what_the_name_makes_plain(text, attribute):
     assert attribute in lexicon_hits(LEXICON, text)
 
@@ -102,7 +102,7 @@ def test_answer_uses_the_production_prompt_and_checks_without_a_database():
     assert [p["name"] for p in result["picks"]] == ["삼계탕", "곤드레밥", "콩나물국밥"]  # the one listing 밀 was dropped by validate_free
     assert result["issues"]["excluded_value"] == 1 and result["failures"] == []
     payload = model.payloads[0]
-    assert payload["excluded"] == ["밀"] and payload["count"] == 3 + 3 and payload["baseDishes"]
+    assert payload["excluded"] == ["밀"] and payload["count"] == 3 + 6 and len(payload["baseDishes"]) == 66
 
 
 def test_taste_reaches_the_model_as_production_sends_it():
