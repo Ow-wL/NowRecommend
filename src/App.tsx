@@ -695,9 +695,9 @@ export default function App() {
       </div>; })()}
 
       {page === 'admin' && <AdminReports token={account?.token} onBack={() => navigate('taste')} />}
-      {page === 'type' && <TasteType results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
+      {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(apiEnabled() ? 'lab' : 'taste')} backLabel={apiEnabled() ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
-        onRecommend={(c, code) => { const base = { ...newSession(c), ...requestForType(c, code) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
+        onRecommend={(c, result) => { const base = { ...newSession(c), ...requestForType(c, result.code, undefined, result.counts) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
       {page === 'lab' && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
       {page === 'pair' && <Pairing items={items} {...pairingInput()} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}

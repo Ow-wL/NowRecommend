@@ -57,7 +57,7 @@ for(const width of [320,360,390])test(`music actions stay on one line each at ${
 });
 test('the taste type test gives a code by questions, and asks for recommendations in its words',async({page})=>{
   await page.goto('/#/type');await page.getByRole('button',{name:'테스트 시작'}).click();
-  for(let i=0;i<8;i++){await expect(page.locator('.type-question small')).toHaveText(`${i+1} / 8`);await page.locator('.type-choice').first().click();}
+  for(let i=0;i<16;i++){await expect(page.locator('.type-question small')).toHaveText(`${i+1} / 16`);await page.locator('.type-choice').first().click();}
   await expect(page.locator('.type-result h2')).toContainText('혼밥 국밥 장인');await expect(page.locator('.type-result h2')).toBeFocused();
   await page.reload();await expect(page.locator('.type-result h2')).toContainText('혼밥 국밥 장인');
   await page.getByRole('button',{name:/이 유형으로 추천받기/}).click();
