@@ -1,4 +1,4 @@
-/* Design tokens, v8 "glass" (DESIGN.md §0). A soft wallpaper, frosted cards on it, and real blur for whatever floats above the content.
+/* Design tokens, v9 (DESIGN.md §v9). A plain page, opaque cards without lines, and real glass only for what floats above the content.
    Hex tokens are the opaque floors the tests measure: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1. */
 :root {
   color-scheme: light;
@@ -14,35 +14,32 @@
   --focus: #1C1C1E; --overlay: rgb(0 0 0 / 32%);
   --bg-inverse: #1C1C1E; --text-inverse: #FFFFFF;
 
-  /* The wallpaper: two soft colour fields, warm for food and cool for music. Pale enough that muted text still clears 4.5:1 on it. */
-  --wall-warm: radial-gradient(72vmax 58vmax at 4% -10%, #FFDCCB 0%, transparent 70%), radial-gradient(52vmax 46vmax at 102% 66%, #FFEFCB 0%, transparent 70%);
-  --wall-cool: radial-gradient(72vmax 58vmax at 98% -12%, #DBE2FF 0%, transparent 70%), radial-gradient(56vmax 50vmax at -4% 104%, #E4DBFF 0%, transparent 70%);
 
   /* Materials. Bars and sheets stay thick enough to read over a dark photo passing underneath. */
-  --glass-card: rgb(255 255 255 / 68%);
+  --card: #FFFFFF;
   --glass-bar: rgb(255 255 255 / 76%);
   --glass-sheet: rgb(250 250 252 / 86%);
   --glass-control: rgb(255 255 255 / 74%);
   --glass-hover: rgb(255 255 255 / 94%);
   --glass-inverse: rgb(28 28 30 / 78%);
   --segment: #FFFFFF;
-  --fill-1: rgb(120 120 128 / 10%); --fill-2: rgb(120 120 128 / 16%); --fill-3: rgb(120 120 128 / 24%);
+  --fill-1: rgb(120 120 128 / 11%); --fill-2: rgb(120 120 128 / 16%); --fill-3: rgb(120 120 128 / 24%);
   --glass-blur: blur(30px) saturate(190%);
   --glass-blur-small: blur(14px) saturate(180%);
 
-  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 85%), 0 0 0 .5px rgb(60 60 67 / 8%), 0 2px 6px rgb(30 30 60 / 4%), 0 14px 36px rgb(30 30 60 / 7%);
+  --shadow-card: 0 0 0 .5px rgb(0 0 0 / 3%);
   --shadow-control: inset 0 1px 0 rgb(255 255 255 / 80%), 0 0 0 .5px rgb(60 60 67 / 10%), 0 1px 3px rgb(30 30 60 / 6%);
   --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 75%), 0 0 0 .5px rgb(60 60 67 / 10%), 0 14px 44px rgb(30 30 60 / 18%);
   --shadow-dialog: inset 0 1px 0 rgb(255 255 255 / 80%), 0 0 0 .5px rgb(60 60 67 / 10%), 0 32px 80px rgb(20 20 50 / 30%);
 
   --gutter: 40px; --page-max: 1200px; --flow-max: 760px;
-  --radius: 14px; --radius-card: 24px; --radius-large: 32px; --radius-art: 14px;
+  --radius: 14px; --radius-card: 24px; --radius-large: 28px; --radius-art: 14px;
   --appbar-height: 76px; --tabbar-height: 64px;
   --fast: 140ms; --normal: 280ms; --ease: cubic-bezier(.32, .72, 0, 1);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-canvas: #0A0A0C; --bg-surface: #1C1C1E; --bg-elevated: #2C2C2E; --bg-hover: #3A3A3C; --bg-pressed: #48484A; --bg-selected: #3A3A3C;
+  --bg-canvas: #000000; --bg-surface: #1C1C1E; --bg-elevated: #2C2C2E; --bg-hover: #3A3A3C; --bg-pressed: #48484A; --bg-selected: #3A3A3C;
   --line: rgb(235 235 245 / 14%); --border-subtle: rgb(235 235 245 / 14%); --border-control: #8E8E93;
   --text-primary: #F5F5F7; --text-secondary: #D1D1D6; --text-muted: #AEAEB2;
   --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C;
@@ -53,10 +50,8 @@
   --focus: #F5F5F7; --overlay: rgb(0 0 0 / 56%);
   --bg-inverse: #F5F5F7; --text-inverse: #1C1C1E;
 
-  --wall-warm: radial-gradient(72vmax 58vmax at 4% -10%, #4A2012 0%, transparent 70%), radial-gradient(52vmax 46vmax at 102% 66%, #3A2A0E 0%, transparent 70%);
-  --wall-cool: radial-gradient(72vmax 58vmax at 98% -12%, #18266E 0%, transparent 70%), radial-gradient(56vmax 50vmax at -4% 104%, #2A1A60 0%, transparent 70%);
 
-  --glass-card: rgb(44 44 46 / 58%);
+  --card: #1C1C1E;
   --glass-bar: rgb(30 30 32 / 74%);
   --glass-sheet: rgb(36 36 38 / 86%);
   --glass-control: rgb(72 72 74 / 56%);
@@ -65,14 +60,14 @@
   --segment: #636366;
   --fill-1: rgb(118 118 128 / 20%); --fill-2: rgb(118 118 128 / 28%); --fill-3: rgb(118 118 128 / 38%);
 
-  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 9%), 0 0 0 .5px rgb(255 255 255 / 7%), 0 14px 36px rgb(0 0 0 / 30%);
+  --shadow-card: 0 0 0 .5px rgb(255 255 255 / 6%);
   --shadow-control: inset 0 1px 0 rgb(255 255 255 / 10%), 0 0 0 .5px rgb(255 255 255 / 8%), 0 1px 3px rgb(0 0 0 / 30%);
   --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 12%), 0 0 0 .5px rgb(255 255 255 / 9%), 0 16px 48px rgb(0 0 0 / 50%);
   --shadow-dialog: inset 0 1px 0 rgb(255 255 255 / 12%), 0 0 0 .5px rgb(255 255 255 / 9%), 0 32px 80px rgb(0 0 0 / 66%);
 }
 /* Someone who asked for less transparency, or a browser with no backdrop-filter, gets the same layout on solid surfaces. */
 @media (prefers-reduced-transparency: reduce) {
-  :root, :root[data-theme="dark"] { --glass-card: var(--bg-surface); --glass-bar: var(--bg-surface); --glass-sheet: var(--bg-surface); --glass-control: var(--bg-surface); --glass-inverse: var(--bg-inverse); --wall-warm: none; --wall-cool: none; }
+  :root, :root[data-theme="dark"] { --glass-bar: var(--bg-surface); --glass-sheet: var(--bg-surface); --glass-control: var(--bg-surface); --glass-inverse: var(--bg-inverse); }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root, :root[data-theme="dark"] { --glass-bar: var(--bg-surface); --glass-sheet: var(--bg-surface); --glass-inverse: var(--bg-inverse); }

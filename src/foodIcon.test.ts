@@ -11,6 +11,11 @@ it('gives every bundled dish a pinned 3D icon and a tile hue', () => {
     expect(icon.hue).toMatch(/^#[0-9A-F]{6}$/);
   }
 });
+it('tints by dish, so dishes sharing an icon can differ, and the same dish never changes', () => {
+  const hues = items.filter(i => i.category === 'food').map(i => foodIcon(i).hue);
+  expect(new Set(hues).size).toBeGreaterThan(1);
+  expect(foodIcon({ id: 'f01', name: '쌀국수' }).hue).toBe(foodIcon({ id: 'f01', name: '다른 이름' }).hue);
+});
 it('builds the file name from the folder name', () => {
   expect(foodIcon({ emoji: '🍜', name: '쌀국수' }).src).toContain('/Steaming%20bowl/3D/steaming_bowl_3d.png');
 });

@@ -3,18 +3,17 @@
 // a picture of this exact dish. Microsoft Fluent Emoji (MIT), pinned to one commit so the set cannot change under us.
 const BASE = 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets';
 
-const SUN = '#F6B73C', PEACH = '#FF8A4C', ROSE = '#F27FA5', LEAF = '#62B96A', SKY = '#4D9DE0', LILAC = '#9B7BE0';
-const ICONS: Record<string, [folder: string, hue: string]> = {
-  '🍙': ['Rice ball', SKY], '🥘': ['Shallow pan of food', SUN], '🥩': ['Cut of meat', LEAF], '🥓': ['Bacon', SUN],
-  '🍲': ['Pot of food', PEACH], '🍖': ['Meat on bone', LILAC], '🍗': ['Poultry leg', SKY], '🍜': ['Steaming bowl', SUN],
-  '🍚': ['Cooked rice', LEAF], '🥣': ['Bowl with spoon', ROSE], '🍳': ['Cooking', LILAC], '🍝': ['Spaghetti', LEAF],
-  '🍢': ['Oden', ROSE], '🥟': ['Dumpling', SKY], '🍱': ['Bento box', PEACH], '🍣': ['Sushi', SKY],
-  '🥞': ['Pancakes', LILAC], '🍕': ['Pizza', LEAF], '🍔': ['Hamburger', SKY], '🥗': ['Green salad', ROSE],
-  '🌮': ['Taco', LILAC], '🍛': ['Curry rice', SKY], '🌭': ['Hot dog', LEAF], '🍤': ['Fried shrimp', SKY],
-  '🧇': ['Waffle', ROSE], '🍰': ['Shortcake', LILAC], '🍧': ['Shaved ice', ROSE], '🍡': ['Dango', LEAF],
-  '🥪': ['Sandwich', PEACH], '🍞': ['Bread', LILAC], '🍟': ['French fries', SKY], '🍩': ['Doughnut', LEAF],
-  '🍽️': ['Fork and knife with plate', SUN],
+const ICONS: Record<string, string> = {
+  '🍙': 'Rice ball', '🥘': 'Shallow pan of food', '🥩': 'Cut of meat', '🥓': 'Bacon', '🍲': 'Pot of food', '🍖': 'Meat on bone',
+  '🍗': 'Poultry leg', '🍜': 'Steaming bowl', '🍚': 'Cooked rice', '🥣': 'Bowl with spoon', '🍳': 'Cooking', '🍝': 'Spaghetti',
+  '🍢': 'Oden', '🥟': 'Dumpling', '🍱': 'Bento box', '🍣': 'Sushi', '🥞': 'Pancakes', '🍕': 'Pizza', '🍔': 'Hamburger', '🥗': 'Green salad',
+  '🌮': 'Taco', '🍛': 'Curry rice', '🌭': 'Hot dog', '🍤': 'Fried shrimp', '🧇': 'Waffle', '🍰': 'Shortcake', '🍧': 'Shaved ice', '🍡': 'Dango',
+  '🥪': 'Sandwich', '🍞': 'Bread', '🍟': 'French fries', '🍩': 'Doughnut', '🍽️': 'Fork and knife with plate',
 };
+// The set is warm and red-leaning, so the tiles stay on hues it stands out from. The hue follows the dish, not the icon:
+// two noodle dishes share a bowl but not a tile.
+const HUES = ['#F6B73C', '#62B96A', '#4D9DE0', '#9B7BE0'];
+const hueOf = (key: string) => HUES[[...key].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) >>> 0, 7) % HUES.length];
 // The catalog's emoji was picked as a hint, and some have no good object of their own: 삼계탕 is not a live chicken.
 const ALIASES: Record<string, string> = { '🍥': '🍜', '🥢': '🍜', '🌶️': '🍲', '🍄': '🍚', '🐔': '🍲', '🐙': '🍡', '🥬': '🥩' };
 const BY_ID: Record<string, string> = { f07: '🍚', 'f-tangsuyuk': '🍤' };
@@ -32,6 +31,5 @@ const known = (emoji?: string) => { const e = emoji && (ALIASES[emoji] || emoji)
 export function foodIcon(item: { id?: string; parentId?: string; emoji?: string; name: string }): { src: string; hue: string } {
   const emoji = (item.id && BY_ID[item.id]) || (item.parentId && BY_ID[item.parentId]) || known(item.emoji)
     || BY_NAME.find(([pattern]) => pattern.test(item.name))?.[1] || '🍽️';
-  const [folder, hue] = ICONS[emoji];
-  return { src: fileOf(folder), hue };
+  return { src: fileOf(ICONS[emoji]), hue: hueOf(item.id || item.name) };
 }

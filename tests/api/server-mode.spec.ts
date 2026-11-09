@@ -225,7 +225,7 @@ test('an AI song the Apple store lists gets its cover and page; one it does not 
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'AI가 제안한 이유' })).toBeVisible();
 });
 
-test('AI food names detail menus, borrows the general dish photo, and can ask within a broad name', async ({ page }) => {
+test('AI food names detail menus, shows a dish icon, and can ask within a broad name', async ({ page }) => {
   await seedProfile(page); await catalogRoute(page);
   const dish = (id: string, name: string, subtitle: string, extra: object = {}) => ({ item: { id, category: 'food', name, subtitle, description: '', tags: ['고소함'], ingredients: ['닭고기'], emoji: '', color: '', ...extra }, tasteReason: '고소한 맛에 가까워요', contextReason: '함께 먹기 좋아요', aiPick: true, confidence: 'high' });
   const sentences: string[] = [];
@@ -246,7 +246,6 @@ test('AI food names detail menus, borrows the general dish photo, and can ask wi
   expect(sentences.at(-1)).toBe('치킨 중에서 골라줘');
   const first = page.locator('.item-card').first();
   await expect(first).toContainText('BHC · 치킨');
-  await expect(first).toContainText('이미지는 참고용이에요');  // the 치킨 photo stands in for 뿌링클
   await expect(first.locator('img')).toHaveCount(1);
 });
 
@@ -299,7 +298,7 @@ test('a card can be reported as a guest, and the admin page shows only what the 
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('radio', { name: '기타' }).check();
   await expect(dialog.getByRole('button', { name: '신고 보내기' })).toBeDisabled();
-  await dialog.getByRole('radio', { name: '사진이 메뉴와 달라요' }).check();
+  await dialog.getByRole('radio', { name: '아이콘이 메뉴와 달라요' }).check();
   await dialog.getByLabel(/자세한 내용/).fill('딸기 빙수 사진이 나와요');
   await dialog.getByRole('button', { name: '신고 보내기' }).click();
   await expect(dialog.getByRole('alert')).toContainText('신고를 보내지 못했어요');  // told inside the dialog; nothing lost
@@ -327,7 +326,7 @@ test('an admin lists reports and settles one, and the list follows the status', 
   await page.goto('/#/taste');
   await page.getByRole('button', { name: /오류 신고 관리/ }).click();
   const card = page.locator('.report-card');
-  await expect(card).toContainText('인절미 빙수');await expect(card).toContainText('사진이 메뉴와 달라요');await expect(card).toContainText('손님');
+  await expect(card).toContainText('인절미 빙수');await expect(card).toContainText('아이콘이 메뉴와 달라요');await expect(card).toContainText('손님');
   await expect(card.locator('.report-note')).toHaveText('<b>딸기</b> 사진이에요');  // a note is text, never markup
   await expect(page.getByRole('button', { name: '미처리 1' })).toBeVisible();
   await card.getByRole('button', { name: '참고 사진 빼기' }).click();

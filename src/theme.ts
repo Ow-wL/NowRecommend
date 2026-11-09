@@ -20,5 +20,5 @@ export function applyAppearance(appearance?:Appearance) {
   const root=document.documentElement;root.dataset.theme=theme;
   const keys=['--accent','--accent-fill','--accent-hover','--accent-pressed','--text-on-accent','--bg-selected'];
   keys.forEach(key=>root.style.removeProperty(key));if(appearance?.accent)root.dataset.customAccent='true';else delete root.dataset.customAccent;if(appearance?.accent)Object.entries(accentTokens(appearance.accent,theme)).forEach(([key,value])=>root.style.setProperty(key,value));
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#0a0a0c':'#f2f2f7');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#000000':'#f2f2f7');
 }

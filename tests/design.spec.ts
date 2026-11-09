@@ -5,8 +5,9 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await page.goto('/');
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(242, 242, 247)');
-    for (const name of ['음식 추천받기', '음악 추천받기']) {
-      const box = await page.getByRole('button', { name: new RegExp(name) }).boundingBox();
+    // The tiles may run past the fold; what has to be on the first screen is each tile's button.
+    for (const go of await page.locator('.door-go').all()) {
+      const box = await go.boundingBox();
       expect(box!.y + box!.height).toBeLessThan(844);
     }
     await page.screenshot({ path: `artifacts/light-home-${width}-default.png`, fullPage: true });
