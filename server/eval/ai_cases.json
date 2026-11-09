@@ -27,7 +27,7 @@
     {"id": "FX2", "kind": "exclusion", "category": "food", "persona": "none", "text": "땅콩 알레르기 있어서 땅콩 빼고 매콤한 거", "conditions": {"tags": ["매콤함"], "excluded": ["땅콩"]}},
     {"id": "FX3", "kind": "exclusion", "category": "food", "persona": "none", "text": "생선 싫어, 시원한 거", "conditions": {"tags": ["차가움"], "excluded": ["생선"]}},
     {"id": "FX4", "kind": "exclusion", "category": "food", "persona": "food-spicy", "text": "고기 없이 먹고 싶어, 소고기 돼지고기 닭고기 다 빼고", "conditions": {"tags": [], "excluded": ["소고기", "돼지고기", "닭고기"]}},
-    {"id": "FX5", "kind": "exclusion", "category": "food", "persona": "none", "text": "비건이라 고기 생선 해산물 달걀 유제품 다 빼줘", "conditions": {"tags": [], "excluded": ["소고기", "돼지고기", "닭고기", "생선", "해산물", "달걀", "유제품"]}},
+    {"id": "FX5", "kind": "exclusion", "category": "food", "persona": "none", "text": "비건이라 고기 생선 해산물 달걀 유제품 다 빼줘", "conditions": {"tags": [], "excluded": ["소고기", "돼지고기", "닭고기", "양고기", "생선", "해산물", "달걀", "유제품"]}},
     {"id": "FX6", "kind": "exclusion", "category": "food", "persona": "none", "text": "유제품 빼고 양식으로", "conditions": {"tags": ["양식"], "excluded": ["유제품"]}},
     {"id": "FX7", "kind": "exclusion", "category": "food", "persona": "food-spicy", "text": "따뜻한 국물인데 맵지 않게", "conditions": {"tags": ["따뜻함", "국물"], "excluded": ["매콤함"]}},
     {"id": "FX8", "kind": "exclusion", "category": "food", "persona": "none", "text": "달걀 못 먹어, 저녁 추천", "conditions": {"tags": ["저녁"], "excluded": ["달걀"]}},

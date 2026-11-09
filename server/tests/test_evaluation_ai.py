@@ -72,12 +72,12 @@ def test_taste_cases_come_in_pairs_with_the_same_request_and_different_tastes():
     assert groups and all(len(g) == 2 and g[0]["text"] == g[1]["text"] and g[0]["persona"] != g[1]["persona"] for g in groups.values())
 
 
-@pytest.mark.parametrize("text,attribute", [("칼국수", "밀"), ("돈까스 정식", "돼지고기"), ("크림 파스타", "유제품"), ("클래식 버거", "유제품"), ("참치마요 덮밥", "생선"), ("제육볶음", "매콤함"), ("막국수", "메밀"), ("들기름 막국수", "밀"), ("평양냉면", "밀"), ("순두부찌개", "콩"), ("닭곰탕", "닭고기"), ("차돌된장찌개", "소고기")])
+@pytest.mark.parametrize("text,attribute", [("칼국수", "밀"), ("돈까스 정식", "돼지고기"), ("크림 파스타", "유제품"), ("클래식 버거", "유제품"), ("양갈비 구이", "양고기"), ("마라 양꼬치", "양고기"), ("참치마요 덮밥", "생선"), ("제육볶음", "매콤함"), ("막국수", "메밀"), ("들기름 막국수", "밀"), ("평양냉면", "밀"), ("순두부찌개", "콩"), ("닭곰탕", "닭고기"), ("차돌된장찌개", "소고기")])
 def test_the_table_recognises_what_the_name_makes_plain(text, attribute):
     assert attribute in lexicon_hits(LEXICON, text)
 
 
-@pytest.mark.parametrize("text,attribute", [("쌀국수", "밀"), ("닭곰탕", "소고기"), ("백짬뽕", "매콤함"), ("맑은 순두부찌개", "매콤함"), ("맑은순두부찌개", "매콤함"), ("간장떡볶이", "매콤함"), ("콩나물국밥", "콩"), ("유부초밥", "생선"), ("연어 스테이크", "소고기"), ("햄버거", "돼지고기")])
+@pytest.mark.parametrize("text,attribute", [("쌀국수", "밀"), ("닭곰탕", "소고기"), ("백짬뽕", "매콤함"), ("맑은 순두부찌개", "매콤함"), ("맑은순두부찌개", "매콤함"), ("양념치킨", "양고기"), ("양파 수프", "양고기"), ("양송이 리조토", "양고기"), ("간장떡볶이", "매콤함"), ("콩나물국밥", "콩"), ("유부초밥", "생선"), ("연어 스테이크", "소고기"), ("햄버거", "돼지고기")])
 def test_the_table_does_not_flag_look_alike_names(text, attribute):
     assert attribute not in lexicon_hits(LEXICON, text)
 
