@@ -764,6 +764,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .textarea-caption { flex-direction: column; gap: 0; }
   .textarea-caption > span { align-self: flex-end; line-height: 1.4; }
   .result-grid.food { grid-template-columns: minmax(0, 1fr); }
+  .skeleton-grid.food { grid-template-columns: minmax(0, 1fr); }
   .result-grid.music { gap: 8px; }
   .result-grid.music .item-card { grid-template-columns: 56px minmax(0, 1fr); gap: 2px 12px; padding: 10px; }
   .result-grid.music .art-frame { grid-row: 1; }
@@ -791,6 +792,29 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .result-grid.music .more { position: relative; top: auto; right: auto; margin-right: 52px; }
   .result-grid.music .save-button { top: auto; right: 10px; bottom: 10px; }
 }
+
+/* ── Loading results ──────────────────────────────── */
+/* While the server works: the running step, and the shape of the cards to come. A soft pulse, no shimmer gradient. */
+.loading-results { display: grid; gap: 14px; margin-top: 28px; }
+.loading-stage { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.loading-stage .spinner { width: 16px; height: 16px; color: var(--accent); }
+.loading-steps { display: flex; flex-wrap: wrap; gap: 8px; }
+.loading-steps li { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--line); font-size: 13px; color: var(--text-muted); }
+.loading-steps li.active { color: var(--accent); background: var(--bg-soft); border-color: transparent; font-weight: 600; }
+.loading-steps li.done { color: var(--text-secondary); }
+.skeleton-grid.food { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.skeleton-grid.music { display: grid; gap: 10px; }
+.skeleton-card { display: grid; gap: 10px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-card); animation: rise var(--normal) var(--ease) backwards; }
+.skeleton-art, .skeleton-line { display: block; background: var(--bg-elevated); border-radius: 10px; animation: pulse 1.4s ease-in-out infinite; }
+.skeleton-art { aspect-ratio: 16 / 10; border-radius: var(--radius-art); }
+.skeleton-line { height: 14px; width: 72%; margin: 0 6px; }
+.skeleton-line.short { width: 46%; margin-bottom: 6px; }
+.skeleton-grid.music .skeleton-card { grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 6px 14px; }
+.skeleton-grid.music .skeleton-art { aspect-ratio: 1; grid-row: 1 / span 2; }
+.skeleton-grid.music .skeleton-line { margin: 0; align-self: end; }
+.skeleton-grid.music .skeleton-line.short { align-self: start; margin: 0; }
+@keyframes pulse { 50% { opacity: .5; } }
+.completion-panel .review-form { margin-top: 24px; }
 
 /* ── Motion ───────────────────────────────────────── */
 /* A screen's blocks slide in one after another: from the right when the move goes deeper or to the right in the menu, from the left on the way back (navigation.ts). */

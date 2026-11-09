@@ -8,6 +8,8 @@ import { apiEnabled } from './api/client';
 import { fetchRecommendations, qualityOf } from './api/recommend';
 import { fetchParse } from './api/parse';
 import { ParseNotice } from './components/ParseNotice';
+import { LoadingResults } from './components/LoadingResults';
+import { ReviewForm } from './components/ReviewForm';
 import { QualityNotice } from './components/QualityNotice';
 import { emptyStore, yearLabel, presetKey, presetLabel, parseConditions, unsupportedConditions, createEditor, changeText, applyParsed, toggleCondition, conditionConflicts, conditionChecks, cleanConditions, eligibleCandidates, recommend, nextBatch, applyBatch, replaceCandidate, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset, type YearRange, type Store } from './domain';
 import { ConditionNotes } from './components/ConditionNotes';
@@ -539,6 +541,7 @@ export default function App() {
             {requestError === 'server' && <div className="error-box" role="alert"><strong>추천 서버에 연결하지 못했어요.</strong><p>잠시 후 다시 시도하거나, 이 브라우저의 기본 방식으로 추천받을 수 있어요.</p><button className="text-button" disabled={busy || conflicts.length > 0} onClick={() => run(false, true, true)}>기본 추천으로 보기 <ArrowRight size={14} /></button></div>}
             {requestError === 'demo' && <div className="error-box" role="alert"><strong>조건 확인을 잠시 완료하지 못했어요.</strong><p>다시 시도하거나, 지금 직접 고른 조건으로 추천받을 수 있어요.</p><button className="text-button" disabled={conflicts.length > 0} onClick={() => run(false, true)}>직접 선택한 조건으로 계속 <ArrowRight size={14} /></button></div>}
           </div>
+          {(busy || parsing) && <LoadingResults category={category} stage={parsing ? 'parsing' : 'busy'} />}
           <div className="action-bar"><div className="action-bar-inner">
             {/* Kept visible on phones too: what is ignored must be clear before recommending, not only after. */}
             {unsupportedCount > 0 && <span className="action-warning" role="status">지원하지 않는 조건 {unsupportedCount}개는 반영하지 않아요</span>}
@@ -613,6 +616,7 @@ export default function App() {
           <p className="completion-context">당시 상황: {completed.raw}</p>
           <div className="mini-tags">{completed.conditions.tags.map(t=><span key={t}>{t}</span>)}{completed.conditions.excluded.map(t=><span key={t}>{t} 제외</span>)}</div>
           {!store.profiles[chosen.category].selected.includes(chosen.id) && <button className="text-button like-chosen" onClick={() => likeItem(chosen)}><ThumbsUp size={15} />내 취향에 추가하고 다음 추천에 반영</button>}
+          <ReviewForm key={completed.id} entry={completed} title="지금 느낌은 어때요?" intro="기록용이에요. 다음 추천과 평소 취향에는 반영하지 않아요. 나중에 추천 기록에서도 고칠 수 있어요." persisted={!storageWarning} onSave={(rating, note) => { setStore(s => ({ ...s, history: s.history.map(h => h.id === completed.id ? reviewSelection(h, rating, note) : h) })); notify('느낌을 기록했어요.'); }} />
           <div className="card-actions"><button className="button secondary" onClick={()=>navigate('history')}>추천 기록 보기</button><div className="button-row"><button className="button secondary" onClick={()=>setHistoryPreview(completed)}>선택 변경</button><button className="button secondary" onClick={()=>start(completed.category,'',true)}>다른 상황으로 추천받기</button></div></div>
         </section>
         </div>
