@@ -205,6 +205,24 @@ py -3.14 -m venv .venv
 
 해시 경로(`#/history`)와 상대 정적 자산 경로로 저장소 하위 주소 새로고침을 지원합니다. 로컬과 배포 사이트의 브라우저 저장소는 분리됩니다. 브라우저 테스트는 로컬 검증이며 배포 Actions는 단위 테스트와 빌드를 실행합니다.
 
+## 2026-11-09 추가 기능 (브랜치 `upgrades-v1`)
+
+- **화면 전환 움직임**: 화면과 단계가 바뀔 때 블록이 방향(앞으로·뒤로)에 맞춰 차례로 들어오고, 결과 카드·대화상자·토스트·메뉴에도 짧은 등장이 있어요(DESIGN.md §0.2).
+- **AI 추천 대기 화면**: 서버 추천을 기다리는 동안 진행 단계와 카드 모양 자리를 보여줘요(`LoadingResults`).
+- **완료 화면 느낌 입력**: 선택 직후 만족도·메모를 바로 남겨요(기록용).
+- **지금 조건**: 한국 시각 시간대에 맞는 빠른 조건 칩이 맨 앞에 있고, "지금 날씨 반영"을 누르면 위치 허용 뒤 Open-Meteo 현재 날씨(비·눈·더위·추위)로 바뀌어요. 위치는 약 1km로 반올림해 보내고 결과는 탭에 30분 둬요(`moment.ts`, `weather.ts`).
+- **말로 입력**: 브라우저 음성 인식(Web Speech API)으로 상황을 말하면 문장에 이어 붙어요. 지원 브라우저에서만 보여요(`voice.ts`).
+- **공유**: 결과·완료 화면에서 요청 이름, 항목, 조건, 앱 주소를 시스템 공유 창으로 보내거나 클립보드에 복사해요(`share.ts`).
+- **30초 미리듣기**: 음악 카드·완료 화면·플레이리스트에서 Apple 미리듣기를 재생해요. 확인된 곡 페이지의 트랙 ID로 스토어 lookup에서 주소를 받아 브라우저에 기억하고, AI 곡은 곡 확인 결과의 주소를 써요. 플레이어는 하나예요(`preview.ts`).
+- **플레이리스트**: 음악 결과를 한 목록으로 보고 복사·공유해요(`Playlist.tsx`).
+- **기록 요약 카드**: 내 취향 화면에 이번 달 선택 수, 음식·음악 비율, 자주 고른 특징, 자주 고르는 시간대, 만족 비율(`stats.ts`).
+- **기록 검색·달력·직접 기록**: 문장·항목·조건으로 찾고, 월 달력에서 날을 골라요. "직접 기록"은 추천 없이 먹거나 들은 카탈로그 항목을 느낌·메모와 함께 남겨요(`calendar.ts`, `HistoryCalendar.tsx`, `ManualRecord.tsx`, `history.ts`의 `manualEntry`).
+- **취향 유형 공유 카드**: 유형 결과를 정사각 이미지로 그려 공유·저장해요. 홈과 내 취향에서 바로 들어가요(`typeCard.ts`).
+- **PWA**: `public/manifest.webmanifest`와 `public/sw.js`. 빌드된 사이트에서만 등록하고, 페이지는 네트워크 우선·해시 자산은 캐시 우선이에요. 외부 사진과 API는 캐시하지 않아요.
+- **사진 자리 표시**: 그림이 뜨기 전 분야색 타일과 아이콘이 자리를 지키고 페이드인해요(`ItemArt`).
+- **API 500의 CORS 헤더**: 처리하지 못한 서버 오류도 CORS 헤더가 붙은 JSON 500으로 내려가 브라우저가 서버 오류로 읽어요(`server/app/errors.py`).
+- **오타 제안**: 조건 단어와 한 음절만 다른 말에 "혹시 … 말씀이신가요?"를 보여주고 누르면 그 단어만 바꿔요(`typo.ts`).
+
 ## 범위와 남은 작업
 
 브라우저 앱은 plans.md의 P0 및 사용자 승인 P1·P2이고, 서버·DB·AI는 plans-rag.md의 R0~R7입니다. P0 기록은 [IMPLEMENTATION.md](./IMPLEMENTATION.md), P1·P2 기능·검증·시연 동선은 [EXTENSIONS.md](./EXTENSIONS.md), P0 검증은 [VERIFICATION.md](./VERIFICATION.md), 디자인 기준은 [DESIGN.md](./DESIGN.md), 서버 계획과 평가는 [plans-rag.md](./plans-rag.md), 배포는 [DEPLOY.md](./DEPLOY.md)에 있습니다.
@@ -230,6 +248,7 @@ F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·A
 - `src/api/`: 서버 모드의 카탈로그·추천·해석·실험 요청.
 - `src/components/MusicLab.tsx`, `src/lab.ts`: 음악 AI 실험 화면과 브라우저 실험 기록.
 - `src/styles/tokens.css`, `src/styles.css`: 색·간격 토큰과 v6.1 스타일시트.
+- `src/moment.ts`, `src/weather.ts`, `src/voice.ts`, `src/share.ts`, `src/preview.ts`, `src/stats.ts`, `src/calendar.ts`, `src/typo.ts`, `src/typeCard.ts`: 2026-11-09 추가 기능의 규칙과 브라우저 API 호출. `src/components/LoadingResults.tsx`, `PreviewButton.tsx`, `Playlist.tsx`, `HistoryCalendar.tsx`, `ManualRecord.tsx`: 그 화면 조각.
 - `src/songCheck.ts`: AI가 고른 곡을 Apple 검색으로 확인하고 커버와 곡 링크를 붙여요.
 - `src/account.ts`, `src/api/auth.ts`, `src/components/AuthPanel.tsx`: 로그인·회원가입과 계정 동기화. `src/knownItems.ts`: 카탈로그 밖 AI 추천 항목의 브라우저 기억. `src/components/Lab.tsx`, `src/lab.ts`, `src/api/lab.ts`: AI 실험실.
 - `src/media.json`, `src/media.ts`, `src/components/ItemArt.tsx`: 항목 사진·앨범 커버와 생성 커버(DESIGN.md v3). 앨범 커버는 `python -m app.cli.media covers`(iTunes Search API, 약 15분)로 다시 받고, 영어 제목 후보(`check`)는 사람이 확인한 뒤 표시합니다. 음식 사진은 Wikimedia Commons에서 메뉴별로 골라 촬영자·라이선스와 함께 적습니다.
