@@ -4,7 +4,7 @@
 
 /* ── Base ─────────────────────────────────────────── */
 :root {
-  font-family: 'Wanted Sans Variable', 'Wanted Sans', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Segoe UI', sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Segoe UI', sans-serif;
   font-size: 16px; line-height: 1.6; font-synthesis: none; text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }

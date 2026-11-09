@@ -5,7 +5,7 @@ import { sides, typeName } from './tasteType';
 // from. Drawn in the browser on a canvas, so nothing leaves the device until the person shares it.
 const SIZE = 1080;
 const COLORS: Record<Category, { bg: string; ink: string; fill: string }> = { food: { bg: '#FFEDE4', ink: '#B8360F', fill: '#D4411A' }, music: { bg: '#E9EDFF', ink: '#2338B0', fill: '#2B46D6' } };
-const FONT = "'Wanted Sans Variable', 'Wanted Sans', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif";
+const FONT = "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 function rounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
