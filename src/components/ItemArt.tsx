@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Music2, Utensils } from 'lucide-react';
 import type { Category } from '../data';
-import { mediaOf } from '../media';
+import { mediaOf, tileImage } from '../media';
 
 type Art = { id?: string; parentId?: string; category: Category; name: string; subtitle?: string };
 
@@ -14,7 +14,8 @@ export function ItemArt({ item, size = 'card', label, className = '', eager = fa
   const [failed, setFailed] = useState('');
   const [loaded, setLoaded] = useState('');
   const img = useRef<HTMLImageElement>(null);
-  const image = media && failed !== media.image ? media.image : '';
+  const picture = media && (size === 'tile' ? tileImage(media.image) : media.image);
+  const image = picture && failed !== picture ? picture : '';
   // A picture already in the browser's cache can be complete before the load handler is attached.
   useEffect(() => { if (image && img.current?.complete && img.current.naturalWidth > 0) setLoaded(image); }, [image]);
   const ready = !!image && loaded === image;

@@ -130,12 +130,11 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .form-divider { border-top: 1px solid var(--line); margin: 28px 0; }
 
 /* ── Home ─────────────────────────────────────────── */
-/* One title, one line, then the choice: Apple's opening, in Toss's plain words. */
-.home-hero { padding: clamp(28px, 5vw, 72px) 0 clamp(28px, 4vw, 56px); text-align: center; }
-.home-hero h1 { font-size: clamp(36px, 6.2vw, 80px); line-height: 1.1; font-weight: 700; letter-spacing: -0.042em; }
+/* One sentence and the hour, on one line, so the two doors fill the first screen. */
+.home-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding: clamp(12px, 2vw, 24px) 0 clamp(20px, 2.4vw, 28px); }
+.home-hero h1 { font-size: clamp(34px, 4.6vw, 60px); line-height: 1.12; font-weight: 700; letter-spacing: -0.04em; }
 .home-hero h1 span { display: inline-block; }
-.home-lede { margin-top: 16px; font-size: clamp(17px, 1.7vw, 22px); color: var(--text-muted); letter-spacing: -0.018em; }
-.home-hero .moment-note { margin-top: 20px; }
+.home-hero .moment-note { margin: 0 0 8px; }
 /* One line: what is open, and how to get back to it. */
 .resume-banner { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 20px; margin-bottom: 16px; border-radius: 999px; }
 .resume-copy { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
@@ -144,29 +143,33 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .resume-end { color: var(--text-muted); font-weight: 500; flex-shrink: 0; }
 /* The two doors: words on the left, one main picture on the right with two smaller ones for depth. */
 .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.door-group { display: grid; gap: 20px; align-content: start; min-width: 0; }
-/* A tile says one thing: a title, a line, a button, and the object standing under them. */
-.door { position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; min-height: clamp(480px, 46vw, 600px); padding: clamp(36px, 4vw, 56px) 28px 0; overflow: hidden; border-radius: var(--radius-large); text-align: center; color: #fff; transition: transform var(--normal) var(--ease); }
+.door-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
+/* A door is a wall of what is behind it, slowly moving, with one sheet of glass in front holding the words. */
+.door { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; height: clamp(440px, calc(100vh - 290px), 640px); padding: 12px; overflow: hidden; border-radius: var(--radius-large); text-align: left; color: #fff; transition: transform var(--normal) var(--ease); }
 .door.food { background: var(--food); }
 .door.music { background: #2B46D6; }
-.door-copy { position: relative; z-index: 2; display: grid; justify-items: center; gap: 6px; }
-.door-copy strong { font-size: clamp(32px, 3.8vw, 50px); line-height: 1.12; font-weight: 700; letter-spacing: -0.036em; }
-.door-copy small { font-size: clamp(16px, 1.5vw, 20px); font-weight: 400; letter-spacing: -0.016em; }
-.door-go { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; padding: 12px 22px; border-radius: 999px; background: #fff; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.door-art { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 10px; }
+/* Three copies of one set, moved by exactly one set, so the loop has no seam. The padding makes the last gap count. */
+.door-col { display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; animation: door-drift 84s linear infinite; will-change: transform; }
+.door-col:nth-child(2) { animation-direction: reverse; animation-duration: 100s; }
+.door-col:nth-child(3) { animation-duration: 72s; }
+@keyframes door-drift { to { transform: translateY(-33.3333%); } }
+.door-art .item-art { flex: none; border-radius: 16px; }
+/* Tinted dark enough for white text even over a bright photo passing behind. */
+.door-copy { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 12px; width: 100%; padding: 18px 14px 18px 24px; border-radius: 18px; -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 24%), inset 0 0 0 .5px rgb(255 255 255 / 16%); }
+.door.food .door-copy { background: rgb(96 24 6 / 70%); }
+.door.music .door-copy { background: rgb(18 28 110 / 70%); }
+.door-copy strong { grid-column: 1; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.18; font-weight: 700; letter-spacing: -0.032em; }
+.door-copy small { grid-column: 1; font-size: 15px; font-weight: 400; letter-spacing: -0.014em; }
+.door-go { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 6px; padding: 13px 20px; border-radius: 999px; background: #fff; font-size: 15px; font-weight: 600; white-space: nowrap; }
 .door.food .door-go { color: #B8360F; }
 .door.music .door-go { color: #2338B0; }
 .door-go svg { transition: transform var(--normal) var(--ease); }
-.door-art { position: absolute; left: 0; right: 0; bottom: 0; height: 52%; }
-.door-art .item-art { position: absolute; transition: transform 520ms var(--ease); }
-.door-art .item-art:nth-child(1) { width: min(50%, 290px); left: 50%; bottom: 7%; margin-left: calc(min(50%, 290px) / -2); z-index: 1; }
-.door-art .item-art:nth-child(2) { width: min(28%, 170px); left: 5%; bottom: 13%; }
-.door-art .item-art:nth-child(3) { width: min(28%, 170px); right: 5%; bottom: 13%; }
-.door .door-art .item-art { aspect-ratio: 1; border-radius: 20px; box-shadow: 0 20px 44px rgb(20 10 40 / 42%); }
 .door-group .chip { background: var(--bg-soft); color: var(--accent); }
-.door-group .preset-section { text-align: center; }
-.door-group .preset-row { justify-content: center; }
-.lab-link { margin-top: 40px; text-align: center; }
-.lab-link .text-button { padding: 0 16px; border-radius: 999px; color: var(--text-secondary); font-weight: 500; background: var(--fill-1); }
+/* The chips speak for themselves; the heading stays for screen readers. */
+.door-group .preset-section h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.lab-link { margin-top: 28px; }
+.lab-link .text-button { justify-content: space-between; min-height: 68px; padding: 0 24px; border-radius: var(--radius-card); color: var(--text-primary); font-size: 16px; font-weight: 600; letter-spacing: -0.016em; background: var(--card); box-shadow: var(--shadow-card); }
 .home-section { margin-top: 64px; }
 .home-section .section-heading { margin-bottom: 20px; }
 .recent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
@@ -305,7 +308,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .type-card { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px 20px; align-items: center; margin: 24px 0 0; padding: 14px; background: var(--fill-1); border-radius: 20px; }
 .type-card img { display: block; width: 100%; aspect-ratio: 1; border-radius: 14px; box-shadow: 0 6px 18px rgb(0 0 0 / 12%); }
 .type-card figcaption { display: grid; gap: 10px; font-size: 14px; color: var(--text-secondary); }
-.lab-link { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px; }
+.lab-link { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .year-panel { margin-top: 12px; padding: 20px 28px; border-radius: var(--radius-card); }
 .year-panel h3 { margin-bottom: 10px; font-size: 15px; font-weight: 600; }
 .year-range { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
@@ -733,9 +736,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .text-button:hover { text-decoration: underline; text-underline-offset: 3px; }
   .back-link:hover { color: var(--text-primary); }
   .door:hover .door-go svg { transform: translateX(4px); }
-  .door:hover .door-art .item-art:nth-child(1) { transform: translateY(-8px) scale(1.03); }
-  .door:hover .door-art .item-art:nth-child(2) { transform: translateY(-4px); }
-  .door:hover .door-art .item-art:nth-child(3) { transform: translateY(-4px); }
+  .door:hover .door-col { animation-play-state: paused; }
   .item-art-link:hover img, .recent-choice:hover img { transform: scale(1.04); }
   .selection-card:hover .item-art { transform: translateY(-3px); }
   .list-row:hover b, .feedback-option:hover b { color: var(--accent); }
@@ -800,20 +801,21 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 @media (max-width: 640px) {
   .doors { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .doors { gap: 12px; }
-  .home-hero { padding: 16px 0 20px; text-align: left; }
-  .home-lede { display: none; }
-  .home-hero .moment-note { margin-top: 14px; }
-  .door-group .preset-section { text-align: left; }
-  .door-group .preset-row { justify-content: flex-start; }
-  .door { flex-direction: row; min-height: 196px; padding: 22px; border-radius: 24px; text-align: left; }
-  .door-copy { justify-items: start; gap: 2px; max-width: 58%; }
-  .door-copy strong { font-size: 26px; }
-  .door-copy small { font-size: 14px; }
-  .door-go { padding: 10px 15px; font-size: 13px; margin-top: 14px; }
-  .door-art { left: auto; top: 0; width: 46%; height: auto; }
-  .door-art .item-art:nth-child(1) { width: 76%; left: 12%; margin-left: 0; bottom: auto; top: 50%; transform: translateY(-50%); }
-  .door-art .item-art:nth-child(n + 2) { display: none; }
-  .door .door-art .item-art { border-radius: 16px; }
+  .home-hero { display: block; padding: 8px 0 18px; }
+  .home-hero .moment-note { margin: 12px 0 0; }
+  .door { height: 208px; padding: 8px; border-radius: 24px; }
+  .door-art { gap: 6px; padding: 0 6px; }
+  .door-col { gap: 6px; padding-bottom: 6px; }
+  .door-art .item-art { border-radius: 12px; }
+  .door-copy { padding: 11px 9px 11px 16px; border-radius: 16px; }
+  .door-copy strong { font-size: 20px; }
+  .door-copy small { font-size: 13px; }
+  .door-go { padding: 10px 14px; font-size: 13px; }
+  /* One line of chips that slides, so the second door still shows on the first screen. */
+  .door-group .chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+  .door-group .chips::-webkit-scrollbar { display: none; }
+  .door-group .chip { flex: none; white-space: nowrap; }
+  .lab-link { margin-top: 20px; }
   .resume-banner { padding-left: 14px; gap: 8px; }
   .resume-end { display: none; }
   .taste-panel { padding: 22px; }
@@ -976,5 +978,6 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
 
 @media (prefers-reduced-motion: reduce) {
+  .door-col { animation: none; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
 }

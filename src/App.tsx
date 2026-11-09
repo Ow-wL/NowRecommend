@@ -423,7 +423,7 @@ export default function App() {
   const requestHasContent = !!session.raw.trim() || conditionCount > 0 || !!session.roundId;
   const categoryItems = items.filter(i => i.category === category);
   // The home doors and the login wall show real photos and covers; typeset covers only fill what is missing.
-  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f05', 'f13', 'f06', 'f09', 'f10'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
+  const showcase = (c: Category, count = 6) => { const prefer = c === 'food' ? ['f07', 'f-jajang', 'f05', 'f-omurice', 'f13', 'f-mapo', 'f11', 'f10', 'f16', 'f06', 'f09', 'f14'] : ['m05', 'm03', 'm06', 'm01', 'm09', 'm12'];
     const own = items.filter(i => i.category === c), withArt = own.filter(i => mediaFor(i.id));
     return [...prefer.map(id => withArt.find(i => i.id === id)).filter((i): i is Item => !!i), ...withArt, ...own].filter((i, n, all) => all.indexOf(i) === n).slice(0, count); };
   const browseTags = category === 'music' ? ['발라드', '팝', '록', '재즈', '피아노', '어쿠스틱', '연주곡', '차분함', '활기참'] : ['한식', '중식', '일식', '양식', '아시안', '분식', '간식', '국물', '매콤함', '담백함'];
@@ -462,7 +462,6 @@ export default function App() {
       <div className="page-view" key={viewKey} data-direction={motion.current.direction}>
       {page === 'home' && <>
         <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1>
-          <p className="home-lede">지금 상황을 한 문장으로 말해 주세요.</p>
           <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>
         </section>
         {active && requestHasContent && <section className={`resume-banner cat-${session.category}`}>
@@ -477,7 +476,7 @@ export default function App() {
               <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : '취향 없이도 바로'}</small>
               <span className="door-go">{categoryLabel[c]} 추천받기 <ArrowRight size={17} /></span>
             </span>
-            <span className="door-art" aria-hidden="true">{showcase(c, 3).map(i => <ItemArt key={i.id} item={i} size="tile" eager />)}</span>
+            <span className="door-art" aria-hidden="true">{[0, 1, 2].map(col => { const set = showcase(c, 9).filter((_, n) => n % 3 === col); return <span className="door-col" key={col}>{[...set, ...set, ...set].map((i, n) => <ItemArt key={`${i.id}-${n}`} item={i} size="tile" eager={n < set.length} />)}</span>; })}</span>
           </button>
           {presetList(c)}
         </div>)}</section>

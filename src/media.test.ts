@@ -12,7 +12,7 @@ vi.mock('./media.json', () => ({ default: {
   f01: { image: 'https://images.unsplash.com/a.jpg', source: 'unsplash', credit: { author: 'A', license: 'CC0', licenseUrl: '', page: 'https://unsplash.com/photos/x' } },
 } }));
 
-const { mediaFor, findSong, youtubeSearch, songLink, overseasLink, mapSearch, recipeSearch } = await import('./media');
+const { tileImage, mediaFor, findSong, youtubeSearch, songLink, overseasLink, mapSearch, recipeSearch } = await import('./media');
 const { items } = await import('./data');
 
 describe('item media', () => {
@@ -24,6 +24,12 @@ describe('item media', () => {
     expect(mediaFor('missing')).toBeUndefined();
     expect(mediaFor('f02')?.image).toBe(`${import.meta.env.BASE_URL}food/f02.jpg`); // saved with the site
     expect(mediaFor('f03')).toBeUndefined();
+  });
+
+  it('asks a resizing host for a smaller tile and leaves other pictures alone', () => {
+    expect(tileImage('https://images.unsplash.com/a?w=960&h=960&fit=crop')).toBe('https://images.unsplash.com/a?w=420&h=420&fit=crop');
+    expect(tileImage('https://is1.mzstatic.com/x/600x600bb.jpg')).toBe('https://is1.mzstatic.com/x/300x300bb.jpg');
+    expect(tileImage('/food/f02.jpg')).toBe('/food/f02.jpg');
   });
 
   it('finds a free-form song in the catalog regardless of case and spacing', () => {

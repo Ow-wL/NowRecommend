@@ -18,6 +18,9 @@ export const addMedia = (id: string, entry: Media) => { found.set(id, entry); };
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
 const localPhoto = /^food\/[\w-]+\.jpg$/;
+/** The same picture at the size of a small tile, where its host can resize it. */
+export const tileImage = (url: string) => url.replace('w=960&h=960', 'w=420&h=420').replace('/600x600bb', '/300x300bb');
+
 /** Covers still marked for a person to confirm (`check`) are not shown. A photo saved with the site is served from its base path. */
 export function mediaFor(id: string): Media | undefined {
   const entry: Entry | undefined = table[id] || found.get(id);
