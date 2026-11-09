@@ -768,6 +768,9 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .textarea-caption > span { align-self: flex-end; line-height: 1.4; }
   .result-grid.food { grid-template-columns: minmax(0, 1fr); }
   .skeleton-grid.food { grid-template-columns: minmax(0, 1fr); }
+  .playlist-row { grid-template-columns: 56px minmax(0, 1fr); gap: 6px 12px; }
+  .playlist-index { display: none; }
+  .playlist-row .button.compact { grid-column: 2; justify-self: start; }
   .result-grid.music { gap: 8px; }
   .result-grid.music .item-card { grid-template-columns: 56px minmax(0, 1fr); gap: 2px 12px; padding: 10px; }
   .result-grid.music .art-frame { grid-row: 1; }
@@ -821,6 +824,19 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .preview-button .spinner { width: 15px; height: 15px; }
 .preview-button.large { width: 56px; height: 56px; right: 14px; bottom: 14px; }
 .preview-button.large .spinner { width: 20px; height: 20px; }
+
+/* ── Playlist ────────────────────────────────────── */
+.playlist-rows { display: grid; gap: 8px; margin-top: 16px; }
+.playlist-row { display: grid; grid-template-columns: 20px 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; background: var(--bg-elevated); border-radius: 16px; }
+.playlist-index { font-size: 13px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.playlist-art { position: relative; display: block; width: 56px; }
+.playlist-art .item-art.thumb { width: 56px; min-width: 56px; }
+.playlist-art .preview-button { width: 30px; height: 30px; right: -4px; bottom: -4px; }
+.playlist-row .list-copy b { display: block; font-weight: 600; }
+.playlist-row .list-copy small { display: block; color: var(--text-muted); }
+.playlist-row .button.compact { white-space: nowrap; }
+.playlist-actions { margin-top: 20px; }
+.playlist > .small { margin-top: 12px; }
 
 /* ── Loading results ──────────────────────────────── */
 /* While the server works: the running step, and the shape of the cards to come. A soft pulse, no shimmer gradient. */

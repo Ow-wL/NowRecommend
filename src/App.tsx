@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Mic, Play, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, Play, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -20,9 +20,10 @@ import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './me
 import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
 import { useVoiceInput } from './voice';
-import { conditionLabels, shareResults, type ShareInput } from './share';
+import { conditionLabels, shareResults, shareText, appAddress, type ShareInput } from './share';
 import { stopPreview } from './preview';
 import { PreviewButton } from './components/PreviewButton';
+import { Playlist } from './components/Playlist';
 import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
@@ -114,6 +115,7 @@ export default function App() {
   const [presetName,setPresetName]=useState('');
   const [detail,setDetail]=useState<{item:Item;reasons?:Recommendation}|null>(null);
   const [compareOpen,setCompareOpen]=useState(false);
+  const [playlistOpen, setPlaylistOpen] = useState(false);
   const [deleteId, setDeleteId] = useState('');
   const [tasteFilter, setTasteFilter] = useState('');
   const [showAllChoices, setShowAllChoices] = useState(false);
@@ -587,6 +589,7 @@ export default function App() {
                 <ConditionNotes raw={session.raw} category={category} conditions={session.conditions} folded />
               </div>
               <div className="result-actions">
+                {category === 'music' && <button className="text-button" disabled={busy || results.length === 0} onClick={() => setPlaylistOpen(true)}><ListMusic size={14} /> {results.length}곡 묶어 보기</button>}
                 <button className="text-button" disabled={busy || results.length === 0} onClick={() => share({ title: requestName, items: results.map(r => r.item), conditions: conditionLabels(session.conditions) })}><Share2 size={14} /> 공유</button>
                 <button className="text-button" disabled={busy} onClick={() => { setStep('input'); setRequestError(false); }}>조건 바꾸기</button>
               </div>
@@ -716,6 +719,9 @@ export default function App() {
     {presetPreview && <Modal title="조건을 바꿀까요?" onClose={()=>setPresetPreview(null)}><p className="modal-description">작성 중인 조건을 ‘{presetPreview.name}’으로 바꿀까요?</p><ConditionsSummary conditions={presetPreview.conditions}/><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={()=>setPresetPreview(null)}>취소</button><button className="button primary" onClick={()=>applyQuickCondition(presetPreview)}>이 조건 적용</button></div></Modal>}
     {reportItem && <ReportDialog item={reportItem} token={account?.token} onClose={() => setReportItem(null)} onSent={() => { setReportedIds(ids => [...ids, reportItem.id]); setReportItem(null); notify('신고를 보냈어요. 확인 후 고칠게요.'); }} />}
     {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons} conditions={session.conditions} onReport={apiEnabled() ? () => { const it = detail.item; setDetail(null); setReportItem(it); } : undefined}/></Modal>}
+    {playlistOpen && <Modal title="이번 추천 플레이리스트" onClose={() => setPlaylistOpen(false)}><Playlist results={results}
+      onCopy={() => navigator.clipboard.writeText(`${shareText({ title: requestName, items: results.map(r => r.item) })}\n${appAddress()}`).then(() => notify('곡 목록을 복사했어요.'), () => notify('이 환경에서는 복사할 수 없어요.'))}
+      onShare={() => void share({ title: requestName, items: results.map(r => r.item), conditions: conditionLabels(session.conditions) })} /></Modal>}
     {compareOpen && <Modal title="후보 비교" onClose={()=>setCompareOpen(false)}><Comparison results={results.filter(r=>session.compareIds?.includes(r.item.id))} conditions={session.conditions} onChoose={r=>{setCompareOpen(false);choose(r);}}/></Modal>}
     {savePresetOpen && <Modal title="내 조건 저장" onClose={()=>setSavePresetOpen(false)}><ConditionsSummary conditions={session.conditions}/><form onSubmit={e=>{e.preventDefault();if(!presetName.trim())return;const preset:Preset={id:crypto.randomUUID(),category:session.category,name:presetName.trim(),conditions:structuredClone(session.conditions)};setStore(s=>({...s,presets:[...(s.presets || []),preset]}));setSavePresetOpen(false);notify('조건 프리셋을 저장했어요.');}}><label className="field-title" htmlFor="preset-name">프리셋 이름</label><input id="preset-name" value={presetName} required maxLength={30} onChange={e=>setPresetName(e.target.value)}/><button className="button primary">프리셋 저장</button></form></Modal>}
     {dialog === 'about' && <Modal neutral title="지금 추천을 먼저 경험해보세요." onClose={() => setDialog(null)}><p className="modal-description">취향 등록부터 조건 수정, 추천과 피드백까지 직접 사용해볼 수 있는 체험 버전이에요.</p><div className="about-list"><p><Check size={17} /> 음식은 {items.filter(i=>i.category==='food').length}개 등록 데이터에서 골라요. {apiEnabled() ? `음악은 AI가 아는 곡 중에서 직접 골라요(등록 곡 ${items.filter(i=>i.category==='music').length}곡은 취향 등록에 써요).` : `음악 ${items.filter(i=>i.category==='music').length}곡의 예시 데이터로 추천해요.`}</p><p><Check size={17} /> 가격·예산·배달 가능 여부는 다루지 않아요. 취향·상황·제외 조건으로 골라요.</p><p><Check size={17} /> 문장에서 조건을 찾아요. {apiEnabled() ? '규칙이 놓친 표현은 AI가 함께 읽어요.' : '알려진 표현만 읽으니 놓친 조건은 직접 골라주세요.'}</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> {apiEnabled() ? '로그인하면 취향·기록이 계정에 저장되어 다른 기기에서도 이어 써요. ' : ''}실제 주문·음원 재생은 포함하지 않아요. 지도·레시피·음악 서비스 검색으로 연결해요.</p></div><div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div></Modal>}
