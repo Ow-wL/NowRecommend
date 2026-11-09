@@ -12,6 +12,7 @@ export function PreviewButton({ item, size = 'small' }: { item: Pick<Item, 'id' 
       aria-label={state === 'playing' ? `${item.name} 미리듣기 중지` : `${item.name} 30초 미리듣기`} title={state === 'unavailable' ? NEWS.unavailable : state === 'failed' ? NEWS.failed : '30초 미리듣기'}>
       {state === 'loading' ? <span className="spinner" /> : state === 'playing' ? <Pause size={icon} fill="currentColor" /> : state === 'unavailable' || state === 'failed' ? <VolumeX size={icon} /> : <Play size={icon} fill="currentColor" />}
     </button>
-    <span className="sr-only" role="status">{state === 'unavailable' ? NEWS.unavailable : state === 'failed' ? NEWS.failed : ''}</span>
+    {/* A live region, not role=status: the card already has one for the song check. */}
+    <span className="sr-only" aria-live="polite">{state === 'unavailable' ? NEWS.unavailable : state === 'failed' ? NEWS.failed : ''}</span>
   </>;
 }
