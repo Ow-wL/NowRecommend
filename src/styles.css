@@ -793,6 +793,13 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .result-grid.music .save-button { top: auto; right: 10px; bottom: 10px; }
 }
 
+/* ── This hour's condition ───────────────────────── */
+.moment-note { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding: 4px 8px 4px 14px; border-radius: 999px; background: var(--sun-soft); color: var(--sun-ink); font-size: 13px; font-weight: 500; }
+.moment-note .text-button { min-height: 32px; font-size: 13px; color: inherit; }
+.moment-note .text-button:disabled { background: transparent !important; color: inherit !important; opacity: .6; }
+.chip.now { background: var(--sun-soft); color: var(--sun-ink); font-weight: 600; }
+.chip.now svg { flex-shrink: 0; }
+
 /* ── Loading results ──────────────────────────────── */
 /* While the server works: the running step, and the shape of the cards to come. A soft pulse, no shimmer gradient. */
 .loading-results { display: grid; gap: 14px; margin-top: 28px; }

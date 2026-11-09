@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Play, RefreshCw, Search, Settings2, SlidersHorizontal, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Play, RefreshCw, Search, Settings2, SlidersHorizontal, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -18,6 +18,8 @@ import { Lab } from './components/Lab';
 import { ItemArt } from './components/ItemArt';
 import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './media';
 import { applyPreset } from './presets';
+import { momentPreset, slotLabel, timeSlot } from './moment';
+import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
@@ -91,6 +93,10 @@ export default function App() {
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [deletePassword, setDeletePassword] = useState(''), [deleteError, setDeleteError] = useState('');
   const [tasteDecade, setTasteDecade] = useState(0);
+  // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.
+  const [weather, setWeather] = useState<Weather | null>(readWeather);
+  const [weatherBusy, setWeatherBusy] = useState(false);
+  const slot = timeSlot();
   const [reportItem, setReportItem] = useState<Item | null>(null), [reportedIds, setReportedIds] = useState<string[]>([]);
   const [songChecks, setSongChecks] = useState<Record<string, SongStatus>>({});
   const [syncAttempt, setSyncAttempt] = useState(0), syncFailureTold = useRef(false);
@@ -216,6 +222,13 @@ export default function App() {
     requestCounter.current++; setBusy(false); setParsing(false); setRequestError(false); setToast(null); setQuery('');
     setCategory(next); setStep('input'); setSession({ ...newSession(next), category: next, raw, conditions: parseConditions(raw, next), editor: createEditor(raw, next), excludedIds: [], revision: 0 });
     setPage('recommend');
+  }
+  function applyWeather() {
+    if (!navigator.geolocation) { notify('이 브라우저에서는 위치를 쓸 수 없어 시간만 반영해요.'); return; }
+    setWeatherBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      position => requestWeather(position.coords.latitude, position.coords.longitude).then(w => { setWeather(w); notify(`${weatherLabel(w)} · 지금 조건에 날씨를 반영했어요.`); }).catch(() => notify('날씨를 가져오지 못해 시간만 반영해요.')).finally(() => setWeatherBusy(false)),
+      () => { setWeatherBusy(false); notify('위치를 확인하지 못해 시간만 반영해요.'); }, { timeout: 8000, maximumAge: 600000 });
   }
   function endRequest() { setActive(false); setSession(newSession(category)); setStep('input'); navigate('home'); notify('이번 요청을 종료했어요.'); }
   function editTaste(next: Category) { setShowAllChoices(false); setSelectedOnly(false); setTasteFilter(''); setTasteDecade(0); setCategory(next); setDraftProfile(store.profiles[next]); setEditingProfile(true); setQuery(''); navigate('onboard'); }
@@ -347,7 +360,7 @@ export default function App() {
     if(!replaceStore(next))return '브라우저에 저장하지 못했어요. 기존 데이터는 유지돼요.';
     setStore(next);setStorageBlocked(false);setStorageWarning(false);setSession(newSession());setActive(false);setCompletedId('');setDraftProfile(next.profiles.food);setEditingProfile(false);selectionLock.current='';setDialog(null);navigate('home');notify('백업 데이터를 가져왔어요.');return null;
   }
-  const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} onPreview={chooseQuickCondition} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
+  const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} now={momentPreset(c, slot, weather)} onPreview={chooseQuickCondition} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
 
   const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', admin: '오류 신고 관리', lab: 'AI 실험실' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
@@ -419,7 +432,9 @@ export default function App() {
 
       <div className="page-view" key={viewKey} data-direction={motion.current.direction}>
       {page === 'home' && <>
-        <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1></section>
+        <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1>
+          <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>
+        </section>
         {active && requestHasContent && <section className={`resume-banner cat-${session.category}`}>
           <p className="resume-copy"><span>진행 중</span> <strong>{resumeName}</strong></p>
           <button className="text-button resume-end" onClick={endRequest}>요청 종료</button>
