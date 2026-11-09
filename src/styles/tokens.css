@@ -1,44 +1,86 @@
-/* Design tokens, v6 "warm cards" (DESIGN.md §0). Warm white page, white rounded cards, tomato for food and cobalt for music.
-   Floors checked by tests: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1. */
+/* Design tokens, v8 "glass" (DESIGN.md §0). A soft wallpaper, frosted cards on it, and real blur for whatever floats above the content.
+   Hex tokens are the opaque floors the tests measure: text ≥ 4.5:1 on its surfaces, control borders and focus ≥ 3:1. */
 :root {
   color-scheme: light;
-  --bg-canvas: #F7F5F0; --bg-surface: #FFFFFF; --bg-elevated: #F3F0EA; --bg-hover: #EEEAE2; --bg-pressed: #E4DFD5; --bg-selected: #EEEAE2;
-  --line: #E9E5DC; --border-subtle: #E9E5DC; --border-control: #8F8A80;
-  --text-primary: #1D1B18; --text-secondary: #4E4A43; --text-muted: #6C675E;
+  --bg-canvas: #F2F2F7; --bg-surface: #FFFFFF; --bg-elevated: #F2F2F7; --bg-hover: #E5E5EA; --bg-pressed: #D1D1D6; --bg-selected: #E5E5EA;
+  --line: rgb(60 60 67 / 13%); --border-subtle: rgb(60 60 67 / 13%); --border-control: #86868B;
+  --text-primary: #1C1C1E; --text-secondary: #3C3C43; --text-muted: #5E5E63;
   /* Pages that belong to no category act in ink. A food or music screen (.cat-*) acts in its colour. */
-  --accent: #1D1B18; --accent-fill: #1D1B18; --accent-hover: #38342E; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #EEEAE2;
+  --accent: #1C1C1E; --accent-fill: #1C1C1E; --accent-hover: #3A3A3C; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #E5E5EA;
   --food: #D4411A; --food-soft: #FFEDE4; --food-ink: #B8360F;
   --music: #2B46D6; --music-soft: #E9EDFF; --music-ink: #2338B0;
   --sun: #F6B73C; --sun-soft: #FFF4D6; --sun-ink: #6B4A00;
   --success: #0B6B45; --warning: #7A5200; --bg-warning: #FFF4D6; --danger: #C2161F; --bg-danger: #FDECEC;
-  --focus: #1D1B18; --overlay: rgb(29 27 24 / 50%);
-  --bg-inverse: #1D1B18; --text-inverse: #FFFFFF;
-  --shadow-raised: 0 16px 44px rgb(60 40 20 / 14%);
-  --shadow-dialog: 0 28px 72px rgb(30 20 10 / 26%);
+  --focus: #1C1C1E; --overlay: rgb(0 0 0 / 32%);
+  --bg-inverse: #1C1C1E; --text-inverse: #FFFFFF;
+
+  /* The wallpaper: two soft colour fields, warm for food and cool for music. Pale enough that muted text still clears 4.5:1 on it. */
+  --wall-warm: radial-gradient(72vmax 58vmax at 4% -10%, #FFDCCB 0%, transparent 70%), radial-gradient(52vmax 46vmax at 102% 66%, #FFEFCB 0%, transparent 70%);
+  --wall-cool: radial-gradient(72vmax 58vmax at 98% -12%, #DBE2FF 0%, transparent 70%), radial-gradient(56vmax 50vmax at -4% 104%, #E4DBFF 0%, transparent 70%);
+
+  /* Materials. Bars and sheets stay thick enough to read over a dark photo passing underneath. */
+  --glass-card: rgb(255 255 255 / 68%);
+  --glass-bar: rgb(255 255 255 / 76%);
+  --glass-sheet: rgb(250 250 252 / 86%);
+  --glass-control: rgb(255 255 255 / 74%);
+  --glass-hover: rgb(255 255 255 / 94%);
+  --glass-inverse: rgb(28 28 30 / 78%);
+  --segment: #FFFFFF;
+  --fill-1: rgb(120 120 128 / 10%); --fill-2: rgb(120 120 128 / 16%); --fill-3: rgb(120 120 128 / 24%);
+  --glass-blur: blur(30px) saturate(190%);
+  --glass-blur-small: blur(14px) saturate(180%);
+
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 85%), 0 0 0 .5px rgb(60 60 67 / 8%), 0 2px 6px rgb(30 30 60 / 4%), 0 14px 36px rgb(30 30 60 / 7%);
+  --shadow-control: inset 0 1px 0 rgb(255 255 255 / 80%), 0 0 0 .5px rgb(60 60 67 / 10%), 0 1px 3px rgb(30 30 60 / 6%);
+  --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 75%), 0 0 0 .5px rgb(60 60 67 / 10%), 0 14px 44px rgb(30 30 60 / 18%);
+  --shadow-dialog: inset 0 1px 0 rgb(255 255 255 / 80%), 0 0 0 .5px rgb(60 60 67 / 10%), 0 32px 80px rgb(20 20 50 / 30%);
+
   --gutter: 40px; --page-max: 1200px; --flow-max: 760px;
-  --radius: 12px; --radius-card: 20px; --radius-large: 28px; --radius-art: 14px;
-  --appbar-height: 72px; --tabbar-height: 64px;
-  --fast: 120ms; --normal: 240ms; --ease: cubic-bezier(.2, 0, 0, 1);
+  --radius: 14px; --radius-card: 24px; --radius-large: 32px; --radius-art: 14px;
+  --appbar-height: 76px; --tabbar-height: 64px;
+  --fast: 140ms; --normal: 280ms; --ease: cubic-bezier(.32, .72, 0, 1);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-canvas: #14120F; --bg-surface: #1F1C18; --bg-elevated: #29251F; --bg-hover: #332E27; --bg-pressed: #3E382F; --bg-selected: #332E27;
-  --line: #37322A; --border-subtle: #37322A; --border-control: #8A8478;
-  --text-primary: #F5F1EA; --text-secondary: #CFC9BD; --text-muted: #ABA598;
-  --accent: #F5F1EA; --accent-fill: #F5F1EA; --accent-hover: #FFFFFF; --accent-pressed: #D9D4C9; --text-on-accent: #1D1B18; --bg-soft: #332E27;
+  --bg-canvas: #0A0A0C; --bg-surface: #1C1C1E; --bg-elevated: #2C2C2E; --bg-hover: #3A3A3C; --bg-pressed: #48484A; --bg-selected: #3A3A3C;
+  --line: rgb(235 235 245 / 14%); --border-subtle: rgb(235 235 245 / 14%); --border-control: #8E8E93;
+  --text-primary: #F5F5F7; --text-secondary: #D1D1D6; --text-muted: #AEAEB2;
+  --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C;
   --food-soft: #3A2218; --food-ink: #FF9470;
   --music: #3B57E8; --music-soft: #1E2550; --music-ink: #A5B4FF;
   --sun-soft: #33290F; --sun-ink: #F6CF7E;
   --success: #5BD39A; --warning: #F0C25A; --bg-warning: #33290F; --danger: #FF8A8F; --bg-danger: #3A2022;
-  --focus: #F5F1EA; --overlay: rgb(0 0 0 / 66%);
-  --bg-inverse: #F5F1EA; --text-inverse: #1D1B18;
-  --shadow-raised: 0 16px 44px rgb(0 0 0 / 44%);
-  --shadow-dialog: 0 28px 72px rgb(0 0 0 / 66%);
+  --focus: #F5F5F7; --overlay: rgb(0 0 0 / 56%);
+  --bg-inverse: #F5F5F7; --text-inverse: #1C1C1E;
+
+  --wall-warm: radial-gradient(72vmax 58vmax at 4% -10%, #4A2012 0%, transparent 70%), radial-gradient(52vmax 46vmax at 102% 66%, #3A2A0E 0%, transparent 70%);
+  --wall-cool: radial-gradient(72vmax 58vmax at 98% -12%, #18266E 0%, transparent 70%), radial-gradient(56vmax 50vmax at -4% 104%, #2A1A60 0%, transparent 70%);
+
+  --glass-card: rgb(44 44 46 / 58%);
+  --glass-bar: rgb(30 30 32 / 74%);
+  --glass-sheet: rgb(36 36 38 / 86%);
+  --glass-control: rgb(72 72 74 / 56%);
+  --glass-hover: rgb(88 88 92 / 72%);
+  --glass-inverse: rgb(245 245 247 / 84%);
+  --segment: #636366;
+  --fill-1: rgb(118 118 128 / 20%); --fill-2: rgb(118 118 128 / 28%); --fill-3: rgb(118 118 128 / 38%);
+
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 9%), 0 0 0 .5px rgb(255 255 255 / 7%), 0 14px 36px rgb(0 0 0 / 30%);
+  --shadow-control: inset 0 1px 0 rgb(255 255 255 / 10%), 0 0 0 .5px rgb(255 255 255 / 8%), 0 1px 3px rgb(0 0 0 / 30%);
+  --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 12%), 0 0 0 .5px rgb(255 255 255 / 9%), 0 16px 48px rgb(0 0 0 / 50%);
+  --shadow-dialog: inset 0 1px 0 rgb(255 255 255 / 12%), 0 0 0 .5px rgb(255 255 255 / 9%), 0 32px 80px rgb(0 0 0 / 66%);
+}
+/* Someone who asked for less transparency, or a browser with no backdrop-filter, gets the same layout on solid surfaces. */
+@media (prefers-reduced-transparency: reduce) {
+  :root, :root[data-theme="dark"] { --glass-card: var(--bg-surface); --glass-bar: var(--bg-surface); --glass-sheet: var(--bg-surface); --glass-control: var(--bg-surface); --glass-inverse: var(--bg-inverse); --wall-warm: none; --wall-cool: none; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root, :root[data-theme="dark"] { --glass-bar: var(--bg-surface); --glass-sheet: var(--bg-surface); --glass-inverse: var(--bg-inverse); }
 }
 /* Category scope: a screen, a nav link or a saved card. A colour the person picked in settings wins everywhere. */
 :root:not([data-custom-accent]) .cat-food, :root:not([data-custom-accent]) .item-card.food { --accent: var(--food-ink); --accent-fill: #D4411A; --accent-hover: #BD3813; --accent-pressed: #A5300F; --text-on-accent: #FFFFFF; --bg-soft: var(--food-soft); --bg-selected: var(--food-soft); }
 :root:not([data-custom-accent]) .cat-music, :root:not([data-custom-accent]) .item-card.music { --accent: var(--music-ink); --accent-fill: #2B46D6; --accent-hover: #2339BB; --accent-pressed: #1C2F9E; --text-on-accent: #FFFFFF; --bg-soft: var(--music-soft); --bg-selected: var(--music-soft); }
 :root[data-theme="dark"]:not([data-custom-accent]) .cat-music, :root[data-theme="dark"]:not([data-custom-accent]) .item-card.music { --accent-fill: #3B57E8; --accent-hover: #2F49CF; --accent-pressed: #2840B8; }
 /* Settings, account and confirmation dialogs belong to no category, wherever they open from. */
-:root:not([data-custom-accent]) .neutral-scope { --accent: #1D1B18; --accent-fill: #1D1B18; --accent-hover: #38342E; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #EEEAE2; --bg-selected: #EEEAE2; }
-:root[data-theme="dark"]:not([data-custom-accent]) .neutral-scope { --accent: #F5F1EA; --accent-fill: #F5F1EA; --accent-hover: #FFFFFF; --accent-pressed: #D9D4C9; --text-on-accent: #1D1B18; --bg-soft: #332E27; --bg-selected: #332E27; }
+:root:not([data-custom-accent]) .neutral-scope { --accent: #1C1C1E; --accent-fill: #1C1C1E; --accent-hover: #3A3A3C; --accent-pressed: #000000; --text-on-accent: #FFFFFF; --bg-soft: #E5E5EA; --bg-selected: #E5E5EA; }
+:root[data-theme="dark"]:not([data-custom-accent]) .neutral-scope { --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C; --bg-selected: #3A3A3C; }
