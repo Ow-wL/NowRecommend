@@ -52,8 +52,13 @@ function learnedTags(signals: Signals, category: Category): string[] {
     for (const tag of list.flatMap(i => i.tags)) if (known.has(tag) && !NOT_A_TASTE.has(tag)) net.set(tag, (net.get(tag) || 0) + by);
   return [...net].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, TAG_LIMIT).map(([tag]) => tag);
 }
-/** A copy to rank with: the taste as registered, plus what the ratings say. Only the rating is used, never the written note. */
-export function rankingProfile(profile: Profile, signals: Signals, category: Category): Profile {
+// Asked for 담백함, a model told about a well-rated spicy dish answered with four spicy sets out of four (2026-11-09, live API).
+// A liked item that is the opposite of this request says nothing about this request, so it is left out of it.
+const OPPOSITES: [string, string][] = [['매콤함', '담백함'], ['따뜻함', '차가움'], ['활기참', '차분함'], ['높은 에너지', '낮은 에너지'], ['높은 에너지', '차분함'], ['활기참', '낮은 에너지'], ['연주곡', '보컬']];
+const opposes = (item: Item, wanted: string[]) => OPPOSITES.some(([a, b]) => item.tags.includes(a) && wanted.includes(b) || item.tags.includes(b) && wanted.includes(a));
+/** A copy to rank with: the taste as registered, plus what the ratings say about this request (`wanted`). Only the rating is used, never the written note. */
+export function rankingProfile(profile: Profile, signals: Signals, category: Category, wanted: string[]): Profile {
   const heard = category === 'food' ? '먹어' : '들어';
-  return { ...profile, tags: [...new Set([...profile.tags, ...learnedTags(signals, category)])].slice(0, PROFILE_TAG_LIMIT), ratedNotes: signals.good.map(i => `${i.name}: ${heard} 보니 좋았어요`) };
+  const good = signals.good.filter(i => !opposes(i, wanted));
+  return { ...profile, tags: [...new Set([...profile.tags, ...learnedTags({ ...signals, good }, category)])].slice(0, PROFILE_TAG_LIMIT), ratedNotes: good.map(i => `${i.name}: ${heard} 보니 좋았어요`) };
 }

@@ -301,7 +301,7 @@ export default function App() {
   // With the API server, the request is async: stale answers are dropped via requestCounter and failures offer a retry.
   function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
     // Past choices steer this ranking only; `base` is what the request keeps.
-    const past = signalsFrom(store.history, base.category, base.id), ranked = rankingSession(base, past), rankedProfile = rankingProfile(profile, past, base.category);
+    const past = signalsFrom(store.history, base.category, base.id), ranked = rankingSession(base, past), rankedProfile = rankingProfile(profile, past, base.category, base.conditions.tags);
     if (!apiEnabled() || local) { done({ ...applyBatch(base, recommend({ ...ranked, currentIds: undefined, snapshot: undefined }, rankedProfile)), source: local ? 'local' : undefined, quality: undefined }); return; }
     const token = ++requestCounter.current;
     setBusy(true); setRequestError(false);
@@ -375,8 +375,7 @@ export default function App() {
     notify('선택한 조건을 적용했어요.', () => setSession(before));
   }
   function pairingInput() {
-    const food = signalsFrom(store.history, 'food'), music = signalsFrom(store.history, 'music');
-    return { signals: { food, music }, profiles: { food: rankingProfile(store.profiles.food, food, 'food'), music: rankingProfile(store.profiles.music, music, 'music') } };
+    return { signals: { food: signalsFrom(store.history, 'food'), music: signalsFrom(store.history, 'music') }, profiles: store.profiles };
   }
   function choosePair(pair: Pair, request: PairRequest) {
     const made = recordPair(store.history, request, pair, store.profiles, items);
@@ -390,7 +389,7 @@ export default function App() {
   function recommendSaved(c:Category,ids:string[]) { start(c,'',true);setSession({...newSession(c),editor:createEditor('',c),candidateScope:'favorites',candidateIds:[...ids]}); }
   function replaceOne(id:string) {
     const done=(next:Session|null)=>{if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.');};
-    const past = signalsFrom(store.history, session.category, session.id), ranked = rankingSession(session, past), profile = rankingProfile(store.profiles[session.category], past, session.category);
+    const past = signalsFrom(store.history, session.category, session.id), ranked = rankingSession(session, past), profile = rankingProfile(store.profiles[session.category], past, session.category, session.conditions.tags);
     if(!apiEnabled()){done(canReplace(session,results,id) ? applyReplacement(session,results,id,recommend(replacementRequest(ranked,results),profile)) : null);return;}
     if(!canReplace(session,results,id))return;
     const base=session,current=results,token=++requestCounter.current;

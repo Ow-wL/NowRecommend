@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, MapPin, Play, RefreshCw } from 'lucide-react';
 import type { Category, Item } from '../data';
 import type { Preset, Profile } from '../domain';
 import { mapSearch, mediaOf, songLink, youtubeSearch } from '../media';
-import { deferred, type Signals } from '../signals';
+import { deferred, rankingProfile, type Signals } from '../signals';
 import { describePair, pairRequest, recommendPairs, replaceSong, withSeen, type Pair, type PairRequest, type Seen } from '../pairing';
 import { ItemArt } from './ItemArt';
 import { PreviewButton } from './PreviewButton';
@@ -40,16 +40,17 @@ export function Pairing({ items, profiles, signals, moment, onChoose, onHome, no
   useEffect(() => { if (focusHeading.current) { focusHeading.current = false; heading.current?.focus(); window.scrollTo(0, 0); } }, [round]);
   const setRound = (next: Round | null) => { keep(next); setRoundState(next); };
 
+  const ranked = (request: PairRequest) => ({ food: rankingProfile(profiles.food, signals.food, 'food', request.conditions.food.tags), music: rankingProfile(profiles.music, signals.music, 'music', request.conditions.music.tags) });
   // Past choices start out as already shown, so a new set leads with something else.
   function ask(request: PairRequest, seen: Seen = { food: deferred(signals.food, request.raw).map(i => i.id), music: deferred(signals.music, request.raw).map(i => i.id) }) {
-    const pairs = recommendPairs(request, profiles, items, seen);
+    const pairs = recommendPairs(request, ranked(request), items, seen);
     if (!pairs.length) { notify('조건에 맞는 조합을 찾지 못했어요. 제외 조건을 줄여 보세요.'); return; }
     focusHeading.current = true; setChosen([]);
     setRound({ request, pairs, seen: withSeen(seen, pairs) });
   }
   function otherSong(pair: Pair) {
     if (!round) return;
-    const next = replaceSong(pair, round.pairs, round.request, profiles, items, round.seen);
+    const next = replaceSong(pair, round.pairs, round.request, ranked(round.request), items, round.seen);
     if (!next) { notify('이 메뉴에 더 보여 드릴 곡이 없어요.'); return; }
     const pairs = round.pairs.map(p => p === pair ? next : p);
     setChosen(c => c.filter(id => id !== pair.food.id));

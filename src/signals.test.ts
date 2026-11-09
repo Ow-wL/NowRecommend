@@ -70,18 +70,18 @@ describe('ratings', () => {
 
   it('learns telling traits from what was liked, and not the ones every dish has', () => {
     const signals = signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW);
-    expect(rankingProfile(emptyProfile(), signals, 'food').tags).toEqual(['국물', '매콤함']);
+    expect(rankingProfile(emptyProfile(), signals, 'food', []).tags).toEqual(['국물', '매콤함']);
   });
 
   it('does not learn a trait met as often in what disappointed', () => {
     const other = { ...spicy, id: 's3', name: '매운 볶음', tags: ['매콤함'] };
     const signals = signalsFrom([rated(spicy, 'good'), rated(other, 'poor')], 'food', undefined, NOW);
-    expect(rankingProfile(emptyProfile(), signals, 'food').tags).toEqual(['국물']);
+    expect(rankingProfile(emptyProfile(), signals, 'food', []).tags).toEqual(['국물']);
   });
 
   it('keeps the registered taste first and leaves the stored one alone', () => {
     const profile = { ...emptyProfile(), tags: ['담백함'] };
-    const ranked = rankingProfile(profile, signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW), 'food');
+    const ranked = rankingProfile(profile, signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW), 'food', []);
     expect(ranked.tags[0]).toBe('담백함');
     expect(profile.tags).toEqual(['담백함']);
     expect(profile.ratedNotes).toBeUndefined();
@@ -91,12 +91,12 @@ describe('ratings', () => {
     const catalog = [mild, { ...spicy, id: 's4', name: '다른 매운 국' }];
     const base = recommend(session(), emptyProfile(), catalog).map(r => r.item.id);
     expect(base[0]).toBe('s2');  // ties go to the smaller id
-    const profile = rankingProfile(emptyProfile(), signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW), 'food');
+    const profile = rankingProfile(emptyProfile(), signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW), 'food', []);
     expect(recommend(session(), profile, catalog)[0].item.id).toBe('s4');
   });
 
   it('tells the AI what was liked, but never the written note', () => {
-    const profile = rankingProfile(emptyProfile(), signalsFrom([rated(spicy, 'good', 20, '비밀 메모')], 'food', undefined, NOW), 'food');
+    const profile = rankingProfile(emptyProfile(), signalsFrom([rated(spicy, 'good', 20, '비밀 메모')], 'food', undefined, NOW), 'food', []);
     const body = recommendBody(session(), profile);
     expect(body.profile.notes).toEqual(['매운 찌개: 먹어 보니 좋았어요']);
     expect(JSON.stringify(body)).not.toContain('비밀 메모');
@@ -104,13 +104,30 @@ describe('ratings', () => {
 
   it('sends only vocabulary the server accepts', () => {
     const odd = { ...spicy, tags: ['없는말', '국물'] };
-    expect(rankingProfile(emptyProfile(), signalsFrom([rated(odd, 'good')], 'food', undefined, NOW), 'food').tags).toEqual(['국물']);
+    expect(rankingProfile(emptyProfile(), signalsFrom([rated(odd, 'good')], 'food', undefined, NOW), 'food', []).tags).toEqual(['국물']);
   });
 
   it('says what it moved', () => {
     const signals = signalsFrom([picked(food[0], 1), rated(spicy, 'poor')], 'food', undefined, NOW);
     expect(deferredNote(signals, '')).toBe(`최근 ${RECENT_DAYS}일 동안 고른 1개와 아쉬웠던 1개는 뒤로 미뤘어요.`);
     expect(deferredNote({ recent: [], poor: [], good: [] }, '')).toBe('');
+  });
+
+  it('leaves out a liked dish that is the opposite of this request', () => {
+    const signals = signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW);
+    const ranked = rankingProfile(emptyProfile(), signals, 'food', ['담백함', '저녁']);
+    expect(ranked.tags).toEqual([]);
+    expect(ranked.ratedNotes).toEqual([]);
+  });
+
+  it('still uses it for a request it does not contradict', () => {
+    const signals = signalsFrom([rated(spicy, 'good')], 'food', undefined, NOW);
+    expect(rankingProfile(emptyProfile(), signals, 'food', ['저녁']).ratedNotes).toEqual(['매운 찌개: 먹어 보니 좋았어요']);
+  });
+
+  it('keeps a liked dish that does not oppose the request beside one that does', () => {
+    const signals = signalsFrom([rated(spicy, 'good'), rated(mild, 'good')], 'food', undefined, NOW);
+    expect(rankingProfile(emptyProfile(), signals, 'food', ['담백함']).ratedNotes).toEqual(['순한 죽: 먹어 보니 좋았어요']);
   });
 
   it('ignores ratings on hand-written records', () => {
