@@ -131,6 +131,7 @@ docker compose exec api python -m app.cli.review publish
 - `review publish`: 승인된 AI 항목을 `server/data/reviewed_items.json`으로 내보냅니다. 이 파일을 커밋하면 `app.cli.seed`(배포의 시드 작업 포함)가 기본 시드 다음에 함께 넣으므로, 새로 만든 DB에도 같은 카탈로그가 들어갑니다.
 - 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다. `--batch 20`으로 요청 수를 줄일 수 있고, 이때는 `RERANK_TIMEOUT_MS`를 넉넉히(예: 150000) 줍니다.
 - `python -m app.cli.eval`(server 폴더에서 실행)은 평가 세트 60개(`server/eval/cases.json`)로 기존 규칙·유사도·취향만 방식을 비교하고, 조건 해석 정확도를 잽니다. 결과는 `server/eval/report.md`에 씁니다. `--with-ai`를 주면 AI 경로도 일부 사례에 대해 측정하며, 이때는 생성 한도를 씁니다. 정답 라벨이 기본 시드 31개만 알기 때문에 기본으로 그 안에서만 순위를 매깁니다(`--full-catalog`로 전체).
+- `python -m app.cli.eval_ai`는 운영 기본인 AI 엔진과 카탈로그 경로를 같은 48개 상황(`server/eval/ai_cases.json`)으로 채점합니다. `run NAME`(답변 받기), `judge NAME`(다른 모델의 심사), `songs NAME`(Apple 스토어 확인), `report NAME...`(표 만들기) 순서로 실행하고, 각 단계는 저장하며 진행해 끊겨도 이어서 할 수 있습니다. 배포 전에는 `check NAME --against ai-r1`로 2026-11-10 기준선보다 나빠졌는지 봅니다. `run`과 `judge`는 Gemini 호출 비용이 듭니다. 결과는 `server/eval/ai_report.md`에 있습니다.
 - 서버 테스트는 GitHub Actions `server-ci.yml`에서 pgvector 컨테이너와 함께 실행됩니다(`server/`·`shared/` 변경 시).
 - `POST /api/recommend`·`/api/parse`·`/api/lab/music/free`는 세 경로를 합쳐 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔). `TRUST_PROXY=true`이면 `X-Forwarded-For`의 **가장 오른쪽** 주소(프록시가 붙인 값)로 클라이언트를 구분합니다. 왼쪽 값은 클라이언트가 마음대로 보낼 수 있습니다.
 

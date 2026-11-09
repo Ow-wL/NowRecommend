@@ -34,7 +34,7 @@ def load_ai_cases(path: Path = CASES_FILE) -> dict:
 
 def request_for(data: dict, case: dict) -> RecommendRequest:
     persona = data["personas"][case["persona"]]
-    return RecommendRequest(category=case["category"], raw=case["text"], tau=0, conditions=case["conditions"], years=case.get("years"),
+    return RecommendRequest(category=case["category"], raw=case["text"], tau=0, conditions=case["conditions"], years=case.get("years"), seenIds=case.get("seen", []),
                             profile={"selected": persona["selected"], "tags": persona["tags"], "notes": persona["notes"]})
 
 
@@ -57,7 +57,7 @@ def answer_ai(data: dict, case: dict, model: JsonModel, labels: dict[str, str], 
     for attempt in range(retries + 1):
         started = time.perf_counter()
         try:
-            validation = ask_picks(request, model, liked, [], [], request.result_count, dishes if case["category"] == "food" else None)
+            validation = ask_picks(request, model, liked, [], [labels[i] for i in request.seenIds], request.result_count, dishes if case["category"] == "food" else None)
             ms = (time.perf_counter() - started) * 1000
             if validation.picks:
                 return {"wanted": request.result_count, "ms": ms, "failures": failures, "issues": dict(validation.issues), "picks": [asdict(p) for p in validation.picks]}
@@ -338,19 +338,37 @@ def song_store(data: dict, run: dict) -> dict:
     return {"status": dict(status), "found": _rate(status["found"], status["found"] + status["missing"]), "outside": outside}
 
 
-# Differences smaller than these are within what two runs of the same code differ by (measured on the first baseline, see eval/ai_report.md).
+def ingredient_shifts(data: dict, run: dict) -> list[str]:
+    """Dishes that list an ingredient in one answer and leave it out when that ingredient is excluded. The server's check believes that
+    list (validate_free), so a shift is a check that could not have worked: a margherita listing no dairy goes straight through."""
+    picks = [(c, p) for c in _by(data, category="food") if c["id"] in run["cases"] for p in run["cases"][c["id"]]["picks"]]
+    listed: dict[str, set[str]] = {}
+    for _, pick in picks:
+        listed.setdefault(pick["name"], set()).update(pick.get("ingredients", []))
+    vocab, found = get_vocab().for_category("food"), []
+    for case, pick in picks:
+        excluded = case["conditions"]["excluded"]
+        for value in sorted(set(vocab.blocked(excluded) if excluded else []) & listed[pick["name"]] - set(pick.get("ingredients", []))):
+            found.append(f"{case['id']} {pick['name']}: 제외하라고 하면 목록에서 사라지고 다른 답변에는 있는 재료 — {value}")
+    return found
+
+
+# Two runs of the same code differed by at most 3 points per category on 2026-11-10; with 75 to 110 picks per category the sampling alone
+# allows about 10, so a smaller change is not evidence of anything.
 MARGIN = {"good": 0.10, "acceptable": 0.08, "judge_broken": 0.10, "opposes": 0.06}
 WORSE_WHEN_LOWER = ("good", "acceptable")
+STORE_MARGIN = 0.08
+TABLE_MARGIN = 1  # the table is fixed but the picks are not: two runs of the same code differed by one case
 
 
 def regressions(data: dict, current: dict, baseline: dict) -> list[str]:
-    """What got worse beyond the noise: the pre-deploy check. Table violations have no margin, the table does not vary by mood."""
+    """What got worse beyond the noise: the pre-deploy check."""
     found = []
     for category, label in CATEGORY_LABEL.items():
         now, then = summarize(data, current, _by(data, category=category)), summarize(data, baseline, _by(data, category=category))
-        if now["table_broken_cases"] > then["table_broken_cases"]:
+        if now["table_broken_cases"] > then["table_broken_cases"] + TABLE_MARGIN:
             found.append(f"{label}: 필수 제외를 어긴 사례가 {then['table_broken_cases']}개에서 {now['table_broken_cases']}개로 늘었어요.")
-        if now["table_opposite"] > then["table_opposite"]:
+        if now["table_opposite"] > then["table_opposite"] + TABLE_MARGIN:
             found.append(f"{label}: 요청과 반대인 추천이 {then['table_opposite']}개에서 {now['table_opposite']}개로 늘었어요.")
         for key, margin in MARGIN.items():
             if now[key] is None or then[key] is None:
@@ -358,6 +376,9 @@ def regressions(data: dict, current: dict, baseline: dict) -> list[str]:
             delta = now[key] - then[key]
             if (key in WORSE_WHEN_LOWER and delta < -margin) or (key not in WORSE_WHEN_LOWER and delta > margin):
                 found.append(f"{label}: {key}가 {then[key]:.2f}에서 {now[key]:.2f}로 나빠졌어요.")
+    now_found, then_found = song_store(data, current)["found"], song_store(data, baseline)["found"]
+    if now_found is not None and then_found is not None and now_found < then_found - STORE_MARGIN:
+        found.append(f"음악: 스토어에서 찾은 곡이 {then_found:.2f}에서 {now_found:.2f}로 줄었어요.")
     return found
 
 
@@ -367,15 +388,20 @@ def _pct(value: float | None) -> str:
 
 def render_report(data: dict, runs: dict[str, dict], note: str = "") -> str:
     """`runs` maps a label to a run; every table has one row per run, so engines and repeated rounds read side by side."""
-    lines = ["# 지금 추천 — 제품 평가 결과", "", note, "", f"평가 세트: `server/eval/ai_cases.json` (음식 {len(_by(data, category='food'))}·음악 {len(_by(data, category='music'))}개)", ""]
-    header = "| 실행 | 사례 | 무응답 | 재시도 | 개수 부족 | p50 | p95 | 잘 맞음 | 받아들일 만함 | 1개 이상 잘 맞음 | 제외 위반(판별표) | 제외 위반(심사) | 반대 추천(심사) | 없는 항목(심사) |"
+    lines = ["# 지금 추천 — 제품 평가 결과", "", note, "", f"평가 세트: `server/eval/ai_cases.json` (음식 {len(_by(data, category='food'))}·음악 {len(_by(data, category='music'))}개)", "",
+             "읽는 법:", "",
+             "- 판별표는 이름만 봐도 분명한 경우만 잡아요. 위반 수는 하한선이에요.",
+             "- 심사는 다른 AI 모델의 판단이고 사람의 검수가 아니에요. 비율은 흐름을 보는 용도로 쓰고, 항목별 근거는 아래 목록에서 확인해요.",
+             "- 심사 모델은 곡의 실존을 잘 판단하지 못했어요(2026-11-10 검토에서 스토어에 없던 곡 대부분을 있다고 답함). 실존은 스토어 표를 봐요.",
+             "- 충돌 사례의 취향은 브라우저가 걸러 주기 전 상태예요. 운영 화면에서는 이 충돌 일부가 서버에 닿기 전에 걸러져요.", ""]
+    header = "| 실행 | 사례 | 무응답 | 재시도 | 개수 부족 | p50 | p95 | 잘 맞음 | 받아들일 만함 | 1개 이상 잘 맞음 | 제외 위반(판별표) | 반대 추천(판별표) | 제외 위반(심사) | 반대 추천(심사) | 없다고 확신(심사) |"
     for category, label in CATEGORY_LABEL.items():
-        lines += [f"## {label}", "", header, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        lines += [f"## {label}", "", header, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for name, run in runs.items():
             m = summarize(data, run, _by(data, category=category))
             table = f"{m['table_broken']}건 ({m['table_broken_cases']}사례)" if category == "food" else "-"
             speed = (f"{m['p50_ms'] / 1000:.1f}s", f"{m['p95_ms'] / 1000:.1f}s") if m["p50_ms"] is not None else ("-", "-")
-            lines.append(f"| {name} | {m['cases']} | {m['unanswered']} | {m['retried']} | {m['short']} | {speed[0]} | {speed[1]} | {_pct(m['good'])} | {_pct(m['acceptable'])} | {_pct(m['hit'])} | {table} | {_pct(m['judge_broken'])} | {_pct(m['opposes'])} | {_pct(m['unreal'])} |")
+            lines.append(f"| {name} | {m['cases']} | {m['unanswered']} | {m['retried']} | {m['short']} | {speed[0]} | {speed[1]} | {_pct(m['good'])} | {_pct(m['acceptable'])} | {_pct(m['hit'])} | {table} | {m['table_opposite'] if category == 'food' else '-'} | {_pct(m['judge_broken'])} | {_pct(m['opposes'])} | {_pct(m['unreal'])} |")
         lines += ["", "| 실행 | 사례 종류 | 사례 | 잘 맞음 | 받아들일 만함 | 제외 위반(심사) | 반대 추천(심사) |", "|---|---|---|---|---|---|---|"]
         for name, run in runs.items():
             for kind, kind_label in data["kinds"].items():
@@ -406,6 +432,8 @@ def render_report(data: dict, runs: dict[str, dict], note: str = "") -> str:
                 if reasons:
                     details.append(f"- {case['id']} \"{case['text']}\" → {pick['name']}" + (f" ({pick['detail']})" if pick.get("detail") else "") + f": {', '.join(reasons)}" + (f" — {judged['note']}" if judged.get("note") else ""))
         lines += [f"### {name}", "", *(details or ["없음"]), ""]
+        if shifts := ingredient_shifts(data, run):
+            lines += ["재료 목록이 요청에 따라 달라진 메뉴(서버 검사가 믿는 목록이에요):", "", *(f"- {s}" for s in shifts), ""]
         if outside := song_store(data, run)["outside"]:
             lines += ["발매 연도 범위 밖으로 보이는 곡(스토어 날짜는 재발매일 수 있어요):", "", *(f"- {o}" for o in outside), ""]
     return "\n".join(lines).rstrip() + "\n"

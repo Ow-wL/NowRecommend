@@ -1,0 +1,4799 @@
+{
+ "meta": {
+  "engine": "catalog",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "FS1": {
+   "wanted": 3,
+   "ms": 885.3472999981022,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "육개장",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "달걀",
+      "콩",
+      "버섯"
+     ]
+    },
+    {
+     "name": "마라탕",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "저녁"
+     ],
+     "ingredients": [
+      "땅콩",
+      "소고기",
+      "밀",
+      "콩",
+      "생선"
+     ]
+    },
+    {
+     "name": "순두부찌개",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "달걀",
+      "돼지고기",
+      "생선",
+      "해산물"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 얼큰한 국물 요리로 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "얼큰하고 매콤한 국물 요리에 부합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "얼큰한 국물 찌개 요리로 적합"
+    }
+   ]
+  },
+  "FS2": {
+   "wanted": 3,
+   "ms": 558.1167999989702,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "물냉면",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "차가움",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "메밀",
+      "밀",
+      "소고기",
+      "달걀",
+      "콩"
+     ]
+    },
+    {
+     "name": "샐러드",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "양식"
+     ],
+     "ingredients": [
+      "달걀",
+      "토마토",
+      "유제품"
+     ]
+    },
+    {
+     "name": "회덮밥",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "일식"
+     ],
+     "ingredients": [
+      "생선",
+      "콩",
+      "밀",
+      "참깨"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "더운 날 시원한 대표 점심 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "시원하게 먹기 좋은 가벼운 점심"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "점심 식사로 적합하나 보통 미지근함"
+    }
+   ]
+  },
+  "FS3": {
+   "wanted": 3,
+   "ms": 549.6206000025268,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "샐러드",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "양식"
+     ],
+     "ingredients": [
+      "달걀",
+      "토마토",
+      "유제품"
+     ]
+    },
+    {
+     "name": "물냉면",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "차가움",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "메밀",
+      "밀",
+      "소고기",
+      "달걀",
+      "콩"
+     ]
+    },
+    {
+     "name": "팟타이",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "따뜻함",
+      "혼자",
+      "점심",
+      "아시안"
+     ],
+     "ingredients": [
+      "달걀",
+      "땅콩",
+      "해산물",
+      "생선",
+      "콩"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "드레싱으로 새콤한 맛이 나는 대표적 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "식초와 겨자를 첨가해 새콤하게 즐김"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "타마린드로 새콤한 맛이 있으나 비빔면류"
+    }
+   ]
+  },
+  "FS4": {
+   "wanted": 3,
+   "ms": 573.4788999980083,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "소고기 스테이크",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "양식"
+     ],
+     "ingredients": [
+      "소고기",
+      "유제품"
+     ]
+    },
+    {
+     "name": "찜닭",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기",
+      "콩",
+      "밀",
+      "감자",
+      "당근"
+     ]
+    },
+    {
+     "name": "인도 커리",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "아시안"
+     ],
+     "ingredients": [
+      "유제품",
+      "닭고기",
+      "토마토",
+      "밀"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2인 저녁 식사로 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "둘이서 먹기 좋은 든든한 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2인 저녁 메뉴로 양호함"
+    }
+   ]
+  },
+  "FS5": {
+   "wanted": 3,
+   "ms": 777.9198999996879,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "샐러드",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "양식"
+     ],
+     "ingredients": [
+      "달걀",
+      "토마토",
+      "유제품"
+     ]
+    },
+    {
+     "name": "된장찌개",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "채소",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "감자",
+      "버섯",
+      "생선"
+     ]
+    },
+    {
+     "name": "채소 카레",
+     "detail": "",
+     "tags": [
+      "따뜻함",
+      "채소",
+      "점심",
+      "혼자"
+     ],
+     "ingredients": [
+      "감자",
+      "당근",
+      "밀",
+      "유제품"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "채소가 많은 대표적 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "채소가 일부 들어가나 보통"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "채소가 듬뿍 들어간 카레"
+    }
+   ]
+  },
+  "FS6": {
+   "wanted": 3,
+   "ms": 563.5980000006384,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "콩나물국밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "달걀",
+      "생선"
+     ]
+    },
+    {
+     "name": "마라탕",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "저녁"
+     ],
+     "ingredients": [
+      "땅콩",
+      "소고기",
+      "밀",
+      "콩",
+      "생선"
+     ]
+    },
+    {
+     "name": "육개장",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "달걀",
+      "콩",
+      "버섯"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 해장 국물 요리"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "자극적이라 해장에 부적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "얼큰한 해장 국물 메뉴"
+    }
+   ]
+  },
+  "FS7": {
+   "wanted": 3,
+   "ms": 579.6016999956919,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "치킨",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁"
+     ],
+     "ingredients": [
+      "닭고기",
+      "밀",
+      "달걀",
+      "콩"
+     ]
+    },
+    {
+     "name": "버섯 리조토",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "저녁",
+      "양식"
+     ],
+     "ingredients": [
+      "버섯",
+      "유제품"
+     ]
+    },
+    {
+     "name": "비빔밥",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "점심",
+      "한식",
+      "채소",
+      "혼자"
+     ],
+     "ingredients": [
+      "달걀",
+      "참깨",
+      "소고기",
+      "콩",
+      "밀"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "튀김의 고소함이 있으나 보통은 기름짐"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "크림과 버섯의 고소한 맛이 잘 맞음"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "참기름 등이 들어가나 고소함이 주특징은 아님"
+    }
+   ]
+  },
+  "FX1": {
+   "wanted": 3,
+   "ms": 570.8880000020145,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "떡국",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "달걀",
+      "콩",
+      "참깨"
+     ]
+    },
+    {
+     "name": "분짜",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "아시안"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "생선",
+      "땅콩",
+      "당근"
+     ]
+    },
+    {
+     "name": "김치볶음밥",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "달걀",
+      "돼지고기",
+      "콩",
+      "참깨",
+      "생선"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "쌀떡 기반으로 밀가루 없음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "쌀국수 면으로 밀가루 없음"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밥 요리로 밀가루 없음"
+    }
+   ]
+  },
+  "FX2": {
+   "wanted": 3,
+   "ms": 590.3338999996777,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "제육볶음",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩",
+      "밀",
+      "참깨"
+     ]
+    },
+    {
+     "name": "인도 커리",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "아시안"
+     ],
+     "ingredients": [
+      "유제품",
+      "닭고기",
+      "토마토",
+      "밀"
+     ]
+    },
+    {
+     "name": "마파두부",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "혼자",
+      "저녁",
+      "중식"
+     ],
+     "ingredients": [
+      "콩",
+      "돼지고기",
+      "밀"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "땅콩 없고 매콤함"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "일반적으로 매콤함이 부족함"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "땅콩 없고 매콤함"
+    }
+   ]
+  },
+  "FX3": {
+   "wanted": 3,
+   "ms": 681.9873999993433,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "물냉면",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "차가움",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "메밀",
+      "밀",
+      "소고기",
+      "달걀",
+      "콩"
+     ]
+    },
+    {
+     "name": "빙수",
+     "detail": "",
+     "tags": [
+      "차가움",
+      "함께",
+      "간식",
+      "한식"
+     ],
+     "ingredients": [
+      "유제품",
+      "콩"
+     ]
+    },
+    {
+     "name": "샐러드",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "양식"
+     ],
+     "ingredients": [
+      "달걀",
+      "토마토",
+      "유제품"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "시원하고 생선 없음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "시원한 디저트"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차갑지만 특별히 시원하진 않음"
+    }
+   ]
+  },
+  "FX4": {
+   "wanted": 3,
+   "ms": 606.6788999960409,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "채소 카레",
+     "detail": "",
+     "tags": [
+      "따뜻함",
+      "채소",
+      "점심",
+      "혼자"
+     ],
+     "ingredients": [
+      "감자",
+      "당근",
+      "밀",
+      "유제품"
+     ]
+    },
+    {
+     "name": "떡볶이",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "분식",
+      "간식"
+     ],
+     "ingredients": [
+      "밀",
+      "생선",
+      "콩"
+     ]
+    },
+    {
+     "name": "된장찌개",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "채소",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "감자",
+      "버섯",
+      "생선"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "고기가 들어가지 않은 채소 카레"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "고기 없는 분식 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "기본적으로 고기가 들어가지 않음"
+    }
+   ]
+  },
+  "FX5": {
+   "wanted": 3,
+   "ms": 560.7210000016494,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "두부 덮밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "혼자",
+      "저녁",
+      "채소"
+     ],
+     "ingredients": [
+      "콩",
+      "밀"
+     ]
+    },
+    {
+     "name": "양꼬치",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "중식"
+     ],
+     "ingredients": [
+      "참깨"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비건 재료 두부 덮밥"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "양고기 사용으로 제외 대상"
+    }
+   ]
+  },
+  "FX6": {
+   "wanted": 3,
+   "ms": 604.3705000047339,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "쌀국수",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "혼자",
+      "저녁",
+      "점심",
+      "국물"
+     ],
+     "ingredients": [
+      "소고기",
+      "밀",
+      "생선",
+      "콩"
+     ]
+    },
+    {
+     "name": "규동",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "혼자",
+      "점심",
+      "일식"
+     ],
+     "ingredients": [
+      "소고기",
+      "콩",
+      "밀",
+      "달걀"
+     ]
+    },
+    {
+     "name": "찜닭",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기",
+      "콩",
+      "밀",
+      "감자",
+      "당근"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "양식이 아닌 아시안 요리"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "양식이 아닌 일식 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "양식이 아닌 한식 메뉴"
+    }
+   ]
+  },
+  "FX7": {
+   "wanted": 3,
+   "ms": 604.1726999974344,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "떡국",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "달걀",
+      "콩",
+      "참깨"
+     ]
+    },
+    {
+     "name": "된장찌개",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "채소",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "감자",
+      "버섯",
+      "생선"
+     ]
+    },
+    {
+     "name": "우동",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "일식"
+     ],
+     "ingredients": [
+      "밀",
+      "생선",
+      "콩"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "따뜻하고 순한 국물 요리로 적절함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "따뜻하고 매지 않은 국물 요리"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "따뜻하고 맵지 않은 국물 면요리"
+    }
+   ]
+  },
+  "FX8": {
+   "wanted": 3,
+   "ms": 585.0741000031121,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "두부 덮밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "혼자",
+      "저녁",
+      "채소"
+     ],
+     "ingredients": [
+      "콩",
+      "밀"
+     ]
+    },
+    {
+     "name": "삼겹살",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩",
+      "참깨"
+     ]
+    },
+    {
+     "name": "인도 커리",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "아시안"
+     ],
+     "ingredients": [
+      "유제품",
+      "닭고기",
+      "토마토",
+      "밀"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달걀 없이 저녁으로 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달걀 없는 대표적 저녁 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달걀 안 들어가는 커리 저녁에 적합"
+    }
+   ]
+  },
+  "FC1": {
+   "wanted": 3,
+   "ms": 575.8150999972713,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "두부 덮밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "혼자",
+      "저녁",
+      "채소"
+     ],
+     "ingredients": [
+      "콩",
+      "밀"
+     ]
+    },
+    {
+     "name": "삼계탕",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기"
+     ]
+    },
+    {
+     "name": "된장찌개",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "채소",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "감자",
+      "버섯",
+      "생선"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백한 저녁 식사로 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백한 보양식 저녁 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "일반적인 저녁 메뉴"
+    }
+   ]
+  },
+  "FC2": {
+   "wanted": 3,
+   "ms": 603.4138999966672,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "떡국",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "달걀",
+      "콩",
+      "참깨"
+     ]
+    },
+    {
+     "name": "샌드위치",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "차가움",
+      "점심",
+      "혼자",
+      "채소"
+     ],
+     "ingredients": [
+      "밀",
+      "달걀",
+      "유제품",
+      "돼지고기"
+     ]
+    },
+    {
+     "name": "우동",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "일식"
+     ],
+     "ingredients": [
+      "밀",
+      "생선",
+      "콩"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백한 혼밥 점심에 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백하고 가벼운 점심으로 적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백한 국물의 혼밥 점심 메뉴"
+    }
+   ]
+  },
+  "FC3": {
+   "wanted": 3,
+   "ms": 541.3401999976486,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "마라탕",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "저녁"
+     ],
+     "ingredients": [
+      "땅콩",
+      "소고기",
+      "밀",
+      "콩",
+      "생선"
+     ]
+    },
+    {
+     "name": "제육볶음",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩",
+      "밀",
+      "참깨"
+     ]
+    },
+    {
+     "name": "순두부찌개",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "달걀",
+      "돼지고기",
+      "생선",
+      "해산물"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "매우 매운 자극적 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "매콤하지만 아주 맵진 않음"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "얼큰하나 아주 매운 편은 아님"
+    }
+   ]
+  },
+  "FC4": {
+   "wanted": 3,
+   "ms": 580.7578999956604,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "물냉면",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "차가움",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "메밀",
+      "밀",
+      "소고기",
+      "달걀",
+      "콩"
+     ]
+    },
+    {
+     "name": "빙수",
+     "detail": "",
+     "tags": [
+      "차가움",
+      "함께",
+      "간식",
+      "한식"
+     ],
+     "ingredients": [
+      "유제품",
+      "콩"
+     ]
+    },
+    {
+     "name": "샐러드",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "상큼함",
+      "차가움",
+      "채소",
+      "혼자",
+      "점심",
+      "양식"
+     ],
+     "ingredients": [
+      "달걀",
+      "토마토",
+      "유제품"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 차가운 음식"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "시원하고 차가운 디저트"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차가운 편이나 보통 식사"
+    }
+   ]
+  },
+  "FT1a": {
+   "wanted": 3,
+   "ms": 544.2517999981646,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "우동",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "일식"
+     ],
+     "ingredients": [
+      "밀",
+      "생선",
+      "콩"
+     ]
+    },
+    {
+     "name": "떡국",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "달걀",
+      "콩",
+      "참깨"
+     ]
+    },
+    {
+     "name": "연어 초밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "차가움",
+      "점심",
+      "혼자",
+      "일식"
+     ],
+     "ingredients": [
+      "생선",
+      "콩",
+      "밀"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "선호 음식으로 점심에 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백한 식사 메뉴로 적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "점심 메뉴로 추천하기 좋음"
+    }
+   ]
+  },
+  "FT1b": {
+   "wanted": 3,
+   "ms": 131.4148000019486,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "김치볶음밥",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "혼자",
+      "점심",
+      "한식"
+     ],
+     "ingredients": [
+      "달걀",
+      "돼지고기",
+      "콩",
+      "참깨",
+      "생선"
+     ]
+    },
+    {
+     "name": "우동",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "일식"
+     ],
+     "ingredients": [
+      "밀",
+      "생선",
+      "콩"
+     ]
+    },
+    {
+     "name": "순두부찌개",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "달걀",
+      "돼지고기",
+      "생선",
+      "해산물"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "점심 식사로 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "점심 메뉴로 무난함"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "점심 식사로 좋은 메뉴"
+    }
+   ]
+  },
+  "FT2a": {
+   "wanted": 3,
+   "ms": 573.8446000032127,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "두부 덮밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "혼자",
+      "저녁",
+      "채소"
+     ],
+     "ingredients": [
+      "콩",
+      "밀"
+     ]
+    },
+    {
+     "name": "소고기 스테이크",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "양식"
+     ],
+     "ingredients": [
+      "소고기",
+      "유제품"
+     ]
+    },
+    {
+     "name": "보쌈",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩",
+      "생선",
+      "해산물"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "평소 선호 메뉴 및 저녁식사 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "저녁 메뉴로 널리 추천할 만함"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "저녁 식사 메뉴로 적절함"
+    }
+   ]
+  },
+  "FT2b": {
+   "wanted": 3,
+   "ms": 156.5727999986848,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "김치찌개",
+     "detail": "",
+     "tags": [
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "생선",
+      "콩"
+     ]
+    },
+    {
+     "name": "두부 덮밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "혼자",
+      "저녁",
+      "채소"
+     ],
+     "ingredients": [
+      "콩",
+      "밀"
+     ]
+    },
+    {
+     "name": "소고기 스테이크",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "양식"
+     ],
+     "ingredients": [
+      "소고기",
+      "유제품"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "취향 반영 저녁 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "무난한 저녁 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "적절한 저녁 메뉴"
+    }
+   ]
+  },
+  "FB1": {
+   "wanted": 3,
+   "ms": 558.2986999943387,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "치킨",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁"
+     ],
+     "ingredients": [
+      "닭고기",
+      "밀",
+      "달걀",
+      "콩"
+     ]
+    },
+    {
+     "name": "닭곰탕",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "혼자",
+      "저녁",
+      "국물"
+     ],
+     "ingredients": [
+      "닭고기"
+     ]
+    },
+    {
+     "name": "찜닭",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "함께",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기",
+      "콩",
+      "밀",
+      "감자",
+      "당근"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "치킨 요청에 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "치킨이 아닌 닭 요리"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "치킨이 아닌 찜 요리"
+    }
+   ]
+  },
+  "FB2": {
+   "wanted": 3,
+   "ms": 579.7155000036582,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "크림 파스타",
+     "detail": "",
+     "tags": [
+      "고소함",
+      "따뜻함",
+      "혼자",
+      "저녁",
+      "양식"
+     ],
+     "ingredients": [
+      "밀",
+      "유제품",
+      "달걀",
+      "돼지고기",
+      "버섯"
+     ]
+    },
+    {
+     "name": "토마토 파스타",
+     "detail": "",
+     "tags": [
+      "상큼함",
+      "따뜻함",
+      "양식",
+      "저녁"
+     ],
+     "ingredients": [
+      "밀",
+      "토마토",
+      "유제품"
+     ]
+    },
+    {
+     "name": "버섯 리조토",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "저녁",
+      "양식"
+     ],
+     "ingredients": [
+      "버섯",
+      "유제품"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "요청한 파스타 메뉴에 잘 맞음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "요청한 파스타 메뉴에 잘 맞음"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "양식이나 파스타는 아님"
+    }
+   ]
+  },
+  "MS1": {
+   "wanted": 5,
+   "ms": 692.3636999999871,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "River Flows in You",
+     "detail": "이루마",
+     "tags": [
+      "차분함",
+      "과제",
+      "연주곡",
+      "피아노",
+      "낮은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "One Summer’s Day",
+     "detail": "히사이시 조",
+     "tags": [
+      "차분함",
+      "과제",
+      "연주곡",
+      "피아노",
+      "중간 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Clair de lune",
+     "detail": "Claude Debussy",
+     "tags": [
+      "차분함",
+      "과제",
+      "휴식",
+      "연주곡",
+      "피아노",
+      "낮은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Lake Louise",
+     "detail": "유키 구라모토",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "과제"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 피아노 곡으로 과제에 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 연주곡으로 요청과 잘 맞음"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "드뷔시의 유명한 잔잔한 피아노곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적이고 차분한 피아노 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "쇼팽의 대표적인 잔잔한 야상곡"
+    }
+   ]
+  },
+  "MS2": {
+   "wanted": 5,
+   "ms": 812.4619000009261,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "CHEER UP",
+     "detail": "TWICE",
+     "tags": [
+      "보컬",
+      "높은 에너지",
+      "팝",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "말달리자",
+     "detail": "크라잉넛",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Don't Stop Me Now",
+     "detail": "Queen",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "여행",
+     "detail": "볼빨간사춘기",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "아주 NICE",
+     "detail": "SEVENTEEN",
+     "tags": [
+      "보컬",
+      "높은 에너지",
+      "팝",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 활기찬 곡으로 달리기 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달리기와 완벽히 어울리는 록 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치고 신나는 운동 곡"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝지만 달리기엔 약간 느림"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 비트가 빨라 러닝에 좋음"
+    }
+   ]
+  },
+  "MS3": {
+   "wanted": 5,
+   "ms": 714.3486999993911,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "우산",
+     "detail": "에픽하이",
+     "tags": [
+      "보컬",
+      "중간 에너지",
+      "차분함",
+      "휴식",
+      "발라드"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "좋은 밤 좋은 꿈",
+     "detail": "너드커넥션",
+     "tags": [
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식",
+      "어쿠스틱"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "거리에서",
+     "detail": "성시경",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "너였다면",
+     "detail": "정승환",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 대표곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밤에 감성적으로 들음"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오고 외로운 밤 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 야곡으로 적합"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "혼자 듣기 좋은 발라드"
+    }
+   ]
+  },
+  "MS4": {
+   "wanted": 5,
+   "ms": 663.774700005888,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "What a Wonderful World",
+     "detail": "Louis Armstrong",
+     "tags": [
+      "재즈",
+      "보컬",
+      "낮은 에너지",
+      "휴식",
+      "차분함"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Naima",
+     "detail": "John Coltrane",
+     "tags": [
+      "연주곡",
+      "재즈",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Waltz for Debby",
+     "detail": "Bill Evans",
+     "tags": [
+      "연주곡",
+      "재즈",
+      "피아노",
+      "중간 에너지",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "My Funny Valentine",
+     "detail": "Chet Baker",
+     "tags": [
+      "재즈",
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "So What",
+     "detail": "Miles Davis",
+     "tags": [
+      "연주곡",
+      "재즈",
+      "중간 에너지",
+      "산책"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 재즈 명곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "존 콜트레인의 재즈 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "빌 에반스의 재즈 명곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "챗 베이커의 재즈 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "마일스 데이비스 재즈곡"
+    }
+   ]
+  },
+  "MS5": {
+   "wanted": 5,
+   "ms": 659.7464000005857,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "좋은 밤 좋은 꿈",
+     "detail": "너드커넥션",
+     "tags": [
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식",
+      "어쿠스틱"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "On the Nature of Daylight",
+     "detail": "Max Richter",
+     "tags": [
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Going Home",
+     "detail": "Kenny G",
+     "tags": [
+      "재즈",
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "한숨",
+     "detail": "이하이",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Here Comes the Sun",
+     "detail": "The Beatles",
+     "tags": [
+      "보컬",
+      "어쿠스틱",
+      "중간 에너지",
+      "산책",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잠들기 전 듣기 좋은 잔잔한 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분하고 차분해지는 현대 클래식"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "편안한 연주곡으로 휴식에 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "위로와 휴식을 주는 잔잔한 곡"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 힐링되나 취침 전엔 다소 경쾌함"
+    }
+   ]
+  },
+  "MS6": {
+   "wanted": 5,
+   "ms": 631.0674999986077,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "I Like Me Better",
+     "detail": "Lauv",
+     "tags": [
+      "보컬",
+      "팝",
+      "어쿠스틱",
+      "중간 에너지",
+      "휴식",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Wonderwall",
+     "detail": "Oasis",
+     "tags": [
+      "록",
+      "보컬",
+      "어쿠스틱",
+      "중간 에너지",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "별 보러 가자",
+     "detail": "적재",
+     "tags": [
+      "어쿠스틱",
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "옛사랑",
+     "detail": "이문세",
+     "tags": [
+      "보컬",
+      "발라드",
+      "어쿠스틱",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Perfect",
+     "detail": "Ed Sheeran",
+     "tags": [
+      "보컬",
+      "낮은 에너지",
+      "발라드",
+      "어쿠스틱",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신스팝 요소가 있는 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 어쿠스틱 기타 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 감성의 대표곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적인 어쿠스틱 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 기타 기반 팝 발라드"
+    }
+   ]
+  },
+  "MS7": {
+   "wanted": 5,
+   "ms": 740.7762000002549,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "좋은 날",
+     "detail": "아이유",
+     "tags": [
+      "활기참",
+      "산책",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "벚꽃 엔딩",
+     "detail": "버스커 버스커",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지",
+      "산책",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Eine kleine Nachtmusik",
+     "detail": "Wolfgang Amadeus Mozart",
+     "tags": [
+      "연주곡",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Permission to Dance",
+     "detail": "BTS",
+     "tags": [
+      "팝",
+      "보컬",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "tags": [
+      "활기참",
+      "산책",
+      "보컬",
+      "록",
+      "높은 에너지"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 활기찬 곡으로 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "산책에 잘 어울리는 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "경쾌하여 산책에 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 에너지 넘침"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "벅차오르고 활기찬 분위기"
+    }
+   ]
+  },
+  "MX1": {
+   "wanted": 5,
+   "ms": 558.0639999971027,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Clair de lune",
+     "detail": "Claude Debussy",
+     "tags": [
+      "차분함",
+      "과제",
+      "휴식",
+      "연주곡",
+      "피아노",
+      "낮은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Cello Suite No. 1 Prelude",
+     "detail": "Johann Sebastian Bach",
+     "tags": [
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "과제"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Blue in Green",
+     "detail": "Miles Davis",
+     "tags": [
+      "차분함",
+      "과제",
+      "연주곡",
+      "재즈",
+      "낮은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "One Summer’s Day",
+     "detail": "히사이시 조",
+     "tags": [
+      "차분함",
+      "과제",
+      "연주곡",
+      "피아노",
+      "중간 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Aruarian Dance",
+     "detail": "Nujabes",
+     "tags": [
+      "연주곡",
+      "차분함",
+      "낮은 에너지",
+      "휴식",
+      "과제"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 피아노 곡으로 집중 시 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 바흐의 첼로 연주곡으로 적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 재즈 연주곡으로 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 피아노 연주곡으로 적합"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 차분한 로파이 인스트루멘탈"
+    }
+   ]
+  },
+  "MX2": {
+   "wanted": 5,
+   "ms": 578.7765999994008,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Eine kleine Nachtmusik",
+     "detail": "Wolfgang Amadeus Mozart",
+     "tags": [
+      "연주곡",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Summer",
+     "detail": "히사이시 조",
+     "tags": [
+      "활기참",
+      "과제",
+      "연주곡",
+      "피아노",
+      "중간 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Spring (The Four Seasons)",
+     "detail": "Antonio Vivaldi",
+     "tags": [
+      "연주곡",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Boléro",
+     "detail": "Maurice Ravel",
+     "tags": [
+      "연주곡",
+      "높은 에너지",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Linus and Lucy",
+     "detail": "Vince Guaraldi Trio",
+     "tags": [
+      "재즈",
+      "피아노",
+      "연주곡",
+      "중간 에너지",
+      "활기참"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 경쾌한 클래식"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 밝고 신나는 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 활기찬 클래식"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없으나 점진적 빌드업 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 재즈 피아노곡"
+    }
+   ]
+  },
+  "MX3": {
+   "wanted": 5,
+   "ms": 571.4535000006435,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Let It Be",
+     "detail": "The Beatles",
+     "tags": [
+      "보컬",
+      "발라드",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "On the Nature of Daylight",
+     "detail": "Max Richter",
+     "tags": [
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Love poem",
+     "detail": "아이유",
+     "tags": [
+      "차분함",
+      "휴식",
+      "보컬",
+      "발라드",
+      "낮은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "My Funny Valentine",
+     "detail": "Chet Baker",
+     "tags": [
+      "재즈",
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Going Home",
+     "detail": "Kenny G",
+     "tags": [
+      "재즈",
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비틀즈의 팝/록 곡으로 팝 제외 조건 위반"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "현대 클래식으로 매우 차분함"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 발라드 곡이나 K-pop 범주"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 재즈 보컬 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 연주곡(연동 재즈)"
+    }
+   ]
+  },
+  "MX4": {
+   "wanted": 5,
+   "ms": 637.9516999950283,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "tags": [
+      "활기참",
+      "산책",
+      "보컬",
+      "록",
+      "높은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Shake It Off",
+     "detail": "Taylor Swift",
+     "tags": [
+      "보컬",
+      "높은 에너지",
+      "팝",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Eine kleine Nachtmusik",
+     "detail": "Wolfgang Amadeus Mozart",
+     "tags": [
+      "연주곡",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "여행",
+     "detail": "볼빨간사춘기",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "바운스",
+     "detail": "조용필",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": true,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "피아노 반주 위주의 곡임"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 활기찬 팝송"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 가요/팝송과 거리 있음"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "기분 전환에 좋은 신나는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 경쾌한 댄스 곡"
+    }
+   ]
+  },
+  "MX5": {
+   "wanted": 5,
+   "ms": 632.8890000004321,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "tags": [
+      "보컬",
+      "높은 에너지",
+      "팝",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "여행",
+     "detail": "볼빨간사춘기",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Boléro",
+     "detail": "Maurice Ravel",
+     "tags": [
+      "연주곡",
+      "높은 에너지",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "After LIKE",
+     "detail": "IVE",
+     "tags": [
+      "팝",
+      "보컬",
+      "높은 에너지",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "들었다 놨다",
+     "detail": "데이브레이크",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 펑크/팝 곡으로 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 에너지 넘치는 인디팝 곡"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "점진적으로 커지는 차분한 클래식 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 댄스 팝 곡"
+    },
+    {
+     "index": 4,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "데이브레이크는 팝록 밴드로 록 제외 위반"
+    }
+   ]
+  },
+  "MC1": {
+   "wanted": 5,
+   "ms": 781.6795999970054,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "좋은 밤 좋은 꿈",
+     "detail": "너드커넥션",
+     "tags": [
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식",
+      "어쿠스틱"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Love poem",
+     "detail": "아이유",
+     "tags": [
+      "차분함",
+      "휴식",
+      "보컬",
+      "발라드",
+      "낮은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Going Home",
+     "detail": "Kenny G",
+     "tags": [
+      "재즈",
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Let It Be",
+     "detail": "The Beatles",
+     "tags": [
+      "보컬",
+      "발라드",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "수면에 적합한 차분한 클래식 곡이다."
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분하고 수면/휴식에 적합한 곡이다."
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔하고 차분하여 수면에 적합하다."
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 색소폰 연주곡으로 휴식에 좋다."
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 편이나 수면 전용으론 평범함."
+    }
+   ]
+  },
+  "MC2": {
+   "wanted": 5,
+   "ms": 659.9581000045873,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "tags": [
+      "보컬",
+      "높은 에너지",
+      "팝",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "잘못된 만남",
+     "detail": "김건모",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Hype Boy",
+     "detail": "NewJeans",
+     "tags": [
+      "활기참",
+      "운동",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "붉은 노을",
+     "detail": "이문세",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Believer",
+     "detail": "Imagine Dragons",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지",
+      "운동",
+      "활기참"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 에너지 넘침"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "빠르고 신나는 댄스곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "경쾌하고 신나는 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "운동에 잘 어울리는 곡"
+    }
+   ]
+  },
+  "MC3": {
+   "wanted": 5,
+   "ms": 593.6551999984658,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "The Path of the Wind",
+     "detail": "히사이시 조",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "휴식",
+      "산책"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Going Home",
+     "detail": "Kenny G",
+     "tags": [
+      "재즈",
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Gabriel's Oboe",
+     "detail": "Ennio Morricone",
+     "tags": [
+      "연주곡",
+      "차분함",
+      "낮은 에너지",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Air on the G String",
+     "detail": "Johann Sebastian Bach",
+     "tags": [
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "쇼팽의 대표적인 피아노 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "히사이시 조의 유명 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "케니 지의 대표 섹소폰 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "엔니오 모리꼬네의 오보에 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "바흐의 G선상의 아리아 연주곡"
+    }
+   ]
+  },
+  "MT1a": {
+   "wanted": 5,
+   "ms": 631.1298000000534,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "우산",
+     "detail": "에픽하이",
+     "tags": [
+      "보컬",
+      "중간 에너지",
+      "차분함",
+      "휴식",
+      "발라드"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "모든 날, 모든 순간",
+     "detail": "폴킴",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식",
+      "과제"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "tags": [
+      "연주곡",
+      "피아노",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "주저하는 연인들을 위해",
+     "detail": "잔나비",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "보고 싶다",
+     "detail": "김범수",
+     "tags": [
+      "발라드",
+      "보컬",
+      "낮은 에너지",
+      "차분함"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "오늘 들을 노래 추천에 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 감성 발라드로 적합함"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 클래식 피아노곡으로 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 곡으로 추천에 적합함"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "유명 발라드 곡으로 적합함"
+    }
+   ]
+  },
+  "MT1b": {
+   "wanted": 5,
+   "ms": 283.0905000009807,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "여행",
+     "detail": "볼빨간사춘기",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "벚꽃 엔딩",
+     "detail": "버스커 버스커",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지",
+      "산책",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "LOVE DIVE",
+     "detail": "IVE",
+     "tags": [
+      "팝",
+      "보컬",
+      "높은 에너지",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "좋은 날",
+     "detail": "아이유",
+     "tags": [
+      "활기참",
+      "산책",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "여행을 떠나요",
+     "detail": "조용필",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "볼빨간사춘기의 인기 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "버스커 버스커의 대표 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "IVE의 대표곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "아이유의 대표 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "조용필의 대표곡"
+    }
+   ]
+  },
+  "MT2a": {
+   "wanted": 5,
+   "ms": 691.3629999980913,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Going Home",
+     "detail": "Kenny G",
+     "tags": [
+      "재즈",
+      "연주곡",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "여행",
+     "detail": "볼빨간사춘기",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "이등병의 편지",
+     "detail": "김광석",
+     "tags": [
+      "보컬",
+      "발라드",
+      "어쿠스틱",
+      "낮은 에너지",
+      "차분함"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "봄날",
+     "detail": "BTS",
+     "tags": [
+      "차분함",
+      "산책",
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "거리에서",
+     "detail": "성시경",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 적합한 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 출근길 노래"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "입대 관련 우울한 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 들을 만함"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 발라드 곡"
+    }
+   ]
+  },
+  "MT2b": {
+   "wanted": 5,
+   "ms": 276.5285999994376,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "여행",
+     "detail": "볼빨간사춘기",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "좋은 날",
+     "detail": "아이유",
+     "tags": [
+      "활기참",
+      "산책",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "벚꽃 엔딩",
+     "detail": "버스커 버스커",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지",
+      "산책",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Welcome to the Show",
+     "detail": "DAY6",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지",
+      "활기참",
+      "팝"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Permission to Dance",
+     "detail": "BTS",
+     "tags": [
+      "팝",
+      "보컬",
+      "높은 에너지",
+      "활기참",
+      "산책"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "취향 반영 출근길 추천"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 출근길에 잘 어울림"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 출근길에 적합"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "활기차고 출근길에 적합"
+    }
+   ]
+  },
+  "MY1": {
+   "wanted": 5,
+   "ms": 607.1477000004961,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "보고 싶다",
+     "detail": "김범수",
+     "tags": [
+      "발라드",
+      "보컬",
+      "낮은 에너지",
+      "차분함"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "두 사람",
+     "detail": "성시경",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "거리에서",
+     "detail": "성시경",
+     "tags": [
+      "보컬",
+      "발라드",
+      "낮은 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "너를 위해",
+     "detail": "임재범",
+     "tags": [
+      "발라드",
+      "록",
+      "보컬",
+      "중간 에너지",
+      "차분함"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "총 맞은 것처럼",
+     "detail": "백지영",
+     "tags": [
+      "발라드",
+      "보컬",
+      "중간 에너지",
+      "차분함"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2002년 발매 대표 발라드"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2005년 발매 대표 발라드"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2006년 발매 대표 발라드"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2000년 발매 대표 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2008년 발매 대표 발라드"
+    }
+   ]
+  },
+  "MY2": {
+   "wanted": 5,
+   "ms": 544.8076999964542,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "잘못된 만남",
+     "detail": "김건모",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "해변의 여인",
+     "detail": "쿨",
+     "tags": [
+      "보컬",
+      "팝",
+      "높은 에너지",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "말달리자",
+     "detail": "크라잉넛",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지",
+      "활기참",
+      "운동"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "여름 안에서",
+     "detail": "듀스",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지",
+      "산책",
+      "활기참"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Summer",
+     "detail": "히사이시 조",
+     "tags": [
+      "활기참",
+      "과제",
+      "연주곡",
+      "피아노",
+      "중간 에너지"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "90년대 대표적인 신나는 댄스곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "90년대 신나는 쿨의 댄스곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "90년대 신나는 펑크록"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "90년대 듀스의 밝고 신나는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 90년대 가요가 아닌 연주곡"
+    }
+   ]
+  },
+  "MY3": {
+   "wanted": 5,
+   "ms": 493.31530000199564,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "Ditto",
+     "detail": "NewJeans",
+     "tags": [
+      "팝",
+      "보컬",
+      "중간 에너지",
+      "차분함",
+      "휴식"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "봄여름가을겨울 (Still Life)",
+     "detail": "BIGBANG",
+     "tags": [
+      "보컬",
+      "낮은 에너지",
+      "차분함",
+      "휴식",
+      "어쿠스틱"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "꽃",
+     "detail": "지수",
+     "tags": [
+      "보컬",
+      "중간 에너지",
+      "팝",
+      "차분함"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "Anti-Hero",
+     "detail": "Taylor Swift",
+     "tags": [
+      "보컬",
+      "중간 에너지",
+      "팝",
+      "차분함"
+     ],
+     "ingredients": []
+    },
+    {
+     "name": "BIRDS OF A FEATHER",
+     "detail": "Billie Eilish",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지",
+      "산책",
+      "휴식"
+     ],
+     "ingredients": []
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2022년 발매된 잔잔한 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2022년 발매된 차분한 곡"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2023년 발매, 아주 잔잔하진 않음"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2022년 발매된 몽환적 잔잔 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2024년 발매된 감성적인 곡"
+    }
+   ]
+  },
+  "FC5": {
+   "wanted": 3,
+   "ms": 730.769000001601,
+   "failures": [],
+   "issues": {},
+   "picks": [
+    {
+     "name": "된장찌개",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "채소",
+      "혼자",
+      "점심",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "감자",
+      "버섯",
+      "생선"
+     ]
+    },
+    {
+     "name": "두부 덮밥",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "고소함",
+      "혼자",
+      "저녁",
+      "채소"
+     ],
+     "ingredients": [
+      "콩",
+      "밀"
+     ]
+    },
+    {
+     "name": "갈비탕",
+     "detail": "",
+     "tags": [
+      "담백함",
+      "따뜻함",
+      "국물",
+      "혼자",
+      "저녁",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "콩",
+      "달걀"
+     ]
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "담백한 저녁 식사로 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "두부 중심의 담백한 식사"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "기름기를 걷어낸 담백한 국물"
+    }
+   ]
+  }
+ }
+}

@@ -3,7 +3,7 @@ import copy
 import pytest
 
 from app.catalog import load_seed
-from app.evaluation_ai import (answer_ai, base_dish_names, check_songs, item_labels, judge_run, lexicon_hits, load_ai_cases, load_run, pick_flags, regressions, render_report,
+from app.evaluation_ai import (answer_ai, base_dish_names, check_songs, ingredient_shifts, item_labels, judge_run, lexicon_hits, load_ai_cases, load_run, pick_flags, regressions, render_report,
                                request_for, run_cases, song_store, store_lookup, summarize, taste_overlap)
 
 DATA = load_ai_cases()
@@ -48,7 +48,7 @@ def judged(fit=2, **change):
 
 
 def test_case_set_covers_every_kind_in_both_categories():
-    assert len(BY_ID) == len(DATA["cases"]) == 47
+    assert len(BY_ID) == len(DATA["cases"]) == 48
     for category in ("food", "music"):
         kinds = {c["kind"] for c in DATA["cases"] if c["category"] == category}
         assert {"situation", "exclusion", "conflict", "taste"} <= kinds
@@ -76,7 +76,7 @@ def test_the_table_recognises_what_the_name_makes_plain(text, attribute):
     assert attribute in lexicon_hits(LEXICON, text)
 
 
-@pytest.mark.parametrize("text,attribute", [("쌀국수", "밀"), ("닭곰탕", "소고기"), ("백짬뽕", "매콤함"), ("간장떡볶이", "매콤함"), ("콩나물국밥", "콩"), ("유부초밥", "생선"), ("연어 스테이크", "소고기"), ("햄버거", "돼지고기")])
+@pytest.mark.parametrize("text,attribute", [("쌀국수", "밀"), ("닭곰탕", "소고기"), ("백짬뽕", "매콤함"), ("맑은 순두부찌개", "매콤함"),("간장떡볶이", "매콤함"), ("콩나물국밥", "콩"), ("유부초밥", "생선"), ("연어 스테이크", "소고기"), ("햄버거", "돼지고기")])
 def test_the_table_does_not_flag_look_alike_names(text, attribute):
     assert attribute not in lexicon_hits(LEXICON, text)
 
@@ -109,6 +109,29 @@ def test_taste_reaches_the_model_as_production_sends_it():
     answer_ai(DATA, BY_ID["FC1"], model, item_labels(), base_dish_names())
     taste = model.payloads[0]["taste"]
     assert taste["liked"] == ["김치찌개", "마라탕"] and taste["likedTags"] == ["매콤함"] and "제육볶음: 먹어 보니 좋았어요" in taste["likedText"]
+
+
+def test_the_request_behind_the_live_bug_is_sent_as_it_was():
+    model = FakeModel({"picks": [food_pick("죽"), food_pick("미역국"), food_pick("두부조림")]})
+    answer_ai(DATA, BY_ID["FC5"], model, item_labels(), base_dish_names())
+    payload = model.payloads[0]
+    assert payload["taste"]["likedTags"] == ["국물", "매콤함"] and payload["taste"]["likedText"] == ["비빔밥: 먹어 보니 좋았어요"]
+    assert payload["avoid"] == ["쌀국수", "닭곰탕"] and payload["wanted"] == ["저녁", "담백함"]
+
+
+def test_an_ingredient_that_disappears_only_when_excluded_is_reported():
+    run = {"meta": {}, "cases": {"FS1": {**record([]), "picks": [{"name": "순두부찌개", "detail": "", "ingredients": ["돼지고기", "콩"]}]},
+                                 "FX4": {**record([]), "picks": [{"name": "순두부찌개", "detail": "", "ingredients": ["콩"]}, {"name": "두부 덮밥", "detail": "", "ingredients": ["콩"]}]}}}
+    shifts = ingredient_shifts(DATA, run)
+    assert len(shifts) == 1 and "FX4 순두부찌개" in shifts[0] and "돼지고기" in shifts[0]
+    assert "재료 목록이 요청에 따라" in render_report(DATA, {"r": run})
+
+
+def test_fewer_songs_on_the_store_is_a_regression():
+    song = lambda status: {"name": "곡", "detail": "가수", "store": {"status": status}}  # noqa: E731
+    make = lambda *statuses: {"meta": {}, "cases": {"MS1": {**record([]), "picks": [song(s) for s in statuses]}}}  # noqa: E731
+    assert any("스토어" in f for f in regressions(DATA, make("found", "missing"), make("found", "found")))
+    assert regressions(DATA, make("found", "found"), make("found", "missing")) == []
 
 
 def test_a_failed_or_empty_answer_is_retried_and_counted():
@@ -216,6 +239,8 @@ def test_the_check_ignores_noise_and_names_real_regressions():
     assert regressions(DATA, base, worse) == []  # better is not a regression
     spicy = copy.deepcopy(base)
     spicy["cases"]["FC1"] = record(["제육볶음"], [judged(2)])
+    assert regressions(DATA, spicy, base) == []  # one case is what two runs of the same code differ by
+    spicy["cases"]["FC2"] = record(["불닭볶음면"], [judged(2)])
     assert any("반대" in f for f in regressions(DATA, spicy, base))
     tired = copy.deepcopy(base)
     for case_id, entry in tired["cases"].items():
