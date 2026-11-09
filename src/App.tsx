@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Play, RefreshCw, Search, Settings2, SlidersHorizontal, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, LogIn, LogOut, MapPin, Mic, Play, RefreshCw, Search, Settings2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -19,6 +19,7 @@ import { ItemArt } from './components/ItemArt';
 import { mapSearch, mediaFor, recipeSearch, songLink, youtubeSearch } from './media';
 import { applyPreset } from './presets';
 import { momentPreset, slotLabel, timeSlot } from './moment';
+import { useVoiceInput } from './voice';
 import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather } from './weather';
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
@@ -97,6 +98,8 @@ export default function App() {
   const [weather, setWeather] = useState<Weather | null>(readWeather);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
+  // Spoken words join the sentence; the rules and the AI then read it like typed text.
+  const voice = useVoiceInput(text => setSession(s => changeText(s, (s.raw.trim() ? `${s.raw.trimEnd()} ` : '') + text)), message => notify(message));
   const [reportItem, setReportItem] = useState<Item | null>(null), [reportedIds, setReportedIds] = useState<string[]>([]);
   const [songChecks, setSongChecks] = useState<Record<string, SongStatus>>({});
   const [syncAttempt, setSyncAttempt] = useState(0), syncFailureTold = useRef(false);
@@ -514,7 +517,8 @@ export default function App() {
         {step !== 'results' ? <>
           <div className="flow-body composer">
             <section className="panel compose-panel">
-              <label className="field-title" htmlFor="situation">지금의 상황</label>
+              <div className="field-head"><label className="field-title" htmlFor="situation">지금의 상황</label>{voice.supported && <button type="button" className={`voice-button${voice.listening ? ' listening' : ''}`} aria-pressed={voice.listening} aria-label={voice.listening ? '음성 입력 중지' : '말로 입력'} onClick={() => voice.listening ? voice.stop() : voice.start()}>{voice.listening ? <Square size={13} fill="currentColor" /> : <Mic size={15} />}{voice.listening ? '듣는 중' : '말로 입력'}</button>}</div>
+              {voice.interim && <p className="voice-interim" aria-live="polite">{voice.interim}</p>}
               <textarea id="situation" rows={3} maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && ctaReady) { e.preventDefault(); submit(); } }} placeholder={category === 'food' ? '예: 혼자 먹을 담백하고 따뜻한 저녁이 먹고 싶어' : '예: 과제하면서 들을 차분한 연주곡을 추천해줘'} />
               <div className="textarea-caption">
                 <div className={`example-row${session.raw ? ' quiet' : ''}`}>{(category === 'food' ? ['혼자 먹을 담백한 저녁', '친구랑 먹을 매콤한 국물', '맵지 않고 따뜻한 점심'] : ['과제할 때 듣는 연주곡', '산책할 때 활기찬 음악']).map(text => <button key={text} onClick={() => setSession(s => changeText(s, text))}>{text}</button>)}</div>
