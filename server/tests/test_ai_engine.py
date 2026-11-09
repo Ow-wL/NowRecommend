@@ -166,7 +166,7 @@ def test_food_picks_name_detail_menus_and_lend_the_general_dish_photo(catalog):
 
 
 def test_a_pick_listing_an_excluded_ingredient_or_doubted_by_the_model_is_dropped(catalog):
-    model = FakeModel({"picks": [food_pick("밀 든 메뉴", ingredients=["밀"]), food_pick("자신 없는 메뉴", confidence="low"), food_pick("해물 메뉴", ingredients=["해산물"]), food_pick("안전한 메뉴", ingredients=["닭고기"])]})
+    model = FakeModel({"picks": [food_pick("밀 든 메뉴", ingredients=["밀"]), food_pick("자신 없는 메뉴", confidence="low"), food_pick("해물 메뉴", ingredients=["해산물"]), food_pick("안전한 메뉴", detail="한식 · 덮밥", ingredients=["닭고기"])]})
     with client_for(catalog, model) as client:
         answer = client.post("/api/recommend", json={"category": "food", "raw": "저녁", "engine": "ai", "conditions": {"excluded": ["밀", "해산물"]}}).json()
     assert [r["item"]["name"] for r in answer["results"]] == ["안전한 메뉴"]

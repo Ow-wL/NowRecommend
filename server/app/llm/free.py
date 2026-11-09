@@ -7,8 +7,10 @@ cleaned (empty fields, duplicates, avoided or disliked items, reason length, unk
 import html
 import re
 from collections import Counter
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 
+from ..dish_facts import name_attributes
 from .client import JsonModel
 from .validate import clean_reason
 
@@ -49,7 +51,7 @@ SYSTEM = {
 - baseDish는 baseDishes 중 이 메뉴가 속하는 가장 가까운 음식 이름을 그대로 쓴다. 맞는 것이 없으면 빈 문자열로 둔다.
 - ingredients는 ingredientWords 중 이 메뉴에 일반적으로 들어가는 것을 소스와 국물까지 생각해서 빠짐없이 고른다. 간장·고추장은 콩과 밀, 된장은 콩, 젓갈과 멸치 육수는 생선, 참기름은 참깨, 치즈와 버터는 유제품, 튀김옷은 밀과 달걀로 본다.
 - broad는 name이 여러 상세 메뉴를 묶는 넓은 이름이면 true, 그 자체로 하나의 메뉴면 false다.
-- excluded는 재료·특징 제외다(예: 유제품, 밀, 생선, 매콤함). 그 재료가 일반적인 조리법에 들어가는 메뉴는 추천하지 않는다. 확실하지 않으면 빼는 쪽을 택한다. 알레르기 안전을 보장하는 말은 쓰지 않는다.
+- excluded는 재료·특징 제외다(예: 유제품, 밀, 생선, 매콤함). 그 재료가 일반적인 조리법에 들어가는 메뉴는 추천하지 않는다. 확실하지 않으면 빼는 쪽을 택한다. excluded가 있어도 ingredients를 줄이거나 바꾸지 않는다. 일반적으로 그 재료가 들어가는 메뉴라면 목록에서 지우지 말고 다른 메뉴를 고른다. 알레르기 안전을 보장하는 말은 쓰지 않는다.
 - 가격·예산·배달·영업 여부는 다루지 않으니 언급하지 않는다.
 - confidence는 그 메뉴가 실제로 있고 excluded를 지켰다는 확신이다. 확실하면 high, 조금 헷갈리면 medium, 자신 없으면 low.""" + COMMON_RULES,
 }
@@ -144,13 +146,17 @@ def clean_name(value: object) -> str | None:
 
 
 def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[str] | None = None, detail_required: bool = True,
-                  excluded_values: list[str] | None = None, years: tuple[int | None, int | None] | None = None) -> FreeValidation:
+                  excluded_values: list[str] | None = None, years: tuple[int | None, int | None] | None = None,
+                  dishes: Mapping[str, Collection[str]] | None = None) -> FreeValidation:
     """`blocked` are 'name - detail' labels (or bare names) that must not come back: avoided, disliked and liked items.
     A bare name in `blocked` blocks that name whatever its detail (so "Hype Boy" blocks it by any artist).
     Food picks may come without a detail (`detail_required=False`); music needs the artist.
     `excluded_values` (the vocabulary's blocked values): a pick listing one as an ingredient or tag is dropped, and with any exclusion
-    in play so is one the model itself doubts. `years`: a song outside the range, or with no year to check, is dropped."""
+    in play so is one the model itself doubts. The model's list bends to the request (a margherita listing no dairy when dairy is excluded,
+    2026-11-10), so the name is checked apart from it: against the table of plain facts, and against `dishes`, the reviewed tags and ingredients
+    of a dish with exactly this name. `years`: a song outside the range, or with no year to check, is dropped."""
     issues: Counter = Counter()
+    known_dishes = {pick_key(n): set(v) for n, v in (dishes or {}).items()}
     blocked_pairs = {pick_key(*split_label(b)) for b in blocked}
     blocked_names = {pick_key(n) for n, d in map(split_label, blocked) if not d}
     allowed = set(allowed_tags) if allowed_tags is not None else None
@@ -181,6 +187,9 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         ingredients = [i for i in dict.fromkeys(entry.get("ingredients") or []) if isinstance(i, str)]
         if excluded_values and ((set(excluded_values) & {*ingredients, *tags}) or confidence == "low"):
             issues["excluded_value"] += 1
+            continue
+        if excluded_values and set(excluded_values) & (name_attributes(f"{name} {detail}") | known_dishes.get(pick_key(name), set())):
+            issues["excluded_by_name"] += 1
             continue
         year = entry.get("releaseYear")
         year = year if isinstance(year, int) and 1900 <= year <= 2100 else None

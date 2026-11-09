@@ -19,6 +19,7 @@ from pathlib import Path
 
 from .ai_engine import ask_picks
 from .catalog import REVIEWED_FILE, load_seed
+from .dish_facts import dish_table, table_hits
 from .llm.client import JsonModel
 from .schemas import RecommendRequest
 from .vocab import get_vocab
@@ -29,7 +30,9 @@ CATEGORY_LABEL = {"food": "음식", "music": "음악"}
 
 
 def load_ai_cases(path: Path = CASES_FILE) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["lexicon"] = {**dish_table(), **data["lexicon"]}
+    return data
 
 
 def request_for(data: dict, case: dict) -> RecommendRequest:
@@ -43,11 +46,12 @@ def item_labels() -> dict[str, str]:
     return {i["id"]: f"{i['name']} - {i['artist']}" if i.get("artist") else i["name"] for i in load_seed()}
 
 
-def base_dish_names() -> list[str]:
-    return [i["name"] for i in load_seed(REVIEWED_FILE) if i["category"] == "food"]
+def reviewed_dishes() -> dict[str, set[str]]:
+    """What ask_model reads from the database: every reviewed dish with its tags and ingredients."""
+    return {i["name"]: {*i["tags"], *i["ingredients"]} for i in [*load_seed(), *load_seed(REVIEWED_FILE)] if i["category"] == "food"}
 
 
-def answer_ai(data: dict, case: dict, model: JsonModel, labels: dict[str, str], dishes: list[str], retries: int = 2, wait: float = 20.0,
+def answer_ai(data: dict, case: dict, model: JsonModel, labels: dict[str, str], dishes: dict[str, set[str]], retries: int = 2, wait: float = 20.0,
               sleep: Callable[[float], None] = time.sleep) -> dict:
     """One case through the production prompt and checks. Empty and failed answers count in `failures` (production would fall back
     to the catalog there) and are retried, so a passing overload does not leave a case with nothing to grade."""
@@ -251,22 +255,11 @@ def check_songs(data: dict, run: dict, path: Path, pace: float = 3.5, sleep: Cal
     return asked
 
 
-def lexicon_hits(lexicon: dict, text: str) -> set[str]:
-    hits = set()
-    for attribute, rule in lexicon.items():
-        rest = text
-        for word in rule["except"]:
-            rest = rest.replace(word, "")
-        if any(word in rest for word in rule["words"]):
-            hits.add(attribute)
-    return hits
-
-
 def pick_flags(data: dict, case: dict, pick: dict) -> dict:
     """What the table says about one pick: exclusions it breaks and the opposite of what was asked."""
     if case["category"] != "food":
         return {"broken": [], "opposite": []}
-    hits = lexicon_hits(data["lexicon"], f"{pick['name']} {pick.get('detail', '')}")
+    hits = table_hits(data["lexicon"], f"{pick['name']} {pick.get('detail', '')}")
     excluded = case["conditions"]["excluded"]
     blocked = set(get_vocab().for_category("food").blocked(excluded)) if excluded else set()
     return {"broken": sorted(hits & blocked), "opposite": sorted(hits & set(case.get("opposite", [])))}
@@ -390,7 +383,7 @@ def render_report(data: dict, runs: dict[str, dict], note: str = "") -> str:
     """`runs` maps a label to a run; every table has one row per run, so engines and repeated rounds read side by side."""
     lines = ["# 지금 추천 — 제품 평가 결과", "", note, "", f"평가 세트: `server/eval/ai_cases.json` (음식 {len(_by(data, category='food'))}·음악 {len(_by(data, category='music'))}개)", "",
              "읽는 법:", "",
-             "- 판별표는 이름만 봐도 분명한 경우만 잡아요. 위반 수는 하한선이에요.",
+             "- 판별표는 이름만 봐도 분명한 경우만 잡아요. 위반 수는 하한선이에요. 서버 검사도 같은 표를 쓰므로, 보강 뒤 AI 엔진의 판별표 위반 0은 당연한 결과예요. 보강의 효과는 심사와 재료 목록 변동으로 봐요.",
              "- 심사는 다른 AI 모델의 판단이고 사람의 검수가 아니에요. 비율은 흐름을 보는 용도로 쓰고, 항목별 근거는 아래 목록에서 확인해요.",
              "- 심사 모델은 곡의 실존을 잘 판단하지 못했어요(2026-11-10 검토에서 스토어에 없던 곡 대부분을 있다고 답함). 실존은 스토어 표를 봐요.",
              "- 충돌 사례의 취향은 브라우저가 걸러 주기 전 상태예요. 운영 화면에서는 이 충돌 일부가 서버에 닿기 전에 걸러져요.", ""]

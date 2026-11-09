@@ -3,8 +3,9 @@ import copy
 import pytest
 
 from app.catalog import load_seed
-from app.evaluation_ai import (answer_ai, base_dish_names, check_songs, ingredient_shifts, item_labels, judge_run, lexicon_hits, load_ai_cases, load_run, pick_flags, regressions, render_report,
-                               request_for, run_cases, song_store, store_lookup, summarize, taste_overlap)
+from app.dish_facts import table_hits as lexicon_hits
+from app.evaluation_ai import (answer_ai, check_songs, ingredient_shifts, item_labels, judge_run, load_ai_cases, load_run, pick_flags, regressions, render_report,
+                               request_for, reviewed_dishes, run_cases, song_store, store_lookup, summarize, taste_overlap)
 
 DATA = load_ai_cases()
 SEED_IDS = {i["id"] for i in load_seed()}
@@ -96,9 +97,9 @@ def test_the_live_bug_of_spicy_dishes_for_a_mild_request_is_caught():
 
 
 def test_answer_uses_the_production_prompt_and_checks_without_a_database():
-    model = FakeModel({"picks": [food_pick("두부 덮밥"), food_pick("닭곰탕", ingredients=["밀"]), food_pick("쌀국수"), food_pick("콩나물국밥")]})
-    result = answer_ai(DATA, BY_ID["FX1"], model, item_labels(), base_dish_names())
-    assert [p["name"] for p in result["picks"]] == ["두부 덮밥", "쌀국수", "콩나물국밥"]  # the one listing 밀 was dropped by validate_free
+    model = FakeModel({"picks": [food_pick("삼계탕"), food_pick("닭곰탕", ingredients=["밀"]), food_pick("곤드레밥"), food_pick("콩나물국밥")]})
+    result = answer_ai(DATA, BY_ID["FX1"], model, item_labels(), reviewed_dishes())
+    assert [p["name"] for p in result["picks"]] == ["삼계탕", "곤드레밥", "콩나물국밥"]  # the one listing 밀 was dropped by validate_free
     assert result["issues"]["excluded_value"] == 1 and result["failures"] == []
     payload = model.payloads[0]
     assert payload["excluded"] == ["밀"] and payload["count"] == 3 + 3 and payload["baseDishes"]
@@ -106,14 +107,14 @@ def test_answer_uses_the_production_prompt_and_checks_without_a_database():
 
 def test_taste_reaches_the_model_as_production_sends_it():
     model = FakeModel({"picks": [food_pick("닭곰탕"), food_pick("죽"), food_pick("두부 덮밥x")]})
-    answer_ai(DATA, BY_ID["FC1"], model, item_labels(), base_dish_names())
+    answer_ai(DATA, BY_ID["FC1"], model, item_labels(), reviewed_dishes())
     taste = model.payloads[0]["taste"]
     assert taste["liked"] == ["김치찌개", "마라탕"] and taste["likedTags"] == ["매콤함"] and "제육볶음: 먹어 보니 좋았어요" in taste["likedText"]
 
 
 def test_the_request_behind_the_live_bug_is_sent_as_it_was():
     model = FakeModel({"picks": [food_pick("죽"), food_pick("미역국"), food_pick("두부조림")]})
-    answer_ai(DATA, BY_ID["FC5"], model, item_labels(), base_dish_names())
+    answer_ai(DATA, BY_ID["FC5"], model, item_labels(), reviewed_dishes())
     payload = model.payloads[0]
     assert payload["taste"]["likedTags"] == ["국물", "매콤함"] and payload["taste"]["likedText"] == ["비빔밥: 먹어 보니 좋았어요"]
     assert payload["avoid"] == ["쌀국수", "닭곰탕"] and payload["wanted"] == ["저녁", "담백함"]
@@ -137,9 +138,9 @@ def test_fewer_songs_on_the_store_is_a_regression():
 def test_a_failed_or_empty_answer_is_retried_and_counted():
     calls = iter([RuntimeError("503"), {"picks": []}, {"picks": [food_pick("죽"), food_pick("덮밥"), food_pick("국밥")]}])
     model, waits = FakeModel(lambda payload: next(calls)), []
-    result = answer_ai(DATA, BY_ID["FS1"], model, item_labels(), base_dish_names(), sleep=waits.append)
+    result = answer_ai(DATA, BY_ID["FS1"], model, item_labels(), reviewed_dishes(), sleep=waits.append)
     assert result["failures"] == ["RuntimeError", "Empty"] and len(result["picks"]) == 3 and len(waits) == 2
-    gone = answer_ai(DATA, BY_ID["FS1"], FakeModel(RuntimeError("down")), item_labels(), base_dish_names(), sleep=waits.append)
+    gone = answer_ai(DATA, BY_ID["FS1"], FakeModel(RuntimeError("down")), item_labels(), reviewed_dishes(), sleep=waits.append)
     assert gone["picks"] == [] and len(gone["failures"]) == 3
 
 

@@ -14,8 +14,8 @@ import sys
 from datetime import date
 
 from ..config import get_settings
-from ..evaluation_ai import (RUNS_DIR, answer_ai, answer_catalog, base_dish_names, check_songs, item_labels, judge_run, load_ai_cases, load_run, regressions, render_report,
-                             run_cases)
+from ..evaluation_ai import (RUNS_DIR, answer_ai, answer_catalog, check_songs, item_labels, judge_run, load_ai_cases, load_run, regressions, render_report,
+                             reviewed_dishes, run_cases)
 from ..llm.client import GeminiJsonModel
 from ..llm.provider import shared_model
 
@@ -46,7 +46,7 @@ def main() -> None:
             if model is None:
                 raise SystemExit("GEMINI_API_KEY is not set")
             run = load_run(path, {"engine": "ai", "model": model.model, "date": date.today().isoformat()})
-            labels, dishes = item_labels(), base_dish_names()
+            labels, dishes = item_labels(), reviewed_dishes()
             run_cases(data, run, path, lambda case: answer_ai(data, case, model, labels, dishes), args.limit, args.only, pace)
         else:
             from ..db import get_sessionmaker

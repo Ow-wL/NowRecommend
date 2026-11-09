@@ -8,7 +8,7 @@ catalog pipeline (recommend.recommend) instead of returning nothing.
 import logging
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 
 from sqlalchemy import select
@@ -46,7 +46,7 @@ class AiAnswer:
 
 
 def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], disliked: list[str], avoid: list[str], wanted: int,
-              base_dishes: list[str] | None) -> FreeValidation:
+              dishes: Mapping[str, Collection[str]] | None) -> FreeValidation:
     """The model's answer after the server's checks, with no database: what production sends is what the evaluation measures."""
     category, conditions, profile = request.category, request.conditions, request.profile
     vocab = get_vocab().for_category(category)
@@ -57,10 +57,10 @@ def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], dis
     years = (request.years.start, request.years.end) if request.years and not food else None
     payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
                             profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],
-                            base_dishes=base_dishes, ingredient_words=vocab.excludableIngredients if food else None,
+                            base_dishes=list(dishes) if dishes else None, ingredient_words=vocab.excludableIngredients if food else None,
                             release_years={"from": years[0], "to": years[1]} if years else None)
     return validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
-                         detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years)
+                         detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years, dishes=dishes)
 
 
 def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> AiAnswer:
@@ -73,8 +73,8 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     liked, disliked = labels_for(session, profile.selected, category), labels_for(session, profile.disliked, category)
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
-    base_dishes = [r.name for r in reviewed_items(session) if r.category == "food"] if category == "food" else None
-    validation = ask_picks(request, model, liked, disliked, avoid, wanted, base_dishes)
+    dishes = {r.name: {*r.tags, *r.ingredients} for r in reviewed_items(session) if r.category == "food"} if category == "food" else None
+    validation = ask_picks(request, model, liked, disliked, avoid, wanted, dishes)
     rows = persist_picks(session, category, validation.picks)
     # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too.
     blocked = {*request.seenIds, *request.excludedIds, *profile.disliked, *(r.id for r in pinned_rows)}
