@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
+from .errors import ErrorResponseMiddleware
 from .ratelimit import RateLimitMiddleware
 from .routes import auth, catalog, health, lab, parse, recommend, reports
 from .vocab import get_vocab
@@ -18,6 +19,8 @@ async def lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="지금 추천 API", version="0.1.0", lifespan=lifespan)
     settings = get_settings()
+    # Innermost, so CORS (added last, outermost) still decorates the 500 it produces and browsers read it as a server error.
+    app.add_middleware(ErrorResponseMiddleware)
     if settings.rate_limit_per_minute > 0:
         # Added before CORS so CORS stays outermost and 429 answers still carry CORS headers.
         app.add_middleware(RateLimitMiddleware, per_minute=settings.rate_limit_per_minute, trust_proxy=settings.trust_proxy)
