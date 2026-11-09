@@ -484,7 +484,7 @@ export default function App() {
             <b>{h.selected!.result.item.name}</b>
           </button>)}</div>
         </section>}
-        {apiEnabled() && <p className="lab-link"><button className="text-button" onClick={() => navigate('lab')}>AI 실험실 <ArrowRight size={14} /></button></p>}
+        <p className="lab-link"><button className="text-button" onClick={() => navigate('type')}>내 취향 유형 알아보기 <ArrowRight size={14} /></button>{apiEnabled() && <button className="text-button" onClick={() => navigate('lab')}>AI 실험실 <ArrowRight size={14} /></button>}</p>
       </>}
 
       {page === 'onboard' && <>
@@ -670,7 +670,7 @@ export default function App() {
 
       {page === 'admin' && <AdminReports token={account?.token} onBack={() => navigate('taste')} />}
       {page === 'type' && <TasteType results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
-        onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate('lab')} onEditTaste={editTaste}
+        onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(apiEnabled() ? 'lab' : 'taste')} backLabel={apiEnabled() ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
         onRecommend={(c, code) => { const base = { ...newSession(c), ...requestForType(c, code) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
       {page === 'lab' && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
@@ -678,7 +678,7 @@ export default function App() {
         <div className="page-heading with-action"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1><button className="button secondary compact" onClick={() => setManualOpen(true)}><PenLine size={15} />직접 기록</button></div>
         {tabFilter}
         {store.history.length > 0 && <div className="history-tools">
-          <label className="search-field"><Search size={16} /><input type="search" value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} placeholder="문장이나 메뉴·곡 이름으로 찾기" aria-label="기록 검색" /></label>
+          <label className="find-field"><Search size={16} /><input type="search" value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} placeholder="문장이나 메뉴·곡 이름으로 찾기" aria-label="기록 검색" /></label>
           <button className={`button secondary compact${calendarOpen ? ' active' : ''}`} aria-pressed={calendarOpen} onClick={() => setCalendarOpen(open => !open)}><CalendarDays size={15} />달력</button>
           {historyDay && <button className="chip selected" onClick={() => setHistoryDay('')} aria-label={`${dayLabel(historyDay)} 필터 해제`}>{dayLabel(historyDay)}<X size={13} /></button>}
         </div>}
@@ -721,6 +721,7 @@ export default function App() {
           <button className="list-row" onClick={() => navigate('history')}><span className="list-copy"><b>추천 기록</b><small>지난 추천과 선택 {store.history.length}개</small></span><ChevronRight size={18} /></button>
           <button className="list-row" onClick={() => { setNameDraft(store.name); setDialog('account'); }}><span className="list-copy"><b>프로필·화면 설정</b><small>이름, 테마, 데이터 백업</small></span><ChevronRight size={18} /></button>
           {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>오류 신고 관리</b><small>사용자가 보낸 사진·정보 오류 확인</small></span><ChevronRight size={18} /></button>}
+          <button className="list-row" onClick={() => navigate('type')}><span className="list-copy"><b>취향 유형 테스트</b><small>음식·음악 취향을 네 글자로, 공유 카드까지</small></span><ChevronRight size={18} /></button>
           {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}
           {apiEnabled() && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>후보 비교와 취향 유형 테스트</small></span><ChevronRight size={18} /></button>}
         </div>

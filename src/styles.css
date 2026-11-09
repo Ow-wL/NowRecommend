@@ -280,6 +280,11 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-fill); min-
 .type-sides li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--bg-elevated); font-size: 14px; }
 .type-sides b { color: var(--accent); font-weight: 800; }
 .type-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+/* The square card to post, drawn on a canvas (typeCard.ts). */
+.type-card { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px 20px; align-items: center; margin: 24px 0 0; padding: 14px; background: var(--bg-elevated); border-radius: 20px; }
+.type-card img { display: block; width: 100%; aspect-ratio: 1; border-radius: 14px; box-shadow: 0 6px 18px rgb(0 0 0 / 12%); }
+.type-card figcaption { display: grid; gap: 10px; font-size: 14px; color: var(--text-secondary); }
+.lab-link { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px; }
 .year-panel { margin-top: 12px; padding: 20px 28px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
 .year-panel h3 { margin-bottom: 10px; font-size: 15px; font-weight: 600; }
 .year-range { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
@@ -448,10 +453,11 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .page-heading.with-action .button { flex-shrink: 0; margin-top: 4px; }
 /* Finding a record: words, a day, or both. */
 .history-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -12px 0 20px; }
-.search-field { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; padding: 0 14px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: 999px; color: var(--text-muted); }
-.search-field input { flex: 1; min-width: 0; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--text-primary); }
-.search-field input:focus { outline: none; }
-.search-field:focus-within { border-color: var(--accent-fill); box-shadow: 0 0 0 1px var(--accent-fill); }
+.find-field { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; padding: 0 14px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: 999px; color: var(--text-muted); }
+.find-field > svg { flex-shrink: 0; }
+.find-field input { flex: 1; min-width: 0; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--text-primary); }
+.find-field input:focus { outline: none; }
+.find-field:focus-within { border-color: var(--accent-fill); box-shadow: 0 0 0 1px var(--accent-fill); }
 .history-tools .button.active { background: var(--bg-soft); color: var(--accent); border-color: transparent; }
 .calendar { max-width: 520px; margin-bottom: 24px; padding: 14px 16px 16px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
 .calendar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -468,7 +474,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .cal-dot.food { background: var(--food); } .cal-dot.music { background: var(--music); }
 .cal-day[aria-pressed="true"] .cal-dot { background: var(--text-on-accent); }
 /* Recording by hand */
-.manual-record .search-field { margin-top: 4px; }
+.manual-record .find-field { margin-top: 4px; }
 .manual-list { display: grid; gap: 6px; margin-top: 12px; max-height: 300px; overflow: auto; padding: 2px; }
 .manual-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px 8px 8px; text-align: left; border-radius: 14px; background: var(--bg-elevated); }
 .manual-item[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent-fill); color: var(--accent); }
@@ -808,6 +814,9 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
   .type-question, .type-result, .type-start { padding: 24px 20px; }
   .type-code b { width: 48px; height: 56px; font-size: 26px; }
   .type-actions .button { width: 100%; }
+  .type-card { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+  .type-card img { max-width: 260px; }
+  .type-card figcaption .button-row { justify-content: center; }
   .textarea-caption { flex-direction: column; gap: 0; }
   .textarea-caption > span { align-self: flex-end; line-height: 1.4; }
   .result-grid.food { grid-template-columns: minmax(0, 1fr); }
