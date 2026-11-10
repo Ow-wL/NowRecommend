@@ -5,26 +5,40 @@
   python -m app.cli.eval_ai songs NAME
   python -m app.cli.eval_ai report NAME [NAME ...] [--out eval/ai_report.md]
   python -m app.cli.eval_ai check NAME --against BASELINE    (exit 1 when something got worse than run-to-run noise)
+  python -m app.cli.eval_ai review NAME [NAME ...] [--redraw]   (human review page: eval/review/review.html)
+  python -m app.cli.eval_ai agree NAME [NAME ...] [--human eval/review/human.json]
+
+`review` draws a sample of judged picks once (eval/review/sample.json; --redraw replaces it) and builds the page from
+eval/review/template.html. The page saves verdicts; put its JSON at eval/review/human.json. `agree` and `report` then compare the
+judge with the human verdicts.
 
 `run` with the AI engine uses the model production uses (LLM_MODEL) and writes nothing to the database; --engine catalog needs the
 database. Runs live in eval/runs/NAME.json.
 """
 import argparse
+import json
 import sys
 from datetime import date
+from pathlib import Path
 
 from ..config import get_settings
-from ..evaluation_ai import (RUNS_DIR, answer_ai, answer_catalog, check_songs, item_labels, judge_run, load_ai_cases, load_run, regressions, render_report,
-                             reviewed_dishes, run_cases)
+from ..evaluation_ai import (REVIEW_DIR, RUNS_DIR, answer_ai, answer_catalog, build_review_page, check_songs, draw_review_sample, human_agreement, item_labels, judge_run,
+                             load_ai_cases, load_human, load_run, regressions, render_agreement, render_report, review_page_data, reviewed_dishes, run_cases, save_run)
 from ..llm.client import GeminiJsonModel
 from ..llm.provider import shared_model
 
 DEFAULT_JUDGE = "gemini-3.6-flash"
 
 
+def _review_inputs() -> tuple[dict, dict]:
+    """The sample names its runs, so agreement always reads the judge verdicts the reviewer was shown."""
+    sample = json.loads((REVIEW_DIR / "sample.json").read_text(encoding="utf-8"))
+    return sample, {n: load_run(RUNS_DIR / f"{n}.json") for n in sample["meta"]["runs"]}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=("run", "judge", "songs", "report", "check"))
+    parser.add_argument("step", choices=("run", "judge", "songs", "report", "check", "review", "agree"))
     parser.add_argument("names", nargs="+")
     parser.add_argument("--engine", choices=("ai", "catalog"), default="ai")
     parser.add_argument("--limit", type=int)
@@ -33,6 +47,8 @@ def main() -> None:
     parser.add_argument("--judge-model", default=DEFAULT_JUDGE)
     parser.add_argument("--out", help="write the report to this file")
     parser.add_argument("--against", help="baseline run for check")
+    parser.add_argument("--redraw", action="store_true", help="review: draw a new sample even if one exists")
+    parser.add_argument("--human", default=str(REVIEW_DIR / "human.json"), help="human verdicts saved by the review page")
     args = parser.parse_args()
 
     sys.stdout.reconfigure(encoding="utf-8")
@@ -65,9 +81,28 @@ def main() -> None:
     elif args.step == "songs":
         run = load_run(path)
         print(f"asked {check_songs(data, run, path, 3.5 if args.pace is None else args.pace)} songs")
+    elif args.step == "review":
+        sample_path = REVIEW_DIR / "sample.json"
+        if sample_path.exists() and not args.redraw:
+            sample = json.loads(sample_path.read_text(encoding="utf-8"))
+            runs = {n: load_run(RUNS_DIR / f"{n}.json") for n in sample["meta"]["runs"]}
+        else:
+            runs = {n: load_run(RUNS_DIR / f"{n}.json") for n in args.names}
+            sample = draw_review_sample(data, runs)
+            save_run(sample_path, sample)
+        page = build_review_page((REVIEW_DIR / "template.html").read_text(encoding="utf-8"), review_page_data(data, runs, sample, item_labels()))
+        (REVIEW_DIR / "review.html").write_text(page, encoding="utf-8", newline="\n")
+        print(f"{len(sample['items'])} items -> {REVIEW_DIR / 'review.html'}")
+    elif args.step == "agree":
+        sample, runs = _review_inputs()
+        print("\n".join(render_agreement(human_agreement(data, runs, sample, load_human(Path(args.human))))))
     elif args.step == "report":
         runs = {n: load_run(RUNS_DIR / f"{n}.json") for n in args.names}
-        report = render_report(data, runs, f"실행일 {date.today().isoformat()}")
+        agreement = None
+        if Path(args.human).exists():
+            sample, sample_runs = _review_inputs()
+            agreement = human_agreement(data, sample_runs, sample, load_human(Path(args.human)))
+        report = render_report(data, runs, f"실행일 {date.today().isoformat()}", agreement)
         print(report)
         if args.out:
             with open(args.out, "w", encoding="utf-8", newline="\n") as out:

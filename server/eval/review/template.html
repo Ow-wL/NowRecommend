@@ -1,0 +1,319 @@
+<title>추천 검수판</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column of request cards; each card lists its picks with three verdict rows, the judge's answer opens under a pick once it is confirmed. */
+:root {
+  --bg: #f6f7fb; --surface: #ffffff; --ink: #1f2433; --muted: #646b80; --line: #e2e5ee;
+  --food: #fde3d4; --food-ink: #8a3f17; --music: #d9ecf7; --music-ink: #1d5677;
+  --accent: #3d5bd9; --accent-soft: #e4e9fb; --good: #2f8a5b; --good-soft: #dff3e8; --warn: #a3660a; --warn-soft: #fbefd5; --bad: #b4373f; --bad-soft: #f9e0e2;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14161d; --surface: #1d2029; --ink: #e8eaf2; --muted: #9aa1b5; --line: #2e3240;
+  --food: #3b2a22; --food-ink: #f3b896; --music: #1e3140; --music-ink: #9fd0ef;
+  --accent: #8ea2ff; --accent-soft: #262d4a; --good: #7bd3a3; --good-soft: #1d3329; --warn: #f0c26e; --warn-soft: #3a3020; --bad: #f19aa0; --bad-soft: #3d2326; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14161d; --surface: #1d2029; --ink: #e8eaf2; --muted: #9aa1b5; --line: #2e3240;
+  --food: #3b2a22; --food-ink: #f3b896; --music: #1e3140; --music-ink: #9fd0ef;
+  --accent: #8ea2ff; --accent-soft: #262d4a; --good: #7bd3a3; --good-soft: #1d3329; --warn: #f0c26e; --warn-soft: #3a3020; --bad: #f19aa0; --bad-soft: #3d2326; color-scheme: dark }
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line) }
+header.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 12px }
+h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em }
+.progress { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0 }
+.meter { flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden }
+.meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s }
+.count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; white-space: nowrap }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+button, .filebtn { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 99px; padding: 6px 12px; cursor: pointer }
+button:hover, .filebtn:hover { border-color: var(--accent) }
+button:focus-visible, .filebtn:focus-within, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600 }
+button.primary:disabled { opacity: .4; cursor: not-allowed }
+.filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0 }
+.status { font-size: 12px; color: var(--muted) }
+main.wrap { padding-block: 20px 60px; display: grid; gap: 18px }
+.intro { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 8px }
+.intro p { margin: 0; max-width: 68ch }
+.intro dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 4px 0 0; font-size: 14px }
+.intro dt { font-weight: 600 } .intro dd { margin: 0; color: var(--muted) }
+.filters { display: flex; gap: 8px; flex-wrap: wrap }
+.filters button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600 }
+.case { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden }
+.case-head { padding: 16px 18px; display: grid; gap: 8px }
+.case[data-cat="food"] .case-head { background: var(--food) } .case[data-cat="music"] .case-head { background: var(--music) }
+.case[data-cat="food"] .eyebrow { color: var(--food-ink) } .case[data-cat="music"] .eyebrow { color: var(--music-ink) }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .04em }
+.request { font-size: 20px; font-weight: 600; line-height: 1.35; margin: 0; text-wrap: balance }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font-size: 12.5px; padding: 2px 9px; border-radius: 99px; background: var(--surface); color: var(--ink) }
+.chip.no { background: var(--bad-soft); color: var(--bad); font-weight: 600 }
+.chip.year { background: var(--warn-soft); color: var(--warn); font-weight: 600 }
+.taste { font-size: 13px; color: var(--muted); margin: 0 }
+.picks { display: grid }
+.pick { padding: 14px 18px; border-top: 1px solid var(--line); display: grid; gap: 10px }
+.pick-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px }
+.pick-name { font-size: 17px; font-weight: 600; min-width: 0; overflow-wrap: anywhere }
+.pick-detail { color: var(--muted); min-width: 0; overflow-wrap: anywhere }
+.pick-id { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto }
+.search { font-size: 12.5px; color: var(--accent) }
+.qs { display: grid; gap: 8px }
+.q { display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: 10px }
+.q-label { font-size: 13px; color: var(--muted) }
+.seg { display: flex; flex-wrap: wrap; gap: 6px }
+.seg button { border-radius: 10px; padding: 6px 12px; min-width: 64px }
+.seg button[aria-pressed="true"][data-tone="good"] { background: var(--good-soft); border-color: var(--good); color: var(--good); font-weight: 600 }
+.seg button[aria-pressed="true"][data-tone="mid"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 600 }
+.seg button[aria-pressed="true"][data-tone="bad"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); font-weight: 600 }
+.seg button[aria-pressed="true"][data-tone="none"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600 }
+.seg button:disabled { cursor: default }
+.note-input { font: inherit; font-size: 13px; width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--bg); color: var(--ink) }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.hint { font-size: 12.5px; color: var(--muted) }
+.reveal { border-radius: 12px; background: var(--bg); border: 1px dashed var(--line); padding: 10px 12px; display: grid; gap: 6px; font-size: 13.5px }
+.reveal b { font-weight: 600 }
+.cmp { display: flex; flex-wrap: wrap; gap: 6px }
+.tag { padding: 1px 8px; border-radius: 99px; font-size: 12.5px }
+.tag.same { background: var(--good-soft); color: var(--good) } .tag.diff { background: var(--bad-soft); color: var(--bad) } .tag.info { background: var(--accent-soft); color: var(--accent) }
+.done-mark { font-size: 12px; font-weight: 600; color: var(--good) }
+.empty { text-align: center; color: var(--muted); padding: 40px 0 }
+@media (max-width: 520px) { .q { grid-template-columns: 1fr; gap: 4px } .request { font-size: 18px } .pick-id { margin-left: 0 } }
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <h1>추천 검수판</h1>
+    <div class="progress"><div class="meter" aria-hidden="true"><i id="meter"></i></div><span class="count" id="count">0 / 0</span></div>
+    <div class="tools">
+      <button id="export" type="button">JSON 내려받기</button>
+      <label class="filebtn">JSON 불러오기<input id="import" type="file" accept="application/json,.json"></label>
+      <span class="status" id="status" role="status"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p>지금 추천의 평가 세트에서 뽑은 추천 항목이에요. 요청과 이름만 보고 항목마다 판정해 주세요. <b>판정 확정</b>을 누르면 그때 AI 심사의 판정이 열려요. 확정한 판정은 집계에 그대로 쓰이고, 나중에 고치면 따로 기록돼요.</p>
+    <dl>
+      <dt>어울림</dt><dd>잘 맞음 = 이 요청을 한 사람에게 바로 권할 만함 · 무난 = 크게 어긋나진 않지만 딱 맞지도 않음 · 안 맞음 = 요청과 맞지 않음. 평소 취향과 요청이 다르면 요청을 기준으로 봐요.</dd>
+      <dt>제외</dt><dd>빼 달라고 한 것이 보통 조리법이나 곡 구성에 들어가면 어김이에요. 간장·고추장의 콩·밀까지는 따지지 않아요.</dd>
+      <dt>실존</dt><dd>메뉴는 한국에서 실제로 파는 메뉴인지, 곡은 그 제목과 아티스트의 곡이 실제로 있는지 봐요. 모르면 검색 링크를 써도 되고, 그래도 모르면 모름을 골라요.</dd>
+    </dl>
+    <div class="filters" role="group" aria-label="보기">
+      <button type="button" data-filter="todo" aria-pressed="true">남은 항목</button>
+      <button type="button" data-filter="all" aria-pressed="false">전체</button>
+      <button type="button" data-filter="done" aria-pressed="false">확정한 항목</button>
+    </div>
+  </section>
+  <div id="list" class="picks-list" style="display:grid;gap:18px"></div>
+</main>
+
+<script id="review-data" type="application/json">/*REVIEW_DATA*/null</script>
+<script>
+(function () {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("review-data").textContent) || { cases: {}, items: [] };
+  const KEY = "nowrec-review-v1";
+  const FIT = [{ v: 2, t: "잘 맞음", tone: "good" }, { v: 1, t: "무난", tone: "mid" }, { v: 0, t: "안 맞음", tone: "bad" }];
+  const EXCL = [{ v: "kept", t: "지킴", tone: "good" }, { v: "broke", t: "어김", tone: "bad" }, { v: "unsure", t: "모름", tone: "none" }];
+  const REAL = [{ v: "yes", t: "있음", tone: "good" }, { v: "no", t: "없음", tone: "bad" }, { v: "unsure", t: "모름", tone: "none" }];
+  const FIT_TEXT = { 2: "잘 맞음", 1: "무난", 0: "안 맞음" };
+  const REAL_TEXT = { yes: "있음", no: "없음", unsure: "모름" };
+
+  // verdicts: confirmed blind answers (what the agreement uses). drafts: choices not confirmed yet. editing: ids opened again after the reveal.
+  let state = { verdicts: {}, drafts: {} };
+  const editing = new Set();
+  let filter = "todo";
+  let db = null;
+  let downloads = null;
+
+  try { const saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved && saved.verdicts) state = { verdicts: saved.verdicts, drafts: saved.drafts || {} }; } catch (e) { /* storage blocked: start empty */ }
+
+  function persistLocal() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ } }
+  function setStatus(text) { document.getElementById("status").textContent = text; }
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === "text") node.textContent = v; else if (k.startsWith("on")) node.addEventListener(k.slice(2), v); else node.setAttribute(k, v === true ? "" : v);
+    }
+    for (const child of [].concat(children || [])) if (child) node.append(child);
+    return node;
+  }
+
+  function needsExclusion(item) { return DATA.cases[item.case].excluded.length > 0; }
+  function current(item) { return editing.has(item.id) ? (state.drafts[item.id] || {}) : (state.verdicts[item.id] ? (state.verdicts[item.id].revised || state.verdicts[item.id]) : (state.drafts[item.id] || {})); }
+  function complete(item, v) { return v.fit !== undefined && v.real !== undefined && (!needsExclusion(item) || v.exclusion !== undefined); }
+
+  function searchUrl(item) {
+    const c = DATA.cases[item.case];
+    const q = c.category === "music" ? `${item.detail} ${item.name}` : `${item.name} 메뉴`;
+    return "https://www.google.com/search?q=" + encodeURIComponent(q);
+  }
+
+  function segment(item, field, options, value, locked) {
+    return el("div", { class: "seg", role: "group" }, options.map(o => el("button", {
+      type: "button", "data-tone": o.tone, "aria-pressed": String(value === o.v), disabled: locked,
+      onclick: () => { const d = Object.assign({}, current(item)); d[field] = o.v; state.drafts[item.id] = d; persistLocal(); render(); },
+      text: o.t
+    })));
+  }
+
+  async function writeRemote(id) {
+    if (!db) return;
+    try { await db.doc("verdicts/" + id).set(Object.assign({}, state.verdicts[id])); setStatus("저장됨"); }
+    catch (e) { setStatus("서버 저장 실패 · 이 브라우저에는 남아 있어요"); }
+  }
+
+  function confirm(item) {
+    const d = state.drafts[item.id];
+    if (!d || !complete(item, d)) return;
+    const clean = { fit: d.fit, exclusion: needsExclusion(item) ? d.exclusion : null, real: d.real, note: d.note || "", at: new Date().toISOString() };
+    if (editing.has(item.id) && state.verdicts[item.id]) {
+      state.verdicts[item.id] = Object.assign({}, state.verdicts[item.id], { revised: clean });
+      editing.delete(item.id);
+    } else {
+      state.verdicts[item.id] = clean;
+    }
+    delete state.drafts[item.id];
+    persistLocal();
+    render();
+    writeRemote(item.id);
+  }
+
+  function reveal(item, v) {
+    const a = item.answer, c = DATA.cases[item.case];
+    const tags = [el("span", { class: "tag " + (a.fit === v.fit ? "same" : "diff"), text: `어울림 ${a.fit === v.fit ? "같음" : "다름"}` })];
+    if (needsExclusion(item) && v.exclusion !== "unsure") tags.push(el("span", { class: "tag " + ((v.exclusion === "broke") === a.breaksExclusion ? "same" : "diff"), text: `제외 ${(v.exclusion === "broke") === a.breaksExclusion ? "같음" : "다름"}` }));
+    if (v.real !== "unsure") tags.push(el("span", { class: "tag " + (v.real === a.real ? "same" : "diff"), text: `실존 ${v.real === a.real ? "같음" : "다름"}` }));
+    if (a.store) tags.push(el("span", { class: "tag info", text: a.store === "found" ? "Apple 스토어: 찾음" : a.store === "missing" ? "Apple 스토어: 못 찾음" : "Apple 스토어: 조회 실패" }));
+    const judge = `AI 심사 — 어울림 ${FIT_TEXT[a.fit]}` + (c.excluded.length ? ` · 제외 ${a.breaksExclusion ? "어김" : "지킴"}` : "") + ` · 실존 ${REAL_TEXT[a.real]}` + (a.opposesRequest ? " · 요청과 반대" : "");
+    const parts = [el("div", {}, [el("b", { text: judge })]), a.note ? el("div", { text: `근거: ${a.note}` }) : null, el("div", { class: "cmp" }, tags)];
+    if (state.verdicts[item.id].revised) parts.push(el("div", { class: "hint", text: `처음 판정: 어울림 ${FIT_TEXT[state.verdicts[item.id].fit]} · 실존 ${REAL_TEXT[state.verdicts[item.id].real]} (집계는 처음 판정을 써요)` }));
+    return el("div", { class: "reveal" }, parts);
+  }
+
+  function pickRow(item) {
+    const c = DATA.cases[item.case];
+    const confirmed = !!state.verdicts[item.id] && !editing.has(item.id);
+    const v = current(item);
+    const qs = [el("div", { class: "q" }, [el("span", { class: "q-label", text: "어울림" }), segment(item, "fit", FIT, v.fit, confirmed)])];
+    if (needsExclusion(item)) qs.push(el("div", { class: "q" }, [el("span", { class: "q-label", text: "제외" }), segment(item, "exclusion", EXCL, v.exclusion, confirmed)]));
+    qs.push(el("div", { class: "q" }, [el("span", { class: "q-label", text: "실존" }), segment(item, "real", REAL, v.real, confirmed)]));
+    const noteId = "note-" + item.id;
+    const note = el("input", { id: noteId, class: "note-input", type: "text", placeholder: "메모 (선택)", value: v.note || "", disabled: confirmed,
+      oninput: e => { const d = Object.assign({}, current(item)); d.note = e.target.value; state.drafts[item.id] = d; persistLocal(); } });
+    const actions = confirmed
+      ? el("div", { class: "actions" }, [el("span", { class: "done-mark", text: "확정함" }), el("button", { type: "button", text: "고치기", onclick: () => { editing.add(item.id); state.drafts[item.id] = Object.assign({}, state.verdicts[item.id].revised || state.verdicts[item.id]); render(); } })])
+      : el("div", { class: "actions" }, [
+          el("button", { type: "button", class: "primary", disabled: !complete(item, v), text: editing.has(item.id) ? "고친 판정 저장" : "판정 확정", onclick: () => confirm(item) }),
+          el("span", { class: "hint", text: complete(item, v) ? "확정하면 AI 심사 판정이 열려요" : needsExclusion(item) ? "어울림·제외·실존을 모두 골라 주세요" : "어울림·실존을 골라 주세요" })]);
+    return el("div", { class: "pick", id: "pick-" + item.id }, [
+      el("div", { class: "pick-top" }, [
+        el("span", { class: "pick-name", text: item.name }),
+        item.detail ? el("span", { class: "pick-detail", text: item.detail }) : null,
+        el("a", { class: "search", href: searchUrl(item), target: "_blank", rel: "noopener noreferrer", text: "검색" }),
+        el("span", { class: "pick-id", text: item.id })]),
+      el("div", { class: "qs" }, qs), note, actions,
+      state.verdicts[item.id] && !editing.has(item.id) ? reveal(item, state.verdicts[item.id]) : null]);
+  }
+
+  function caseCard(caseId, items) {
+    const c = DATA.cases[caseId];
+    const chips = [...c.wanted.map(t => el("span", { class: "chip", text: t })), ...c.excluded.map(t => el("span", { class: "chip no", text: `빼 줘: ${t}` }))];
+    if (c.years) chips.push(el("span", { class: "chip year", text: `발매 ${c.years.from || ""}~${c.years.to || ""}` }));
+    const taste = c.liked.length || c.likedTags.length ? `평소 취향 — ${[...c.liked, ...c.likedTags.map(t => "#" + t)].join(", ")}` : "평소 취향 정보 없음";
+    return el("article", { class: "case", "data-cat": c.category }, [
+      el("div", { class: "case-head" }, [
+        el("span", { class: "eyebrow", text: `${c.category === "food" ? "음식" : "음악"} · ${c.kind}` }),
+        el("p", { class: "request", text: `“${c.text}”` }),
+        chips.length ? el("div", { class: "chips" }, chips) : null,
+        el("p", { class: "taste", text: taste })]),
+      el("div", { class: "picks" }, items.map(pickRow))]);
+  }
+
+  function render() {
+    const keep = document.activeElement && document.activeElement.id;
+    const list = document.getElementById("list");
+    const done = DATA.items.filter(i => state.verdicts[i.id]).length;
+    document.getElementById("count").textContent = `${done} / ${DATA.items.length} 확정`;
+    document.getElementById("meter").style.width = DATA.items.length ? `${done / DATA.items.length * 100}%` : "0";
+    const show = DATA.items.filter(i => filter === "all" || (filter === "done") === !!state.verdicts[i.id] || editing.has(i.id));
+    const groups = new Map();
+    for (const item of show) { if (!groups.has(item.case)) groups.set(item.case, []); groups.get(item.case).push(item); }
+    list.replaceChildren(...[...groups].map(([id, items]) => caseCard(id, items)));
+    if (!groups.size) list.append(el("p", { class: "empty", text: filter === "todo" ? "모든 항목을 확정했어요. JSON 내려받기로 결과를 저장해 주세요." : "보여 줄 항목이 없어요." }));
+    if (keep) { const again = document.getElementById(keep); if (again && again.tagName === "INPUT") again.focus(); }
+  }
+
+  document.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+
+  function exportJson() {
+    return JSON.stringify({ meta: { page: "nowrecommend-review", items: DATA.items.length, exported: new Date().toISOString() }, verdicts: state.verdicts }, null, 1);
+  }
+  document.getElementById("export").addEventListener("click", async () => {
+    const text = exportJson();
+    if (downloads) {
+      try { await downloads.save({ filename: "human.json", data: text }); setStatus("내려받았어요"); }
+      catch (e) { setStatus(e && e.code === "declined" ? "내려받기를 취소했어요" : "내려받지 못했어요"); }
+      return;
+    }
+    const a = el("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: "human.json" });
+    document.body.append(a); a.click(); a.remove();
+    setStatus("human.json을 내려받았어요");
+  });
+  document.getElementById("import").addEventListener("change", async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const got = JSON.parse(await file.text());
+      const known = new Set(DATA.items.map(i => i.id));
+      let n = 0;
+      for (const [id, v] of Object.entries(got.verdicts || {})) if (known.has(id) && v && v.fit !== undefined) { state.verdicts[id] = v; n++; writeRemote(id); }
+      persistLocal(); render(); setStatus(`${n}개 판정을 불러왔어요`);
+    } catch (err) { setStatus("JSON을 읽지 못했어요. 이 화면에서 내려받은 파일인지 확인해 주세요"); }
+    e.target.value = "";
+  });
+
+  render();
+
+  // Inside claude.ai the verdicts also go to the artifact's store, so they survive another browser and Claude can read them back.
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then(ns => { downloads = ns; }).catch(() => {});
+    window.claude.use("db").then(ns => {
+      if (!ns) return;
+      db = ns;
+      setStatus("서버와 맞추는 중…");
+      let uploaded = false;
+      const timer = setTimeout(() => setStatus("서버에 닿지 않아요 · 이 브라우저에 저장 중"), 10000);
+      db.collection("verdicts").onSnapshot(snap => {
+        if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("서버에 저장 중"); }
+        let changed = false;
+        for (const doc of snap.docs) {
+          const v = doc.data();
+          if (v && v.fit !== undefined && JSON.stringify(state.verdicts[doc.id]) !== JSON.stringify(v)) { state.verdicts[doc.id] = Object.assign({}, v); changed = true; }
+        }
+        // Verdicts made here before the store answered go up once.
+        if (!snap.metadata.fromCache && !uploaded) {
+          uploaded = true;
+          for (const id of Object.keys(state.verdicts)) if (!snap.docs.some(d => d.id === id)) writeRemote(id);
+        }
+        if (changed) { persistLocal(); render(); }
+      }, () => { clearTimeout(timer); setStatus("서버 저장을 쓸 수 없어요 · 이 브라우저에 저장 중"); db = null; });
+    }).catch(() => {});
+  }
+})();
+</script>

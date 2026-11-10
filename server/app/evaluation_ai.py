@@ -379,8 +379,196 @@ def _pct(value: float | None) -> str:
     return "-" if value is None else f"{value * 100:.0f}%"
 
 
-def render_report(data: dict, runs: dict[str, dict], note: str = "") -> str:
-    """`runs` maps a label to a run; every table has one row per run, so engines and repeated rounds read side by side."""
+# Human review of the judge (2026-11-10). The reviewer sees what the judge saw — request, conditions, taste, bare names — and gives the
+# same three verdicts; the judge's answer shows only after that, so the human verdict is blind. A sample, not every pick: the same
+# number from each (category, kind) at random, plus picks the judge flagged and songs the store did not find, so the rare "no"
+# answers get enough examples to compare. Rates that stand for the whole set use the random part only.
+REVIEW_DIR = CASES_FILE.parent / "review"
+REVIEW_SEED = 20261110
+FIT_LABEL = {2: "잘 맞음", 1: "무난", 0: "안 맞음"}
+
+
+def _pick_key(case_id: str, pick: dict) -> tuple[str, str, str]:
+    return case_id, pick["name"].strip(), (pick.get("detail") or "").strip()
+
+
+def review_units(data: dict, runs: dict[str, dict]) -> dict[tuple[str, str, str], list[dict]]:
+    """Every judged pick, grouped by (case, name, detail): two runs naming the same dish for the same request are one thing to review."""
+    units: dict[tuple[str, str, str], list[dict]] = {}
+    for run_name, run in runs.items():
+        for case in data["cases"]:
+            record = run["cases"].get(case["id"])
+            if not record or "judge" not in record:
+                continue
+            for n, pick in enumerate(record["picks"]):
+                units.setdefault(_pick_key(case["id"], pick), []).append({"run": run_name, "case": case["id"], "index": n})
+    return units
+
+
+def _unit_pick(runs: dict[str, dict], unit: dict) -> tuple[dict, dict]:
+    record = runs[unit["run"]]["cases"][unit["case"]]
+    return record["picks"][unit["index"]], record["judge"][unit["index"]]
+
+
+def _flagged(data: dict, runs: dict[str, dict], unit: dict) -> bool:
+    _, judged = _unit_pick(runs, unit)
+    case = next(c for c in data["cases"] if c["id"] == unit["case"])
+    return judged["fit"] == 0 or judged["real"] == "no" or (judged["breaksExclusion"] and bool(case["conditions"]["excluded"]))
+
+
+def draw_review_sample(data: dict, runs: dict[str, dict], per_kind: int = 6, flagged: int = 8, store_missing: int = 8, seed: int = REVIEW_SEED) -> dict:
+    """Ids are R01.. in a shuffled order, so neither the id nor the order tells the reviewer which engine or bucket a pick came from."""
+    import random
+
+    rng, units = random.Random(seed), review_units(data, runs)
+    by_case = {c["id"]: c for c in data["cases"]}
+    chosen: list[tuple[tuple, dict, str]] = []
+    taken: set[tuple] = set()
+
+    def take(keys: list[tuple], count: int, why: str) -> None:
+        for key in rng.sample(sorted(keys), min(count, len(keys))):
+            taken.add(key)
+            chosen.append((key, rng.choice(units[key]), why))
+
+    strata: dict[tuple[str, str], list[tuple]] = {}
+    for key in units:
+        case = by_case[key[0]]
+        strata.setdefault((case["category"], case["kind"]), []).append(key)
+    for stratum in sorted(strata):
+        take(strata[stratum], per_kind, "random")
+    take([k for k, us in units.items() if k not in taken and any(_flagged(data, runs, u) for u in us)], flagged, "judge_flag")
+    take([k for k, us in units.items() if k not in taken and any(_unit_pick(runs, u)[0].get("store", {}).get("status") == "missing" for u in us)], store_missing, "store_missing")
+    rng.shuffle(chosen)
+    items = [{"id": f"R{n + 1:02d}", **unit, "why": why} for n, (_, unit, why) in enumerate(chosen)]
+    return {"meta": {"seed": seed, "runs": list(runs), "per_kind": per_kind, "flagged": flagged, "store_missing": store_missing}, "items": items}
+
+
+def review_page_data(data: dict, runs: dict[str, dict], sample: dict, labels: dict[str, str]) -> dict:
+    """What the review page shows. `answer` holds the judge's verdict and the store result, which the page opens only after the human verdict."""
+    by_case = {c["id"]: c for c in data["cases"]}
+    cases, items = {}, []
+    for item in sample["items"]:
+        case = by_case[item["case"]]
+        if case["id"] not in cases:
+            persona = data["personas"][case["persona"]]
+            cases[case["id"]] = {"category": case["category"], "kind": data["kinds"][case["kind"]], "text": case["text"], "wanted": case["conditions"]["tags"],
+                                 "excluded": case["conditions"]["excluded"], "years": case.get("years"),
+                                 "liked": [labels[i] for i in persona["selected"]], "likedTags": persona["tags"]}
+        pick, judged = _unit_pick(runs, item)
+        items.append({"id": item["id"], "case": case["id"], "name": pick["name"], "detail": pick.get("detail", ""),
+                      "answer": {"fit": judged["fit"], "breaksExclusion": judged["breaksExclusion"], "opposesRequest": judged["opposesRequest"], "real": judged["real"],
+                                 "note": judged.get("note", ""), "store": pick.get("store", {}).get("status")}})
+    return {"cases": cases, "items": items}
+
+
+def build_review_page(template: str, page_data: dict) -> str:
+    """The page carries its data, so it opens from disk and as an Artifact alike. `</` is escaped so no name can close the script tag."""
+    payload = json.dumps(page_data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    marker = "/*REVIEW_DATA*/null"
+    if marker not in template:
+        raise ValueError("template has no data marker")
+    return template.replace(marker, payload)
+
+
+def load_human(path: Path) -> dict:
+    """Verdicts the page saved: {"verdicts": {"R01": {"fit": 2, "exclusion": "kept"|"broke"|"unsure"|None, "real": "yes"|"no"|"unsure"}}}.
+    A verdict changed after seeing the judge keeps the blind one in place and the change under "revised"."""
+    raw = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    return {"meta": raw.get("meta", {}), "verdicts": raw.get("verdicts", {})}
+
+
+def _kappa(pairs: list[tuple]) -> float | None:
+    """Cohen's kappa: agreement beyond what two raters with these label rates would reach by chance."""
+    if not pairs:
+        return None
+    observed = sum(a == b for a, b in pairs) / len(pairs)
+    left, right = Counter(a for a, _ in pairs), Counter(b for _, b in pairs)
+    chance = sum(left[k] * right[k] for k in left) / len(pairs) ** 2
+    return None if chance == 1 else (observed - chance) / (1 - chance)
+
+
+def _wilson(part: int, whole: int) -> tuple[float, float] | None:
+    if not whole:
+        return None
+    z, p = 1.96, part / whole
+    centre, half = p + z * z / (2 * whole), z * ((p * (1 - p) + z * z / (4 * whole)) / whole) ** 0.5
+    return (centre - half) / (1 + z * z / whole), (centre + half) / (1 + z * z / whole)
+
+
+def human_agreement(data: dict, runs: dict[str, dict], sample: dict, human: dict) -> dict:
+    """The judge against the human verdict, metric by metric, over the sample items the human has answered."""
+    by_case = {c["id"]: c for c in data["cases"]}
+    rows = []
+    for item in sample["items"]:
+        verdict = human["verdicts"].get(item["id"])
+        if not verdict or verdict.get("fit") not in (0, 1, 2):
+            continue
+        pick, judged = _unit_pick(runs, item)
+        rows.append({"item": item, "case": by_case[item["case"]], "pick": pick, "judge": judged, "human": verdict})
+
+    def fit_block(selected: list[dict]) -> dict:
+        pairs = [(r["human"]["fit"], r["judge"]["fit"]) for r in selected]
+        good = [(h == 2, j == 2) for h, j in pairs]
+        n = len(pairs)
+        return {"n": n, "exact": _rate(sum(h == j for h, j in pairs), n), "kappa": _kappa(pairs), "good_agree": _rate(sum(h == j for h, j in good), n),
+                "good_kappa": _kappa(good), "human_good": _rate(sum(h for h, _ in good), n), "judge_good": _rate(sum(j for _, j in good), n),
+                "human_good_ci": _wilson(sum(h for h, _ in good), n), "human_ok": _rate(sum(h >= 1 for h, _ in pairs), n), "judge_ok": _rate(sum(j >= 1 for _, j in pairs), n),
+                "matrix": {f"{h}-{j}": c for (h, j), c in Counter(pairs).items()}}
+
+    random_rows = [r for r in rows if r["item"]["why"] == "random"]
+    excl = [(r["human"]["exclusion"] == "broke", r["judge"]["breaksExclusion"]) for r in rows if r["case"]["conditions"]["excluded"] and r["human"].get("exclusion") in ("kept", "broke")]
+    real = [(r["human"]["real"], r["judge"]["real"], r["pick"].get("store", {}).get("status"), r["case"]["category"]) for r in rows if r["human"].get("real") in ("yes", "no")]
+    real_no = [x for x in real if x[0] == "no"]
+    return {
+        "answered": len(rows), "items": len(sample["items"]), "revised": sum(bool(r["human"].get("revised")) for r in rows),
+        "fit_random": fit_block(random_rows),
+        "fit_by_category": {cat: fit_block([r for r in random_rows if r["case"]["category"] == cat]) for cat in CATEGORY_LABEL},
+        "fit_all": fit_block(rows),
+        "exclusion": {"n": len(excl), "agree": _rate(sum(h == j for h, j in excl), len(excl)), "human_broke": sum(h for h, _ in excl),
+                      "judge_missed": sum(h and not j for h, j in excl), "judge_false": sum(j and not h for h, j in excl)},
+        "real": {"n": len(real), "unsure": sum(r["human"].get("real") == "unsure" for r in rows), "human_no": len(real_no),
+                 "judge_caught": sum(j == "no" for _, j, _, _ in real_no), "judge_said_yes": sum(j == "yes" for _, j, _, _ in real_no),
+                 "judge_false_no": sum(h == "yes" and j == "no" for h, j, _, _ in real),
+                 "store_missing_human_no": sum(h == "no" for h, _, s, _ in real if s == "missing"), "store_missing": sum(s == "missing" for _, _, s, _ in real)},
+        "disagreements": [{"id": r["item"]["id"], "case": r["case"]["id"], "text": r["case"]["text"], "pick": r["pick"]["name"] + (f" ({r['pick']['detail']})" if r["pick"].get("detail") else ""),
+                           "human": r["human"]["fit"], "judge": r["judge"]["fit"], "note": r["judge"].get("note", ""), "why": r["item"]["why"]}
+                          for r in rows if abs(r["human"]["fit"] - r["judge"]["fit"]) >= 1],
+    }
+
+
+def render_agreement(agreement: dict) -> list[str]:
+    a = agreement
+    lines = ["## 사람 검수와 AI 심사의 일치", "",
+             f"표본 {a['items']}개 중 {a['answered']}개를 사람이 판정했어요. 사람은 심사 결과를 보기 전에 판정했고, 본 뒤 고친 판정은 {a['revised']}개예요(일치율은 보기 전 판정으로 계산해요).", ""]
+    if not a["answered"]:
+        return [*lines, "아직 판정이 없어요.", ""]
+
+    def fit_row(label: str, m: dict) -> str:
+        ci = m["human_good_ci"]
+        span = f" ({ci[0] * 100:.0f}~{ci[1] * 100:.0f}%)" if ci else ""
+        kappa = "-" if m["kappa"] is None else f"{m['kappa']:.2f}"
+        return f"| {label} | {m['n']} | {_pct(m['judge_good'])} | {_pct(m['human_good'])}{span} | {_pct(m['judge_ok'])} | {_pct(m['human_ok'])} | {_pct(m['good_agree'])} | {_pct(m['exact'])} | {kappa} |"
+
+    lines += ["어울림(fit)은 무작위 표본으로 봐요. 사람 '잘 맞음' 옆 괄호는 95% 신뢰구간이에요.", "",
+              "| 범위 | 항목 | 잘 맞음(심사) | 잘 맞음(사람) | 받아들일 만함(심사) | 받아들일 만함(사람) | 잘 맞음 여부 일치 | 3단계 일치 | 카파 |", "|---|---|---|---|---|---|---|---|---|",
+              fit_row("무작위 전체", a["fit_random"]), *(fit_row(f"무작위 · {CATEGORY_LABEL[c]}", m) for c, m in a["fit_by_category"].items() if m["n"]),
+              fit_row("표본 전체(골라 넣은 항목 포함)", a["fit_all"]), "",
+              "사람(행) × 심사(열), 표본 전체:", "", "| 사람 \\ 심사 | 잘 맞음 | 무난 | 안 맞음 |", "|---|---|---|---|"]
+    for h in (2, 1, 0):
+        lines.append(f"| {FIT_LABEL[h]} | " + " | ".join(str(a["fit_all"]["matrix"].get(f"{h}-{j}", 0)) for j in (2, 1, 0)) + " |")
+    e, r = a["exclusion"], a["real"]
+    lines += ["", "| 지표 | 사람이 판정한 항목 | 일치 | 내용 |", "|---|---|---|---|",
+              f"| 제외 위반 | {e['n']} | {_pct(e['agree'])} | 사람이 위반이라 본 {e['human_broke']}개 중 심사가 놓친 {e['judge_missed']}개, 심사만 위반이라 한 {e['judge_false']}개 |",
+              f"| 없는 항목 | {r['n']} (모름 {r['unsure']}) | - | 사람이 없다고 본 {r['human_no']}개 중 심사가 '없음' {r['judge_caught']}개, '있음' {r['judge_said_yes']}개. 사람이 있다고 본 항목을 심사가 없다고 한 것 {r['judge_false_no']}개. 스토어에 없던 곡 {r['store_missing']}개 중 사람이 없다고 본 것 {r['store_missing_human_no']}개 |",
+              "", "어울림이 어긋난 항목(무작위·골라 넣은 항목 모두):", ""]
+    lines += [f"- {d['id']} {d['case']} \"{d['text']}\" → {d['pick']}: 사람 {FIT_LABEL[d['human']]}, 심사 {FIT_LABEL[d['judge']]}" + (f" — 심사 근거: {d['note']}" if d["note"] else "")
+              for d in sorted(a["disagreements"], key=lambda d: (d["judge"] - d["human"], d["id"]))] or ["없음"]
+    return [*lines, ""]
+
+
+def render_report(data: dict, runs: dict[str, dict], note: str = "", agreement: dict | None = None) -> str:
+    """`runs` maps a label to a run; every table has one row per run, so engines and repeated rounds read side by side.
+    `agreement` (human_agreement) adds the human review section."""
     lines = ["# 지금 추천 — 제품 평가 결과", "", note, "", f"평가 세트: `server/eval/ai_cases.json` (음식 {len(_by(data, category='food'))}·음악 {len(_by(data, category='music'))}개)", "",
              "읽는 법:", "",
              "- 판별표는 이름만 봐도 분명한 경우만 잡아요. 위반 수는 하한선이에요. 서버 검사도 같은 표를 쓰므로, 보강 뒤 AI 엔진의 판별표 위반 0은 당연한 결과예요. 보강의 효과는 심사와 재료 목록 변동으로 봐요.",
@@ -406,6 +594,8 @@ def render_report(data: dict, runs: dict[str, dict], note: str = "") -> str:
             v, overlap = variety(data, run, category), taste_overlap(data, run, category)
             lines.append(f"| {name} | {_pct(overlap)} | {v['distinct']} / {v['picks']} | {', '.join(f'{n} {c}회' for n, c in v['top'])} |")
         lines.append("")
+    if agreement is not None:
+        lines += render_agreement(agreement)
     lines += ["## 곡 실존 (Apple 스토어 검색)", "", "못 찾았다고 없는 곡은 아니에요. 찾은 비율은 하한선이에요.", "", "| 실행 | 찾음 | 못 찾음 | 조회 실패 | 찾은 비율 |", "|---|---|---|---|---|"]
     for name, run in runs.items():
         s = song_store(data, run)

@@ -1,0 +1,319 @@
+<title>추천 검수판</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column of request cards; each card lists its picks with three verdict rows, the judge's answer opens under a pick once it is confirmed. */
+:root {
+  --bg: #f6f7fb; --surface: #ffffff; --ink: #1f2433; --muted: #646b80; --line: #e2e5ee;
+  --food: #fde3d4; --food-ink: #8a3f17; --music: #d9ecf7; --music-ink: #1d5677;
+  --accent: #3d5bd9; --accent-soft: #e4e9fb; --good: #2f8a5b; --good-soft: #dff3e8; --warn: #a3660a; --warn-soft: #fbefd5; --bad: #b4373f; --bad-soft: #f9e0e2;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14161d; --surface: #1d2029; --ink: #e8eaf2; --muted: #9aa1b5; --line: #2e3240;
+  --food: #3b2a22; --food-ink: #f3b896; --music: #1e3140; --music-ink: #9fd0ef;
+  --accent: #8ea2ff; --accent-soft: #262d4a; --good: #7bd3a3; --good-soft: #1d3329; --warn: #f0c26e; --warn-soft: #3a3020; --bad: #f19aa0; --bad-soft: #3d2326; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14161d; --surface: #1d2029; --ink: #e8eaf2; --muted: #9aa1b5; --line: #2e3240;
+  --food: #3b2a22; --food-ink: #f3b896; --music: #1e3140; --music-ink: #9fd0ef;
+  --accent: #8ea2ff; --accent-soft: #262d4a; --good: #7bd3a3; --good-soft: #1d3329; --warn: #f0c26e; --warn-soft: #3a3020; --bad: #f19aa0; --bad-soft: #3d2326; color-scheme: dark }
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line) }
+header.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 12px }
+h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em }
+.progress { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0 }
+.meter { flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden }
+.meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s }
+.count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; white-space: nowrap }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+button, .filebtn { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 99px; padding: 6px 12px; cursor: pointer }
+button:hover, .filebtn:hover { border-color: var(--accent) }
+button:focus-visible, .filebtn:focus-within, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600 }
+button.primary:disabled { opacity: .4; cursor: not-allowed }
+.filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0 }
+.status { font-size: 12px; color: var(--muted) }
+main.wrap { padding-block: 20px 60px; display: grid; gap: 18px }
+.intro { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 8px }
+.intro p { margin: 0; max-width: 68ch }
+.intro dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 4px 0 0; font-size: 14px }
+.intro dt { font-weight: 600 } .intro dd { margin: 0; color: var(--muted) }
+.filters { display: flex; gap: 8px; flex-wrap: wrap }
+.filters button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600 }
+.case { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden }
+.case-head { padding: 16px 18px; display: grid; gap: 8px }
+.case[data-cat="food"] .case-head { background: var(--food) } .case[data-cat="music"] .case-head { background: var(--music) }
+.case[data-cat="food"] .eyebrow { color: var(--food-ink) } .case[data-cat="music"] .eyebrow { color: var(--music-ink) }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .04em }
+.request { font-size: 20px; font-weight: 600; line-height: 1.35; margin: 0; text-wrap: balance }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font-size: 12.5px; padding: 2px 9px; border-radius: 99px; background: var(--surface); color: var(--ink) }
+.chip.no { background: var(--bad-soft); color: var(--bad); font-weight: 600 }
+.chip.year { background: var(--warn-soft); color: var(--warn); font-weight: 600 }
+.taste { font-size: 13px; color: var(--muted); margin: 0 }
+.picks { display: grid }
+.pick { padding: 14px 18px; border-top: 1px solid var(--line); display: grid; gap: 10px }
+.pick-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px }
+.pick-name { font-size: 17px; font-weight: 600; min-width: 0; overflow-wrap: anywhere }
+.pick-detail { color: var(--muted); min-width: 0; overflow-wrap: anywhere }
+.pick-id { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto }
+.search { font-size: 12.5px; color: var(--accent) }
+.qs { display: grid; gap: 8px }
+.q { display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: 10px }
+.q-label { font-size: 13px; color: var(--muted) }
+.seg { display: flex; flex-wrap: wrap; gap: 6px }
+.seg button { border-radius: 10px; padding: 6px 12px; min-width: 64px }
+.seg button[aria-pressed="true"][data-tone="good"] { background: var(--good-soft); border-color: var(--good); color: var(--good); font-weight: 600 }
+.seg button[aria-pressed="true"][data-tone="mid"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 600 }
+.seg button[aria-pressed="true"][data-tone="bad"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); font-weight: 600 }
+.seg button[aria-pressed="true"][data-tone="none"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600 }
+.seg button:disabled { cursor: default }
+.note-input { font: inherit; font-size: 13px; width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--bg); color: var(--ink) }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.hint { font-size: 12.5px; color: var(--muted) }
+.reveal { border-radius: 12px; background: var(--bg); border: 1px dashed var(--line); padding: 10px 12px; display: grid; gap: 6px; font-size: 13.5px }
+.reveal b { font-weight: 600 }
+.cmp { display: flex; flex-wrap: wrap; gap: 6px }
+.tag { padding: 1px 8px; border-radius: 99px; font-size: 12.5px }
+.tag.same { background: var(--good-soft); color: var(--good) } .tag.diff { background: var(--bad-soft); color: var(--bad) } .tag.info { background: var(--accent-soft); color: var(--accent) }
+.done-mark { font-size: 12px; font-weight: 600; color: var(--good) }
+.empty { text-align: center; color: var(--muted); padding: 40px 0 }
+@media (max-width: 520px) { .q { grid-template-columns: 1fr; gap: 4px } .request { font-size: 18px } .pick-id { margin-left: 0 } }
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <h1>추천 검수판</h1>
+    <div class="progress"><div class="meter" aria-hidden="true"><i id="meter"></i></div><span class="count" id="count">0 / 0</span></div>
+    <div class="tools">
+      <button id="export" type="button">JSON 내려받기</button>
+      <label class="filebtn">JSON 불러오기<input id="import" type="file" accept="application/json,.json"></label>
+      <span class="status" id="status" role="status"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p>지금 추천의 평가 세트에서 뽑은 추천 항목이에요. 요청과 이름만 보고 항목마다 판정해 주세요. <b>판정 확정</b>을 누르면 그때 AI 심사의 판정이 열려요. 확정한 판정은 집계에 그대로 쓰이고, 나중에 고치면 따로 기록돼요.</p>
+    <dl>
+      <dt>어울림</dt><dd>잘 맞음 = 이 요청을 한 사람에게 바로 권할 만함 · 무난 = 크게 어긋나진 않지만 딱 맞지도 않음 · 안 맞음 = 요청과 맞지 않음. 평소 취향과 요청이 다르면 요청을 기준으로 봐요.</dd>
+      <dt>제외</dt><dd>빼 달라고 한 것이 보통 조리법이나 곡 구성에 들어가면 어김이에요. 간장·고추장의 콩·밀까지는 따지지 않아요.</dd>
+      <dt>실존</dt><dd>메뉴는 한국에서 실제로 파는 메뉴인지, 곡은 그 제목과 아티스트의 곡이 실제로 있는지 봐요. 모르면 검색 링크를 써도 되고, 그래도 모르면 모름을 골라요.</dd>
+    </dl>
+    <div class="filters" role="group" aria-label="보기">
+      <button type="button" data-filter="todo" aria-pressed="true">남은 항목</button>
+      <button type="button" data-filter="all" aria-pressed="false">전체</button>
+      <button type="button" data-filter="done" aria-pressed="false">확정한 항목</button>
+    </div>
+  </section>
+  <div id="list" class="picks-list" style="display:grid;gap:18px"></div>
+</main>
+
+<script id="review-data" type="application/json">{"cases":{"FS7":{"category":"food","kind":"상황 맞춤","text":"고소한 거 먹고 싶어","wanted":["고소함"],"excluded":[],"years":null,"liked":["쌀국수","닭곰탕","우동","두부 덮밥","샌드위치"],"likedTags":["담백함"]},"FT1b":{"category":"food","kind":"취향 반영","text":"점심 뭐 먹지","wanted":["점심"],"excluded":[],"years":null,"liked":["김치찌개","마라탕","떡볶이"],"likedTags":["매콤함"]},"FB1":{"category":"food","kind":"넓은 메뉴","text":"치킨 중에서 골라줘","wanted":[],"excluded":[],"years":null,"liked":[],"likedTags":[]},"MC2":{"category":"music","kind":"취향과 요청 충돌","text":"헬스장에서 터질 듯 신나게","wanted":["운동","활기참","높은 에너지"],"excluded":[],"years":null,"liked":["밤편지 - 아이유","Kiss the Rain - 이루마"],"likedTags":["차분함","낮은 에너지"]},"MT1a":{"category":"music","kind":"취향 반영","text":"오늘 들을 노래 추천해줘","wanted":[],"excluded":[],"years":null,"liked":["밤편지 - 아이유","River Flows in You - 이루마","Kiss the Rain - 이루마","Clair de lune - Claude Debussy","Love poem - 아이유"],"likedTags":["차분함"]},"MS5":{"category":"music","kind":"상황 맞춤","text":"잠들기 전에 편안하게","wanted":["휴식"],"excluded":[],"years":null,"liked":["사건의 지평선 - 윤하","Hype Boy - NewJeans","Dynamite - BTS","좋은 날 - 아이유"],"likedTags":["활기참"]},"MY2":{"category":"music","kind":"발매 연도","text":"90년대 신나는 노래","wanted":["활기참"],"excluded":[],"years":{"from":1990,"to":1999},"liked":[],"likedTags":[]},"FS5":{"category":"food","kind":"상황 맞춤","text":"채소 많이 들어간 점심","wanted":["점심","채소"],"excluded":[],"years":null,"liked":["쌀국수","닭곰탕","우동","두부 덮밥","샌드위치"],"likedTags":["담백함"]},"MT2b":{"category":"music","kind":"취향 반영","text":"출근길에 들을 노래","wanted":[],"excluded":[],"years":null,"liked":["사건의 지평선 - 윤하","Hype Boy - NewJeans","Dynamite - BTS","좋은 날 - 아이유"],"likedTags":["활기참"]},"MS6":{"category":"music","kind":"상황 맞춤","text":"어쿠스틱 감성","wanted":["어쿠스틱"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"MS7":{"category":"music","kind":"상황 맞춤","text":"산책할 때 듣는 밝은 노래","wanted":["산책","활기참"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"FC4":{"category":"food","kind":"취향과 요청 충돌","text":"더워 죽겠어, 차가운 거","wanted":["차가움"],"excluded":[],"years":null,"liked":["쌀국수","닭곰탕","우동"],"likedTags":["따뜻함","국물"]},"MC1":{"category":"music","kind":"취향과 요청 충돌","text":"잠잘 때 틀어 놓을 차분한 노래","wanted":["휴식","차분함"],"excluded":[],"years":null,"liked":["Hype Boy - NewJeans","Dynamite - BTS"],"likedTags":["활기참","높은 에너지"]},"FC2":{"category":"food","kind":"취향과 요청 충돌","text":"혼자 먹을 담백한 점심","wanted":["혼자","점심","담백함"],"excluded":[],"years":null,"liked":["김치찌개","마라탕"],"likedTags":["매콤함"]},"MX1":{"category":"music","kind":"필수 제외","text":"집중해야 하는데 가사 없는 걸로","wanted":["과제"],"excluded":["보컬"],"years":null,"liked":["밤편지 - 아이유","River Flows in You - 이루마","Kiss the Rain - 이루마","Clair de lune - Claude Debussy","Love poem - 아이유"],"likedTags":["차분함"]},"MX4":{"category":"music","kind":"필수 제외","text":"기분 전환할 신나는 노래, 피아노 말고","wanted":["활기참"],"excluded":["피아노"],"years":null,"liked":["사건의 지평선 - 윤하","Hype Boy - NewJeans","Dynamite - BTS","좋은 날 - 아이유"],"likedTags":["활기참"]},"MC3":{"category":"music","kind":"취향과 요청 충돌","text":"노래 말고 연주곡만 듣고 싶어","wanted":["연주곡"],"excluded":["보컬"],"years":null,"liked":["밤편지 - 아이유","Love poem - 아이유","바람이 불어오는 곳 - 김광석"],"likedTags":["보컬","발라드"]},"MX3":{"category":"music","kind":"필수 제외","text":"팝 말고 차분한 노래","wanted":["차분함"],"excluded":["팝"],"years":null,"liked":[],"likedTags":[]},"FS3":{"category":"food","kind":"상황 맞춤","text":"새콤한 게 당겨","wanted":["상큼함"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"MS1":{"category":"music","kind":"상황 맞춤","text":"과제하면서 들을 잔잔한 피아노","wanted":["과제","차분함","피아노"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"FX6":{"category":"food","kind":"필수 제외","text":"유제품 빼고 양식으로","wanted":["양식"],"excluded":["유제품"],"years":null,"liked":[],"likedTags":[]},"MT2a":{"category":"music","kind":"취향 반영","text":"출근길에 들을 노래","wanted":[],"excluded":[],"years":null,"liked":["밤편지 - 아이유","River Flows in You - 이루마","Kiss the Rain - 이루마","Clair de lune - Claude Debussy","Love poem - 아이유"],"likedTags":["차분함"]},"FX1":{"category":"food","kind":"필수 제외","text":"밀가루 못 먹어요, 점심 추천","wanted":["점심"],"excluded":["밀"],"years":null,"liked":[],"likedTags":[]},"MS3":{"category":"music","kind":"상황 맞춤","text":"비 오는 밤 혼자 듣기 좋은 노래","wanted":[],"excluded":[],"years":null,"liked":[],"likedTags":[]},"FX2":{"category":"food","kind":"필수 제외","text":"땅콩 알레르기 있어서 땅콩 빼고 매콤한 거","wanted":["매콤함"],"excluded":["땅콩"],"years":null,"liked":[],"likedTags":[]},"MT1b":{"category":"music","kind":"취향 반영","text":"오늘 들을 노래 추천해줘","wanted":[],"excluded":[],"years":null,"liked":["사건의 지평선 - 윤하","Hype Boy - NewJeans","Dynamite - BTS","좋은 날 - 아이유"],"likedTags":["활기참"]},"FC5":{"category":"food","kind":"취향과 요청 충돌","text":"담백한 저녁","wanted":["저녁","담백함"],"excluded":[],"years":null,"liked":[],"likedTags":["국물","매콤함"]},"FT1a":{"category":"food","kind":"취향 반영","text":"점심 뭐 먹지","wanted":["점심"],"excluded":[],"years":null,"liked":["쌀국수","닭곰탕","우동","두부 덮밥","샌드위치"],"likedTags":["담백함"]},"FB2":{"category":"food","kind":"넓은 메뉴","text":"파스타 먹고 싶어","wanted":["양식"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"FS2":{"category":"food","kind":"상황 맞춤","text":"더운 날 시원하게 점심","wanted":["점심","차가움"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"FS6":{"category":"food","kind":"상황 맞춤","text":"숙취 해장할 국물","wanted":["국물"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"MY1":{"category":"music","kind":"발매 연도","text":"2000년대 발라드","wanted":["발라드"],"excluded":[],"years":{"from":2000,"to":2009},"liked":[],"likedTags":[]},"MY3":{"category":"music","kind":"발매 연도","text":"요즘 나온 잔잔한 노래","wanted":["차분함"],"excluded":[],"years":{"from":2022,"to":null},"liked":[],"likedTags":[]},"FT2b":{"category":"food","kind":"취향 반영","text":"오늘 저녁 추천해줘","wanted":["저녁"],"excluded":[],"years":null,"liked":["김치찌개","마라탕","떡볶이"],"likedTags":["매콤함"]},"FX3":{"category":"food","kind":"필수 제외","text":"생선 싫어, 시원한 거","wanted":["차가움"],"excluded":["생선"],"years":null,"liked":[],"likedTags":[]},"FS4":{"category":"food","kind":"상황 맞춤","text":"둘이서 든든하게 저녁","wanted":["함께","저녁"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"MS4":{"category":"music","kind":"상황 맞춤","text":"재즈 듣고 싶어","wanted":["재즈"],"excluded":[],"years":null,"liked":[],"likedTags":[]},"MX5":{"category":"music","kind":"필수 제외","text":"록 빼고 에너지 넘치는 곡","wanted":["높은 에너지"],"excluded":["록"],"years":null,"liked":[],"likedTags":[]},"FX8":{"category":"food","kind":"필수 제외","text":"달걀 못 먹어, 저녁 추천","wanted":["저녁"],"excluded":["달걀"],"years":null,"liked":[],"likedTags":[]},"FX5":{"category":"food","kind":"필수 제외","text":"비건이라 고기 생선 해산물 달걀 유제품 다 빼줘","wanted":[],"excluded":["소고기","돼지고기","닭고기","양고기","생선","해산물","달걀","유제품"],"years":null,"liked":[],"likedTags":[]},"FC3":{"category":"food","kind":"취향과 요청 충돌","text":"스트레스 풀리게 아주 매운 거","wanted":["매콤함"],"excluded":[],"years":null,"liked":["쌀국수","닭곰탕","두부 덮밥"],"likedTags":["담백함"]}},"items":[{"id":"R01","case":"FS7","name":"까르보나라 파스타","detail":"이탈리아 · 크림 파스타","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"계란/치즈/크림의 고소한 풍미가 적합함","store":null}},{"id":"R02","case":"FT1b","name":"뼈해장국","detail":"한식 · 얼큰한 국물","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"점심 식사로 적합함","store":null}},{"id":"R03","case":"FB1","name":"황금올리브치킨","detail":"BBQ · 치킨","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"대표적인 치킨 메뉴","store":null}},{"id":"R04","case":"MC2","name":"Levitating","detail":"Dua Lipa","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"신나는 댄스 곡","store":"found"}},{"id":"R05","case":"MT1a","name":"Ditto","detail":"NewJeans","answer":{"fit":1,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"무난히 들을 수 있는 곡","store":"found"}},{"id":"R06","case":"MS5","name":"사랑은 은하수 카페에서","detail":"10CM","answer":{"fit":1,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"어쿠스틱하나 다소 경쾌함","store":"missing"}},{"id":"R07","case":"MY2","name":"Summer","detail":"히사이시 조","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":true,"real":"yes","note":"신나는 90년대 가요가 아닌 연주곡","store":null}},{"id":"R08","case":"FS5","name":"샐러드","detail":"","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"채소가 많은 대표적 메뉴","store":null}},{"id":"R09","case":"MT2b","name":"Butter","detail":"BTS","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"밝고 출근길에 어울림","store":"found"}},{"id":"R10","case":"MS6","name":"꽃길만 레이디","detail":"적재","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":false,"real":"no","note":"존재하지 않는 곡으로 추정","store":"missing"}},{"id":"R11","case":"MS7","name":"Sunday Morning","detail":"Maroon 5","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"산책할 때 듣기 좋은 밝은 곡","store":"found"}},{"id":"R12","case":"FC4","name":"밀면","detail":"한식 · 차가운 밀면","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"차가운 국물 면요리","store":null}},{"id":"R13","case":"MC1","name":"Blue Side","detail":"제이홉","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"차분하고 몽환적인 분위기의 수면용 곡","store":"found"}},{"id":"R14","case":"FC2","name":"샌드위치","detail":"","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"담백하고 가벼운 점심으로 적합","store":null}},{"id":"R15","case":"MX1","name":"Aruarian Dance","detail":"Nujabes","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"가사 없는 차분한 로파이 인스트루멘탈","store":null}},{"id":"R16","case":"MY2","name":"Believe","detail":"Cher","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"90년대 신나는 댄스 팝","store":"found"}},{"id":"R17","case":"MX4","name":"Eine kleine Nachtmusik","detail":"Wolfgang Amadeus Mozart","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":true,"real":"yes","note":"신나는 가요/팝송과 거리 있음","store":null}},{"id":"R18","case":"MC3","name":"Minuet in G major","detail":"Johann Sebastian Bach","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"바흐의 유명 클래식 연주곡","store":"missing"}},{"id":"R19","case":"FS7","name":"콘치즈 피자","detail":"피자 · 프랜차이즈","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"옥수수와 치즈의 고소함이 적합","store":null}},{"id":"R20","case":"MX3","name":"기다림","detail":"이장희","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"차분하고 잔잔한 가요","store":"missing"}},{"id":"R21","case":"MT2b","name":"좋은 날","detail":"아이유","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"취향 반영 출근길 추천","store":null}},{"id":"R22","case":"FS3","name":"물냉면","detail":"","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"식초와 겨자를 첨가해 새콤하게 즐김","store":null}},{"id":"R23","case":"MY2","name":"여름 안에서","detail":"듀스","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"90년대 듀스의 밝고 신나는 곡","store":null}},{"id":"R24","case":"MC1","name":"Draft 1","detail":"Honeysuckle","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":false,"real":"unsure","note":"실제 존재하는 곡인지 불확실함","store":"missing"}},{"id":"R25","case":"MS1","name":"Merry-Go-Round of Life","detail":"Joe Hisaishi","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"과제용으로 적합한 피아노 연주곡","store":"found"}},{"id":"R26","case":"FX6","name":"마르게리타 피자","detail":"이탈리아 요리 · 화덕 피자","answer":{"fit":0,"breaksExclusion":true,"opposesRequest":true,"real":"yes","note":"모짜렐라 치즈(유제품) 포함","store":null}},{"id":"R27","case":"MT2a","name":"봄날","detail":"BTS","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"출근길에 들을 만함","store":null}},{"id":"R28","case":"MX4","name":"Love Dive","detail":"IVE","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"기분 전환에 적합함","store":"found"}},{"id":"R29","case":"FX1","name":"소고기 육개장","detail":"한식 · 얼큰한 국물","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"밀가루 없는 밥류 점심 추천으로 적합","store":null}},{"id":"R30","case":"MS3","name":"비 오는 날의 수채화","detail":"김현식","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"비 오는 밤 분위기에 잘 어울림","store":"missing"}},{"id":"R31","case":"FX2","name":"신라면","detail":"라면 · 매콤함","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"땅콩 없고 매콤한 라면","store":null}},{"id":"R32","case":"MT1b","name":"Butter","detail":"BTS","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"취향과 잘 어울림","store":"found"}},{"id":"R33","case":"FX2","name":"신라면","detail":"라면 · 국물 요리","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"땅콩 없이 매콤한 대표 라면","store":null}},{"id":"R34","case":"FX2","name":"제육볶음","detail":"한식 · 돼지고기 볶음","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"땅콩 없는 매콤한 제육볶음","store":null}},{"id":"R35","case":"MC3","name":"Letter From The Earth","detail":"Isao Tomita","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"토미타 이사오 연주곡","store":"missing"}},{"id":"R36","case":"MS1","name":"One Summer’s Day","detail":"히사이시 조","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"차분한 연주곡으로 요청과 잘 맞음","store":null}},{"id":"R37","case":"FC5","name":"차돌된장찌개","detail":"한식 · 따뜻한 국물","answer":{"fit":1,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"기름기가 있어 아주 담백하진 않음","store":null}},{"id":"R38","case":"MT2a","name":"이등병의 편지","detail":"김광석","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":true,"real":"yes","note":"입대 관련 우울한 곡","store":null}},{"id":"R39","case":"FT1a","name":"마파두부 덮밥","detail":"중식 · 든든한 밥","answer":{"fit":1,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"두부 덮밥이나 매콤할 수 있음","store":null}},{"id":"R40","case":"FB2","name":"봉골레 파스타","detail":"이탈리안 · 오일 파스타","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"대중적인 오일 파스타","store":null}},{"id":"R41","case":"FS2","name":"초계국수","detail":"한식 · 닭 육수 면","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"시원한 여름철 점심 메뉴로 적합","store":null}},{"id":"R42","case":"FS6","name":"마라탕","detail":"","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":true,"real":"yes","note":"자극적이라 해장에 부적합","store":null}},{"id":"R43","case":"MY1","name":"거리에서","detail":"성시경","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"2006년 발매 대표 발라드","store":null}},{"id":"R44","case":"MY3","name":"BIRDS OF A FEATHER","detail":"Billie Eilish","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"2024년 발매된 감성적인 곡","store":null}},{"id":"R45","case":"FB2","name":"까르보나라","detail":"이탈리아 요리 · 크림 파스타","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"요청에 부합하는 파스타","store":null}},{"id":"R46","case":"FB2","name":"토마토 미트소스 파스타","detail":"이탈리아 요리 · 토마토 파스타","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"요청에 부합하는 파스타","store":null}},{"id":"R47","case":"MS5","name":"잠은 다 잤나봐요","detail":"잔나비","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"잔잔하고 감성적인 수면용 곡","store":"missing"}},{"id":"R48","case":"MX3","name":"On the Nature of Daylight","detail":"Max Richter","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"현대 클래식으로 매우 차분함","store":null}},{"id":"R49","case":"MY1","name":"너를 위해","detail":"임재범","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"2000년 발매 대표 발라드","store":null}},{"id":"R50","case":"MC3","name":"River Flows In You","detail":"Yiruma","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"이루마의 대표적인 피아노 연주곡","store":"found"}},{"id":"R51","case":"MX3","name":"Let It Be","detail":"The Beatles","answer":{"fit":0,"breaksExclusion":true,"opposesRequest":false,"real":"yes","note":"비틀즈의 팝/록 곡으로 팝 제외 조건 위반","store":null}},{"id":"R52","case":"MY3","name":"헤어지자 말해요","detail":"박재정","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"2023년 발매, 차분한 발라드 곡","store":"found"}},{"id":"R53","case":"MY3","name":"첫 만남은 계획대로 되지 않아","detail":"QWER","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":true,"real":"no","note":"아티스트 매칭 오류(TWS곡임)","store":"missing"}},{"id":"R54","case":"FT1a","name":"가바우동","detail":"일식 · 면 요리","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"점심 추천 및 취향(우동)에 잘 맞음","store":null}},{"id":"R55","case":"FC2","name":"닭칼국수","detail":"한식 · 따뜻한 면","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"혼밥으로 담백한 국물 면 요리","store":null}},{"id":"R56","case":"MS1","name":"Comptine d'un autre été, l'après-midi","detail":"Yann Tiersen","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"잔잔하고 집중하기 좋은 피아노곡","store":"found"}},{"id":"R57","case":"MC3","name":"The Path of the Wind","detail":"히사이시 조","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"히사이시 조의 유명 연주곡","store":null}},{"id":"R58","case":"MT2a","name":"의도적으로","detail":"유희열","answer":{"fit":1,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"유희열의 곡, 출근길 무난함","store":"missing"}},{"id":"R59","case":"MT2a","name":"Dynamite","detail":"루모스","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":false,"real":"no","note":"아티스트 불일치 또는 미존재","store":"missing"}},{"id":"R60","case":"FT2b","name":"차돌된장찌개","detail":"한식 · 따뜻한 국물","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"저녁 식사로 적합한 찌개 메뉴","store":null}},{"id":"R61","case":"FB2","name":"까르보나라","detail":"이탈리안 · 크림 파스타","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"대표적인 파스타 메뉴","store":null}},{"id":"R62","case":"FX3","name":"밀면","detail":"한식 · 차가운 밀면","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"생선 없고 차가운 부산 밀면","store":null}},{"id":"R63","case":"FS4","name":"인도 커리","detail":"","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"2인 저녁 메뉴로 양호함","store":null}},{"id":"R64","case":"MS4","name":"Take Five","detail":"The Dave Brubeck Quartet","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"대표적인 재즈 명곡","store":"found"}},{"id":"R65","case":"MX5","name":"After LIKE","detail":"IVE","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"에너지 넘치는 댄스 팝 곡","store":null}},{"id":"R66","case":"FX8","name":"김치찌개","detail":"한식 · 국물","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"달걀 미포함 저녁 메뉴","store":null}},{"id":"R67","case":"MX1","name":"The Goldberg Variations","detail":"Johann Sebastian Bach","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"가사 없는 바흐 연주곡","store":"missing"}},{"id":"R68","case":"FC5","name":"샤브샤브","detail":"한식 · 맑은 육수","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"담백하게 먹기 좋은 메뉴","store":null}},{"id":"R69","case":"FB2","name":"봉골레 파스타","detail":"양식 · 오일 파스타","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"요청에 부합하는 파스타","store":null}},{"id":"R70","case":"MC2","name":"Dynamite","detail":"BTS","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"신나고 에너지 넘침","store":"found"}},{"id":"R71","case":"FT1b","name":"제육덮밥","detail":"한식 · 매콤한 볶음","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"점심 식사로 적합한 대중적 덮밥 메뉴","store":null}},{"id":"R72","case":"FX5","name":"양꼬치","detail":"","answer":{"fit":0,"breaksExclusion":true,"opposesRequest":true,"real":"yes","note":"양고기 사용으로 제외 대상","store":null}},{"id":"R73","case":"MC1","name":"Garden","detail":"Samm Henshaw","answer":{"fit":1,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"미디엄 템포로 차분한 수면용엔 무난함","store":"missing"}},{"id":"R74","case":"FT1a","name":"에그샌드위치","detail":"양식 · 빵과 달걀","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"선호 음식인 샌드위치, 점심으로 적합","store":null}},{"id":"R75","case":"FC3","name":"엽기떡볶이","detail":"분식 · 떡볶이","answer":{"fit":2,"breaksExclusion":false,"opposesRequest":false,"real":"yes","note":"매운 떡볶이의 대명사로 요청에 부합","store":null}},{"id":"R76","case":"MY2","name":"Smells Like Teen Spirit","detail":"Nirvana","answer":{"fit":0,"breaksExclusion":false,"opposesRequest":true,"real":"yes","note":"어둡고 격렬한 록 음악","store":"found"}}]}</script>
+<script>
+(function () {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("review-data").textContent) || { cases: {}, items: [] };
+  const KEY = "nowrec-review-v1";
+  const FIT = [{ v: 2, t: "잘 맞음", tone: "good" }, { v: 1, t: "무난", tone: "mid" }, { v: 0, t: "안 맞음", tone: "bad" }];
+  const EXCL = [{ v: "kept", t: "지킴", tone: "good" }, { v: "broke", t: "어김", tone: "bad" }, { v: "unsure", t: "모름", tone: "none" }];
+  const REAL = [{ v: "yes", t: "있음", tone: "good" }, { v: "no", t: "없음", tone: "bad" }, { v: "unsure", t: "모름", tone: "none" }];
+  const FIT_TEXT = { 2: "잘 맞음", 1: "무난", 0: "안 맞음" };
+  const REAL_TEXT = { yes: "있음", no: "없음", unsure: "모름" };
+
+  // verdicts: confirmed blind answers (what the agreement uses). drafts: choices not confirmed yet. editing: ids opened again after the reveal.
+  let state = { verdicts: {}, drafts: {} };
+  const editing = new Set();
+  let filter = "todo";
+  let db = null;
+  let downloads = null;
+
+  try { const saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved && saved.verdicts) state = { verdicts: saved.verdicts, drafts: saved.drafts || {} }; } catch (e) { /* storage blocked: start empty */ }
+
+  function persistLocal() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ } }
+  function setStatus(text) { document.getElementById("status").textContent = text; }
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === "text") node.textContent = v; else if (k.startsWith("on")) node.addEventListener(k.slice(2), v); else node.setAttribute(k, v === true ? "" : v);
+    }
+    for (const child of [].concat(children || [])) if (child) node.append(child);
+    return node;
+  }
+
+  function needsExclusion(item) { return DATA.cases[item.case].excluded.length > 0; }
+  function current(item) { return editing.has(item.id) ? (state.drafts[item.id] || {}) : (state.verdicts[item.id] ? (state.verdicts[item.id].revised || state.verdicts[item.id]) : (state.drafts[item.id] || {})); }
+  function complete(item, v) { return v.fit !== undefined && v.real !== undefined && (!needsExclusion(item) || v.exclusion !== undefined); }
+
+  function searchUrl(item) {
+    const c = DATA.cases[item.case];
+    const q = c.category === "music" ? `${item.detail} ${item.name}` : `${item.name} 메뉴`;
+    return "https://www.google.com/search?q=" + encodeURIComponent(q);
+  }
+
+  function segment(item, field, options, value, locked) {
+    return el("div", { class: "seg", role: "group" }, options.map(o => el("button", {
+      type: "button", "data-tone": o.tone, "aria-pressed": String(value === o.v), disabled: locked,
+      onclick: () => { const d = Object.assign({}, current(item)); d[field] = o.v; state.drafts[item.id] = d; persistLocal(); render(); },
+      text: o.t
+    })));
+  }
+
+  async function writeRemote(id) {
+    if (!db) return;
+    try { await db.doc("verdicts/" + id).set(Object.assign({}, state.verdicts[id])); setStatus("저장됨"); }
+    catch (e) { setStatus("서버 저장 실패 · 이 브라우저에는 남아 있어요"); }
+  }
+
+  function confirm(item) {
+    const d = state.drafts[item.id];
+    if (!d || !complete(item, d)) return;
+    const clean = { fit: d.fit, exclusion: needsExclusion(item) ? d.exclusion : null, real: d.real, note: d.note || "", at: new Date().toISOString() };
+    if (editing.has(item.id) && state.verdicts[item.id]) {
+      state.verdicts[item.id] = Object.assign({}, state.verdicts[item.id], { revised: clean });
+      editing.delete(item.id);
+    } else {
+      state.verdicts[item.id] = clean;
+    }
+    delete state.drafts[item.id];
+    persistLocal();
+    render();
+    writeRemote(item.id);
+  }
+
+  function reveal(item, v) {
+    const a = item.answer, c = DATA.cases[item.case];
+    const tags = [el("span", { class: "tag " + (a.fit === v.fit ? "same" : "diff"), text: `어울림 ${a.fit === v.fit ? "같음" : "다름"}` })];
+    if (needsExclusion(item) && v.exclusion !== "unsure") tags.push(el("span", { class: "tag " + ((v.exclusion === "broke") === a.breaksExclusion ? "same" : "diff"), text: `제외 ${(v.exclusion === "broke") === a.breaksExclusion ? "같음" : "다름"}` }));
+    if (v.real !== "unsure") tags.push(el("span", { class: "tag " + (v.real === a.real ? "same" : "diff"), text: `실존 ${v.real === a.real ? "같음" : "다름"}` }));
+    if (a.store) tags.push(el("span", { class: "tag info", text: a.store === "found" ? "Apple 스토어: 찾음" : a.store === "missing" ? "Apple 스토어: 못 찾음" : "Apple 스토어: 조회 실패" }));
+    const judge = `AI 심사 — 어울림 ${FIT_TEXT[a.fit]}` + (c.excluded.length ? ` · 제외 ${a.breaksExclusion ? "어김" : "지킴"}` : "") + ` · 실존 ${REAL_TEXT[a.real]}` + (a.opposesRequest ? " · 요청과 반대" : "");
+    const parts = [el("div", {}, [el("b", { text: judge })]), a.note ? el("div", { text: `근거: ${a.note}` }) : null, el("div", { class: "cmp" }, tags)];
+    if (state.verdicts[item.id].revised) parts.push(el("div", { class: "hint", text: `처음 판정: 어울림 ${FIT_TEXT[state.verdicts[item.id].fit]} · 실존 ${REAL_TEXT[state.verdicts[item.id].real]} (집계는 처음 판정을 써요)` }));
+    return el("div", { class: "reveal" }, parts);
+  }
+
+  function pickRow(item) {
+    const c = DATA.cases[item.case];
+    const confirmed = !!state.verdicts[item.id] && !editing.has(item.id);
+    const v = current(item);
+    const qs = [el("div", { class: "q" }, [el("span", { class: "q-label", text: "어울림" }), segment(item, "fit", FIT, v.fit, confirmed)])];
+    if (needsExclusion(item)) qs.push(el("div", { class: "q" }, [el("span", { class: "q-label", text: "제외" }), segment(item, "exclusion", EXCL, v.exclusion, confirmed)]));
+    qs.push(el("div", { class: "q" }, [el("span", { class: "q-label", text: "실존" }), segment(item, "real", REAL, v.real, confirmed)]));
+    const noteId = "note-" + item.id;
+    const note = el("input", { id: noteId, class: "note-input", type: "text", placeholder: "메모 (선택)", value: v.note || "", disabled: confirmed,
+      oninput: e => { const d = Object.assign({}, current(item)); d.note = e.target.value; state.drafts[item.id] = d; persistLocal(); } });
+    const actions = confirmed
+      ? el("div", { class: "actions" }, [el("span", { class: "done-mark", text: "확정함" }), el("button", { type: "button", text: "고치기", onclick: () => { editing.add(item.id); state.drafts[item.id] = Object.assign({}, state.verdicts[item.id].revised || state.verdicts[item.id]); render(); } })])
+      : el("div", { class: "actions" }, [
+          el("button", { type: "button", class: "primary", disabled: !complete(item, v), text: editing.has(item.id) ? "고친 판정 저장" : "판정 확정", onclick: () => confirm(item) }),
+          el("span", { class: "hint", text: complete(item, v) ? "확정하면 AI 심사 판정이 열려요" : needsExclusion(item) ? "어울림·제외·실존을 모두 골라 주세요" : "어울림·실존을 골라 주세요" })]);
+    return el("div", { class: "pick", id: "pick-" + item.id }, [
+      el("div", { class: "pick-top" }, [
+        el("span", { class: "pick-name", text: item.name }),
+        item.detail ? el("span", { class: "pick-detail", text: item.detail }) : null,
+        el("a", { class: "search", href: searchUrl(item), target: "_blank", rel: "noopener noreferrer", text: "검색" }),
+        el("span", { class: "pick-id", text: item.id })]),
+      el("div", { class: "qs" }, qs), note, actions,
+      state.verdicts[item.id] && !editing.has(item.id) ? reveal(item, state.verdicts[item.id]) : null]);
+  }
+
+  function caseCard(caseId, items) {
+    const c = DATA.cases[caseId];
+    const chips = [...c.wanted.map(t => el("span", { class: "chip", text: t })), ...c.excluded.map(t => el("span", { class: "chip no", text: `빼 줘: ${t}` }))];
+    if (c.years) chips.push(el("span", { class: "chip year", text: `발매 ${c.years.from || ""}~${c.years.to || ""}` }));
+    const taste = c.liked.length || c.likedTags.length ? `평소 취향 — ${[...c.liked, ...c.likedTags.map(t => "#" + t)].join(", ")}` : "평소 취향 정보 없음";
+    return el("article", { class: "case", "data-cat": c.category }, [
+      el("div", { class: "case-head" }, [
+        el("span", { class: "eyebrow", text: `${c.category === "food" ? "음식" : "음악"} · ${c.kind}` }),
+        el("p", { class: "request", text: `“${c.text}”` }),
+        chips.length ? el("div", { class: "chips" }, chips) : null,
+        el("p", { class: "taste", text: taste })]),
+      el("div", { class: "picks" }, items.map(pickRow))]);
+  }
+
+  function render() {
+    const keep = document.activeElement && document.activeElement.id;
+    const list = document.getElementById("list");
+    const done = DATA.items.filter(i => state.verdicts[i.id]).length;
+    document.getElementById("count").textContent = `${done} / ${DATA.items.length} 확정`;
+    document.getElementById("meter").style.width = DATA.items.length ? `${done / DATA.items.length * 100}%` : "0";
+    const show = DATA.items.filter(i => filter === "all" || (filter === "done") === !!state.verdicts[i.id] || editing.has(i.id));
+    const groups = new Map();
+    for (const item of show) { if (!groups.has(item.case)) groups.set(item.case, []); groups.get(item.case).push(item); }
+    list.replaceChildren(...[...groups].map(([id, items]) => caseCard(id, items)));
+    if (!groups.size) list.append(el("p", { class: "empty", text: filter === "todo" ? "모든 항목을 확정했어요. JSON 내려받기로 결과를 저장해 주세요." : "보여 줄 항목이 없어요." }));
+    if (keep) { const again = document.getElementById(keep); if (again && again.tagName === "INPUT") again.focus(); }
+  }
+
+  document.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+
+  function exportJson() {
+    return JSON.stringify({ meta: { page: "nowrecommend-review", items: DATA.items.length, exported: new Date().toISOString() }, verdicts: state.verdicts }, null, 1);
+  }
+  document.getElementById("export").addEventListener("click", async () => {
+    const text = exportJson();
+    if (downloads) {
+      try { await downloads.save({ filename: "human.json", data: text }); setStatus("내려받았어요"); }
+      catch (e) { setStatus(e && e.code === "declined" ? "내려받기를 취소했어요" : "내려받지 못했어요"); }
+      return;
+    }
+    const a = el("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: "human.json" });
+    document.body.append(a); a.click(); a.remove();
+    setStatus("human.json을 내려받았어요");
+  });
+  document.getElementById("import").addEventListener("change", async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const got = JSON.parse(await file.text());
+      const known = new Set(DATA.items.map(i => i.id));
+      let n = 0;
+      for (const [id, v] of Object.entries(got.verdicts || {})) if (known.has(id) && v && v.fit !== undefined) { state.verdicts[id] = v; n++; writeRemote(id); }
+      persistLocal(); render(); setStatus(`${n}개 판정을 불러왔어요`);
+    } catch (err) { setStatus("JSON을 읽지 못했어요. 이 화면에서 내려받은 파일인지 확인해 주세요"); }
+    e.target.value = "";
+  });
+
+  render();
+
+  // Inside claude.ai the verdicts also go to the artifact's store, so they survive another browser and Claude can read them back.
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then(ns => { downloads = ns; }).catch(() => {});
+    window.claude.use("db").then(ns => {
+      if (!ns) return;
+      db = ns;
+      setStatus("서버와 맞추는 중…");
+      let uploaded = false;
+      const timer = setTimeout(() => setStatus("서버에 닿지 않아요 · 이 브라우저에 저장 중"), 10000);
+      db.collection("verdicts").onSnapshot(snap => {
+        if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("서버에 저장 중"); }
+        let changed = false;
+        for (const doc of snap.docs) {
+          const v = doc.data();
+          if (v && v.fit !== undefined && JSON.stringify(state.verdicts[doc.id]) !== JSON.stringify(v)) { state.verdicts[doc.id] = Object.assign({}, v); changed = true; }
+        }
+        // Verdicts made here before the store answered go up once.
+        if (!snap.metadata.fromCache && !uploaded) {
+          uploaded = true;
+          for (const id of Object.keys(state.verdicts)) if (!snap.docs.some(d => d.id === id)) writeRemote(id);
+        }
+        if (changed) { persistLocal(); render(); }
+      }, () => { clearTimeout(timer); setStatus("서버 저장을 쓸 수 없어요 · 이 브라우저에 저장 중"); db = null; });
+    }).catch(() => {});
+  }
+})();
+</script>

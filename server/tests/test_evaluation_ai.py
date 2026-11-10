@@ -1,11 +1,13 @@
 import copy
+import json
 
 import pytest
 
 from app.catalog import load_seed
 from app.dish_facts import table_hits as lexicon_hits
-from app.evaluation_ai import (answer_ai, check_songs, ingredient_shifts, item_labels, judge_run, load_ai_cases, load_run, pick_flags, regressions, render_report,
-                               request_for, reviewed_dishes, run_cases, song_store, store_lookup, summarize, taste_overlap)
+from app.evaluation_ai import (REVIEW_DIR, RUNS_DIR, answer_ai, build_review_page, check_songs, draw_review_sample, human_agreement, ingredient_shifts, item_labels,
+                               judge_run, load_ai_cases, load_human, load_run, pick_flags, regressions, render_report, request_for, review_page_data, review_units,
+                               reviewed_dishes, run_cases, song_store, store_lookup, summarize, taste_overlap)
 
 DATA = load_ai_cases()
 SEED_IDS = {i["id"] for i in load_seed()}
@@ -256,3 +258,81 @@ def test_report_puts_runs_side_by_side_and_lists_what_to_look_at():
     assert "| AI 1회차 | 1 |" in report and "| 빈 실행 | 0 |" in report and "메모" in report
     assert "칼국수" in report and "판별표: 밀 제외 위반" in report and "심사: 제외 위반" in report and "밀 면" in report
     assert "| AI 1회차 | 1 | 0 | 0 |" in report
+
+
+def review_runs():
+    """Two runs that agree on FS1's first pick, a flagged pick in FX1 and a song the store did not find."""
+    first = {"meta": {}, "cases": {"FS1": record(["국밥", "짬뽕"], [judged(2), {**judged(1), "index": 1}]),
+                                   "FX1": record(["칼국수"], [judged(0, breaksExclusion=True)]),
+                                   "MS1": {**record([]), "picks": [{"name": "없는 노래", "detail": "누군가", "store": {"status": "missing"}}], "judge": [judged(2)]}}}
+    second = {"meta": {}, "cases": {"FS1": record(["국밥"], [judged(2)]), "FS2": record(["냉면"])}}  # FS2 was never judged
+    return {"a": first, "b": second}
+
+
+def test_review_sample_is_balanced_blind_and_the_same_every_time():
+    runs = review_runs()
+    assert len(review_units(DATA, runs)) == 4  # 국밥 twice is one thing to review; the unjudged case is left out
+    sample = draw_review_sample(DATA, runs, per_kind=1, flagged=5, store_missing=5)
+    assert sample == draw_review_sample(DATA, runs, per_kind=1, flagged=5, store_missing=5)
+    assert [i["id"] for i in sample["items"]] == ["R01", "R02", "R03"]
+    assert sorted((i["case"], i["why"]) for i in sample["items"]) == [("FS1", "random"), ("FX1", "random"), ("MS1", "random")]
+    page = review_page_data(DATA, runs, sample, item_labels())
+    assert all(set(i) == {"id", "case", "name", "detail", "answer"} for i in page["items"])  # no run or bucket on screen
+    assert set(page["cases"]["FX1"]) >= {"text", "wanted", "excluded", "liked", "likedTags"}
+
+
+def test_flagged_picks_and_store_misses_fill_up_after_the_random_part():
+    runs = review_runs()
+    runs["a"]["cases"]["FS1"]["judge"][1] = {**judged(0), "index": 1}
+    sample = draw_review_sample(DATA, runs, per_kind=0, flagged=1, store_missing=1)
+    assert sorted(i["why"] for i in sample["items"]) == ["judge_flag", "store_missing"]
+    assert next(i for i in sample["items"] if i["why"] == "store_missing")["case"] == "MS1"
+
+
+def test_the_page_carries_its_data_and_a_name_cannot_close_the_script():
+    page = build_review_page("<script>const D = /*REVIEW_DATA*/null;</script>", {"items": [{"name": "</script><b>"}]})
+    assert "</script><b>" not in page and "<\\/script>" in page
+    with pytest.raises(ValueError):
+        build_review_page("no marker", {})
+
+
+def test_agreement_uses_the_blind_verdict_and_names_where_the_judge_errs():
+    runs = review_runs()
+    sample = {"items": [{"id": "R01", "run": "a", "case": "FS1", "index": 0, "why": "random"},
+                        {"id": "R02", "run": "a", "case": "FS1", "index": 1, "why": "random"},
+                        {"id": "R03", "run": "a", "case": "FX1", "index": 0, "why": "judge_flag"},
+                        {"id": "R04", "run": "a", "case": "MS1", "index": 0, "why": "store_missing"},
+                        {"id": "R05", "run": "b", "case": "FS1", "index": 0, "why": "random"}]}
+    human = {"verdicts": {"R01": {"fit": 2, "exclusion": None, "real": "yes"},
+                          "R02": {"fit": 0, "exclusion": None, "real": "yes", "revised": {"fit": 1}},
+                          "R03": {"fit": 0, "exclusion": "kept", "real": "yes"},
+                          "R04": {"fit": 1, "exclusion": None, "real": "no"}}}  # R05 not answered yet
+    a = human_agreement(DATA, runs, sample, human)
+    assert (a["answered"], a["revised"]) == (4, 1)
+    assert a["fit_random"]["n"] == 2 and a["fit_random"]["exact"] == 0.5  # R02: blind 0 against the judge's 1, the revision is ignored
+    assert (a["fit_random"]["judge_good"], a["fit_random"]["human_good"]) == (0.5, 0.5)
+    assert a["fit_all"]["matrix"] == {"2-2": 1, "0-1": 1, "0-0": 1, "1-2": 1}
+    assert a["exclusion"] == {"n": 1, "agree": 0.0, "human_broke": 0, "judge_missed": 0, "judge_false": 1}
+    assert (a["real"]["human_no"], a["real"]["judge_said_yes"], a["real"]["store_missing_human_no"]) == (1, 1, 1)
+    assert {d["id"] for d in a["disagreements"]} == {"R02", "R04"}
+    report = render_report(DATA, runs, "메모", a)
+    assert "## 사람 검수와 AI 심사의 일치" in report and "| 무작위 전체 | 2 |" in report and "R04 MS1" in report
+
+
+def test_kappa_is_one_for_full_agreement_and_none_without_verdicts():
+    runs = review_runs()
+    sample = {"items": [{"id": "R01", "run": "a", "case": "FS1", "index": 0, "why": "random"}, {"id": "R02", "run": "a", "case": "FS1", "index": 1, "why": "random"}]}
+    a = human_agreement(DATA, runs, sample, {"verdicts": {"R01": {"fit": 2, "real": "yes"}, "R02": {"fit": 1, "real": "yes"}}})
+    assert a["fit_random"]["kappa"] == 1.0 and a["fit_random"]["exact"] == 1.0
+    empty = human_agreement(DATA, runs, sample, {"verdicts": {}})
+    assert empty["answered"] == 0 and empty["fit_random"]["kappa"] is None
+    assert "아직 판정이 없어요" in render_report(DATA, runs, "", empty)
+
+
+def test_the_committed_review_page_is_built_from_the_committed_sample(tmp_path):
+    sample = json.loads((REVIEW_DIR / "sample.json").read_text(encoding="utf-8"))
+    runs = {n: load_run(RUNS_DIR / f"{n}.json") for n in sample["meta"]["runs"]}
+    assert sample == draw_review_sample(DATA, runs, sample["meta"]["per_kind"], sample["meta"]["flagged"], sample["meta"]["store_missing"], sample["meta"]["seed"])
+    built = build_review_page((REVIEW_DIR / "template.html").read_text(encoding="utf-8"), review_page_data(DATA, runs, sample, item_labels()))
+    assert built == (REVIEW_DIR / "review.html").read_text(encoding="utf-8")
+    assert load_human(tmp_path / "none.json") == {"meta": {}, "verdicts": {}}

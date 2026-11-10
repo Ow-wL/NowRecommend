@@ -1,0 +1,549 @@
+{
+ "meta": {
+  "seed": 20261110,
+  "runs": [
+   "ai-r1",
+   "ai-r2",
+   "guard-r1",
+   "guard-r2",
+   "catalog"
+  ],
+  "per_kind": 6,
+  "flagged": 8,
+  "store_missing": 8
+ },
+ "items": [
+  {
+   "id": "R01",
+   "run": "ai-r2",
+   "case": "FS7",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R02",
+   "run": "guard-r2",
+   "case": "FT1b",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R03",
+   "run": "guard-r2",
+   "case": "FB1",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R04",
+   "run": "ai-r2",
+   "case": "MC2",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R05",
+   "run": "ai-r2",
+   "case": "MT1a",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R06",
+   "run": "ai-r1",
+   "case": "MS5",
+   "index": 4,
+   "why": "store_missing"
+  },
+  {
+   "id": "R07",
+   "run": "catalog",
+   "case": "MY2",
+   "index": 4,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R08",
+   "run": "catalog",
+   "case": "FS5",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R09",
+   "run": "ai-r2",
+   "case": "MT2b",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R10",
+   "run": "ai-r2",
+   "case": "MS6",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R11",
+   "run": "ai-r1",
+   "case": "MS7",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R12",
+   "run": "ai-r2",
+   "case": "FC4",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R13",
+   "run": "ai-r1",
+   "case": "MC1",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R14",
+   "run": "catalog",
+   "case": "FC2",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R15",
+   "run": "catalog",
+   "case": "MX1",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R16",
+   "run": "ai-r1",
+   "case": "MY2",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R17",
+   "run": "catalog",
+   "case": "MX4",
+   "index": 2,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R18",
+   "run": "ai-r1",
+   "case": "MC3",
+   "index": 4,
+   "why": "store_missing"
+  },
+  {
+   "id": "R19",
+   "run": "guard-r2",
+   "case": "FS7",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R20",
+   "run": "ai-r1",
+   "case": "MX3",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R21",
+   "run": "catalog",
+   "case": "MT2b",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R22",
+   "run": "catalog",
+   "case": "FS3",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R23",
+   "run": "catalog",
+   "case": "MY2",
+   "index": 3,
+   "why": "random"
+  },
+  {
+   "id": "R24",
+   "run": "ai-r2",
+   "case": "MC1",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R25",
+   "run": "ai-r2",
+   "case": "MS1",
+   "index": 3,
+   "why": "random"
+  },
+  {
+   "id": "R26",
+   "run": "ai-r2",
+   "case": "FX6",
+   "index": 1,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R27",
+   "run": "catalog",
+   "case": "MT2a",
+   "index": 3,
+   "why": "random"
+  },
+  {
+   "id": "R28",
+   "run": "ai-r1",
+   "case": "MX4",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R29",
+   "run": "ai-r1",
+   "case": "FX1",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R30",
+   "run": "ai-r2",
+   "case": "MS3",
+   "index": 0,
+   "why": "store_missing"
+  },
+  {
+   "id": "R31",
+   "run": "guard-r2",
+   "case": "FX2",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R32",
+   "run": "ai-r2",
+   "case": "MT1b",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R33",
+   "run": "ai-r2",
+   "case": "FX2",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R34",
+   "run": "ai-r2",
+   "case": "FX2",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R35",
+   "run": "ai-r2",
+   "case": "MC3",
+   "index": 2,
+   "why": "store_missing"
+  },
+  {
+   "id": "R36",
+   "run": "catalog",
+   "case": "MS1",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R37",
+   "run": "guard-r2",
+   "case": "FC5",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R38",
+   "run": "catalog",
+   "case": "MT2a",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R39",
+   "run": "ai-r1",
+   "case": "FT1a",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R40",
+   "run": "ai-r2",
+   "case": "FB2",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R41",
+   "run": "guard-r1",
+   "case": "FS2",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R42",
+   "run": "catalog",
+   "case": "FS6",
+   "index": 1,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R43",
+   "run": "catalog",
+   "case": "MY1",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R44",
+   "run": "catalog",
+   "case": "MY3",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R45",
+   "run": "guard-r1",
+   "case": "FB2",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R46",
+   "run": "guard-r1",
+   "case": "FB2",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R47",
+   "run": "ai-r2",
+   "case": "MS5",
+   "index": 1,
+   "why": "store_missing"
+  },
+  {
+   "id": "R48",
+   "run": "catalog",
+   "case": "MX3",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R49",
+   "run": "catalog",
+   "case": "MY1",
+   "index": 3,
+   "why": "random"
+  },
+  {
+   "id": "R50",
+   "run": "ai-r1",
+   "case": "MC3",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R51",
+   "run": "catalog",
+   "case": "MX3",
+   "index": 0,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R52",
+   "run": "ai-r2",
+   "case": "MY3",
+   "index": 4,
+   "why": "random"
+  },
+  {
+   "id": "R53",
+   "run": "ai-r1",
+   "case": "MY3",
+   "index": 4,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R54",
+   "run": "guard-r2",
+   "case": "FT1a",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R55",
+   "run": "ai-r1",
+   "case": "FC2",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R56",
+   "run": "ai-r2",
+   "case": "MS1",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R57",
+   "run": "catalog",
+   "case": "MC3",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R58",
+   "run": "ai-r1",
+   "case": "MT2a",
+   "index": 1,
+   "why": "store_missing"
+  },
+  {
+   "id": "R59",
+   "run": "ai-r2",
+   "case": "MT2a",
+   "index": 3,
+   "why": "store_missing"
+  },
+  {
+   "id": "R60",
+   "run": "guard-r1",
+   "case": "FT2b",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R61",
+   "run": "ai-r2",
+   "case": "FB2",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R62",
+   "run": "guard-r2",
+   "case": "FX3",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R63",
+   "run": "catalog",
+   "case": "FS4",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R64",
+   "run": "ai-r1",
+   "case": "MS4",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R65",
+   "run": "catalog",
+   "case": "MX5",
+   "index": 3,
+   "why": "random"
+  },
+  {
+   "id": "R66",
+   "run": "ai-r2",
+   "case": "FX8",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R67",
+   "run": "ai-r2",
+   "case": "MX1",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R68",
+   "run": "ai-r1",
+   "case": "FC5",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R69",
+   "run": "guard-r2",
+   "case": "FB2",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R70",
+   "run": "ai-r1",
+   "case": "MC2",
+   "index": 0,
+   "why": "random"
+  },
+  {
+   "id": "R71",
+   "run": "guard-r1",
+   "case": "FT1b",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R72",
+   "run": "catalog",
+   "case": "FX5",
+   "index": 1,
+   "why": "judge_flag"
+  },
+  {
+   "id": "R73",
+   "run": "ai-r1",
+   "case": "MC1",
+   "index": 1,
+   "why": "store_missing"
+  },
+  {
+   "id": "R74",
+   "run": "ai-r2",
+   "case": "FT1a",
+   "index": 2,
+   "why": "random"
+  },
+  {
+   "id": "R75",
+   "run": "ai-r1",
+   "case": "FC3",
+   "index": 1,
+   "why": "random"
+  },
+  {
+   "id": "R76",
+   "run": "ai-r1",
+   "case": "MY2",
+   "index": 2,
+   "why": "judge_flag"
+  }
+ ]
+}
