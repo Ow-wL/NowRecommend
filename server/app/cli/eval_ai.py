@@ -10,7 +10,7 @@
 
 `review` draws a sample of judged picks once (eval/review/sample.json; --redraw replaces it) and builds the page from
 eval/review/template.html. The page saves verdicts; put its JSON at eval/review/human.json. `agree` and `report` then compare the
-judge with the human verdicts.
+judge with the human verdicts; eval/review/findings.md, the written reading of them, follows the tables.
 
 `run` with the AI engine uses the model production uses (LLM_MODEL) and writes nothing to the database; --engine catalog needs the
 database. Runs live in eval/runs/NAME.json.
@@ -34,6 +34,12 @@ def _review_inputs() -> tuple[dict, dict]:
     """The sample names its runs, so agreement always reads the judge verdicts the reviewer was shown."""
     sample = json.loads((REVIEW_DIR / "sample.json").read_text(encoding="utf-8"))
     return sample, {n: load_run(RUNS_DIR / f"{n}.json") for n in sample["meta"]["runs"]}
+
+
+def _findings() -> str:
+    """The written reading of the agreement numbers, kept beside the verdicts and placed after the tables."""
+    path = REVIEW_DIR / "findings.md"
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
 def main() -> None:
@@ -95,14 +101,14 @@ def main() -> None:
         print(f"{len(sample['items'])} items -> {REVIEW_DIR / 'review.html'}")
     elif args.step == "agree":
         sample, runs = _review_inputs()
-        print("\n".join(render_agreement(human_agreement(data, runs, sample, load_human(Path(args.human))))))
+        print("\n".join(render_agreement(human_agreement(data, runs, sample, load_human(Path(args.human))), _findings())))
     elif args.step == "report":
         runs = {n: load_run(RUNS_DIR / f"{n}.json") for n in args.names}
         agreement = None
         if Path(args.human).exists():
             sample, sample_runs = _review_inputs()
             agreement = human_agreement(data, sample_runs, sample, load_human(Path(args.human)))
-        report = render_report(data, runs, f"실행일 {date.today().isoformat()}", agreement)
+        report = render_report(data, runs, f"실행일 {date.today().isoformat()}", agreement, _findings() if agreement else "")
         print(report)
         if args.out:
             with open(args.out, "w", encoding="utf-8", newline="\n") as out:

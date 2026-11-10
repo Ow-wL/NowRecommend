@@ -1,0 +1,445 @@
+{
+ "meta": {
+  "source": "https://claude.ai/artifact/4o6XhBusKNCQ43x4x9qexm",
+  "read": "2026-11-10",
+  "items": 76,
+  "answered": 62,
+  "note": "사용자가 모르는 항목은 판정하지 않고 넘겼어요."
+ },
+ "verdicts": {
+  "R01": {
+   "at": "2026-11-10T07:28:56.079Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R02": {
+   "at": "2026-11-10T07:29:06.288Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R03": {
+   "at": "2026-11-10T07:29:09.467Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R04": {
+   "at": "2026-11-10T07:29:27.603Z",
+   "exclusion": null,
+   "fit": 1,
+   "note": "",
+   "real": "yes"
+  },
+  "R05": {
+   "at": "2026-11-10T07:30:30.593Z",
+   "exclusion": null,
+   "fit": 1,
+   "note": "",
+   "real": "yes"
+  },
+  "R06": {
+   "at": "2026-11-10T07:30:11.320Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R07": {
+   "at": "2026-11-10T07:30:35.408Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R08": {
+   "at": "2026-11-10T07:30:39.474Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R09": {
+   "at": "2026-11-10T07:30:55.358Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R10": {
+   "at": "2026-11-10T07:31:12.527Z",
+   "exclusion": null,
+   "fit": 0,
+   "note": "",
+   "real": "no"
+  },
+  "R11": {
+   "at": "2026-11-10T07:31:15.966Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R12": {
+   "at": "2026-11-10T07:31:20.560Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R13": {
+   "at": "2026-11-10T07:31:55.670Z",
+   "exclusion": null,
+   "fit": 1,
+   "note": "",
+   "real": "yes"
+  },
+  "R14": {
+   "at": "2026-11-10T07:31:58.793Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R15": {
+   "at": "2026-11-10T07:32:24.801Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R16": {
+   "at": "2026-11-10T07:32:44.991Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R17": {
+   "at": "2026-11-10T07:33:09.426Z",
+   "exclusion": "kept",
+   "fit": 1,
+   "note": "",
+   "real": "yes"
+  },
+  "R18": {
+   "at": "2026-11-10T07:33:25.705Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R19": {
+   "at": "2026-11-10T07:38:20.267Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R21": {
+   "at": "2026-11-10T07:37:42.660Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R22": {
+   "at": "2026-11-10T07:37:44.625Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R23": {
+   "at": "2026-11-10T07:37:37.384Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R26": {
+   "at": "2026-11-10T07:37:27.831Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R27": {
+   "at": "2026-11-10T07:37:16.881Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R28": {
+   "at": "2026-11-10T07:37:20.775Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R29": {
+   "at": "2026-11-10T07:37:08.476Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R30": {
+   "at": "2026-11-10T07:37:00.510Z",
+   "exclusion": null,
+   "fit": 0,
+   "note": "",
+   "real": "yes"
+  },
+  "R31": {
+   "at": "2026-11-10T07:36:34.570Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R32": {
+   "at": "2026-11-10T07:36:29.064Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R33": {
+   "at": "2026-11-10T07:36:36.443Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R34": {
+   "at": "2026-11-10T07:36:38.329Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R36": {
+   "at": "2026-11-10T07:37:32.016Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R37": {
+   "at": "2026-11-10T07:36:17.458Z",
+   "exclusion": null,
+   "fit": 0,
+   "note": "",
+   "real": "yes"
+  },
+  "R38": {
+   "at": "2026-11-10T07:37:14.815Z",
+   "exclusion": null,
+   "fit": 0,
+   "note": "",
+   "real": "yes"
+  },
+  "R39": {
+   "at": "2026-11-10T07:36:19.953Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R40": {
+   "at": "2026-11-10T07:35:22.137Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R41": {
+   "at": "2026-11-10T07:35:15.175Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R42": {
+   "at": "2026-11-10T07:35:11.157Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R43": {
+   "at": "2026-11-10T07:34:26.178Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R45": {
+   "at": "2026-11-10T07:35:25.384Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R46": {
+   "at": "2026-11-10T07:35:27.348Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R47": {
+   "at": "2026-11-10T07:35:01.865Z",
+   "exclusion": null,
+   "fit": 0,
+   "note": "",
+   "real": "no"
+  },
+  "R48": {
+   "at": "2026-11-10T07:38:03.639Z",
+   "exclusion": "broke",
+   "fit": 1,
+   "note": "",
+   "real": "unsure"
+  },
+  "R49": {
+   "at": "2026-11-10T07:35:05.863Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R50": {
+   "at": "2026-11-10T07:36:25.358Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R51": {
+   "at": "2026-11-10T07:37:56.010Z",
+   "exclusion": "broke",
+   "fit": 1,
+   "note": "",
+   "real": "yes"
+  },
+  "R52": {
+   "at": "2026-11-10T07:34:40.577Z",
+   "exclusion": null,
+   "fit": 0,
+   "note": "잔잔한 노래는 아니야.",
+   "real": "yes"
+  },
+  "R53": {
+   "at": "2026-11-10T07:34:44.434Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R55": {
+   "at": "2026-11-10T07:35:31.365Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R60": {
+   "at": "2026-11-10T07:35:37.726Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R61": {
+   "at": "2026-11-10T07:35:39.979Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R62": {
+   "at": "2026-11-10T07:35:46.459Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R63": {
+   "at": "2026-11-10T07:35:51.604Z",
+   "exclusion": null,
+   "fit": 1,
+   "note": "",
+   "real": "yes"
+  },
+  "R65": {
+   "at": "2026-11-10T07:36:01.147Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R66": {
+   "at": "2026-11-10T07:34:07.696Z",
+   "exclusion": "kept",
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R68": {
+   "at": "2026-11-10T07:36:13.923Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R69": {
+   "at": "2026-11-10T07:35:55.630Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R70": {
+   "at": "2026-11-10T07:33:58.378Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R71": {
+   "at": "2026-11-10T07:33:55.104Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R72": {
+   "at": "2026-11-10T07:33:51.328Z",
+   "exclusion": "broke",
+   "fit": 0,
+   "note": "",
+   "real": "yes"
+  },
+  "R74": {
+   "at": "2026-11-10T07:36:09.704Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  },
+  "R75": {
+   "at": "2026-11-10T07:34:00.985Z",
+   "exclusion": null,
+   "fit": 2,
+   "note": "",
+   "real": "yes"
+  }
+ }
+}

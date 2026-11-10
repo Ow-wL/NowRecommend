@@ -536,7 +536,8 @@ def human_agreement(data: dict, runs: dict[str, dict], sample: dict, human: dict
     }
 
 
-def render_agreement(agreement: dict) -> list[str]:
+def render_agreement(agreement: dict, findings: str = "") -> list[str]:
+    """`findings` is the hand-written reading of the numbers (eval/review/findings.md), placed after the tables."""
     a = agreement
     lines = ["## 사람 검수와 AI 심사의 일치", "",
              f"표본 {a['items']}개 중 {a['answered']}개를 사람이 판정했어요. 사람은 심사 결과를 보기 전에 판정했고, 본 뒤 고친 판정은 {a['revised']}개예요(일치율은 보기 전 판정으로 계산해요).", ""]
@@ -563,16 +564,17 @@ def render_agreement(agreement: dict) -> list[str]:
               "", "어울림이 어긋난 항목(무작위·골라 넣은 항목 모두):", ""]
     lines += [f"- {d['id']} {d['case']} \"{d['text']}\" → {d['pick']}: 사람 {FIT_LABEL[d['human']]}, 심사 {FIT_LABEL[d['judge']]}" + (f" — 심사 근거: {d['note']}" if d["note"] else "")
               for d in sorted(a["disagreements"], key=lambda d: (d["judge"] - d["human"], d["id"]))] or ["없음"]
-    return [*lines, ""]
+    return [*lines, "", *([findings.strip(), ""] if findings.strip() else [])]
 
 
-def render_report(data: dict, runs: dict[str, dict], note: str = "", agreement: dict | None = None) -> str:
+def render_report(data: dict, runs: dict[str, dict], note: str = "", agreement: dict | None = None, findings: str = "") -> str:
     """`runs` maps a label to a run; every table has one row per run, so engines and repeated rounds read side by side.
     `agreement` (human_agreement) adds the human review section."""
     lines = ["# 지금 추천 — 제품 평가 결과", "", note, "", f"평가 세트: `server/eval/ai_cases.json` (음식 {len(_by(data, category='food'))}·음악 {len(_by(data, category='music'))}개)", "",
              "읽는 법:", "",
              "- 판별표는 이름만 봐도 분명한 경우만 잡아요. 위반 수는 하한선이에요. 서버 검사도 같은 표를 쓰므로, 보강 뒤 AI 엔진의 판별표 위반 0은 당연한 결과예요. 보강의 효과는 심사와 재료 목록 변동으로 봐요.",
-             "- 심사는 다른 AI 모델의 판단이고 사람의 검수가 아니에요. 비율은 흐름을 보는 용도로 쓰고, 항목별 근거는 아래 목록에서 확인해요.",
+             "- 심사는 다른 AI 모델의 판단이고 사람의 검수가 아니에요. 비율은 흐름을 보는 용도로 쓰고, 항목별 근거는 아래 목록에서 확인해요."
+             + (" 심사를 사람 판정과 맞춰 본 결과는 '사람 검수와 AI 심사의 일치' 절에 있어요." if agreement is not None else ""),
              "- 심사 모델은 곡의 실존을 잘 판단하지 못했어요(2026-11-10 검토에서 스토어에 없던 곡 대부분을 있다고 답함). 실존은 스토어 표를 봐요.",
              "- 충돌 사례의 취향은 브라우저가 걸러 주기 전 상태예요. 운영 화면에서는 이 충돌 일부가 서버에 닿기 전에 걸러져요.", ""]
     header = "| 실행 | 사례 | 무응답 | 재시도 | 개수 부족 | p50 | p95 | 잘 맞음 | 받아들일 만함 | 1개 이상 잘 맞음 | 제외 위반(판별표) | 반대 추천(판별표) | 제외 위반(심사) | 반대 추천(심사) | 없다고 확신(심사) |"
@@ -595,7 +597,7 @@ def render_report(data: dict, runs: dict[str, dict], note: str = "", agreement: 
             lines.append(f"| {name} | {_pct(overlap)} | {v['distinct']} / {v['picks']} | {', '.join(f'{n} {c}회' for n, c in v['top'])} |")
         lines.append("")
     if agreement is not None:
-        lines += render_agreement(agreement)
+        lines += render_agreement(agreement, findings)
     lines += ["## 곡 실존 (Apple 스토어 검색)", "", "못 찾았다고 없는 곡은 아니에요. 찾은 비율은 하한선이에요.", "", "| 실행 | 찾음 | 못 찾음 | 조회 실패 | 찾은 비율 |", "|---|---|---|---|---|"]
     for name, run in runs.items():
         s = song_store(data, run)

@@ -327,6 +327,9 @@ def test_kappa_is_one_for_full_agreement_and_none_without_verdicts():
     empty = human_agreement(DATA, runs, sample, {"verdicts": {}})
     assert empty["answered"] == 0 and empty["fit_random"]["kappa"] is None
     assert "아직 판정이 없어요" in render_report(DATA, runs, "", empty)
+    report = render_report(DATA, runs, "", a, "### 검수에서 본 경향\n\n음악은 후해요.\n")
+    assert report.index("| 무작위 전체 |") < report.index("### 검수에서 본 경향") < report.index("## 곡 실존")
+    assert "사람 검수와 AI 심사의 일치' 절" in report and "사람 판정과 맞춰 본" not in render_report(DATA, runs)
 
 
 def test_the_committed_review_page_is_built_from_the_committed_sample(tmp_path):
