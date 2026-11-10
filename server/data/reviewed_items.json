@@ -1230,6 +1230,354 @@
       "source": "user_request"
     },
     {
+      "id": "f-kongguksu",
+      "category": "food",
+      "name": "콩국수",
+      "artist": null,
+      "subtitle": "고소함 · 차가움 · 국물",
+      "description": "곱게 간 콩물에 소면을 말고 오이채를 올린 시원한 여름 국수.",
+      "tags": [
+        "고소함",
+        "차가움",
+        "국물",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "밀",
+        "참깨",
+        "땅콩",
+        "토마토"
+      ],
+      "emoji": "🥣",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-dubujorim",
+      "category": "food",
+      "name": "두부조림",
+      "artist": null,
+      "subtitle": "매콤함 · 따뜻함",
+      "description": "노릇하게 부친 두부에 간장 양념을 끼얹어 졸인 밥반찬.",
+      "tags": [
+        "매콤함",
+        "따뜻함",
+        "혼자",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "밀",
+        "참깨"
+      ],
+      "emoji": "🍱",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-namulbibimbap",
+      "category": "food",
+      "name": "나물 비빔밥",
+      "artist": null,
+      "subtitle": "고소함 · 채소",
+      "description": "달걀 없이 여러 나물만 올려 고추장과 참기름에 비벼 먹는 밥.",
+      "tags": [
+        "고소함",
+        "채소",
+        "혼자",
+        "점심",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "밀",
+        "참깨",
+        "당근",
+        "버섯"
+      ],
+      "emoji": "🥗",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-veggiekimbap",
+      "category": "food",
+      "name": "채소 김밥",
+      "artist": null,
+      "subtitle": "고소함 · 채소",
+      "description": "햄과 달걀 없이 당근·시금치·우엉·단무지만 넣어 만 김밥.",
+      "tags": [
+        "고소함",
+        "채소",
+        "혼자",
+        "점심",
+        "한식",
+        "분식"
+      ],
+      "ingredients": [
+        "당근",
+        "콩",
+        "밀",
+        "참깨"
+      ],
+      "emoji": "🍙",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-falafel",
+      "category": "food",
+      "name": "팔라펠",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "병아리콩을 갈아 동그랗게 튀겨 피타에 채소, 타히니 소스와 곁들인 음식.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "아시안"
+      ],
+      "ingredients": [
+        "콩",
+        "밀",
+        "참깨",
+        "토마토"
+      ],
+      "emoji": "🧆",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-gamjajeon",
+      "category": "food",
+      "name": "감자전",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "강판에 간 감자를 얇게 부쳐 겉은 바삭하고 속은 쫀득한 전.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "간식",
+        "한식"
+      ],
+      "ingredients": [
+        "감자",
+        "밀",
+        "콩"
+      ],
+      "emoji": "🥔",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-dotorimuk",
+      "category": "food",
+      "name": "도토리묵무침",
+      "artist": null,
+      "subtitle": "매콤함 · 상큼함 · 차가움",
+      "description": "탱글한 도토리묵과 채소를 간장 양념에 버무린 새콤한 무침.",
+      "tags": [
+        "매콤함",
+        "상큼함",
+        "차가움",
+        "채소",
+        "함께",
+        "저녁",
+        "한식"
+      ],
+      "ingredients": [
+        "콩",
+        "밀",
+        "참깨",
+        "당근"
+      ],
+      "emoji": "🥗",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-hobakjuk",
+      "category": "food",
+      "name": "호박죽",
+      "artist": null,
+      "subtitle": "담백함 · 따뜻함",
+      "description": "단호박을 곱게 끓여 찹쌀로 걸쭉하게 만든 달큰한 죽.",
+      "tags": [
+        "담백함",
+        "따뜻함",
+        "혼자",
+        "간식",
+        "한식"
+      ],
+      "ingredients": [
+        "콩"
+      ],
+      "emoji": "🎃",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-patjuk",
+      "category": "food",
+      "name": "팥죽",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "푹 삶은 팥을 걸러 끓이고 찹쌀 새알심을 넣은 따뜻한 죽.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "간식",
+        "한식"
+      ],
+      "ingredients": [
+        "콩"
+      ],
+      "emoji": "🥣",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
+      "id": "f-ratatouille",
+      "category": "food",
+      "name": "라따뚜이",
+      "artist": null,
+      "subtitle": "상큼함 · 따뜻함 · 채소",
+      "description": "가지·애호박·파프리카를 토마토와 올리브유에 뭉근히 익힌 채소 스튜.",
+      "tags": [
+        "상큼함",
+        "따뜻함",
+        "채소",
+        "혼자",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "토마토"
+      ],
+      "emoji": "🍆",
+      "color": "#f6e3d5",
+      "source": "user_request"
+    },
+    {
+      "id": "f-matang",
+      "category": "food",
+      "name": "고구마 맛탕",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "튀긴 고구마에 달콤한 시럽을 입히고 검은깨를 뿌린 간식.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "함께",
+        "간식",
+        "한식"
+      ],
+      "ingredients": [
+        "참깨"
+      ],
+      "emoji": "🍠",
+      "color": "#f1e0dc",
+      "source": "user_request"
+    },
+    {
+      "id": "f-margherita",
+      "category": "food",
+      "name": "마르게리타 피자",
+      "artist": null,
+      "subtitle": "상큼함 · 따뜻함",
+      "description": "토마토 소스에 모차렐라와 바질만 올린 기본 피자.",
+      "tags": [
+        "상큼함",
+        "따뜻함",
+        "함께",
+        "저녁",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "유제품",
+        "토마토"
+      ],
+      "emoji": "🍕",
+      "color": "#f6ead0",
+      "source": "user_request"
+    },
+    {
+      "id": "f-pesto",
+      "category": "food",
+      "name": "바질 페스토 파스타",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함",
+      "description": "바질과 올리브유, 치즈를 간 초록 소스에 버무린 파스타.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "혼자",
+        "점심",
+        "양식"
+      ],
+      "ingredients": [
+        "밀",
+        "유제품"
+      ],
+      "emoji": "🍝",
+      "color": "#e9ebd6",
+      "source": "user_request"
+    },
+    {
+      "id": "f-palakpaneer",
+      "category": "food",
+      "name": "팔락 파니르",
+      "artist": null,
+      "subtitle": "고소함 · 따뜻함 · 채소",
+      "description": "시금치를 곱게 갈아 끓인 커리에 생치즈 파니르를 넣어 난과 먹는 요리.",
+      "tags": [
+        "고소함",
+        "따뜻함",
+        "채소",
+        "혼자",
+        "저녁",
+        "아시안"
+      ],
+      "ingredients": [
+        "유제품",
+        "밀",
+        "토마토"
+      ],
+      "emoji": "🍛",
+      "color": "#f4e9d9",
+      "source": "user_request"
+    },
+    {
+      "id": "f-tomatoegg",
+      "category": "food",
+      "name": "토마토 달걀볶음",
+      "artist": null,
+      "subtitle": "상큼함 · 따뜻함",
+      "description": "부드럽게 익힌 달걀과 토마토를 함께 볶아 밥에 얹어 먹는 가정식.",
+      "tags": [
+        "상큼함",
+        "따뜻함",
+        "혼자",
+        "저녁",
+        "중식"
+      ],
+      "ingredients": [
+        "토마토",
+        "달걀"
+      ],
+      "emoji": "🍅",
+      "color": "#efe7cf",
+      "source": "user_request"
+    },
+    {
       "id": "m-03847fd1",
       "category": "music",
       "name": "첫눈처럼 너에게 가겠다",

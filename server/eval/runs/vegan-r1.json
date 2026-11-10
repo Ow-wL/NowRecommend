@@ -1,0 +1,850 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "FX1": {
+   "wanted": 3,
+   "ms": 3723.063800000091,
+   "failures": [],
+   "issues": {
+    "excluded_by_name": 2,
+    "extra": 4
+   },
+   "dropped": [
+    "연어초밥",
+    "들기름막국수"
+   ],
+   "picks": [
+    {
+     "name": "차돌된장찌개",
+     "detail": "한식 · 찌개",
+     "taste_reason": "취향 정보가 없어 든든한 점심 메뉴로 골랐어요.",
+     "context_reason": "점심 식사로 든든하게 먹기 좋은 찌개예요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "콩",
+      "버섯",
+      "감자",
+      "당근"
+     ],
+     "base_dish": "된장찌개",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "소고기 국밥",
+     "detail": "한식 · 국밥",
+     "taste_reason": "취향 정보가 없어 깔끔한 점심 메뉴로 골랐어요.",
+     "context_reason": "점심에 따뜻한 국물과 함께 먹기 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "콩",
+      "당근"
+     ],
+     "base_dish": "콩나물국밥",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "목살김치찌개",
+     "detail": "한식 · 찌개",
+     "taste_reason": "취향 정보가 없어 매콤한 점심 메뉴로 골랐어요.",
+     "context_reason": "점심 식사로 얼큰하게 끓여내어 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩"
+     ],
+     "base_dish": "김치찌개",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밀가루 없음, 점심 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밀가루 없음, 점심 적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밀가루 없음, 점심 적합"
+    }
+   ]
+  },
+  "FX2": {
+   "wanted": 3,
+   "ms": 2911.648100000093,
+   "failures": [],
+   "issues": {
+    "excluded_by_name": 1,
+    "extra": 5
+   },
+   "dropped": [
+    "마라탕"
+   ],
+   "picks": [
+    {
+     "name": "차돌짬뽕",
+     "detail": "중식 · 매콤한 국물",
+     "taste_reason": "매콤한 맛을 좋아해 취향에 가까워요",
+     "context_reason": "매콤한 국물이 저녁 식사에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "매콤함",
+      "국물",
+      "중식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "해산물",
+      "밀",
+      "콩",
+      "참깨"
+     ],
+     "base_dish": "짬뽕",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "매운 닭갈비",
+     "detail": "한식 · 볶음 요리",
+     "taste_reason": "매콤한 양념이라 취향에 가까워요",
+     "context_reason": "매콤한 맛이 저녁 식사에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "매콤함",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기",
+      "콩",
+      "참깨",
+      "당근",
+      "감자"
+     ],
+     "base_dish": "닭갈비",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "김치찌개",
+     "detail": "한식 · 얼큰한 국물",
+     "taste_reason": "매콤한 김치 맛이 취향에 가까워요",
+     "context_reason": "얼큰한 국물이 점심 식사에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "매콤함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩"
+     ],
+     "base_dish": "김치찌개",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "땅콩 없이 매콤한 짬뽕 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "땅콩 없이 매콤한 볶음 요리"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "땅콩 없이 매콤/얼큰한 찌개"
+    }
+   ]
+  },
+  "FX3": {
+   "wanted": 3,
+   "ms": 3869.0636999999697,
+   "failures": [],
+   "issues": {
+    "excluded_by_name": 1,
+    "extra": 5
+   },
+   "dropped": [
+    "분짜"
+   ],
+   "picks": [
+    {
+     "name": "물냉면",
+     "detail": "한식 · 차가운 면",
+     "taste_reason": "취향이 없어 새로운 시원한 메뉴에 가까워요.",
+     "context_reason": "시원한 육수가 들어있어 차가운 요리에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "차가움",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "메밀",
+      "참깨",
+      "달걀"
+     ],
+     "base_dish": "물냉면",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "초계국수",
+     "detail": "한식 · 닭고기 면",
+     "taste_reason": "취향이 없어 시원한 닭국수 요리에 가까워요.",
+     "context_reason": "살얼음 육수와 닭고기가 들어가 차가운 요리에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "차가움",
+      "국물",
+      "한식",
+      "담백함"
+     ],
+     "ingredients": [
+      "닭고기",
+      "밀",
+      "참깨",
+      "달걀"
+     ],
+     "base_dish": "메밀국수",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "메밀소바",
+     "detail": "일식 · 차가운 면",
+     "taste_reason": "취향이 없어 깔끔한 메밀면에 가까워요.",
+     "context_reason": "시원한 쯔유에 적셔 먹어 차가운 요리에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "차가움",
+      "일식",
+      "담백함"
+     ],
+     "ingredients": [
+      "메밀",
+      "참깨"
+     ],
+     "base_dish": "메밀국수",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "생선 없이 차가운 시원한 면 요리"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "닭고기 기반의 차가운 국수"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "생선 제외 조건에 맞는 차가운 소바"
+    }
+   ]
+  },
+  "FX4": {
+   "wanted": 3,
+   "ms": 4130.114599999615,
+   "failures": [],
+   "issues": {
+    "blocked": 3,
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "토마토 파스타",
+     "detail": "양식 · 토마토 소스",
+     "taste_reason": "새콤매콤한 풍미를 선호하는 입맛에 맞아요.",
+     "context_reason": "해산물이나 육류 없이 토마토와 채소로 맛을 냈어요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "상큼함",
+      "양식"
+     ],
+     "ingredients": [
+      "밀",
+      "토마토",
+      "당근"
+     ],
+     "base_dish": "토마토 파스타",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "연어 초밥",
+     "detail": "일식 · 생선 초밥",
+     "taste_reason": "깔끔하고 담백한 생선 맛을 즐기는 취향에 가까워요.",
+     "context_reason": "고기 없이 신선한 연어로 가볍게 먹기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "담백함",
+      "일식"
+     ],
+     "ingredients": [
+      "생선"
+     ],
+     "base_dish": "연어 초밥",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "버섯 리조토",
+     "detail": "양식 · 크림 리조토",
+     "taste_reason": "부드럽고 고소한 맛을 좋아하는 취향에 어울려요.",
+     "context_reason": "버섯과 유제품으로 풍부한 감칠맛을 내어 든든해요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "고소함",
+      "따뜻함",
+      "양식"
+     ],
+     "ingredients": [
+      "버섯",
+      "유제품"
+     ],
+     "base_dish": "버섯 리조토",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "고기가 들어가지 않음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "해산물로 고기 제외 조건 충족"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "버섯 주재료로 고기 제외 충족"
+    }
+   ]
+  },
+  "FX5": {
+   "wanted": 3,
+   "ms": 3240.5193000004147,
+   "failures": [],
+   "issues": {
+    "excluded_by_name": 5,
+    "extra": 1
+   },
+   "dropped": [
+    "채소 카레",
+    "버섯 리조토",
+    "토마토 파스타",
+    "메밀국수",
+    "콩나물국밥"
+   ],
+   "picks": [
+    {
+     "name": "채소 김밥",
+     "detail": "분식 · 김밥",
+     "taste_reason": "취향 정보가 없어 담백한 김밥에 가까워요.",
+     "context_reason": "단무지, 우엉, 당근 등 채소만 들어 있어 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "담백함",
+      "채소",
+      "한식",
+      "분식"
+     ],
+     "ingredients": [
+      "밀",
+      "참깨",
+      "당근",
+      "콩"
+     ],
+     "base_dish": "채소 김밥",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "도토리묵무침",
+     "detail": "한식 · 무침",
+     "taste_reason": "취향 정보가 없어 쌉싸름한 무침 요리에 가까워요.",
+     "context_reason": "도토리묵과 각종 채소를 양념에 무쳐 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "상큼함",
+      "채소",
+      "한식"
+     ],
+     "ingredients": [
+      "참깨"
+     ],
+     "base_dish": "도토리묵무침",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "감자전",
+     "detail": "한식 · 전",
+     "taste_reason": "취향 정보가 없어 고소한 전 요리에 가까워요.",
+     "context_reason": "갈은 감자만 부쳐내어 동물성 성분이 없어 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "고소함",
+      "따뜻함",
+      "채소",
+      "한식"
+     ],
+     "ingredients": [
+      "감자"
+     ],
+     "base_dish": "감자전",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "일반 채소김밥엔 계란이 들어갈 위험 있음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비건 재료로 구성된 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "감자, 소금 등으로 만드는 비건 메뉴"
+    }
+   ]
+  },
+  "FX6": {
+   "wanted": 3,
+   "ms": 3983.541900000091,
+   "failures": [],
+   "issues": {
+    "excluded_by_name": 2,
+    "extra": 4
+   },
+   "dropped": [
+    "마르게리타 피자",
+    "비건 버섯 크림 파스타"
+   ],
+   "picks": [
+    {
+     "name": "알리오 올리오",
+     "detail": "이탈리안 · 오일 파스타",
+     "taste_reason": "평소 취향이 없어 깔끔한 오일 파스타에 가까워요.",
+     "context_reason": "마늘과 올리브오일로 맛을 낸 대표적인 양식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "저녁",
+      "담백함",
+      "양식"
+     ],
+     "ingredients": [
+      "밀"
+     ],
+     "base_dish": "토마토 파스타",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "봉골레 파스타",
+     "detail": "이탈리안 · 해산물 파스타",
+     "taste_reason": "평소 취향이 없어 조개의 감칠맛이 나는 파스타에 가까워요.",
+     "context_reason": "신선한 조개와 올리브오일로 조리하는 양식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "국물",
+      "양식"
+     ],
+     "ingredients": [
+      "밀",
+      "해산물"
+     ],
+     "base_dish": "토마토 파스타",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "토마토 해산물 리조토",
+     "detail": "이탈리안 · 쌀 요리",
+     "taste_reason": "평소 취향이 없어 토마토 소스를 더한 쌀 요리에 가까워요.",
+     "context_reason": "해산물과 토마토 소스가 어우러지는 양식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "상큼함",
+      "양식"
+     ],
+     "ingredients": [
+      "해산물",
+      "토마토"
+     ],
+     "base_dish": "버섯 리조토",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "유제품이 없는 대표적 양식 파스타"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "조개 기반의 유제품 없는 양식 파스타"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "버터/치즈 미사용 시 유제품 없는 양식"
+    }
+   ]
+  },
+  "FX7": {
+   "wanted": 3,
+   "ms": 3670.2746000000843,
+   "failures": [],
+   "issues": {
+    "extra": 6
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "맑은 닭곰탕",
+     "detail": "한식 · 닭고기 국물",
+     "taste_reason": "좋아하는 음식들과는 다르지만 새로운 국물 요리에 가까워요.",
+     "context_reason": "따뜻한 닭 육수와 닭고기로 끓여내어 따뜻한 국물에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "저녁",
+      "담백함",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기",
+      "당근"
+     ],
+     "base_dish": "닭곰탕",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "갈비탕",
+     "detail": "한식 · 소고기 국물",
+     "taste_reason": "좋아하는 음식들과는 다르지만 진한 고기 국물에 가까워요.",
+     "context_reason": "푹 끓여낸 소갈비와 맑은 육수가 들어 있어 따뜻한 국물에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "저녁",
+      "담백함",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "당근"
+     ],
+     "base_dish": "갈비탕",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "사골 만두국",
+     "detail": "한식 · 사골 국물",
+     "taste_reason": "좋아하는 음식들과는 다르지만 고소한 만두 국물에 가까워요.",
+     "context_reason": "진한 사골 육수에 만두가 들어 있어 따뜻한 국물에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "저녁",
+      "담백함",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "밀",
+      "달걀",
+      "콩"
+     ],
+     "base_dish": "떡국",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "따뜻하고 맵지 않은 맑은 닭곰탕"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "따뜻하고 담백한 국물 요리"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "맵지 않은 따뜻한 사골 국물"
+    }
+   ]
+  },
+  "FX8": {
+   "wanted": 3,
+   "ms": 3337.771100000282,
+   "failures": [],
+   "issues": {
+    "extra": 6
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "김치찌개",
+     "detail": "한식 · 국물 요리",
+     "taste_reason": "평소 취향과 무관하게 저녁 메뉴로 골랐어요.",
+     "context_reason": "얼큰한 국물이 저녁 식사에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "매콤함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩"
+     ],
+     "base_dish": "김치찌개",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "쌀국수",
+     "detail": "아시안 · 국물 요리",
+     "taste_reason": "평소 취향과 무관하게 저녁 메뉴로 골랐어요.",
+     "context_reason": "따뜻한 국물이 저녁 식사에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "담백함",
+      "따뜻함",
+      "국물",
+      "아시안"
+     ],
+     "ingredients": [
+      "소고기",
+      "밀"
+     ],
+     "base_dish": "쌀국수",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "연어 초밥",
+     "detail": "일식 · 생선 초밥",
+     "taste_reason": "평소 취향과 무관하게 저녁 메뉴로 골랐어요.",
+     "context_reason": "담백한 생선이 저녁 식사에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "담백함",
+      "일식"
+     ],
+     "ingredients": [
+      "생선"
+     ],
+     "base_dish": "연어 초밥",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달걀 미포함 저녁 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달걀 미포함 저녁 메뉴"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달걀 미포함 저녁 메뉴"
+    }
+   ]
+  }
+ }
+}

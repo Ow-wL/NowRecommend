@@ -102,7 +102,7 @@ def test_answer_uses_the_production_prompt_and_checks_without_a_database():
     assert [p["name"] for p in result["picks"]] == ["삼계탕", "곤드레밥", "콩나물국밥"]  # the one listing 밀 was dropped by validate_free
     assert result["issues"]["excluded_value"] == 1 and result["failures"] == []
     payload = model.payloads[0]
-    assert payload["excluded"] == ["밀"] and payload["count"] == 3 + 6 and len(payload["baseDishes"]) == 66
+    assert payload["excluded"] == ["밀"] and payload["count"] == 3 + 6 and len(payload["baseDishes"]) == 81
 
 
 def test_taste_reaches_the_model_as_production_sends_it():
