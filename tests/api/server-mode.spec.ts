@@ -91,7 +91,7 @@ test('replaces a single card through the server', async ({ page }) => {
   await expect(page.locator('.result-grid h3')).toHaveText([food('f02').name, food('f14').name, food('f12').name]);
   // The server returned one card; the comparison of the cards kept is redone for the new set (mocked API, not real AI).
   const kept = page.locator('.item-card').filter({ hasText: food('f12').name }).locator('.contrast');
-  await expect(kept).toHaveText('고소한 메뉴예요.'); // 비빔밥, also 고소함, has left
+  await expect(kept).toHaveText('고소한, 가벼운 메뉴예요.'); // 비빔밥, also 고소함, has left; 두부 덮밥 is also 가벼움 since 2026-11-10
   await expect(page.locator('.item-card').filter({ hasText: food('f02').name }).locator('.contrast')).toHaveText('국물 있는 메뉴예요.');
   await expect(page.getByText(/이전에 본 후보/)).toHaveCount(0); // a replacement is not a repeat
   expect(bodies[1]).toMatchObject({ count: 1, pinnedIds: [] });
