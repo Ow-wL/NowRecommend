@@ -136,7 +136,7 @@ def test_parse_route():
         assert client.post("/api/parse", json={"category": "drink", "text": "x"}).status_code == 422
         assert client.post("/api/parse", json={"category": "food", "text": "가" * 301}).status_code == 422
     # maxPrice: always null, only so Pages builds from before the price removal accept the answer (DEPLOY.md §0).
-    assert ok.json() == {"conditions": {"tags": ["차분함", "휴식"], "excluded": [], "maxPrice": None}, "unparsed": [], "unsupported": [], "source": "rule+ai", "ai": "used"}
+    assert ok.json() == {"conditions": {"tags": ["새벽", "차분함", "휴식"], "excluded": [], "maxPrice": None}, "unparsed": [], "unsupported": [], "source": "rule+ai", "ai": "used"}
 
 
 def test_the_model_cannot_bring_back_a_tag_the_sentence_left_out():

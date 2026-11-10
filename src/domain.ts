@@ -53,9 +53,14 @@ const POP = new RegExp(`${genreWord('팝')}|(?:케이|시티|제이)\\s?팝|${la
 const BALLAD = new RegExp(`발라드|${latinWord('ballads?')}`, 'i');
 /** Genres the catalog has no tag for: named before recommending instead of disappearing ("힙합 노래"). */
 const UNSUPPORTED_GENRES = new RegExp(`(?:${genreWord('힙합|랩|클래식|트로트|뽕짝|일렉트로닉|일렉|알앤비|인디|메탈|펑크|레게|컨트리|블루스|디스코|댄스|뉴에이지|로파이|동요|국악|오페라|EDM|R&B|CCM')}|헤비\\s?메탈|전자\\s?음악|${latinWord('hip-?hop|edm|r&b|lo-?fi|classical|metal|reggae|disco')})(?!\\s?[록락])`, 'gi');
+// Night as a word: "밤에", "비 오는 밤", "밤늦게", but not 밤양갱·밤편지·군밤. Mirrored in server/app/parsing/rules.py.
+const NIGHT = String.raw`새벽|한밤|야밤|늦은\s?밤|(?<![가-힣])밤(?=$|[\s,.!?에늦중새])`;
 const TAG_RULES: Record<Category, [RegExp, string][]> = {
-  food: [[/혼자|혼밥/, '혼자'], [/함께|친구|둘이/, '함께'], [/저녁/, '저녁'], [/점심/, '점심'], [/담백|순한|부담.?없/, '담백함'], [/매콤|매운|칼칼|얼큰/, '매콤함'], [/고소/, '고소함'], [/따뜻|따끈/, '따뜻함'], [/시원|차가운/, '차가움'], [/국물/, '국물'], [/채소|야채/, '채소']],
-  music: [[/과제|공부|집중|작업/, '과제'], [/휴식|쉬|잠|편안/, '휴식'], [/산책|걷/, '산책'], [/운동|달리|러닝/, '운동'], [/잔잔|차분|조용/, '차분함'], [/활기|신나|밝은/, '활기참'], [/적당히|적당한/, '중간 에너지'], [/연주곡|보컬.?없|가사.?없/, '연주곡'], [/재즈/, '재즈'], [/피아노/, '피아노'], [/어쿠스틱/, '어쿠스틱'], [ROCK, '록'], [POP, '팝'], [BALLAD, '발라드']],
+  food: [[/혼자|혼밥/, '혼자'], [/함께|친구|둘이/, '함께'], [/저녁/, '저녁'], [/점심/, '점심'], [/담백|순한|부담.?없/, '담백함'], [/매콤|매운|칼칼|얼큰/, '매콤함'], [/고소/, '고소함'], [/상큼|새콤|새큼/, '상큼함'], [/따뜻|따끈/, '따뜻함'], [/시원|차가운/, '차가움'], [/국물/, '국물'], [/채소|야채/, '채소'],
+    [new RegExp(`야식|밤참|${NIGHT}`), '야식'], [/해장|숙취|속\s?풀/, '해장'], [/든든|배부르|배불리|푸짐|양\s?많/, '든든함'], [/가볍|가벼운|간단히|간단한|가뿐|다이어트/, '가벼움']],
+  music: [[/과제|공부|집중|작업/, '과제'], [/휴식|쉬|잠|편안/, '휴식'], [/산책|걷/, '산책'], [/운동|달리|러닝/, '운동'],
+    [/드라이브|운전|차에서|차\s?안에서/, '드라이브'], [/출근|퇴근|등교|하교|통근|지하철|버스(?!커)/, '출퇴근'], [new RegExp(NIGHT), '새벽'],
+    [/잔잔|차분|조용/, '차분함'], [/활기|신나|밝은/, '활기참'], [/감성|센치|울적|우울|슬픈|슬플|슬퍼|이별|그리운|그리워/, '감성'], [/적당히|적당한/, '중간 에너지'], [/연주곡|보컬.?없|가사.?없/, '연주곡'], [/재즈/, '재즈'], [/피아노/, '피아노'], [/어쿠스틱/, '어쿠스틱'], [ROCK, '록'], [POP, '팝'], [BALLAD, '발라드']],
 };
 // The prototype only maps known phrases. It never calls an AI service.
 export function parseConditions(text: string, category: Category): Conditions {
@@ -328,7 +333,7 @@ export function capFamiliar<T extends { id: string }>(ordered: T[], liked: strin
 
 // Reason templates, worded exactly like server/app/retrieval/reasons.py. They say what is true of this card alone and
 // never claim a taste that was not registered; how it differs from the others is contrastReason's job.
-export const FOOD_TRAIT_WORDS: Record<string, string> = { 매콤함: '매콤한', 담백함: '담백한', 고소함: '고소한', 상큼함: '상큼한', 따뜻함: '따뜻한', 차가움: '차가운', 국물: '국물 있는', 채소: '채소가 많은' };
+export const FOOD_TRAIT_WORDS: Record<string, string> = { 매콤함: '매콤한', 담백함: '담백한', 고소함: '고소한', 상큼함: '상큼한', 따뜻함: '따뜻한', 차가움: '차가운', 국물: '국물 있는', 채소: '채소가 많은', 해장: '해장하기 좋은', 든든함: '든든한', 가벼움: '가벼운' };
 const MUSIC_DISTINCT = ['재즈', '피아노', '어쿠스틱', '록', '발라드', '팝', '연주곡', '보컬'];
 export const NO_TASTE_REASON = '등록된 취향이 없어 취향은 반영하지 않았어요';
 export function templateReasons(item: Item, profile: Profile, preferred: Set<string>, conditions: Conditions, category: Category) {

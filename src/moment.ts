@@ -10,12 +10,12 @@ export function timeSlot(date = new Date()): Slot {
 }
 export const slotLabel: Record<Slot, string> = { morning: '아침', lunch: '점심시간', afternoon: '오후', evening: '저녁', night: '밤' };
 const FOOD: Record<Slot, [string, string[]]> = {
-  morning: ['가볍게 시작하는 아침', ['담백함', '따뜻함']], lunch: ['든든한 점심', ['점심', '따뜻함']], afternoon: ['가볍게 한 입', ['담백함', '상큼함']],
-  evening: ['따뜻한 저녁', ['저녁', '따뜻함']], night: ['부담 없는 야식', ['담백함', '국물']],
+  morning: ['가볍게 시작하는 아침', ['가벼움', '따뜻함']], lunch: ['든든한 점심', ['점심', '든든함']], afternoon: ['가볍게 한 입', ['가벼움', '상큼함']],
+  evening: ['따뜻한 저녁', ['저녁', '따뜻함']], night: ['부담 없는 야식', ['야식', '담백함']],
 };
 const MUSIC: Record<Slot, [string, string[]]> = {
   morning: ['활기찬 아침', ['활기참', '중간 에너지']], lunch: ['집중할 때 연주곡', ['과제', '연주곡']], afternoon: ['오후의 어쿠스틱', ['어쿠스틱', '차분함']],
-  evening: ['차분한 저녁', ['휴식', '차분함']], night: ['잠들기 전 잔잔하게', ['휴식', '낮은 에너지']],
+  evening: ['차분한 저녁', ['휴식', '차분함']], night: ['잠들기 전 잔잔하게', ['휴식', '새벽', '낮은 에너지']],
 };
 /** The quick condition for right now. Weather, when the person asked for it, speaks before the hour; the meal of the hour stays. */
 export function momentPreset(category: Category, slot: Slot, weather?: Weather | null): Preset {

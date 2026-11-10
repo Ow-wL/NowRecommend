@@ -17,6 +17,7 @@ NEUTRAL = {
     "이하", "이내", "미만", "정도", "제외", "빼고", "말고", "없이", "싫어", "좋은", "같은", "위한", "어울리는", "느낌",
     "하게", "하고", "해서",  # leftovers of a matched stem: "담백|하게", "시원|하게"
     "이라", "이라서", "라서", "이라고",  # leftovers of a matched noun: "비건|이라서"
+    "적인", "적으로", "적이고",  # leftovers of a matched noun used as an adjective: "감성|적인"
 }
 WORD = re.compile(r"[가-힣A-Za-z0-9]+")
 

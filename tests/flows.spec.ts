@@ -230,3 +230,17 @@ test('music genres become conditions or are named as unsupported', async ({ page
   await expect(page.locator('.condition-summary .chip')).toHaveCount(0);
   await expect(page.locator('.condition-note.unsupported')).toHaveCount(0);
 });
+
+// 2026-11-10: "해장", "든든하게", "새벽 감성", "드라이브" became conditions instead of going unread (shared/vocab.json).
+test('situation words become the finer conditions and their chips', async ({ page }) => {
+  await page.goto('/#/recommend/food');
+  await page.getByLabel('지금의 상황').fill('숙취 해장할 국물');
+  await expect(page.locator('.condition-summary .chip')).toHaveText(['국물', '해장']);
+  await page.getByLabel('지금의 상황').fill('둘이서 든든하게 저녁');
+  await expect(page.locator('.condition-summary .chip')).toHaveText(['함께', '저녁', '든든함']);
+  await page.goto('/#/recommend/music');
+  await page.getByLabel('지금의 상황').fill('드라이브할 때 듣는 새벽 감성 노래');
+  await expect(page.locator('.condition-summary .chip')).toHaveText(['드라이브', '새벽', '감성']);
+  await page.getByLabel('지금의 상황').fill('밤양갱 같은 노래');
+  await expect(page.locator('.condition-summary .chip')).toHaveCount(0);
+});

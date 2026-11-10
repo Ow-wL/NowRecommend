@@ -47,6 +47,8 @@ export const items: Item[] = [
 export const categoryLabel: Record<Category, string> = { food: '음식', music: '음악' };
 // Tag vocabulary is shared with the API server; edit shared/vocab.json, not these constants.
 export const options: Record<Category, string[]> = { food: vocab.food.conditionTags, music: vocab.music.conditionTags };
+/** When and where, not what it is like: the first chip group, and never a taste of its own. */
+export const situationTags: Record<Category, string[]> = { food: ['혼자', '함께', '점심', '저녁', '야식', '해장'], music: ['과제', '휴식', '산책', '운동', '드라이브', '출퇴근', '새벽'] };
 export const exclusions: Record<Category, string[]> = { food: vocab.food.exclusions, music: vocab.music.exclusions };
 export const excludableIngredients: string[] = vocab.food.excludableIngredients;
 export const exclusionAliases: Record<Category, Record<string, string[]>> = { food: vocab.food.exclusionAliases, music: vocab.music.exclusionAliases };

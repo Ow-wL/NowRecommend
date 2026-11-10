@@ -428,7 +428,9 @@
       "category": "music",
       "text": "비 오는 밤 혼자 듣기 좋은 노래",
       "expected": {
-        "tags": [],
+        "tags": [
+          "새벽"
+        ],
         "excluded": [],
         "unsupported": []
       }
@@ -1331,7 +1333,8 @@
       "text": "채식주의자라서 가볍게 점심",
       "expected": {
         "tags": [
-          "점심"
+          "점심",
+          "가벼움"
         ],
         "excluded": [
           "소고기",
@@ -1604,6 +1607,305 @@
       "text": "클래식한 분위기 노래",
       "expected": {
         "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "숙취 해장할 국물",
+      "expected": {
+        "tags": [
+          "국물",
+          "해장"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "어제 술 마셔서 속 풀리는 거",
+      "expected": {
+        "tags": [
+          "해장"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "둘이서 든든하게 저녁",
+      "expected": {
+        "tags": [
+          "함께",
+          "저녁",
+          "든든함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "배부르게 먹을 점심",
+      "expected": {
+        "tags": [
+          "점심",
+          "든든함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "가볍게 먹을 저녁, 다이어트 중",
+      "expected": {
+        "tags": [
+          "저녁",
+          "가벼움"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "밤에 출출할 때 야식",
+      "expected": {
+        "tags": [
+          "야식"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "새벽에 먹을 따뜻한 거",
+      "expected": {
+        "tags": [
+          "따뜻함",
+          "야식"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "군밤 같은 간식",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "새콤한 게 당겨",
+      "expected": {
+        "tags": [
+          "상큼함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "야식 말고 점심",
+      "expected": {
+        "tags": [
+          "점심"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "야식 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "양 많은 메뉴",
+      "expected": {
+        "tags": [
+          "든든함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "food",
+      "text": "가벼운 건 싫고 든든한 거",
+      "expected": {
+        "tags": [
+          "든든함"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "가벼움 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "food",
+      "text": "상큼한 거 말고 고소한 거",
+      "expected": {
+        "tags": [
+          "고소함"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "상큼함 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "music",
+      "text": "새벽 감성 노래",
+      "expected": {
+        "tags": [
+          "새벽",
+          "감성"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "드라이브할 때 신나는 노래",
+      "expected": {
+        "tags": [
+          "드라이브",
+          "활기참"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "운전하면서 들을 노래",
+      "expected": {
+        "tags": [
+          "드라이브"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "출근길에 들을 노래",
+      "expected": {
+        "tags": [
+          "출퇴근"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "지하철에서 듣는 잔잔한 노래",
+      "expected": {
+        "tags": [
+          "출퇴근",
+          "차분함"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "버스커버스커 같은 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "이별 후에 듣는 슬픈 발라드",
+      "expected": {
+        "tags": [
+          "감성",
+          "발라드"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "밤양갱 같은 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "밤편지 같은 노래",
+      "expected": {
+        "tags": [],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "늦은 밤 공부할 때",
+      "expected": {
+        "tags": [
+          "과제",
+          "새벽"
+        ],
+        "excluded": [],
+        "unsupported": []
+      }
+    },
+    {
+      "category": "music",
+      "text": "슬픈 노래 말고 신나는 거",
+      "expected": {
+        "tags": [
+          "활기참"
+        ],
+        "excluded": [],
+        "unsupported": [
+          {
+            "kind": "trait",
+            "text": "감성 제외"
+          }
+        ]
+      }
+    },
+    {
+      "category": "music",
+      "text": "감성적인 어쿠스틱",
+      "expected": {
+        "tags": [
+          "감성",
+          "어쿠스틱"
+        ],
         "excluded": [],
         "unsupported": []
       }

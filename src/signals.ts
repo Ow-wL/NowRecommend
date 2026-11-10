@@ -54,7 +54,7 @@ function learnedTags(signals: Signals, category: Category): string[] {
 }
 // Asked for 담백함, a model told about a well-rated spicy dish answered with four spicy sets out of four (2026-11-09, live API).
 // A liked item that is the opposite of this request says nothing about this request, so it is left out of it.
-const OPPOSITES: [string, string][] = [['매콤함', '담백함'], ['따뜻함', '차가움'], ['활기참', '차분함'], ['높은 에너지', '낮은 에너지'], ['높은 에너지', '차분함'], ['활기참', '낮은 에너지'], ['연주곡', '보컬']];
+const OPPOSITES: [string, string][] = [['매콤함', '담백함'], ['따뜻함', '차가움'], ['든든함', '가벼움'], ['활기참', '차분함'], ['높은 에너지', '낮은 에너지'], ['높은 에너지', '차분함'], ['활기참', '낮은 에너지'], ['연주곡', '보컬']];
 const opposes = (item: Item, wanted: string[]) => OPPOSITES.some(([a, b]) => item.tags.includes(a) && wanted.includes(b) || item.tags.includes(b) && wanted.includes(a));
 /** A copy to rank with: the taste as registered, plus what the ratings say about this request (`wanted`). Only the rating is used, never the written note. */
 export function rankingProfile(profile: Profile, signals: Signals, category: Category, wanted: string[]): Profile {

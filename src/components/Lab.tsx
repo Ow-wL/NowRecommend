@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, ExternalLink, Info, RefreshCw, SearchX, SlidersHorizontal, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
-import { categoryLabel, exclusions, options, type Category, type Item } from '../data';
+import { categoryLabel, exclusions, options, situationTags, type Category, type Item } from '../data';
 import { apiEnabled } from '../api/client';
 import { fetchRecommendations } from '../api/recommend';
 import { fetchParse } from '../api/parse';
@@ -186,8 +186,8 @@ export function Lab({ onTasteType, category, profile, items, onCategory, onEditT
     </section>;
   };
   const groups = category === 'food'
-    ? [{ label: '상황', values: ['혼자', '함께', '점심', '저녁'] }, { label: '원하는 맛·특징', values: options.food.filter(t => !['혼자', '함께', '점심', '저녁'].includes(t)) }]
-    : [{ label: '활동', values: ['과제', '휴식', '산책', '운동'] }, { label: '분위기', values: options.music.filter(t => !['과제', '휴식', '산책', '운동', '보컬', '연주곡'].includes(t)) }, { label: '보컬', values: ['보컬', '연주곡'] }];
+    ? [{ label: '상황', values: situationTags.food }, { label: '원하는 맛·특징', values: options.food.filter(t => !situationTags.food.includes(t)) }]
+    : [{ label: '상황', values: situationTags.music }, { label: '분위기', values: options.music.filter(t => ![...situationTags.music, '보컬', '연주곡'].includes(t)) }, { label: '보컬', values: ['보컬', '연주곡'] }];
 
   return <>
     <div className="flow-head">

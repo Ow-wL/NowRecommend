@@ -3,7 +3,7 @@ import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
 import { SoundSettings } from './components/SoundSettings';
 import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, PenLine, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
-import { options, exclusions, categoryLabel, type Category, type Item } from './data';
+import { options, exclusions, categoryLabel, situationTags, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
 import { fetchRecommendations, qualityOf } from './api/recommend';
@@ -517,7 +517,7 @@ export default function App() {
           <h1>평소 좋아하는 {category === 'food' ? '음식을' : '음악을'} 골라주세요.</h1>
           <p>{category === 'food' ? '좋아하는 메뉴' : '좋아하는 곡'} 3개 정도 골라보세요.{editingProfile ? '' : ' 건너뛰어도 돼요.'}</p>
           <button className="text-button to-moods" aria-expanded={moodsOpen} aria-controls="taste-moods" onClick={() => setShowMoods(open => { if (!open) requestAnimationFrame(() => document.querySelector<HTMLElement>('#taste-moods button')?.focus()); return !open; })}>{category === 'food' ? '메뉴 대신 맛으로 고르기' : '곡 대신 분위기로 고르기'}{draftProfile.tags.length > 0 && ` · ${draftProfile.tags.length}개`}<ChevronDown size={15} className="chevron" /></button>
-          {moodsOpen && <div className="taste-tags" id="taste-moods">{chips(options[category].filter(t => !['혼자', '함께', '점심', '저녁', '과제', '운동', '산책', '휴식'].includes(t) && !t.includes('에너지')), draftProfile.tags, v => setDraftProfile(p => ({ ...p, tags: toggle(p.tags, v) })))}</div>}
+          {moodsOpen && <div className="taste-tags" id="taste-moods">{chips(options[category].filter(t => !situationTags[category].includes(t) && !t.includes('에너지')), draftProfile.tags, v => setDraftProfile(p => ({ ...p, tags: toggle(p.tags, v) })))}</div>}
           {!editingProfile && <button className="button secondary skip-taste" onClick={skipTaste}>취향 없이 바로 추천받기 <ArrowRight size={16} /></button>}
         </div>
         <div className="flow-body">
@@ -597,7 +597,7 @@ export default function App() {
             </section>}
             <details className="panel more-conditions">
               <summary><SlidersHorizontal size={16} /> 조건 직접 고르기<ChevronDown size={16} className="chevron" /></summary>
-              {(category === 'food' ? [{label:'상황', values:['혼자','함께','점심','저녁']}, {label:'원하는 맛·특징', values:options.food.filter(t => !['혼자','함께','점심','저녁'].includes(t))}] : [{label:'활동',values:['과제','휴식','산책','운동']},{label:'분위기',values:options.music.filter(t => !['과제','휴식','산책','운동','보컬','연주곡'].includes(t))},{label:'보컬',values:['보컬','연주곡']}]).map(group => <div className="chip-group" key={group.label}><h3>{group.label}</h3>{chips(group.values,session.conditions.tags,v=>conditionTag(v))}</div>)}
+              {(category === 'food' ? [{label:'상황', values:situationTags.food}, {label:'원하는 맛·특징', values:options.food.filter(t => !situationTags.food.includes(t))}] : [{label:'상황',values:situationTags.music},{label:'분위기',values:options.music.filter(t => ![...situationTags.music,'보컬','연주곡'].includes(t))},{label:'보컬',values:['보컬','연주곡']}]).map(group => <div className="chip-group" key={group.label}><h3>{group.label}</h3>{chips(group.values,session.conditions.tags,v=>conditionTag(v))}</div>)}
               <div className="chip-group"><h3>반드시 제외 <small>선호 조건보다 먼저 적용해요</small></h3>{chips(exclusions[category], session.conditions.excluded, v => conditionTag(v, true), 'exclude')}</div>
               <div className="preset-panel">
                 <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>

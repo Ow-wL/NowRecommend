@@ -7,6 +7,8 @@ import { recordRound, selectResult } from './history';
 
 /** Most telling trait first: nearly every dish is 따뜻함, so it comes last and only decides what nothing else did. */
 const RULES: { food: string; music: string[] }[] = [
+  { food: '해장', music: ['차분함', '어쿠스틱', '낮은 에너지'] },
+  { food: '야식', music: ['새벽', '감성', '차분함'] },
   { food: '매콤함', music: ['활기참', '높은 에너지', '록'] },
   { food: '상큼함', music: ['팝', '활기참', '중간 에너지'] },
   { food: '차가움', music: ['팝', '중간 에너지'] },
@@ -14,12 +16,14 @@ const RULES: { food: string; music: string[] }[] = [
   { food: '고소함', music: ['재즈', '어쿠스틱', '중간 에너지'] },
   { food: '국물', music: ['발라드', '피아노', '차분함'] },
   { food: '채소', music: ['어쿠스틱', '차분함'] },
+  { food: '가벼움', music: ['어쿠스틱', '중간 에너지'] },
+  { food: '든든함', music: ['팝', '활기참'] },
   { food: '함께', music: ['팝', '활기참'] },
   { food: '혼자', music: ['휴식', '피아노'] },
   { food: '따뜻함', music: ['발라드', '차분함'] },
 ];
-const FOOD_WORD: Record<string, string> = { ...FOOD_TRAIT_WORDS, 함께: '함께 먹는', 혼자: '혼자 먹는' };
-const SONG_WORD: Record<string, string> = { 활기참: '활기찬', '높은 에너지': '에너지 높은', 록: '록', 팝: '팝', '중간 에너지': '적당히 경쾌한', 차분함: '차분한', 어쿠스틱: '어쿠스틱', '낮은 에너지': '잔잔한', 재즈: '재즈', 발라드: '발라드', 피아노: '피아노', 휴식: '쉬기 좋은' };
+const FOOD_WORD: Record<string, string> = { ...FOOD_TRAIT_WORDS, 함께: '함께 먹는', 혼자: '혼자 먹는', 야식: '야식으로 좋은' };
+const SONG_WORD: Record<string, string> = { 활기참: '활기찬', '높은 에너지': '에너지 높은', 록: '록', 팝: '팝', '중간 에너지': '적당히 경쾌한', 차분함: '차분한', 어쿠스틱: '어쿠스틱', '낮은 에너지': '잔잔한', 재즈: '재즈', 발라드: '발라드', 피아노: '피아노', 휴식: '쉬기 좋은', 새벽: '새벽에 어울리는', 감성: '감성적인' };
 const KINDS = ['연주곡', '피아노', '재즈', '어쿠스틱', '발라드', '록', '팝'];
 /** The dish's first trait decides most; the next ones only break ties in its favour. */
 const RANK = [3, 1.5, .75];
