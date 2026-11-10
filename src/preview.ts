@@ -42,6 +42,38 @@ export async function previewFor(item: Pick<Item, 'id' | 'category'>, fetcher: t
   return url;
 }
 
+// Preview loudness is this device's own setting: kept in this browser apart from the taste store, so it is neither synced
+// to the account nor carried in backups. Apple's previews are mastered loud, so it starts at half.
+const VOLUME_KEY = 'nowrecommend-preview-volume-v1';
+export const DEFAULT_PREVIEW_VOLUME = 0.5;
+/** A volume between 0 and 1 in steps of 0.05, or the default for anything that is not a number. */
+export function cleanVolume(value: unknown): number {
+  const number = typeof value === 'string' && value.trim() ? Number(value) : value;
+  if (typeof number !== 'number' || !Number.isFinite(number)) return DEFAULT_PREVIEW_VOLUME;
+  return Math.round(Math.min(1, Math.max(0, number)) * 20) / 20;
+}
+function readVolume(): number { try { return cleanVolume(localStorage.getItem(VOLUME_KEY)); } catch { return DEFAULT_PREVIEW_VOLUME; } }
+let volume = readVolume();
+const volumeListeners = new Set<() => void>();
+export const getPreviewVolume = () => volume;
+/** Set the preview volume, keep it in this browser, and apply it at once to a song that is playing. */
+export function setPreviewVolume(value: number) {
+  volume = cleanVolume(value);
+  try { localStorage.setItem(VOLUME_KEY, String(volume)); } catch { /* applies for this visit only */ }
+  if (audio) audio.volume = volume;
+  volumeListeners.forEach(listener => listener());
+}
+/** The preview volume, re-rendering when it changes anywhere in the app. */
+export function usePreviewVolume(): number {
+  const [, tick] = useState(0);
+  useEffect(() => { const listener = () => tick(n => n + 1); volumeListeners.add(listener); return () => { volumeListeners.delete(listener); }; }, []);
+  return volume;
+}
+/** iPhone and iPad keep media volume on the hardware buttons: there an element's volume reads back as 1 whatever is set. */
+export function canSetVolume(): boolean {
+  try { const probe = new Audio(); probe.volume = 0.5; return Math.abs(probe.volume - 0.5) < 0.01; } catch { return false; }
+}
+
 export type PreviewState = 'idle' | 'loading' | 'playing' | 'unavailable' | 'failed';
 let audio: HTMLAudioElement | null = null, currentId = '', currentState: PreviewState = 'idle';
 const listeners = new Set<() => void>();
@@ -49,7 +81,7 @@ const emit = () => listeners.forEach(listener => listener());
 const settle = (id: string, state: PreviewState) => { if (currentId !== id) return; currentState = state; emit(); };
 function player(): HTMLAudioElement {
   if (!audio) {
-    audio = new Audio(); audio.preload = 'none';
+    audio = new Audio(); audio.preload = 'none'; audio.volume = volume;
     audio.addEventListener('ended', () => { currentId = ''; currentState = 'idle'; emit(); });
     audio.addEventListener('error', () => { if (currentState === 'loading' || currentState === 'playing') settle(currentId, 'failed'); });
   }
