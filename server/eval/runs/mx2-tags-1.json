@@ -1,0 +1,158 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX2": {
+   "wanted": 5,
+   "ms": 2899.0083999997296,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Take Five",
+     "detail": "Dave Brubeck",
+     "taste_reason": "새로운 취향의 재즈 연주곡에 가까워요.",
+     "context_reason": "독특한 리듬감이 활기찬 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "Green Onions",
+     "detail": "Booker T. & the M.G.'s",
+     "taste_reason": "새로운 취향의 펑크 록 연주곡에 가까워요.",
+     "context_reason": "경쾌한 오르간 연주가 활기찬 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1962
+    },
+    {
+     "name": "Cliffs of Dover",
+     "detail": "Eric Johnson",
+     "taste_reason": "새로운 취향의 기타 연주곡에 가까워요.",
+     "context_reason": "빠른 기타 선율이 운동할 때 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1990
+    },
+    {
+     "name": "Sir Duke",
+     "detail": "The Cleveland Orchestra",
+     "taste_reason": "새로운 취향의 관악 연주곡에 가까워요.",
+     "context_reason": "풍성한 브라스 사운드가 활기찬 분위기에 어울려요.",
+     "confidence": "medium",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1976
+    },
+    {
+     "name": "Misirlou",
+     "detail": "Dick Dale",
+     "taste_reason": "새로운 취향의 서프 록 연주곡에 가까워요.",
+     "context_reason": "빠른 트레몰로 기타가 활기찬 활동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1962
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없으나 쿨재즈라 아주 신나진 않음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 리드미컬하고 신나는 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 빠른 템포의 신나는 기타 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "unsure",
+     "yearOk": true,
+     "note": "클리블랜드 오케스트라 커버 연주버전"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 매우 격정적이고 신나는 곡"
+    }
+   ]
+  }
+ }
+}

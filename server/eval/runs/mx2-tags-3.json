@@ -1,0 +1,159 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX2": {
+   "wanted": 5,
+   "ms": 2979.061300000467,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 연주곡이에요.",
+     "context_reason": "5/4박자의 독특한 리듬이 활기찬 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "Spain",
+     "detail": "Chick Corea",
+     "taste_reason": "새로운 취향으로 추천하는 경쾌한 재즈 곡이에요.",
+     "context_reason": "빠른 피아노 선율과 타악기 연주가 활기찬 기운을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1972
+    },
+    {
+     "name": "Clocks",
+     "detail": "Coldplay",
+     "taste_reason": "새로운 취향을 넓혀줄 웅장한 연주 트랙이에요.",
+     "context_reason": "반복되는 피아노 아르페지오가 역동적인 느낌에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2002
+    },
+    {
+     "name": "The Entertainer",
+     "detail": "Marvin Hamlisch",
+     "taste_reason": "새로운 취향으로 가볍게 듣기 좋은 클래식 랙타임이에요.",
+     "context_reason": "경쾌한 피아노 건반 소리가 밝고 신나는 순간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1973
+    },
+    {
+     "name": "Flight of the Bumblebee",
+     "detail": "Nikolai Rimsky-Korsakov",
+     "taste_reason": "새로운 취향으로 신선한 자극을 주는 관현악 곡이에요.",
+     "context_reason": "빠른 속도의 기악 편성이 에너지를 끌어올리는 데 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1900
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없으나 차분함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 재즈"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬이 있는 곡임"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 매우 신나는 곡"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,156 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX2": {
+   "wanted": 5,
+   "ms": 3259.1207999994367,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Sing, Sing, Sing",
+     "detail": "Benny Goodman",
+     "taste_reason": "신나는 스윙 리듬에 가까워요",
+     "context_reason": "화려한 드럼 연주가 활기찬 분위기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1937
+    },
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "감각적인 재즈 선율에 가까워요",
+     "context_reason": "독특한 5박자 리듬이 산뜻하게 어울려요",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "The Entertainer",
+     "detail": "Scott Joplin",
+     "taste_reason": "경쾌한 건반 연주에 가까워요",
+     "context_reason": "통통 튀는 피아노 선율이 즐거운 기분에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1902
+    },
+    {
+     "name": "Flight of the Bumblebee",
+     "detail": "Nikolai Rimsky-Korsakov",
+     "taste_reason": "빠른 속도감의 클래식에 가까워요",
+     "context_reason": "역동적인 관현악 편성이 활력에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "Sabre Dance",
+     "detail": "Aram Khachaturian",
+     "taste_reason": "강렬한 타악기 연주에 가까워요",
+     "context_reason": "몰아치는 선율이 신나는 운동에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1942
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 재즈곡"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없으나 차분한 분위기"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 경쾌한 럭타임"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 매우 빠른 클래식"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 격정적이고 신나는 곡"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,158 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX2": {
+   "wanted": 5,
+   "ms": 2611.496299999999,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Take Five",
+     "detail": "Dave Brubeck",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "활기찬 리듬이 산책에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "The Way You Look Tonight",
+     "detail": "Bill Charlap Trio",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "경쾌한 피아노 선율이 드라이브에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004
+    },
+    {
+     "name": "Spain",
+     "detail": "Chick Corea",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "빠른 템포의 연주가 운동에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1972
+    },
+    {
+     "name": "Cantaloupe Island",
+     "detail": "Herbie Hancock",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "그루브한 재즈 연주가 출퇴근에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1964
+    },
+    {
+     "name": "Sir Duke",
+     "detail": "Anat Cohen",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "밝은 관악기 연주가 산책에 어울려요",
+     "confidence": "medium",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2007
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없으나 활기참은 보통"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 차분한 재즈 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나고 활기찬 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 리드미컬하고 신나는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "스티비 원더 곡의 신나는 인스트루멘털 커버"
+    }
+   ]
+  }
+ }
+}

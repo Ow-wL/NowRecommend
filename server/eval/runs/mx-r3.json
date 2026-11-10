@@ -1,0 +1,901 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX1": {
+   "wanted": 5,
+   "ms": 3596.551799999361,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Gymnopédie No. 1",
+     "detail": "Erik Satie",
+     "taste_reason": "차분한 피아노 결을 좋아해 선택했어요.",
+     "context_reason": "과제할 때 방해되지 않는 잔잔한 연주곡이에요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "Merry-Go-Round of Life",
+     "detail": "Joe Hisaishi",
+     "taste_reason": "익숙한 피아노 선율 취향에 가까워요.",
+     "context_reason": "학습에 몰입하기 좋은 감미로운 선율이에요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004
+    },
+    {
+     "name": "Letter from Autumn",
+     "detail": "Yiruma",
+     "taste_reason": "평소 즐기던 피아노 연주곡 결에 맞아요.",
+     "context_reason": "차분하게 책상에 앉아 과제할 때 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003
+    },
+    {
+     "name": "The Whole Nine Yards",
+     "detail": "Takashi Yoshimatsu",
+     "taste_reason": "차분한 악기 편성이 취향과 잘 맞아요.",
+     "context_reason": "깊은 집중을 요하는 과제 시간에 제격이에요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1998
+    },
+    {
+     "name": "Children's Song",
+     "detail": "Chick Corea",
+     "taste_reason": "잔잔한 건반 연주 취향에 가까워요.",
+     "context_reason": "고요한 분위기에서 과제할 때 틀기 좋아요.",
+     "confidence": "medium",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1984
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 차분한 피아노곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 유명 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 이루마 피아노곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 영화 OST 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 재즈/클래식 연주곡"
+    }
+   ]
+  },
+  "MX2": {
+   "wanted": 5,
+   "ms": 2639.5217000008415,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "새로운 취향의 연주곡이에요.",
+     "context_reason": "독특한 리듬이 활기찬 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "Green Onions",
+     "detail": "Booker T. & the M.G.'s",
+     "taste_reason": "새로운 취향의 연주곡이에요.",
+     "context_reason": "신나는 멜로디가 운동할 때 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1962
+    },
+    {
+     "name": "Soulful Strut",
+     "detail": "Young-Holt Unlimited",
+     "taste_reason": "새로운 취향의 연주곡이에요.",
+     "context_reason": "경쾌한 건반 소리가 산책에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1968
+    },
+    {
+     "name": "The Sidewinder",
+     "detail": "Lee Morgan",
+     "taste_reason": "새로운 취향의 연주곡이에요.",
+     "context_reason": "빠른 연주가 활기찬 기분에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1964
+    },
+    {
+     "name": "Sir Duke",
+     "detail": "Stevie Wonder",
+     "taste_reason": "새로운 취향의 연주곡이에요.",
+     "context_reason": "혼 섹션의 연주가 신나는 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1976
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 재즈 명곡이나 신남은 약간 부족"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 활기찬 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 소울 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 재즈 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬이 포함된 곡임"
+    }
+   ]
+  },
+  "MX3": {
+   "wanted": 5,
+   "ms": 3313.56439999945,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "사계",
+     "detail": "태연",
+     "taste_reason": "차분한 분위기를 선호하는 취향에 가까워요.",
+     "context_reason": "잔잔한 멜로디가 차분한 휴식 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019
+    },
+    {
+     "name": "너의 모든 순간",
+     "detail": "성시경",
+     "taste_reason": "감성적인 발라드를 즐기는 취향에 가까워요.",
+     "context_reason": "부드러운 피아노 선율이 차분한 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "피아노",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014
+    },
+    {
+     "name": "밤편지",
+     "detail": "아이유",
+     "taste_reason": "어쿠스틱한 감성을 좋아하는 취향에 가까워요.",
+     "context_reason": "기타 연주와 나지막한 목소리가 차분한 새벽에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "어쿠스틱",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017
+    },
+    {
+     "name": "내 사람",
+     "detail": "SG 워너비",
+     "taste_reason": "서정적인 보컬 곡을 찾는 취향에 가까워요.",
+     "context_reason": "깊이 있는 목소리가 차분한 감정을 북돋아줘요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2006
+    },
+    {
+     "name": "야생화",
+     "detail": "박효신",
+     "taste_reason": "풍부한 감성의 곡을 즐기는 취향에 가까워요.",
+     "context_reason": "웅장하면서도 섬세한 곡 전개가 차분한 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "K-POP/발라드로 차분한 편"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 발라드 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 차분한 발라드"
+    },
+    {
+     "index": 3,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "웅장하고 템포 있는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적이고 차분한 발라드"
+    }
+   ]
+  },
+  "MX4": {
+   "wanted": 5,
+   "ms": 2873.8628000010067,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Super Shy",
+     "detail": "NewJeans",
+     "taste_reason": "활기찬 대중음악 취향에 가까워요",
+     "context_reason": "기분 전환에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023
+    },
+    {
+     "name": "Butter",
+     "detail": "BTS",
+     "taste_reason": "밝고 경쾌한 곡을 좋아하는 편에 가까워요",
+     "context_reason": "신나는 분위기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021
+    },
+    {
+     "name": "ASAP",
+     "detail": "STAYC",
+     "taste_reason": "상큼한 보컬 곡을 즐겨 듣는 취향에 가까워요",
+     "context_reason": "활력을 돋우는 데 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021
+    },
+    {
+     "name": "BUNNY",
+     "detail": "재쓰비",
+     "taste_reason": "경쾌한 리듬을 선호하는 취향에 가까워요",
+     "context_reason": "기분 전환용으로 어울려요",
+     "confidence": "medium",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2024
+    },
+    {
+     "name": "Love Dive",
+     "detail": "IVE",
+     "taste_reason": "대중적인 아이돌 음악 취향에 가까워요",
+     "context_reason": "환기하기 좋은 분위기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 활기찬 댄스곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 경쾌한 댄스곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "기분 전환에 좋은 댄스곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 활기찬 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "기분 전환에 좋은 댄스곡"
+    }
+   ]
+  },
+  "MX5": {
+   "wanted": 5,
+   "ms": 3063.6359000000084,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Dynamite",
+     "detail": "BTS",
+     "taste_reason": "새로운 취향이지만 신나는 곡이에요.",
+     "context_reason": "경쾌한 디스코 팝 리듬이 높은 에너지에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020
+    },
+    {
+     "name": "Bad Guy",
+     "detail": "Billie Eilish",
+     "taste_reason": "새로운 취향이지만 독특한 비트가 매력적이에요.",
+     "context_reason": "묵직한 베이스 라인이 몰입감을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019
+    },
+    {
+     "name": "Blinding Lights",
+     "detail": "The Weeknd",
+     "taste_reason": "새로운 취향이지만 질주하는 느낌이 좋아요.",
+     "context_reason": "빠른 신디사이저 연주가 신나는 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019
+    },
+    {
+     "name": "Levitating",
+     "detail": "Dua Lipa",
+     "taste_reason": "새로운 취향이지만 리듬감이 돋보여요.",
+     "context_reason": "펑키한 사운드가 몸을 움직이게 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020
+    },
+    {
+     "name": "Sugar",
+     "detail": "Maroon 5",
+     "taste_reason": "새로운 취향이지만 밝은 분위기가 특징이에요.",
+     "context_reason": "경쾌한 멜로디가 활기찬 기분을 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 디스코 팝 곡임."
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비트는 있으나 에너지가 다소 차분함."
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신스팝 기반의 에너지 넘치는 곡임."
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 에너지 넘치는 디스코 팝 곡."
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "팝 록 성향이 약간 있는 팝 곡."
+    }
+   ]
+  },
+  "MC3": {
+   "wanted": 5,
+   "ms": 2841.1043000014615,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "River Flows in You",
+     "detail": "Yiruma",
+     "taste_reason": "차분한 피아노 선율이 편안한 감성에 가까워요",
+     "context_reason": "차분하게 울려 퍼지는 피아노 연주곡이라 어울려요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001
+    },
+    {
+     "name": "Autumn Leaves",
+     "detail": "Bill Evans",
+     "taste_reason": "재즈 피아노의 깊이 있는 선율이 취향에 가까워요",
+     "context_reason": "잔잔한 재즈 연주만 흘러나와 조용히 집중하기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "Merry-Go-Round of Life",
+     "detail": "Joe Hisaishi",
+     "taste_reason": "풍성한 멜로디의 감성적인 분위기에 가까워요",
+     "context_reason": "화려한 오케스트라 연주로만 채워진 곡이라 어울려요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "산책",
+      "감성",
+      "중간 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004
+    },
+    {
+     "name": "Gymnopédie No. 1",
+     "detail": "Erik Satie",
+     "taste_reason": "느리고 담담한 클래식 피아노 선율에 가까워요",
+     "context_reason": "군더더기 없는 순수 피아노 연주곡이라 어울려요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "세련된 재즈 리듬감이 새로운 취향에 가까워요",
+     "context_reason": "독특한 박자의 재즈 악기 연주만 이어져 어울려요",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "드라이브",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "유명 피아노 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "빌 에반스의 재즈 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "히사이시 죠 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "사티의 피아노 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "데이브 브루벡 연주곡"
+    }
+   ]
+  }
+ }
+}

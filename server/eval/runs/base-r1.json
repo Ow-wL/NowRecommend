@@ -1,0 +1,1780 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash",
+  "note": "origin/main 코드와 옛 규칙의 조건으로 답하고, 심사는 finer-tags-v1 사례 정의(새 태그 wanted)로 받음"
+ },
+ "cases": {
+  "FN1": {
+   "wanted": 3,
+   "ms": 2459.8892000003616,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "닭곰탕",
+     "detail": "한식 · 따뜻한 국물",
+     "taste_reason": "깔끔하고 담백한 맛에 가까워요.",
+     "context_reason": "맑은 닭육수가 속을 편안하게 풀어줘요.",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "담백함",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기"
+     ],
+     "base_dish": "닭곰탕",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "콩나물국밥",
+     "detail": "한식 · 시원한 국물",
+     "taste_reason": "시원하고 개운한 맛에 가까워요.",
+     "context_reason": "콩나물의 아스파라긴산이 해장에 도움을 줘요.",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "따뜻함",
+      "국물",
+      "채소",
+      "한식"
+     ],
+     "ingredients": [
+      "달걀",
+      "콩"
+     ],
+     "base_dish": "콩나물국밥",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "황태해장국",
+     "detail": "한식 · 따뜻한 국물",
+     "taste_reason": "구수하고 진한 국물 맛에 가까워요.",
+     "context_reason": "황태의 깊은 감칠맛이 해장에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "함께",
+      "점심",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "생선",
+      "달걀"
+     ],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "따뜻한 국물로 해장에 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 해장 메뉴임"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "해장에 매우 잘 어울림"
+    }
+   ]
+  },
+  "FN2": {
+   "wanted": 3,
+   "ms": 1973.2165000004898,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "연어 아보카도 샐러드",
+     "detail": "샐러드 · 생채소",
+     "taste_reason": "새로운 취향으로 가볍게 즐기기 좋아요.",
+     "context_reason": "다이어트 점심에 가볍게 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "상큼함",
+      "채소",
+      "양식"
+     ],
+     "ingredients": [
+      "생선",
+      "토마토",
+      "당근"
+     ],
+     "base_dish": "샐러드",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "닭가슴살 샌드위치",
+     "detail": "샌드위치 · 빵",
+     "taste_reason": "새로운 취향으로 든든하게 즐기기 좋아요.",
+     "context_reason": "다이어트 점심에 알맞은 메뉴예요.",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "담백함",
+      "양식"
+     ],
+     "ingredients": [
+      "닭고기",
+      "밀",
+      "토마토",
+      "당근"
+     ],
+     "base_dish": "샌드위치",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "두부구이 덮밥",
+     "detail": "한식 · 밥 요리",
+     "taste_reason": "새로운 취향으로 깔끔하게 즐기기 좋아요.",
+     "context_reason": "가벼운 점심 식사로 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "담백함",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "당근"
+     ],
+     "base_dish": "두부 덮밥",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "다이어트용 가벼운 점심으로 매우 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "닭가슴살 샌드위치는 가벼운 점심으로 적합"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "두부 요리지만 덮밥이라 약간 무거울 수 있음"
+    }
+   ]
+  },
+  "FN3": {
+   "wanted": 3,
+   "ms": 2322.839400000703,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "교촌 허니콤보",
+     "detail": "교촌에프앤비 · 치킨",
+     "taste_reason": "익숙한 대중적인 맛에 가까워요",
+     "context_reason": "바삭하고 달콤한 야식으로 어울려요",
+     "confidence": "high",
+     "tags": [
+      "함께",
+      "저녁",
+      "고소함"
+     ],
+     "ingredients": [
+      "닭고기",
+      "밀",
+      "달걀",
+      "참깨"
+     ],
+     "base_dish": "치킨",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "신전떡볶이 매운맛",
+     "detail": "신전푸드시스 · 분식",
+     "taste_reason": "매콤한 분식 취향에 가까워요",
+     "context_reason": "늦은 밤 매콤하게 즐기기 어울려요",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "저녁",
+      "매콤함",
+      "분식"
+     ],
+     "ingredients": [
+      "밀",
+      "콩"
+     ],
+     "base_dish": "떡볶이",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "참치김밥",
+     "detail": "한식 · 분식",
+     "taste_reason": "간단하고 깔끔한 맛에 가까워요",
+     "context_reason": "밤에 가볍게 먹기 어울려요",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "저녁",
+      "담백함",
+      "한식"
+     ],
+     "ingredients": [
+      "생선",
+      "달걀",
+      "참깨",
+      "당근"
+     ],
+     "base_dish": "김밥",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 인기 야식 메뉴임"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "야식으로 자주 먹는 떡볶이"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "야식으로 부담없이 먹기 좋음"
+    }
+   ]
+  },
+  "FN4": {
+   "wanted": 3,
+   "ms": 2501.960699999472,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "제육볶음",
+     "detail": "한식 · 고기 볶음",
+     "taste_reason": "평소 즐겨 찾던 고기 요리에 가까워요",
+     "context_reason": "든든한 돼지고기와 매콤한 양념이 배고픔을 채워줘요",
+     "confidence": "high",
+     "tags": [
+      "저녁",
+      "매콤함",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩"
+     ],
+     "base_dish": "제육볶음",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "치즈버거",
+     "detail": "버거킹 · 패스트푸드",
+     "taste_reason": "선호하는 든든한 식사 메뉴에 가까워요",
+     "context_reason": "고기 패티와 빵이 어우러져 한 끼를 채우기 좋아요",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "고소함",
+      "양식"
+     ],
+     "ingredients": [
+      "소고기",
+      "밀",
+      "유제품"
+     ],
+     "base_dish": "햄버거",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "차돌된장찌개",
+     "detail": "한식 · 뚝배기 국물",
+     "taste_reason": "평소 좋아하는 구수한 맛에 가까워요",
+     "context_reason": "따뜻한 국물과 차돌박이가 속을 든든하게 채워줘요",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "소고기",
+      "콩"
+     ],
+     "base_dish": "된장찌개",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "든든한 고기 요리로 요청에 잘 맞음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "든든하게 먹을 수 있는 패스트푸드"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밥과 함께 든든하게 먹기 좋은 메뉴"
+    }
+   ]
+  },
+  "MN1": {
+   "wanted": 5,
+   "ms": 2596.13999999965,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "혜화동 (또는 로터리)",
+     "detail": "동물원",
+     "taste_reason": "잔잔한 어쿠스틱 선율이 주는 편안함에 가까워요.",
+     "context_reason": "고요한 새벽 시간에 듣기 좋은 따뜻한 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988
+    },
+    {
+     "name": "주저하는 연인들을 위해",
+     "detail": "잔나비",
+     "taste_reason": "서정적인 멜로디와 깊이 있는 가사가 주는 감성에 가까워요.",
+     "context_reason": "깊은 밤 생각에 잠기기 좋은 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "발라드",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019
+    },
+    {
+     "name": "빗속에서",
+     "detail": "이문세",
+     "taste_reason": "아날로그 감성의 포근한 멜로디에 가까워요.",
+     "context_reason": "새벽의 차분한 공기와 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1985
+    },
+    {
+     "name": "그때 그 아인",
+     "detail": "김필",
+     "taste_reason": "호소력 짙은 목소리와 잔잔한 편곡에 가까워요.",
+     "context_reason": "혼자만의 시간에 감성을 더하기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020
+    },
+    {
+     "name": "사랑한다는 말은",
+     "detail": "김동률",
+     "taste_reason": "풍성한 오케스트라와 감성적인 보컬에 가까워요.",
+     "context_reason": "새벽 감성을 깊게 채워주는 곡에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "새벽 감성에 적합한 서정적인 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔하고 감성적인 잔나비 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적이고 잔잔한 이문세 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "새벽에 듣기 좋은 김필 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 발라드로 감성 충족"
+    }
+   ]
+  },
+  "MN2": {
+   "wanted": 5,
+   "ms": 2153.2641000003423,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Dynamite",
+     "detail": "BTS",
+     "taste_reason": "새로운 취향의 활기찬 곡에 가까워요.",
+     "context_reason": "신나는 리듬이 드라이브에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020
+    },
+    {
+     "name": "Blinding Lights",
+     "detail": "The Weeknd",
+     "taste_reason": "새로운 취향의 신나는 곡에 가까워요.",
+     "context_reason": "빠른 신스 사운드가 드라이브에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019
+    },
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "taste_reason": "새로운 취향의 펑키한 곡에 가까워요.",
+     "context_reason": "신나는 브라스 사운드가 드라이브에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014
+    },
+    {
+     "name": "Sugar",
+     "detail": "Maroon 5",
+     "taste_reason": "새로운 취향의 밝은 곡에 가까워요.",
+     "context_reason": "경쾌한 리듬이 드라이브에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014
+    },
+    {
+     "name": "Levitating",
+     "detail": "Dua Lipa",
+     "taste_reason": "새로운 취향의 리듬감 있는 곡에 가까워요.",
+     "context_reason": "디스코 비트가 드라이브에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "드라이브용 신나는 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 비트감 있는 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 펑크 팝 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 드라이브에 어울림"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "경쾌하고 신나는 리듬"
+    }
+   ]
+  },
+  "MN3": {
+   "wanted": 5,
+   "ms": 2431.0224999999264,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Ditto",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향의 편안한 곡에 가까워요.",
+     "context_reason": "퇴근길 지하철의 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022
+    },
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "taste_reason": "새로운 취향의 시원한 곡에 가까워요.",
+     "context_reason": "복잡한 퇴근길 지하철에서 듣기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "보컬",
+      "록",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022
+    },
+    {
+     "name": "Hype Boy",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향의 경쾌한 곡에 가까워요.",
+     "context_reason": "지하철 이동 시간에 활력을 줘요.",
+     "confidence": "low",
+     "tags": [
+      "보컬",
+      "팝",
+      "활기참"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022
+    },
+    {
+     "name": "Attention",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향의 부드러운 곡에 가까워요.",
+     "context_reason": "퇴근길 지친 마음을 달래줘요.",
+     "confidence": "low",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022
+    },
+    {
+     "name": "OMG",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향의 리드미컬한 곡에 가까워요.",
+     "context_reason": "지하철 풍경과 잘 어우러져요.",
+     "confidence": "low",
+     "tags": [
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 듣기 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 듣기 좋은 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이동 중 듣기 좋음"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이동 중 듣기 좋음"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 듣기 적합함"
+    }
+   ]
+  },
+  "MN4": {
+   "wanted": 5,
+   "ms": 2629.387500000121,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "눈의 꽃",
+     "detail": "박효신",
+     "taste_reason": "좋아하는 취향이 없어 새로운 곡을 골랐어요.",
+     "context_reason": "애절한 가사와 감성적인 보컬이 이별의 아픔에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "중간 에너지",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004
+    },
+    {
+     "name": "사랑했지만",
+     "detail": "김광석",
+     "taste_reason": "좋아하는 취향이 없어 새로운 곡을 골랐어요.",
+     "context_reason": "담담하면서도 슬픈 목소리가 슬픔을 달래기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "어쿠스틱",
+      "낮은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1991
+    },
+    {
+     "name": "기억의 습작",
+     "detail": "전람회",
+     "taste_reason": "좋아하는 취향이 없어 새로운 곡을 골랐어요.",
+     "context_reason": "서정적인 피아노 선율과 웅장한 가창력이 이별의 감정에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "피아노",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1994
+    },
+    {
+     "name": "바람이 분다",
+     "detail": "이소라",
+     "taste_reason": "좋아하는 취향이 없어 새로운 곡을 골랐어요.",
+     "context_reason": "쓸쓸한 분위기와 깊은 감정선이 혼자 남겨진 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "차분함",
+      "낮은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004
+    },
+    {
+     "name": "니가 널 떠난 뒤",
+     "detail": "신승훈",
+     "taste_reason": "좋아하는 취향이 없어 새로운 곡을 골랐어요.",
+     "context_reason": "애절한 멜로디와 호소력 짙은 목소리가 이별 후에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "중간 에너지",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이별/슬픈 감성 발라드로 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이별의 아픔을 담은 대표적 명곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이별 감성과 아련함에 잘 어울림"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 슬픈 이별 노래"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "no",
+     "yearOk": true,
+     "note": "곡명 오타(나가 너를 떠난 뒤)"
+    }
+   ]
+  },
+  "FS4t": {
+   "wanted": 3,
+   "ms": 2328.5400999993726,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "삼겹살",
+     "detail": "한식 · 돼지고기 구이",
+     "taste_reason": "든든한 저녁 식사에 어울려요.",
+     "context_reason": "둘이서 함께 구워 먹기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "함께",
+      "저녁",
+      "고소함",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기"
+     ],
+     "base_dish": "삼겹살",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "부대찌개",
+     "detail": "한식 · 찌개류",
+     "taste_reason": "푸짐한 국물 요리에 가까워요.",
+     "context_reason": "저녁 시간에 여럿이 나누기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "함께",
+      "저녁",
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "돼지고기",
+      "콩",
+      "밀"
+     ],
+     "base_dish": "부대찌개",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "차돌박이 짬뽕",
+     "detail": "중식 · 면 요리",
+     "taste_reason": "얼큰한 맛을 즐기는 취향에 가까워요.",
+     "context_reason": "저녁 식사로 든든한 면 요리에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "함께",
+      "저녁",
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "중식"
+     ],
+     "ingredients": [
+      "소고기",
+      "해산물",
+      "밀"
+     ],
+     "base_dish": "짬뽕",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "둘이 먹기 든든한 저녁 메뉴"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2인 이상 든든한 저녁으로 적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "든든한 저녁 식사로 적절함"
+    }
+   ]
+  },
+  "FS6t": {
+   "wanted": 3,
+   "ms": 2180.434900000364,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "콩나물국밥",
+     "detail": "한식 · 국물 요리",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "따뜻하고 시원한 국물이 해장에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "콩",
+      "달걀"
+     ],
+     "base_dish": "콩나물국밥",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "얼큰 짬뽕",
+     "detail": "중식 · 매운 국물",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "칼칼한 국물이 속을 풀어주는 데 어울려요",
+     "confidence": "high",
+     "tags": [
+      "점심",
+      "저녁",
+      "매콤함",
+      "따뜻함",
+      "국물",
+      "중식"
+     ],
+     "ingredients": [
+      "해산물",
+      "밀",
+      "돼지고기",
+      "당근"
+     ],
+     "base_dish": "짬뽕",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "닭곰탕",
+     "detail": "한식 · 맑은 국물",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "담백한 닭육수가 해장으로 가볍게 먹기 어울려요",
+     "confidence": "high",
+     "tags": [
+      "혼자",
+      "점심",
+      "따뜻함",
+      "국물",
+      "한식"
+     ],
+     "ingredients": [
+      "닭고기"
+     ],
+     "base_dish": "닭곰탕",
+     "broad": false,
+     "release_year": null
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 해장 국물 요리"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "해장으로 많이 찾는 매운 국물"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "자극적이지 않고 든든한 해장국"
+    }
+   ]
+  },
+  "MS3t": {
+   "wanted": 5,
+   "ms": 2461.395000000266,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "비가 와",
+     "detail": "헤이즈",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 발라드 곡이에요.",
+     "context_reason": "차분한 감성이 빗소리와 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016
+    },
+    {
+     "name": "빗속에서",
+     "detail": "이문세",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 발라드 곡이에요.",
+     "context_reason": "서정적인 멜로디가 밤 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1985
+    },
+    {
+     "name": "Endless Rain",
+     "detail": "X-Japan",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 록 곡이에요.",
+     "context_reason": "비 내리는 밤의 쓸쓸한 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1989
+    },
+    {
+     "name": "비와 당신",
+     "detail": "럼블 피쉬",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 록 곡이에요.",
+     "context_reason": "호소력 짙은 목소리가 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004
+    },
+    {
+     "name": "Rain",
+     "detail": "태연",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 팝 곡이에요.",
+     "context_reason": "잔잔한 재즈 선율이 빗소리에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 밤 분위기에 잘 맞음"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 어울리는 감성곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적인 록 발라드로 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 듣기 좋은 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 밤에 어울리는 재즈풍 곡"
+    }
+   ]
+  },
+  "MS6t": {
+   "wanted": 5,
+   "ms": 2461.0098000002836,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Love Yourself",
+     "detail": "Justin Bieber",
+     "taste_reason": "새로운 취향으로 가벼운 기타 선율이 돋보여요.",
+     "context_reason": "차분한 어쿠스틱 기타 사운드가 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2015
+    },
+    {
+     "name": "Sunday Morning",
+     "detail": "Maroon 5",
+     "taste_reason": "새로운 취향으로 부드러운 음색이 매력적이에요.",
+     "context_reason": "감미로운 건반과 기타 연주가 산책에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2002
+    },
+    {
+     "name": "I'm Yours",
+     "detail": "Jason Mraz",
+     "taste_reason": "새로운 취향으로 밝고 친근한 분위기예요.",
+     "context_reason": "청량한 통기타 리듬이 산책에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2008
+    },
+    {
+     "name": "풍경",
+     "detail": "디에이드",
+     "taste_reason": "새로운 취향으로 따뜻한 감성을 전해줘요.",
+     "context_reason": "섬세한 어쿠스틱 편곡이 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016
+    },
+    {
+     "name": "너를 만나",
+     "detail": "폴킴",
+     "taste_reason": "새로운 취향으로 깊이 있는 목소리를 들려줘요.",
+     "context_reason": "서정적인 피아노와 기타가 차분함에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 기타 기반 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 감성의 pop곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 어쿠스틱 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 듀오의 감성곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "감성적인 어쿠스틱 발라드"
+    }
+   ]
+  },
+  "MT2at": {
+   "wanted": 5,
+   "ms": 2866.70310000045,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "혜화동 (또는 연적)",
+     "detail": "동물원",
+     "taste_reason": "어쿠스틱한 감성이 평소 좋아하는 스타일과 가까워요",
+     "context_reason": "복잡한 출근길 마음을 차분하게 정리해줘요",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988
+    },
+    {
+     "name": "기다림",
+     "detail": "이루마",
+     "taste_reason": "잔잔한 피아노 선율이 선호하는 결에 가까워요",
+     "context_reason": "바쁜 발걸음을 차분하게 가라앉히기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001
+    },
+    {
+     "name": "너의 의미",
+     "detail": "아이유",
+     "taste_reason": "따뜻한 보컬의 정서가 취향과 잘 맞아요",
+     "context_reason": "지하철 안에서 편안하게 듣기 좋은 곡이에요",
+     "confidence": "high",
+     "tags": [
+      "차분함",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014
+    },
+    {
+     "name": "Gymnopédie No. 1",
+     "detail": "Erik Satie",
+     "taste_reason": "클래식 피아노 연주곡 취향과 자연스럽게 이뤄져요",
+     "context_reason": "이른 아침 창밖 풍경을 보며 듣기 알맞아요",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null
+    },
+    {
+     "name": "제비꽃",
+     "detail": "조동진",
+     "taste_reason": "서정적인 노랫말이 취향에 가까워요",
+     "context_reason": "서늘한 아침 공기와 나지막한 목소리가 잘 어울려요",
+     "confidence": "high",
+     "tags": [
+      "차분함",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1979
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 적합한 서정적인 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "취향과 출근길 분위기에 적합"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 좋은 미디엄 템포"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분하나 출근길엔 다소 조용함"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 어울리는 포크 곡"
+    }
+   ]
+  },
+  "MT2bt": {
+   "wanted": 5,
+   "ms": 3950.7740999997623,
+   "failures": [],
+   "issues": {
+    "extra": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Super Shy",
+     "detail": "NewJeans",
+     "taste_reason": "활기찬 분위기를 좋아하는 취향에 가까워요.",
+     "context_reason": "가벼운 리듬이 활기찬 아침 출근길에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023
+    },
+    {
+     "name": "Butter",
+     "detail": "BTS",
+     "taste_reason": "경쾌한 팝 음악을 즐기는 취향에 가까워요.",
+     "context_reason": "신나는 댄스 팝이라 발걸음을 가볍게 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021
+    },
+    {
+     "name": "Celebrity",
+     "detail": "아이유",
+     "taste_reason": "대중적이고 밝은 보컬 곡을 좋아하는 취향에 가까워요.",
+     "context_reason": "산뜻한 신디사이저 사운드가 아침 출발에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021
+    },
+    {
+     "name": "OMEGA CODE",
+     "detail": "윤하",
+     "taste_reason": "청량한 보컬을 좋아하는 취향에 새로운 곡이에요.",
+     "context_reason": "시원한 록 사운드가 지루한 대중교통 이동에 어울려요.",
+     "confidence": "medium",
+     "tags": [
+      "활기참",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021
+    },
+    {
+     "name": "Ditto",
+     "detail": "NewJeans",
+     "taste_reason": "세련된 팝 감성을 좋아하는 취향에 가까워요.",
+     "context_reason": "포근한 클럽 1시 감성의 비트가 출근길에 잘 맞아요.",
+     "confidence": "high",
+     "tags": [
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 좋은 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 출근길에 어울림"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 출근길에 잘 어울림"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "윤하 곡이나 출근길 특화 부족"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출퇴근길에 듣기 좋음"
+    }
+   ]
+  }
+ }
+}

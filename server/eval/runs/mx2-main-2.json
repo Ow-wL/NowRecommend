@@ -1,0 +1,152 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX2": {
+   "wanted": 5,
+   "ms": 2410.5349000001297,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Sing, Sing, Sing",
+     "detail": "Benny Goodman",
+     "taste_reason": "재즈 스타일에 가까워요",
+     "context_reason": "신나는 스윙 리듬이 활기찬 분위기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1937
+    },
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "재즈 연주에 가까워요",
+     "context_reason": "독특한 리듬감이 경쾌한 순간에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "The Pink Panther Theme",
+     "detail": "Henry Mancini",
+     "taste_reason": "재즈 편곡에 가까워요",
+     "context_reason": "브라스 연주가 생동감을 더해줘요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1963
+    },
+    {
+     "name": "Brazil",
+     "detail": "Django Reinhardt",
+     "taste_reason": "기타 연주곡에 가까워요",
+     "context_reason": "빠른 기타 선율이 신나는 분위기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1947
+    },
+    {
+     "name": "Flight of the Bumblebee",
+     "detail": "Nikolai Rimsky-Korsakov",
+     "taste_reason": "클래식 연주에 가까워요",
+     "context_reason": "빠른 템포의 관현악 연주가 활력을 줘요",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1900
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 재즈 곡"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬은 없으나 신나기보단 차분함"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없으나 쾌활하기보단 익살스러움"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 삼바 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 빠르고 활기찬 클래식"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,160 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-10",
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MX2": {
+   "wanted": 5,
+   "ms": 2956.5612000005785,
+   "failures": [],
+   "issues": {
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "재즈 장르의 곡이에요.",
+     "context_reason": "활기찬 리듬감과 빠른 템포가 운동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959
+    },
+    {
+     "name": "Fly Me to the Moon",
+     "detail": "The Countdown Singers",
+     "taste_reason": "재즈 장르의 곡이에요.",
+     "context_reason": "경쾌한 브라스 연주가 활기찬 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1999
+    },
+    {
+     "name": "Spain",
+     "detail": "Chick Corea",
+     "taste_reason": "재즈 장르의 곡이에요.",
+     "context_reason": "빠른 피아노 선율이 활기찬 기분을 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1972
+    },
+    {
+     "name": "Cantaloupe Island",
+     "detail": "Herbie Hancock",
+     "taste_reason": "재즈 장르의 곡이에요.",
+     "context_reason": "그루브한 연주가 산책할 때 흥을 돋워줘요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1964
+    },
+    {
+     "name": "Sing, Sing, Sing",
+     "detail": "Benny Goodman",
+     "taste_reason": "재즈 장르의 곡이에요.",
+     "context_reason": "드럼 연주가 돋보여 활기찬 에너지를 채워줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1937
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "재즈 연주곡이나 신나는 느낌은 적음"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬이 포함된 곡임"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 재즈 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 리드미컬하고 신나는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 웅장하고 신나는 연주곡"
+    }
+   ]
+  }
+ }
+}
