@@ -11,6 +11,8 @@ from app.models import EMBEDDING_DIM
 
 # The retrieval pipeline is tested through food requests; tests of the AI engine ask for it explicitly.
 os.environ["FOOD_ENGINE"] = "catalog"
+# Tests never ask Apple's store; a test of the check passes its own fake (tests/test_song_store.py).
+os.environ["SONG_STORE_CHECK"] = "false"
 from app.config import get_settings  # noqa: E402 (after the environment above)
 
 DB_TESTS = os.environ.get("NOWREC_DB_TESTS") == "1"

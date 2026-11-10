@@ -195,6 +195,17 @@ def test_store_lookup_finds_by_either_door_and_tells_a_failure_from_a_miss():
     assert store_lookup("밤편지", "아이유", broken)["status"] == "failed"
 
 
+def test_store_lookup_reads_korean_titles_back_by_id():
+    # The US store names "너의 의미" "Meaning of You"; the Korean store gives the Korean names of the same tracks (2026-11-10).
+    def store(path, params):
+        if path == "search":
+            return [{"trackId": 7, "trackName": "Meaning of You", "artistName": "Sanullim"}] if params["country"] == "US" else []
+        return [{"trackId": 7, "trackName": "너의 의미", "artistName": "Sanullim", "releaseDate": "1984-01-01T00:00:00Z"}] if params["country"] == "KR" and params["id"] == "7" else []
+    assert store_lookup("너의 의미", "Sanullim", store) == {"status": "found", "year": 1984}
+    assert store_lookup("너의 의미", "산울림", store)["status"] == "missing"  # neither store calls the artist that
+    assert store_lookup("다른 의미", "Sanullim", store)["status"] == "missing"
+
+
 def test_songs_are_asked_once_and_failures_are_asked_again(tmp_path):
     song = {"name": "밤편지", "detail": "아이유"}
     run = {"meta": {}, "cases": {"MS1": {**record([]), "picks": [dict(song), {"name": "X", "detail": "Y"}]}, "MS3": {**record([]), "picks": [dict(song)]}}}
@@ -208,6 +219,8 @@ def test_songs_are_asked_once_and_failures_are_asked_again(tmp_path):
     check_songs(DATA, run, tmp_path / "r.json", pace=0, lookup=lookup, log=lambda _: None)
     assert asked == ["밤편지", "X", "X"]
     assert song_store(DATA, run)["found"] == pytest.approx(2 / 3)
+    check_songs(DATA, run, tmp_path / "r.json", pace=0, lookup=lookup, log=lambda _: None, again=True)  # a better lookup asks the misses again
+    assert asked == ["밤편지", "X", "X", "X"]
 
 
 def test_summary_separates_what_was_not_measured_from_zero():

@@ -22,6 +22,7 @@ from .catalog import REVIEWED_FILE, load_seed
 from .dish_facts import dish_table, table_hits
 from .llm.client import JsonModel
 from .schemas import RecommendRequest
+from .song_store import SongStore
 from .vocab import get_vocab
 
 CASES_FILE = Path(__file__).resolve().parents[1] / "eval" / "ai_cases.json"
@@ -52,7 +53,7 @@ def reviewed_dishes() -> dict[str, set[str]]:
 
 
 def answer_ai(data: dict, case: dict, model: JsonModel, labels: dict[str, str], dishes: dict[str, set[str]], retries: int = 2, wait: float = 20.0,
-              sleep: Callable[[float], None] = time.sleep) -> dict:
+              sleep: Callable[[float], None] = time.sleep, store: SongStore | None = None) -> dict:
     """One case through the production prompt and checks. Empty and failed answers count in `failures` (production would fall back
     to the catalog there) and are retried, so a passing overload does not leave a case with nothing to grade."""
     request, failures = request_for(data, case), []
@@ -61,7 +62,7 @@ def answer_ai(data: dict, case: dict, model: JsonModel, labels: dict[str, str], 
     for attempt in range(retries + 1):
         started = time.perf_counter()
         try:
-            validation = ask_picks(request, model, liked, [], [labels[i] for i in request.seenIds], request.result_count, dishes if case["category"] == "food" else None)
+            validation = ask_picks(request, model, liked, [], [labels[i] for i in request.seenIds], request.result_count, dishes if case["category"] == "food" else None, store)
             ms = (time.perf_counter() - started) * 1000
             if validation.picks:
                 return {"wanted": request.result_count, "ms": ms, "failures": failures, "issues": dict(validation.issues), "dropped": validation.dropped_by_name, "picks": [asdict(p) for p in validation.picks]}
@@ -198,14 +199,22 @@ def _store_get(path: str, params: dict) -> list[dict]:
 
 
 def store_lookup(title: str, artist: str, get: Callable[[str, dict], list[dict]] = _store_get) -> dict:
-    """The same two doors as src/songCheck.ts, in short: the US song search, then the Korean store's list for that artist."""
+    """The same two doors as src/songCheck.ts, in short: the US song search, then the Korean store's list for that artist.
+    Between them (2026-11-10), the US hits read back by id in the Korean store: the US store names "너의 의미" "Meaning of You", and the
+    artist's Korean list stops at 200 songs, so both doors missed songs that are listed. A run checked before that keeps its answers
+    unless `songs --again` asks for the missing ones once more."""
     from .cli.media import artist_matches, title_matches
 
     def pick(hits: list[dict], check_artist: bool) -> dict | None:
         return next((h for h in hits if h.get("trackName") and title_matches(title, h["trackName"]) and (not check_artist or artist_matches(artist, h.get("artistName", "")))), None)
 
     try:
-        hit = pick(get("search", {"term": f"{artist} {title}", "country": "US", "entity": "song", "limit": 10}), True)
+        us = get("search", {"term": f"{artist} {title}", "country": "US", "entity": "song", "limit": 10})
+        hit = pick(us, True)
+        if hit is None and (ids := [h["trackId"] for h in us if h.get("trackId")]):
+            same = {h.get("trackId"): h for h in us}
+            hit = next((h for h in get("lookup", {"id": ",".join(map(str, ids)), "country": "KR"})
+                        if pick([h], True) or (pick([h], False) and artist_matches(artist, same.get(h.get("trackId"), {}).get("artistName", "")))), None)
         if hit is None:
             who = get("search", {"term": artist, "country": "KR", "entity": "musicArtist", "limit": 1})
             if who and who[0].get("artistId"):
@@ -220,11 +229,13 @@ def store_lookup(title: str, artist: str, get: Callable[[str, dict], list[dict]]
 
 
 def check_songs(data: dict, run: dict, path: Path, pace: float = 3.5, sleep: Callable[[float], None] = time.sleep, lookup: Callable[[str, str], dict] = store_lookup,
-                log: Callable[[str], None] = print) -> int:
-    """One answer per song; a failed lookup stays unmarked so the next run asks again."""
+                log: Callable[[str], None] = print, again: bool = False) -> int:
+    """One answer per song; a failed lookup stays unmarked so the next run asks again. `again` asks once more for the songs marked missing."""
     known: dict[tuple[str, str], dict] = {}
     for record in run["cases"].values():
         for pick in record["picks"]:
+            if again and pick.get("store", {}).get("status") == "missing":
+                pick["store"] = {"status": "failed", "before": "missing"}
             if pick.get("store", {}).get("status") in ("found", "missing"):
                 known[(pick["name"], pick["detail"])] = pick["store"]
     asked = 0

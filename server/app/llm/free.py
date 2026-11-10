@@ -7,7 +7,7 @@ cleaned (empty fields, duplicates, avoided or disliked items, reason length, unk
 import html
 import re
 from collections import Counter
-from collections.abc import Collection, Mapping
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass, field
 
 from ..dish_facts import name_attributes
@@ -122,6 +122,7 @@ class FreePick:
     base_dish: str = ""
     broad: bool = False
     release_year: int | None = None
+    listed: str | None = None  # music: what Apple's store said (song_store.py), None when not asked
 
     @property
     def label(self) -> str:
@@ -148,14 +149,15 @@ def clean_name(value: object) -> str | None:
 
 def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[str] | None = None, detail_required: bool = True,
                   excluded_values: list[str] | None = None, years: tuple[int | None, int | None] | None = None,
-                  dishes: Mapping[str, Collection[str]] | None = None) -> FreeValidation:
+                  dishes: Mapping[str, Collection[str]] | None = None, rank: Callable[[list[FreePick]], list[FreePick]] | None = None) -> FreeValidation:
     """`blocked` are 'name - detail' labels (or bare names) that must not come back: avoided, disliked and liked items.
     A bare name in `blocked` blocks that name whatever its detail (so "Hype Boy" blocks it by any artist).
     Food picks may come without a detail (`detail_required=False`); music needs the artist.
     `excluded_values` (the vocabulary's blocked values): a pick listing one as an ingredient or tag is dropped, and with any exclusion
     in play so is one the model itself doubts. The model's list bends to the request (a margherita listing no dairy when dairy is excluded,
     2026-11-10), so the name is checked apart from it: against the table of plain facts, and against `dishes`, the reviewed tags and ingredients
-    of a dish with exactly this name. `years`: a song outside the range, or with no year to check, is dropped."""
+    of a dish with exactly this name. `years`: a song outside the range, or with no year to check, is dropped.
+    `rank` reorders what survived before the cut to `count` (the store check puts listed songs first, so spares replace unlisted ones)."""
     issues: Counter = Counter()
     dropped_by_name: list[str] = []
     known_dishes = {pick_key(n): set(v) for n, v in (dishes or {}).items()}
@@ -208,6 +210,8 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         artists: set[str] = set()
         first = [p for p in picks if not (pick_key(p.detail) in artists or artists.add(pick_key(p.detail)))]
         picks = [*first, *[p for p in picks if p not in first]]
+    if rank is not None and picks:
+        picks = rank(picks)
     if len(picks) > count:
         issues["extra"] += len(picks) - count
         picks = picks[:count]

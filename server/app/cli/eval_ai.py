@@ -2,7 +2,7 @@
 
   python -m app.cli.eval_ai run NAME [--engine ai|catalog] [--limit N] [--only food|exclusion|FS] [--pace 6]
   python -m app.cli.eval_ai judge NAME [--judge-model gemini-3.6-flash] [--limit N] [--pace 13]
-  python -m app.cli.eval_ai songs NAME
+  python -m app.cli.eval_ai songs NAME [--again]
   python -m app.cli.eval_ai report NAME [NAME ...] [--out eval/ai_report.md]
   python -m app.cli.eval_ai check NAME --against BASELINE    (exit 1 when something got worse than run-to-run noise)
   python -m app.cli.eval_ai review NAME [NAME ...] [--redraw]   (human review page: eval/review/review.html)
@@ -26,6 +26,7 @@ from ..evaluation_ai import (REVIEW_DIR, RUNS_DIR, answer_ai, answer_catalog, bu
                              load_ai_cases, load_human, load_run, regressions, render_agreement, render_report, review_page_data, reviewed_dishes, run_cases, save_run)
 from ..llm.client import GeminiJsonModel
 from ..llm.provider import shared_model
+from ..song_store import song_store
 
 DEFAULT_JUDGE = "gemini-3.6-flash"
 
@@ -55,6 +56,7 @@ def main() -> None:
     parser.add_argument("--against", help="baseline run for check")
     parser.add_argument("--redraw", action="store_true", help="review: draw a new sample even if one exists")
     parser.add_argument("--human", default=str(REVIEW_DIR / "human.json"), help="human verdicts saved by the review page")
+    parser.add_argument("--again", action="store_true", help="songs: ask once more for the songs marked missing")
     args = parser.parse_args()
 
     sys.stdout.reconfigure(encoding="utf-8")
@@ -69,7 +71,9 @@ def main() -> None:
                 raise SystemExit("GEMINI_API_KEY is not set")
             run = load_run(path, {"engine": "ai", "model": model.model, "date": date.today().isoformat()})
             labels, dishes = item_labels(), reviewed_dishes()
-            run_cases(data, run, path, lambda case: answer_ai(data, case, model, labels, dishes), args.limit, args.only, pace)
+            store = song_store()  # as production: SONG_STORE_CHECK=false measures the model alone
+            run["meta"].setdefault("songStore", store is not None)
+            run_cases(data, run, path, lambda case: answer_ai(data, case, model, labels, dishes, store=store), args.limit, args.only, pace)
         else:
             from ..db import get_sessionmaker
             from ..routes.recommend import get_query_embedder
@@ -86,7 +90,7 @@ def main() -> None:
         print(f"judged {done}, failed {failed}")
     elif args.step == "songs":
         run = load_run(path)
-        print(f"asked {check_songs(data, run, path, 3.5 if args.pace is None else args.pace)} songs")
+        print(f"asked {check_songs(data, run, path, 3.5 if args.pace is None else args.pace, again=args.again)} songs")
     elif args.step == "review":
         sample_path = REVIEW_DIR / "sample.json"
         if sample_path.exists() and not args.redraw:

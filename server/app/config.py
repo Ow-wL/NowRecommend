@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     music_engine: str = "ai"
     # The same choice for food (2026-11-03): the model names detail menus; exclusions are checked against the ingredients it lists.
     food_engine: str = "ai"
+    # The AI engine asks Apple's store whether its songs are listed and shows the listed ones first (song_store.py, 2026-11-10).
+    # The store allows about 20 requests a minute per address; past the budget or the deadline the songs keep the model's order.
+    song_store_check: bool = True
+    song_store_per_minute: int = Field(18, ge=0)
+    song_store_deadline_ms: int = Field(1500, ge=100)
     parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)

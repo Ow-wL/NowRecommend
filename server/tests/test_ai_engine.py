@@ -203,3 +203,18 @@ def test_one_song_per_artist_while_there_are_spare_picks(catalog):
     with client_for(catalog, model) as client:
         answer = client.post("/api/recommend", json={"category": "music", "count": 2}).json()
     assert [r["item"]["name"] for r in answer["results"]] == ["첫 곡", "다른 곡"]
+
+
+def test_songs_the_store_lists_go_first_and_unlisted_ones_are_counted(catalog, monkeypatch):
+    from app import ai_engine
+    from app.song_store import SongStore
+
+    listed = {"Spring Day": "BTS", "다른 곡": "다른 가수"}
+    def store(path, params, timeout):  # the US search answers with the listed songs only; nothing needs the Korean names
+        return [{"trackId": 1, "trackName": t, "artistName": a} for t, a in listed.items() if params.get("term") == f"{a} {t}"]
+    monkeypatch.setattr(ai_engine, "song_store", lambda: SongStore(store))
+    model = FakeModel({"picks": [pick("없는 곡", "아무개"), pick("Spring Day", "BTS"), pick("다른 곡", "다른 가수")]})
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "music", "count": 3}).json()
+    assert [r["item"]["name"] for r in answer["results"]] == ["Spring Day", "다른 곡", "없는 곡"]  # short of spares, the unlisted one still fills
+    assert "store_missing=1" in answer["meta"]["issues"]
