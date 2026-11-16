@@ -100,8 +100,19 @@ curl http://127.0.0.1:8010/api/catalog?category=food
 | `GET /api/me/store` | 계정에 저장된 브라우저 저장소(`Store` 전체 JSON)와 버전(`version`) |
 | `PUT /api/me/store` `{store, baseVersion}` | 저장하고 새 버전을 돌려줍니다. 다른 기기가 `baseVersion` 뒤에 먼저 저장했으면 409. 1MB(`STORE_MAX_BYTES`) 초과는 413, 분당 60회(`STORE_WRITES_PER_MINUTE`) 초과는 429 |
 | `POST /api/auth/delete` `{password}` | 계정과 저장 데이터를 삭제(204) |
+| `POST /api/auth/password` `{currentPassword, newPassword}` | 비밀번호를 바꾸고 새 토큰을 돌려줍니다. 다른 기기의 토큰은 모두 끝납니다 |
+| `POST /api/auth/logout-all` | 이 계정의 모든 토큰을 끝냅니다(204). 이 기기 포함 |
+| `POST /api/auth/reset/request` `{email}` | 가입된 주소면 재설정 링크를 메일로 보냅니다. 가입 여부와 무관하게 같은 202 응답 |
+| `POST /api/auth/reset/confirm` `{token, password}` | 메일의 링크로 새 비밀번호를 정하고 로그인합니다. 링크는 한 번만, 30분 동안 |
 
 - 비밀번호는 PBKDF2-HMAC-SHA256(사용자별 솔트)으로 저장하고, 토큰은 `AUTH_SECRET`으로 서명한 30일(`AUTH_TOKEN_DAYS`) 만료 토큰입니다. 세션 표가 없어서 비밀 값을 바꾸면 모두 로그아웃됩니다.
+- **계정 하나만 로그아웃시킬 수 있습니다(2026-11-17).** 토큰에 계정의 `token_version`(마이그레이션 `0009`)을 넣고, 요청마다 계정의 현재 값과 같은지 확인합니다. 비밀번호 변경·재설정·"모든 기기에서 로그아웃"이 이 값을 올려 이전 토큰을 모두 끝냅니다. 이 변경 전에 발급된 토큰은 0으로 읽어 그대로 유효합니다.
+- **비밀번호 재설정 링크**는 `<PUBLIC_APP_URL>#/reset/<토큰>`입니다. 토큰은 서명된 값으로, 발급 당시 비밀번호 해시의 지문을 담습니다. 비밀번호가 바뀌면 지문이 달라지므로 링크는 한 번만 쓸 수 있고, 표를 따로 두지 않습니다. 세션 토큰과 재설정 토큰은 서로 대신 쓸 수 없습니다. 프론트는 링크의 토큰을 한 번 읽은 뒤 주소를 `#/login`으로 바꿉니다.
+- **메일 발송**은 표준 라이브러리의 SMTP입니다(`server/app/mail.py`). `SMTP_HOST`·`SMTP_PORT`·`SMTP_USER`·`SMTP_PASSWORD`·`MAIL_FROM` 다섯 값으로 어떤 메일 서비스든 붙습니다. 465번은 처음부터 TLS, 그 밖의 포트는 STARTTLS가 되지 않으면 보내지 않습니다. `SMTP_HOST`나 `MAIL_FROM`이 비어 있으면 재설정 요청은 503으로 답하고 화면은 "지금은 메일로 비밀번호를 다시 정할 수 없어요"라고 알립니다. `/api/health`의 `mail.configured`로 확인합니다.
+- 재설정 메일은 한 계정에 하루 3통(`RESET_DAILY_PER_EMAIL`), 한 주소에서 하루 10번(`RESET_DAILY_PER_ADDRESS`)까지입니다. 계정별 한도를 넘어도 응답은 같고 메일만 나가지 않습니다.
+- 비밀번호를 확인하거나 메일을 보내는 경로(`/api/auth/password`·`delete`·`logout-all`·`reset/*`)도 분당 요청 제한을 받습니다.
+- 한계: 가입 시 이메일 인증은 아직 없습니다. 메일 발송은 요청 안에서 동기로 하므로, 가입된 주소와 아닌 주소의 응답 시간이 다를 수 있습니다(가입 폼의 409가 이미 가입 여부를 알려주는 것과 같은 수준의 노출).
+- 테스트: `server/tests/test_account_recovery.py`(토큰 종류와 버전, 변경·재설정·전체 로그아웃, 링크 1회·만료, 한도, SMTP 순서), `tests/api/auth.spec.ts`(비밀번호 찾기, 메일 링크, 만료된 링크, 비밀번호 변경, 모든 기기 로그아웃).
 - 가입·로그인 경로도 기존 요청 제한(IP당 분당 30회)을 받습니다. `/api/health`의 `auth.enabled`로 설정 여부를 확인할 수 있습니다.
 - 서버는 `store` 내용을 해석하지 않고 크기와 버전만 확인합니다. 어떤 데이터가 들어가는지는 프론트의 `Store` 타입(`src/domain.ts`)이 정합니다.
 - 저장 버전(`users.store_version`, 마이그레이션 `0007`)은 저장할 때마다 1씩 오릅니다. 조건부 저장은 `UPDATE … WHERE store_version = baseVersion` 한 문장이라, 동시에 온 두 저장이 둘 다 성공하지 않습니다. `baseVersion` 없이 보내는 옛 프론트는 전처럼 무조건 저장되고 버전만 오릅니다.
