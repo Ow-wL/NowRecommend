@@ -14,7 +14,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
-from ..budget import signup_allowed
+from ..budget import Allowance, signup_day
 from ..config import get_settings
 from ..db import get_session
 from ..models import User
@@ -117,8 +117,8 @@ def _session_answer(signer: TokenSigner, user: User) -> dict:
 
 @router.post("/api/auth/signup", status_code=201)
 def signup(request: SignupRequest, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
-           allowed: bool = Depends(signup_allowed)):
-    if not allowed:  # an account raises the daily AI allowance, so accounts cannot be made without end from one place
+           day: Allowance = Depends(signup_day)):
+    if not day.left():  # an account raises the daily AI allowance, so accounts cannot be made without end from one place
         raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
     if session.scalar(select(User).where(User.email == request.email)) is not None:
         raise HTTPException(409, "이미 가입된 이메일이에요. 로그인해주세요.")
@@ -127,6 +127,7 @@ def signup(request: SignupRequest, session: Session = Depends(get_session), sign
     session.add(user)
     session.commit()
     session.refresh(user)
+    day.take()
     return _session_answer(signer, user)
 
 

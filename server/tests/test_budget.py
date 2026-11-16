@@ -14,7 +14,8 @@ from app.catalog import load_seed, seed_items
 from app.config import Settings, get_settings
 from app.db import get_session
 from app.llm.client import CooldownModel
-from app.llm.provider import BudgetedModel, BudgetSpent
+from app.budget import AllowanceSpent, BudgetedEmbedder, BudgetSpent, Gate
+from app.llm.provider import BudgetedModel
 from app.main import create_app
 from app.models import UsageDaily, User
 from app.parsing.service import ParseService
@@ -171,6 +172,7 @@ def test_past_the_daily_allowance_the_catalog_answers_and_the_answer_says_why(ap
     assert spent.status_code == 200 and spent.json()["results"]  # still an answer, from the reviewed catalog
     assert spent.json()["meta"]["engine"] == "catalog" and spent.json()["meta"]["limit"] == "guest"
     assert model.calls == 2  # the model was not asked a third time
+    assert "query_embedding:AllowanceSpent" in str(spent.json()["meta"]) or spent.json()["meta"].get("contextSimilarity") is False  # nor was the paid embedding
 
     # An account has its own, larger day, whatever the guests at the same address used.
     token = client.post("/api/auth/signup", json={"email": "lee@example.com", "password": "password1", "name": "주형"}).json()["token"]
@@ -191,8 +193,9 @@ def test_a_spent_service_budget_reads_as_a_limit_not_as_a_broken_model(api):
 def test_parse_counts_only_sentences_the_model_read(api, db_session):
     client, _, app = api
     reader = Recording({"tags": [], "excluded": [], "unparsed": []})
+    service = ParseService()
     app.dependency_overrides[get_parse_model] = lambda: reader
-    app.dependency_overrides[get_parse_service] = ParseService
+    app.dependency_overrides[get_parse_service] = lambda: service
     bucket = db_session.scalars(select(UsageDaily.bucket)).all()
     assert bucket == []
     # Settled by the rules: the model is not asked and nothing is counted.
@@ -203,4 +206,76 @@ def test_parse_counts_only_sentences_the_model_read(api, db_session):
         client.post("/api/parse", json={"category": "music", "text": words})
     assert reader.calls == 2 and db_session.scalars(select(UsageDaily.count)).all() == [2]
     after = client.post("/api/parse", json={"category": "music", "text": "포근포근한 감성의 노래"}).json()
-    assert reader.calls == 2 and after["ai"] == "unavailable"
+    assert reader.calls == 2 and after["ai"] == "failed"
+    # That refusal is this caller's alone: it is not kept, so a member sending the same sentence still gets the model.
+    token = client.post("/api/auth/signup", json={"email": "lee@example.com", "password": "password1", "name": "주형"}).json()["token"]
+    member = client.post("/api/parse", json={"category": "music", "text": "포근포근한 감성의 노래"}, headers={"Authorization": f"Bearer {token}"}).json()
+    assert reader.calls == 3 and member["ai"] == "used"
+    # And a sentence already answered costs nobody anything: the guest gets it from the cache.
+    assert client.post("/api/parse", json={"category": "music", "text": "포근포근한 감성의 노래"}).json()["ai"] == "used" and reader.calls == 3
+
+
+@needs_db
+def test_an_answer_that_needs_no_model_costs_the_caller_nothing(api, db_session):
+    client, model, _ = api
+    pinned = db_session.scalars(text("SELECT id FROM items WHERE category = 'music' AND status = 'reviewed' ORDER BY id LIMIT 5")).all()
+    for _ in range(4):  # more than the guest allowance of 2: every card is pinned, so the model is never asked
+        meta = client.post("/api/recommend", json={**MUSIC, "pinnedIds": pinned}).json()["meta"]
+        assert "limit" not in meta
+    assert model.calls == 0 and db_session.scalars(select(UsageDaily.count)).all() == []
+
+
+@needs_db
+def test_past_the_allowance_the_paid_embedding_is_not_called_either(api):
+    client, _, app = api
+    embedded = []
+    app.dependency_overrides[get_query_embedder] = lambda: (lambda words: embedded.append(words) or FakeEmbedder().embed([words])[0])
+    food = {"category": "food", "raw": "비 오는 날 따뜻한 국물", "conditions": {"tags": [], "excluded": []}, "engine": "catalog"}
+    app.dependency_overrides[get_rerank_model] = lambda: Recording({"picks": []})
+    for _ in range(2):
+        client.post("/api/recommend", json=food)
+    assert len(embedded) == 2
+    meta = client.post("/api/recommend", json={**food, "raw": "다른 문장으로 따뜻한 국물"}).json()["meta"]
+    assert len(embedded) == 2 and meta["limit"] == "guest" and meta["contextSimilarity"] is False
+
+
+def test_the_gate_charges_once_per_request_and_names_the_limit(counters):
+    allowance = budget.Allowance(counters, "ai:g:test", 1, False)
+    gate, inner = Gate(allowance), Recording()
+    first, second = gate.model(inner), gate.model(Recording())
+    first.generate_json("s", {}, {}); second.generate_json("s", {}, {}); first.generate_json("s", {}, {})
+    assert budget.used(counters, "ai:g:test") == 1 and gate.limit() is None  # three calls of one request: one charge
+    spent = Gate(allowance)
+    assert spent.embedder(lambda words: [0.0])  # there is an embedder, but nothing is left to spend on it
+    with pytest.raises(AllowanceSpent):
+        spent.embedder(lambda words: [0.0])("문장")
+    with pytest.raises(AllowanceSpent):
+        spent.model(inner).generate_json("s", {}, {})
+    assert inner.calls == 2 and spent.limit() == "guest"
+    assert Gate(budget.Allowance(counters, "ai:u:1", 0, True)).model(None) is None
+    # The service's own budget, met inside a call, is told apart from the caller's.
+    service = Gate(budget.Allowance(counters, "ai:u:2", 5, True))
+    with pytest.raises(BudgetSpent):
+        service.model(BudgetedModel(Recording(), lambda: False)).generate_json("s", {}, {})
+    assert service.limit() == "service"
+    with pytest.raises(BudgetSpent):
+        BudgetedEmbedder(None, lambda: False).embed(["문장"])
+
+
+@needs_db
+def test_on_postgresql_takes_arriving_together_stop_exactly_at_the_limit(test_database_url):
+    from concurrent.futures import ThreadPoolExecutor
+
+    engine = create_engine(test_database_url)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE usage_daily"))
+    make = sessionmaker(engine)
+
+    def one(_):
+        with make() as session:
+            return budget.take(session, "ai:total", 5, DAY)
+
+    with ThreadPoolExecutor(12) as pool:
+        counts = list(pool.map(one, range(12)))
+    assert sorted(c for c in counts if c is not None) == [1, 2, 3, 4, 5] and counts.count(None) == 7
+    engine.dispose()

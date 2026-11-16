@@ -10,10 +10,15 @@ anyone could keep the paid model busy all day. These counters survive restarts a
 
 A guest is told apart by address, kept only as a keyed hash and deleted after a week. One UPSERT both checks and counts,
 so two requests cannot both take the last one.
+
+A caller is charged where the money is spent: `Gate` wraps the models of one request and counts the caller's day at the
+first call that really reaches a model, so an answer from the cache, the rules or pinned items costs them nothing, and
+the query embedding (a paid call too) is skipped once nothing is left.
 """
 import hashlib
 import logging
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
@@ -37,6 +42,14 @@ _TAKE = text(
     "ON CONFLICT (day, bucket) DO UPDATE SET count = usage_daily.count + 1 WHERE usage_daily.count < :limit "
     "RETURNING count"
 )
+
+
+class BudgetSpent(RuntimeError):
+    """The service's model calls for today are used up. Callers treat it like any model failure."""
+
+
+class AllowanceSpent(RuntimeError):
+    """This caller's requests for today are used up. Callers treat it like any model failure."""
 
 
 def today() -> date:
@@ -99,6 +112,78 @@ class Allowance:
         return take(self.session, self.bucket, self.limit) is not None
 
 
+class Gate:
+    """One request's way to the paid models. The caller's day is charged once, at the first generation call that is
+    really made; the embedding only asks whether anything is left."""
+
+    def __init__(self, allowance: Allowance | None):
+        self.allowance, self._admitted, self._open, self.service_spent = allowance, None, None, False
+
+    def open(self) -> bool:
+        if self._admitted is not None:
+            return self._admitted
+        if self._open is None:
+            self._open = self.allowance is None or self.allowance.left()
+        return self._open
+
+    def admit(self) -> bool:
+        if self._admitted is None:
+            self._admitted = self.allowance is None or self.allowance.take()
+        return self._admitted
+
+    def model(self, inner):
+        return GatedModel(inner, self) if inner is not None else None
+
+    def embedder(self, embed: Callable[[str], list[float]] | None):
+        if embed is None:
+            return None
+
+        def gated(words: str) -> list[float]:
+            if not self.open():
+                raise AllowanceSpent("no daily allowance left for the query embedding")
+            try:
+                return embed(words)
+            except BudgetSpent:
+                self.service_spent = True
+                raise
+
+        return gated
+
+    def limit(self) -> str | None:
+        """Why the model was not asked, for the answer's meta: the whole service's day, or this caller's."""
+        if self.service_spent:
+            return "service"
+        if self._admitted is False or self._open is False:
+            return "member" if self.allowance and self.allowance.member else "guest"
+        return None
+
+
+class GatedModel:
+    def __init__(self, inner, gate: Gate):
+        self.inner, self.model, self.gate = inner, inner.model, gate
+
+    def generate_json(self, system: str, payload: dict, schema: dict) -> dict:
+        if not self.gate.admit():
+            raise AllowanceSpent("daily allowance spent")
+        try:
+            return self.inner.generate_json(system, payload, schema)
+        except BudgetSpent:
+            self.gate.service_spent = True
+            raise
+
+
+class BudgetedEmbedder:
+    """The query embedding is a paid call as well: it is counted against the service's day like a generation."""
+
+    def __init__(self, inner, take: Callable[[], bool]):
+        self.inner, self.take = inner, take
+
+    def embed(self, texts):
+        if not self.take():
+            raise BudgetSpent("daily AI budget spent")
+        return self.inner.embed(texts)
+
+
 def allowance_for(request: Request, user_id: uuid.UUID | None, session: Session, settings: Settings) -> Allowance:
     if user_id is not None:
         return Allowance(session, f"ai:u:{user_id}", settings.ai_daily_per_member, True)
@@ -106,7 +191,8 @@ def allowance_for(request: Request, user_id: uuid.UUID | None, session: Session,
     return Allowance(session, f"ai:g:{guest_key(address, settings.auth_secret)}", settings.ai_daily_per_guest, False)
 
 
-def signup_allowed(request: Request, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)) -> bool:
-    """Counts one sign-up attempt from this address; False once today's are used up."""
+def signup_day(request: Request, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)) -> Allowance:
+    """This address's sign-ups for today. The route asks `left()` first and `take()`s only for an account it created, so a
+    mistyped form or an address already registered uses nothing up."""
     address = client_address(request, settings.trust_proxy)
-    return take(session, f"signup:{guest_key(address, settings.auth_secret)}", settings.signup_daily_per_address) is not None
+    return Allowance(session, f"signup:{guest_key(address, settings.auth_secret)}", settings.signup_daily_per_address, False)

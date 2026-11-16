@@ -56,7 +56,8 @@ def public_report(report: Report, item: Item | None) -> dict:
 
 @router.post("/api/reports", status_code=201)
 def create_report(request: ReportRequest, session: Session = Depends(get_session), user_id: uuid.UUID | None = Depends(optional_user_id)):
-    item = session.get(Item, request.itemId)
+    # The item's row is locked until this report is in, so reports of one item arriving together are counted one by one.
+    item = session.get(Item, request.itemId, with_for_update=True)
     if item is None:
         raise HTTPException(404, "신고할 항목을 찾지 못했어요.")
     # The same thing said again adds nothing for the admin, and an item cannot be buried under reports: a repeat of an open

@@ -1,12 +1,9 @@
 from collections.abc import Callable
 from functools import lru_cache
 
+from ..budget import BudgetSpent, take_total
 from ..config import get_settings
 from .client import CooldownModel, GeminiJsonModel, JsonModel
-
-
-class BudgetSpent(RuntimeError):
-    """The service's model calls for today are used up (app/budget.py). Callers treat it like any model failure."""
 
 
 class BudgetedModel:
@@ -32,7 +29,6 @@ def model_named(name: str, budgeted: bool = False) -> JsonModel | None:
         return None
     model: JsonModel = GeminiJsonModel(settings.gemini_api_key, name, timeout_ms=settings.rerank_timeout_ms)
     if budgeted:
-        from ..budget import take_total  # here, not at the top: budget imports the database, the CLI's models do not need it
         model = BudgetedModel(model, take_total)
     return CooldownModel(model)
 

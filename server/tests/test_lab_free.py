@@ -189,6 +189,7 @@ def test_long_avoid_labels_fit_the_name_limit():
     assert FreeRequest(avoid=[label]).avoid == [label]
 
 
+@needs_db
 def test_the_lab_is_for_admin_accounts(db_session):
     """Since 2026-11-17: a guest is asked to sign in, a member is refused, an admin gets in (and LAB_PUBLIC opens it)."""
     from sqlalchemy import text

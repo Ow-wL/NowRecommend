@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from ..ai_engine import engine_for, recommend_ai
-from ..budget import allowance_for
+from ..budget import BudgetedEmbedder, Gate, allowance_for, take_total
 from ..config import Settings, get_settings
 from ..db import get_session
 from ..embeddings import GeminiEmbedder, QueryEmbedder
@@ -27,8 +27,9 @@ def get_query_embedder() -> Callable[[str], list[float]] | None:
     if not settings.gemini_api_key:
         return None
     # One attempt with a short timeout: a slow embedding should degrade the ranking, not stall the request.
-    return QueryEmbedder(GeminiEmbedder(settings.gemini_api_key, settings.embedding_model, settings.embedding_dim,
-                                        attempts=1, timeout_ms=5000))
+    # The embedding is a paid call too: a sentence not in the cache is counted against the service's day (budget.py).
+    return QueryEmbedder(BudgetedEmbedder(GeminiEmbedder(settings.gemini_api_key, settings.embedding_model, settings.embedding_dim,
+                                                         attempts=1, timeout_ms=5000), take_total))
 
 
 def get_rerank_model() -> JsonModel | None:
@@ -50,18 +51,16 @@ def recommend_route(request: RecommendRequest, http: Request, session: Session =
                     embed_query=Depends(get_query_embedder), rerank_model=Depends(get_rerank_model),
                     ai_model=Depends(get_ai_engine_model), config: PipelineConfig = Depends(get_pipeline_config),
                     user_id: uuid.UUID | None = Depends(optional_user_id), settings: Settings = Depends(get_settings)):
-    # A request that would call the model is counted against the caller's day (budget.py). Past the allowance the answer
-    # is the one given when the model is unavailable, and `limit` tells the browser why.
-    limited = (ai_model is not None or rerank_model is not None) and not allowance_for(http, user_id, session, settings).take()
-    if limited:
-        ai_model = rerank_model = None
+    # The models go through this request's gate (budget.py): the caller's day is charged at the first call that really
+    # reaches a model, and past the allowance or the service's budget the pipeline answers as it does when a model
+    # fails. `limit` then tells the browser it was a limit, not a fault.
+    gate = Gate(allowance_for(http, user_id, session, settings))
+    ai_model, rerank_model, embed_query = gate.model(ai_model), gate.model(rerank_model), gate.embedder(embed_query)
     if engine_for(request) == "ai":
         answer = recommend_ai(session, request, ai_model, config, embed_query=embed_query, rerank_model=rerank_model)
     else:
         answer = recommend(session, request, embed_query, config, rerank_model=rerank_model)
         answer["meta"]["engine"] = "catalog"
-    if limited:
-        answer["meta"]["limit"] = "member" if user_id else "guest"
-    elif answer["meta"].get("aiError") == "BudgetSpent":
-        answer["meta"]["limit"] = "service"
+    if limit := gate.limit():
+        answer["meta"]["limit"] = limit
     return answer

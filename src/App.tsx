@@ -480,7 +480,7 @@ export default function App() {
     <main tabIndex={-1} id="main-content" className={`main-content ${page}${page === 'recommend' ? ` step-${step}` : ''}`}>
       {tabWarning && <div className="notice warning" role="status">현재 요청을 탭에 저장하지 못했어요. 새로고침하면 입력과 일시 제외가 사라질 수 있어요.</div>}
       {storageBlocked && <div className="notice warning"><div><strong>저장된 데이터가 손상되어 원본을 보호하고 있어요.</strong><p>현재 변경은 영구 저장하지 않아요. 원본을 내려받아 보관한 뒤 설정에서 초기화할 수 있어요.</p><button className="button secondary" onClick={() => downloadRecovery(loaded.raw || '')}>손상 원본 내려받기</button><button className="text-button" onClick={()=>setDialog('reset')}>초기화 확인</button></div></div>}
-      {storageWarning && !storageBlocked && <div className="notice warning">이번 변경을 브라우저에 저장하지 못했어요. 화면에는 반영되지만 새로고침하면 변경 내용이 사라질 수 있어요. <button className="button secondary" onClick={()=>setStorageWarning(!writeStore(store))}>저장 재시도</button></div>}
+      {storageWarning && !storageBlocked && <div className="notice warning">이번 변경을 브라우저에 저장하지 못했어요. 화면에는 반영되지만 새로고침하면 변경 내용이 사라질 수 있어요. <button className="button secondary" onClick={()=>setStorageWarning(!writeStore(store, sync.agreement()))}>저장 재시도</button></div>}
 
       <div className="page-view" key={viewKey} data-direction={motion.current.direction}>
       {page === 'home' && <>
