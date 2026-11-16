@@ -192,7 +192,7 @@ def allowance_for(request: Request, user_id: uuid.UUID | None, session: Session,
 
 
 def signup_day(request: Request, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)) -> Allowance:
-    """This address's sign-ups for today. The route asks `left()` first and `take()`s only for an account it created, so a
-    mistyped form or an address already registered uses nothing up."""
+    """This address's sign-ups for today. The route `take()`s right before it makes the account, after the form and the
+    address have been checked, so a mistyped form or an address already registered uses nothing up."""
     address = client_address(request, settings.trust_proxy)
     return Allowance(session, f"signup:{guest_key(address, settings.auth_secret)}", settings.signup_daily_per_address, False)

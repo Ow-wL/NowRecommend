@@ -14,6 +14,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import TokenSigner, hash_password, needs_rehash, normalize_email, valid_email, verify_password
@@ -164,17 +165,24 @@ def signup(request: SignupRequest, session: Session = Depends(get_session), sign
         if request.agreeTerms and request.agreePrivacy and request.adult and request.termsVersion:  # agreed, but to documents that are not the current ones
             raise HTTPException(409, "약관이 바뀌었어요. 페이지를 새로 고친 뒤 다시 가입해주세요.")
         raise HTTPException(422, "이용약관과 개인정보 수집·이용에 동의하고, 이용 가능한 나이인지 확인해주세요.")
-    if not day.left():  # an account raises the daily AI allowance, so accounts cannot be made without end from one place
-        raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
+    taken = HTTPException(409, "이미 가입된 이메일이에요. 로그인해주세요.")
     if session.scalar(select(User).where(User.email == request.email)) is not None:
-        raise HTTPException(409, "이미 가입된 이메일이에요. 로그인해주세요.")
+        raise taken
+    # An account raises the daily AI allowance, so accounts cannot be made without end from one place. Counted before the
+    # account is made (one statement that checks and counts), so sign-ups arriving together cannot pass the limit; a
+    # mistyped form or an address already registered was turned away above and uses nothing up.
+    if not day.take():
+        raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
     now = datetime.now(timezone.utc)
     user = User(email=request.email, name=request.name, password_hash=hash_password(request.password), last_login_at=now,
                 terms_version=request.termsVersion if agreed else None, terms_agreed_at=now if agreed else None)
     session.add(user)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:  # the same address signed up a moment earlier
+        session.rollback()
+        raise taken from None
     session.refresh(user)
-    day.take()
     return _session_answer(signer, user)
 
 
@@ -183,20 +191,21 @@ def login(request: Credentials, session: Session = Depends(get_session), signer:
     user = session.scalar(select(User).where(User.email == request.email))
     # One message for both cases, so the form does not reveal which emails have accounts.
     checked = user.password_hash if user is not None else ""
+    refused = HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
     if user is None or not verify_password(request.password, checked):
-        raise HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
-    if needs_rehash(checked):
-        # Made with fewer rounds than are used now: redone while the password is at hand, but only if the stored hash is
-        # still the one just checked. Without that condition a reset finished in between would be overwritten with the
-        # old password's new hash.
-        redone = session.execute(update(User).where(User.id == user.id, User.password_hash == checked).values(password_hash=hash_password(request.password)))
-        if redone.rowcount == 0:
-            session.rollback()
-            raise HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
-    session.execute(update(User).where(User.id == user.id).values(last_login_at=datetime.now(timezone.utc)))
+        raise refused
+    # One UPDATE, and only if the stored hash is still the one just checked: a password changed or reset between the
+    # check and here leaves this login with nothing (it proved the old password), and the token is issued for the
+    # version this UPDATE saw, not for whatever a later read would show. A hash made with fewer rounds than are used now
+    # is redone in the same statement, while the password is at hand.
+    values = {"last_login_at": datetime.now(timezone.utc), **({"password_hash": hash_password(request.password)} if needs_rehash(checked) else {})}
+    version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked).values(**values)
+                              .returning(User.token_version)).scalar()
     session.commit()
+    if version is None:
+        raise refused
     session.refresh(user)
-    return _session_answer(signer, user)
+    return _session_answer(signer, user, version)
 
 
 @router.get("/api/auth/me")

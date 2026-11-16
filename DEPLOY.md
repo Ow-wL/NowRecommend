@@ -443,6 +443,38 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
   - 인스턴스 생성부터 삭제까지 약 20분이 걸렸습니다. 실제 복구라면 2번의 대상을 운영 인스턴스로 하거나, 임시 인스턴스를 그대로 새 운영으로 쓰고 Cloud Run의 Cloud SQL 연결과 `database-url` 비밀 값을 바꿉니다.
   - Git Bash에서 `MSYS_NO_PATHCONV=1`을 켜면 gcloud가 실행되지 않습니다. `/`로 시작하는 인자가 있는 명령에만 붙입니다.
 
+## 4-3. 출시 준비 묶음(1~5단계)의 배포와 도메인 전환 — 계획 (2026-11-17 작성, 아직 실행 전)
+
+브랜치 `launch-polish`가 `main`보다 앞서 있고, DB 마이그레이션 `0007`~`0010`(모두 확장)을 가져옵니다. 사이트 주소는 `https://nowrec.kr`로 바꿉니다(2026-11-17 구매).
+
+순서:
+
+1. **확인**: 배포할 커밋에서 `frontend` 검사와 서버 CI(`gh workflow run server-ci.yml --ref launch-polish`)가 통과했는지 봅니다.
+2. **수동 백업**: `gcloud sql backups create --instance nowrecommend-db --project harness-recommend`. 백업 ID와 성공 상태를 적어 둡니다.
+3. **API 배포**: 이미지를 빌드·푸시하고 아래 환경 변수와 함께 배포합니다. 컨테이너가 시작하면서 `0007`~`0010`을 적용합니다.
+   - `SIGNUP_CONSENT_REQUIRED=false`: Pages가 아직 옛 프론트라 가입 때 동의 필드를 보내지 않습니다. 5번에서 지웁니다.
+   - `CORS_ORIGINS=["https://nowrec.kr","https://www.nowrec.kr","https://ow-wl.github.io"]`, `PUBLIC_APP_URL=https://nowrec.kr/`
+   - 기존 `DATABASE_URL`·`AUTH_SECRET`·`GEMINI_API_KEY`·`TRUST_PROXY=true`·`LOG_RAW_TEXT=false`·`LLM_MODEL`·`SONG_STORE_DEADLINE_MS`는 그대로 이어받습니다.
+   - 확인: `/api/health`가 200이고 `database.revision`이 `0010`, 로그에 마이그레이션 결과, 기존 계정 로그인.
+   - 이 사이 옛 프론트의 상태: 추천·해석·로그인·동기화는 동작합니다(동기화는 전처럼 통째로 저장). AI 실험실은 401로 동작하지 않습니다.
+4. **작업 이미지 갱신**: `nowrecommend-seed`, `nowrecommend-migrate-plan`, `nowrecommend-contract`를 새 이미지로 바꿉니다. 옛 이미지는 DB `0010`을 모릅니다("DB revision unknown"으로 실패).
+5. **사이트 배포와 주소 전환**:
+   - 저장소 변수 `VITE_PUBLIC_URL=https://nowrec.kr/`, Pages의 사용자 도메인을 `nowrec.kr`로 설정합니다(DNS에 A 레코드 4개와 `www` CNAME이 들어가 있어야 합니다).
+   - `launch-polish`를 `main`으로 올립니다. 워크플로가 테스트를 돌리고, 도메인에 맞는 경로(`/`)로 빌드해 배포합니다.
+   - 인증서가 발급되면 HTTPS 강제를 켭니다.
+   - `gcloud run services update nowrecommend-api --remove-env-vars SIGNUP_CONSENT_REQUIRED`로 가입 동의 확인을 되살립니다.
+6. **실제 사이트 확인**: 연령 확인 창, 가입(동의 3개), 두 브라우저 동기화, 추천, 약관·처리방침의 운영자 정보, `https://ow-wl.github.io/NowRecommend/`가 새 주소로 넘어가는지. 기존 계정 두 개는 새로 고친 뒤 동기화를 확인합니다.
+
+문제가 생겼을 때:
+
+- **앞으로 고칩니다(기본)**: 스키마가 정상인 문제(인증, 한도, 화면, 메일)는 `0010`을 유지한 채 수정해서 다시 배포합니다. 스위치로 끌 수 있는 것은 끕니다: `AI_DAILY_LIMIT=0`(한도 끔), `SIGNUP_CONSENT_REQUIRED=false`, `LAB_PUBLIC`, 프론트의 `VITE_WEATHER=off`·`VITE_APPLE_PREVIEWS=off`.
+- **되돌리기는 마지막 수단**이고 순서가 중요합니다. 새 API가 떠 있는 동안 downgrade하면 그 API가 열 누락으로 실패하고, 다시 시작하면 또 upgrade합니다.
+  1. 새 리비전으로 가는 트래픽을 막습니다(서비스에 유지보수 응답을 주는 리비전을 두거나, 잠시 비공개로 돌립니다).
+  2. 새 이미지로 `python -m app.cli.migrate --downgrade 0006`을 실행합니다. `token_version`·동의 기록·한도 기록이 함께 지워집니다.
+  3. `AUTH_SECRET`에 새 버전을 추가하고, **옛 이미지를 새 리비전으로 다시 배포**합니다(트래픽만 옮기면 이미 떠 있는 인스턴스는 옛 비밀 값을 그대로 씁니다). 모든 사용자가 로그아웃됩니다.
+  4. Pages는 되돌리는 커밋을 작업 브랜치에 올려 `frontend` 검사를 통과시킨 뒤 `main`으로 올립니다(강제 푸시는 막혀 있습니다).
+- 데이터가 망가진 경우에만 백업 복원을 씁니다(§4-2의 연습 절차).
+
 ## 5. 로컬 시연
 
 ```powershell

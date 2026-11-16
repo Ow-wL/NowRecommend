@@ -368,3 +368,32 @@ def test_a_browser_error_becomes_one_log_line(world, caplog):
     assert client.post("/api/client-errors", json={**report, "extra": "field"}).status_code == 422
     # A body far larger than any report is refused on its declared length, before it is read.
     assert client.post("/api/client-errors", content=b"x" * 9000, headers={"Content-Type": "application/json"}).status_code == 413
+
+
+def test_a_login_that_proved_the_old_password_gets_no_token_once_the_password_has_changed(world, monkeypatch):
+    """Between "the password is right" and the token, the password is changed elsewhere (and every session ended). The
+    login in flight must not come out with a token that outlives that: it proved a password that no longer exists."""
+    from sqlalchemy import select, update
+
+    from app.routes import auth as routes
+
+    client, _, _, _, _, app = world
+    session = next(app.dependency_overrides[get_session]())
+    user = session.scalars(select(User)).one()
+    real = routes.verify_password
+
+    def changed_right_after_the_check(password, stored):
+        ok = real(password, stored)
+        if ok:
+            other = next(app.dependency_overrides[get_session]())  # another request: a reset finishing
+            other.execute(update(User).where(User.id == user.id).values(password_hash=routes.hash_password("brand-new-pass"), token_version=User.token_version + 1))
+            other.commit()
+        return ok
+
+    monkeypatch.setattr(routes, "verify_password", changed_right_after_the_check)
+    answer = client.post("/api/auth/login", json=SIGNUP)
+    assert answer.status_code == 401 and "token" not in answer.json()
+    monkeypatch.setattr(routes, "verify_password", real)
+    fresh = client.post("/api/auth/login", json={**SIGNUP, "password": "brand-new-pass"})
+    assert fresh.status_code == 200
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {fresh.json()['token']}"}).status_code == 200  # the token carries the version it saw

@@ -137,8 +137,14 @@ def test_signups_from_one_address_stop_for_the_day(counters):
     app.dependency_overrides[get_signer] = lambda: SIGNER
     app.dependency_overrides[get_settings] = lambda: Settings(signup_daily_per_address=2)
     with TestClient(app) as client:
+        # What is turned away before an account is made uses nothing up: a mistyped form, an address already registered.
+        assert client.post("/api/auth/signup", json={"email": "not-an-address", "password": "password1", "name": "이름"}).status_code == 422
+        assert client.post("/api/auth/signup", json={"email": "first@example.com", "password": "password1", "name": "이름"}).status_code == 201
+        for _ in range(3):
+            assert client.post("/api/auth/signup", json={"email": "first@example.com", "password": "password1", "name": "이름"}).status_code == 409
         codes = [client.post("/api/auth/signup", json={"email": f"p{n}@example.com", "password": "password1", "name": "이름"}).status_code for n in range(3)]
-        assert codes == [201, 201, 429]
+        assert codes == [201, 429, 429]  # one of today's two went to first@example.com above
+        assert budget.used(counters, next(iter(counters.scalars(select(UsageDaily.bucket))))) == 2  # neither the repeats nor the refusals were counted
         assert client.post("/api/auth/login", json={"email": "p0@example.com", "password": "password1"}).status_code == 200  # signing in is not sign-up
 
 
