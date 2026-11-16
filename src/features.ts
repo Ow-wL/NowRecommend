@@ -24,3 +24,11 @@ export function previewsOnOf(env: Env = (import.meta.env ?? {}) as Env): boolean
   return text(env.VITE_APPLE_PREVIEWS).toLowerCase() !== 'off';
 }
 export const previewsOn = previewsOnOf();
+
+/** Apple Music's embed player inside the song details (src/fullPlay.ts): Apple's own player in a frame, opened only when
+ * asked for. VITE_APPLE_EMBED=off removes the button; so does VITE_APPLE_PREVIEWS=off, which stands for "no listening
+ * through Apple in the page" as a whole. */
+export function fullPlayOnOf(env: Env = (import.meta.env ?? {}) as Env): boolean {
+  return previewsOnOf(env) && text(env.VITE_APPLE_EMBED).toLowerCase() !== 'off';
+}
+export const fullPlayOn = fullPlayOnOf();

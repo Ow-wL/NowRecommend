@@ -101,3 +101,26 @@ test('a browser a few years old still gets the app, not the error page', async (
   await expect(page.getByRole('button', { name: /추천받기$/ })).toBeVisible();
   expect(failures).toEqual([]);
 });
+
+test('the security policy lets Apple Music\'s player into a frame, and no other page', async ({ page }) => {
+  const blocked: string[] = [], asked: string[] = [];
+  page.on('console', message => { if (/Content Security Policy|Refused to/.test(message.text())) blocked.push(message.text()); });
+  await page.addInitScript(version => { localStorage.setItem('nowrecommend-adult-v1', version);
+    localStorage.setItem('nowrecommend-prototype-v1', JSON.stringify({ version: 2, name: '검증', profiles: { food: { selected: ['f01', 'f02', 'f03', 'f04', 'f05'], tags: [], disliked: [] }, music: { selected: ['m01'], tags: [], disliked: [] } }, favorites: ['m06'], history: [] })); }, legal.version);
+  await page.route('https://itunes.apple.com/**', route => route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: '{"results":[]}' }));
+  await page.route(`${API}/api/**`, route => fulfill(route, { catalogVersion: 'db-test', items }));
+  await page.route('https://embed.music.apple.com/**', route => { asked.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><p>Apple Music player</p>' }); });
+  await page.route('https://frames.example/**', route => { asked.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'text/html', body: '<p>not allowed</p>' }); });
+  await page.goto('/#/favorites');
+  expect(await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')).toContain('frame-src https://embed.music.apple.com;');
+  await page.getByRole('button', { name: 'River Flows in You 상세 보기' }).click();
+  await page.getByRole('button', { name: 'Apple Music 플레이어 열기' }).click();
+  const frame = page.getByRole('dialog').locator('iframe');
+  await expect(frame).toHaveAttribute('src', /^https:\/\/embed\.music\.apple\.com\/[a-z]{2}\/song\/river-flows-in-you\/\d+$/);
+  await expect(frame.contentFrame().getByText('Apple Music player')).toBeVisible();
+  expect(blocked).toEqual([]);
+  // A frame from anywhere else is refused by the policy before any request is made.
+  await page.evaluate(() => { const other = document.createElement('iframe'); other.src = 'https://frames.example/page'; document.body.append(other); });
+  await expect.poll(() => blocked.filter(text => /frames\.example/.test(text)).length).toBeGreaterThan(0);
+  expect(asked.filter(url => /frames\.example/.test(url))).toEqual([]);
+});

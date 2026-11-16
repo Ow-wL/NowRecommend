@@ -712,6 +712,17 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .item-details dt { font-size: 13px; color: var(--text-muted); }
 .item-details dd { font-size: 15px; }
 .listen-links { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Apple Music's player, opened inside a song's details (components/FullPlay.tsx). The frame is Apple's own page: only its box is ours. */
+.full-play { display: grid; gap: 8px; padding: 12px; background: var(--fill-1); border-radius: 16px; }
+.full-play iframe { display: block; width: 100%; max-width: 660px; height: 175px; margin: 0 auto; border: 0; border-radius: 12px; overflow: hidden; background: transparent; }
+.full-play-wait { display: flex; align-items: center; justify-content: center; gap: 8px; height: 175px; font-size: 14px; color: var(--text-muted); }
+.full-play p { margin: 0; }
+.music-apps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.music-apps details { flex: 1 1 100%; }
+.music-apps summary { cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.music-app-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+.music-app-list a { text-decoration: none; }
+.music-apps details p { margin: 0 0 4px; }
 .data-info { font-size: 13px; color: var(--text-muted); }
 .data-info > summary { cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
 .data-info p { font-size: 13px; color: var(--text-muted); }

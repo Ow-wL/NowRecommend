@@ -31,6 +31,7 @@ function site(env: Record<string, string>): Plugin {
         "font-src 'self' data: https://cdn.jsdelivr.net",
         "img-src 'self' data: blob: https:",                          // covers and photos come from several picture hosts
         "media-src blob: https://*.apple.com https://*.mzstatic.com",  // the 30-second previews
+        "frame-src https://embed.music.apple.com",                     // Apple Music's player, opened from a song's details (src/fullPlay.ts)
         `connect-src 'self' ${api} https://itunes.apple.com https://api.open-meteo.com https://customer-api.open-meteo.com`.replace(/\s+/g, ' '),
         "manifest-src 'self'", "worker-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'self'",
       ].join('; ');

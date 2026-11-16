@@ -23,7 +23,8 @@ export type LegalKind = 'terms' | 'privacy';
 /** A paragraph, or a list of points. */
 export type LegalBlock = string | string[];
 export type LegalSection = { title: string; blocks: LegalBlock[] };
-export type LegalInfo = { operator: string; contact: string; weather: boolean; previews: boolean };
+/** `player`: Apple Music's embed player is offered in the song details (src/features.ts fullPlayOn). */
+export type LegalInfo = { operator: string; contact: string; weather: boolean; previews: boolean; player?: boolean };
 export const legalTitle: Record<LegalKind, string> = { terms: '이용약관', privacy: '개인정보 처리방침' };
 
 const who = (info: LegalInfo) => info.operator || '운영자';
@@ -33,7 +34,9 @@ export function termsSections(info: LegalInfo): LegalSection[] {
   return [
     { title: '1. 서비스', blocks: [
       `'지금 추천'(이하 서비스)은 평소 취향과 지금의 상황을 함께 반영해 음식 메뉴와 음악을 추천합니다. ${who(info)}(이하 운영자)가 제공합니다.`,
-      '서비스는 메뉴와 곡을 추천할 뿐, 음식의 주문·배달·결제나 음원의 판매·전곡 재생을 하지 않습니다. 곡의 30초 미리듣기는 Apple이 제공하는 것을 그대로 들려줍니다. 음식점, 지도, 레시피, 음악 서비스로 가는 링크는 각 서비스의 약관을 따릅니다.',
+      info.player
+        ? '서비스는 메뉴와 곡을 추천할 뿐, 음식의 주문·배달·결제나 음원의 판매·전송을 하지 않습니다. 곡의 30초 미리듣기는 Apple이 제공하는 것을 그대로 들려줍니다. 곡 상세에서 여는 Apple Music 플레이어는 Apple이 제공하는 화면이며, 전곡을 들을 수 있는지는 Apple Music 구독과 로그인, 그 곡의 제공 여부에 따릅니다. 음식점, 지도, 레시피, 음악 서비스로 가는 링크와 Apple Music 플레이어는 각 서비스의 약관을 따릅니다.'
+        : '서비스는 메뉴와 곡을 추천할 뿐, 음식의 주문·배달·결제나 음원의 판매·전곡 재생을 하지 않습니다. 곡의 30초 미리듣기는 Apple이 제공하는 것을 그대로 들려줍니다. 음식점, 지도, 레시피, 음악 서비스로 가는 링크는 각 서비스의 약관을 따릅니다.',
     ] },
     { title: '2. 이용 대상과 계정', blocks: [
       `서비스는 만 ${MIN_AGE}세 이상만 이용할 수 있습니다.`,
@@ -79,6 +82,8 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     'Google LLC (Gemini API, 미국 등): 추천과 문장 해석을 위해 입력한 문장, 선택한 조건, 취향으로 등록하거나 싫다고 표시한 메뉴·곡의 이름, 직접 적은 메모, 이번에 이미 본 추천의 이름을 보냅니다. 이메일·이름 같은 계정 정보는 보내지 않지만, 입력란에 적은 내용은 그대로 전달되므로 개인정보를 적지 말아 주세요. 추천이나 문장 해석을 요청할 때 전송되며, 유료 등급 약관에 따라 Google의 모델 학습에는 쓰이지 않습니다.',
     'Google Cloud (대한민국 서울 리전): 서버와 데이터베이스를 운영합니다. 계정 정보와 동기화 데이터가 여기에 저장됩니다.',
     'Apple Inc. (iTunes, 미국 등): 추천된 곡이 실제로 있는지 확인하고 미리듣기·앨범 이미지를 불러오기 위해, 브라우저와 서버가 곡 제목과 가수 이름으로 검색을 요청합니다. 브라우저가 직접 요청할 때 접속 주소(IP)가 전달됩니다.',
+    // What Apple says its embedded player collects (apple.com/legal/privacy/data/ko/apple-music-web, read 2026-11-17).
+    ...(info.player ? ['Apple Inc. (Apple Music 플레이어, 미국 등): 곡 상세에서 "Apple Music 플레이어 열기"를 누른 경우에만 Apple의 플레이어를 화면 안에 불러옵니다. 이때부터 Apple은 플레이어가 놓인 사이트의 주소, 브라우저와 기기 정보, 접속 주소(IP), 재생한 곡 같은 이용 내역을 하루 동안 유지되는 식별자와 함께 수집하고, 플레이어에서 Apple 계정으로 로그인하면 이용 내역이 그 계정과 연결됩니다. Apple은 자체 쿠키와 저장소를 쓰며 이 정보를 최대 2년 보관한다고 밝히고 있습니다(https://www.apple.com/legal/privacy/data/ko/apple-music-web/). 로그인은 Apple의 창에서 이뤄지고, 지금 추천은 Apple 계정의 아이디·비밀번호·로그인 정보나 구독 여부를 받지 않습니다. 지금 추천에서 로그아웃하거나 데이터를 지워도 Apple 쪽의 로그인과 기록은 그대로이므로, 필요하면 플레이어나 Apple의 설정에서 로그아웃해 주세요. 버튼을 누르지 않으면 플레이어를 불러오지 않습니다.'] : []),
     ...(info.weather ? ['Open-Meteo (독일 등): "지금 날씨 반영"을 누른 경우에만, 약 1km 단위로 줄인 위치 좌표를 보내 현재 날씨를 받습니다. 좌표는 서버에 저장하지 않습니다.'] : []),
     'GitHub, jsDelivr, Unsplash, Wikimedia 등 화면과 글꼴·이미지를 전달하는 서비스: 페이지와 이미지를 불러올 때 접속 주소(IP)가 전달됩니다.',
     // The mail provider by name (server SMTP_HOST): what it receives, where it keeps it and for how long (resend.com/legal/dpa,
@@ -119,6 +124,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     ]] },
     { title: '5. 쿠키와 브라우저 저장소', blocks: [
       '서비스는 광고·추적용 쿠키를 쓰지 않습니다. 취향, 기록, 로그인 상태, 화면 설정을 브라우저 저장소에 보관하며, 이는 서비스 동작에 필요한 저장입니다.',
+      ...(info.player ? ['곡 상세에서 Apple Music 플레이어를 열면, 그 플레이어는 Apple의 쿠키와 저장소를 따로 사용합니다. 이는 Apple이 관리하며 서비스의 "데이터 관리"로는 지워지지 않습니다.'] : []),
     ] },
     { title: '6. 안전하게 지키기 위한 조치', blocks: [[
       '비밀번호는 복원할 수 없는 방식(PBKDF2)으로 변환해 저장합니다.',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Item } from './data';
 import { mediaFor } from './media';
+import { closeFullPlay } from './fullPlay';
 
 // Thirty-second previews are Apple's own, served from their hosts for exactly this purpose. A confirmed song page gives the
 // track id; the store's lookup gives the preview address. AI picks that the song check found carry the address already.
@@ -92,6 +93,7 @@ export function stopPreview() { if (!audio) return; audio.pause(); currentId = '
 export async function togglePreview(item: Pick<Item, 'id' | 'category'>) {
   const element = player();
   if (currentId === item.id && (currentState === 'playing' || currentState === 'loading')) { stopPreview(); return; }
+  closeFullPlay();  // one thing plays at a time: Apple's player (fullPlay.ts) is closed when a preview starts
   element.pause(); currentId = item.id; currentState = 'loading'; emit();
   let url: string | undefined, failed = false;
   try { url = await previewFor(item); } catch { failed = true; }

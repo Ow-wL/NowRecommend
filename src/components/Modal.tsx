@@ -9,7 +9,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
     const inert = background.map(n=>n.inert);
     background.forEach(n=>n.inert=true);
     const overflow = document.body.style.overflow; document.body.style.overflow='hidden';
-    const controls = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href], select:not(:disabled), textarea:not(:disabled), summary') || []).filter(n=>n.getClientRects().length > 0);
+    const controls = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href], select:not(:disabled), textarea:not(:disabled), summary, iframe') || []).filter(n=>n.getClientRects().length > 0);
     (ref.current?.querySelector<HTMLElement>('[data-safe-focus]') || controls()[0])?.focus();
     const handle = (event: KeyboardEvent) => {
       if(event.key === 'Escape'){event.preventDefault();close.current();}

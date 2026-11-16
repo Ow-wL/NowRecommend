@@ -1,4 +1,5 @@
-import { previewsOn } from '../features';
+import { fullPlayOn, previewsOn } from '../features';
+import { FullPlayButton, FullPlayPanel, MusicApps } from './FullPlay';
 import { AlertTriangle, Check, CircleDashed } from 'lucide-react';
 import { CATALOG_META, type Item } from '../data';
 import { useCatalog } from '../catalog';
@@ -14,9 +15,11 @@ export function ItemDetails({item,reasons,conditions,onReport}: {item:Item;reaso
   const checks = reasons && conditions ? conditionChecks(item,conditions) : [];
   return <div className="item-details">
     <div className="details-head"><ItemArt item={item} size="tile" />
-      {item.category === 'music' ? <div className="listen-links">{song && <a className="button primary compact" href={song} target="_blank" rel="noopener noreferrer">Apple Music에서 듣기 (새 탭)</a>}<a className="button secondary compact" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer">YouTube에서 찾기 (새 탭)</a>{overseas && <><a className="button secondary compact" href={overseas} target="_blank" rel="noopener noreferrer">Apple Music 해외 스토어에서 보기 (새 탭)</a><p className="small muted">한국 계정에서 들을 수 있는지는 확인하지 못했어요.</p></>}</div>
+      {item.category === 'music' ? <div className="listen-links">{song && fullPlayOn && <FullPlayButton item={item} link={song} />}{song && <a className={`button ${fullPlayOn ? 'secondary' : 'primary'} compact`} href={song} target="_blank" rel="noopener noreferrer">Apple Music에서 듣기 (새 탭)</a>}<a className="button secondary compact" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer">YouTube에서 찾기 (새 탭)</a>{overseas && <><a className="button secondary compact" href={overseas} target="_blank" rel="noopener noreferrer">Apple Music 해외 스토어에서 보기 (새 탭)</a><p className="small muted">한국 계정에서 들을 수 있는지는 확인하지 못했어요.</p></>}</div>
         : <div className="listen-links"><a className="button secondary compact" href={mapSearch(item)} target="_blank" rel="noopener noreferrer">네이버 지도에서 찾기 (새 탭)</a><a className="button secondary compact" href={recipeSearch(item)} target="_blank" rel="noopener noreferrer">만개의레시피에서 찾기 (새 탭)</a></div>}
     </div>
+    {item.category === 'music' && song && fullPlayOn && <FullPlayPanel item={item} link={song} />}
+    {item.category === 'music' && <MusicApps item={item} />}
     {media?.guestUnconfirmed && <p className="song-note">요청한 참여자는 확인하지 못했어요</p>}
     {reasons && <section className="details-why"><h3>{item.category === 'music' && isAiPick(item.id) && !own?.link ? 'AI가 제안한 이유' : '추천 이유'}</h3>
       <div className="reasons">{reasons.tasteReason !== NO_TASTE_REASON && <p><b>평소 취향</b>{reasons.tasteReason}</p>}<p><b>이번 상황</b>{reasons.contextReason}</p>{reasons.contrast && <p><b>이 후보의 특징</b>{reasons.contrast}</p>}</div>
@@ -25,7 +28,7 @@ export function ItemDetails({item,reasons,conditions,onReport}: {item:Item;reaso
     </section>}
     <p>{item.description || '설명 미등록'}</p><dl><dt>{item.category==='food' ? isAiPick(item.id) ? '주요 재료 (AI 추정)' : '주요 재료' : '아티스트'}</dt><dd>{item.category==='food' ? item.ingredients.join(' · ') || '미등록' : item.subtitle || '미등록'}</dd></dl>
     {item.tags.length > 0 && <><h3>특징</h3><div className="mini-tags">{item.tags.map(t=><span key={t}>{t}</span>)}</div></>}
-    <p className="small muted">{item.category==='food' ? '등록된 재료만 표시해요. 실제 판매처의 재료·알레르기 안전은 보장하지 않아요. 검색 결과의 판매 여부·영업·배달은 각 서비스에서 확인해주세요.' : (previewsOn ? '30초 미리듣기(제공되는 곡에 한해)와 앨범 이미지는' : '앨범 이미지는') + ' iTunes 제공(provided courtesy of iTunes)이에요. 전체 곡은 Apple Music 등 외부 서비스에서 들어요.'}</p>
+    <p className="small muted">{item.category==='food' ? '등록된 재료만 표시해요. 실제 판매처의 재료·알레르기 안전은 보장하지 않아요. 검색 결과의 판매 여부·영업·배달은 각 서비스에서 확인해주세요.' : (previewsOn ? '30초 미리듣기(제공되는 곡에 한해)와 앨범 이미지는' : '앨범 이미지는') + ' iTunes 제공(provided courtesy of iTunes)이에요. ' + (fullPlayOn ? '전체 곡은 Apple Music의 플레이어나 각 음악 서비스에서 들어요.' : '전체 곡은 Apple Music 등 외부 서비스에서 들어요.')}</p>
     <p className="details-credit">{media?.credit ? <>사진: <a href={media.credit.page} target="_blank" rel="noopener noreferrer">{media.credit.author}</a> · {media.credit.licenseUrl ? <a href={media.credit.licenseUrl} target="_blank" rel="noopener noreferrer">{media.credit.license}</a> : media.credit.license} · {media.source === 'commons' ? 'Wikimedia Commons' : media.source === 'pexels' ? 'Pexels' : 'Unsplash'}{media.approx ? ' · 메뉴와 비슷한 참고 사진이에요' : ''}</> : media?.source === 'itunes' ? '앨범 아트: Apple Music' : item.category === 'food' ? '등록된 사진이 없어요.' : '앨범 아트를 찾지 못했어요.'}</p>
     {onReport && <button className="text-button details-report" onClick={onReport}>사진이나 정보가 틀렸나요? 오류 신고</button>}
     <details className="data-info"><summary>데이터 정보</summary>{item.id.startsWith('ai-') && <p>AI가 직접 고른 항목이에요. 이름·정보는 AI의 답을 그대로 저장한 것이라 실제와 다를 수 있어요.</p>}<p>출처: {item.id.startsWith('ai-') ? 'AI 추천 결과' : catalog.source==='server' ? '추천 서버 카탈로그' : CATALOG_META.source} · 버전 {catalog.version}</p><p>{catalog.source==='server' ? (item.category==='food' ? '등록된 정보 기준이에요. 실제 판매처의 메뉴·재료와 다를 수 있어요.' : '곡·아티스트 정보는 음악 서비스에서 확인해주세요.') : item.category==='food' ? '검수 전 샘플 데이터예요.' : '곡·아티스트 정보는 별도 검수가 필요해요.'}</p></details>
