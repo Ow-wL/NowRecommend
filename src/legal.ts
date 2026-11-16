@@ -81,7 +81,9 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     'Apple Inc. (iTunes, 미국 등): 추천된 곡이 실제로 있는지 확인하고 미리듣기·앨범 이미지를 불러오기 위해, 브라우저와 서버가 곡 제목과 가수 이름으로 검색을 요청합니다. 브라우저가 직접 요청할 때 접속 주소(IP)가 전달됩니다.',
     ...(info.weather ? ['Open-Meteo (독일 등): "지금 날씨 반영"을 누른 경우에만, 약 1km 단위로 줄인 위치 좌표를 보내 현재 날씨를 받습니다. 좌표는 서버에 저장하지 않습니다.'] : []),
     'GitHub, jsDelivr, Unsplash, Wikimedia 등 화면과 글꼴·이미지를 전달하는 서비스: 페이지와 이미지를 불러올 때 접속 주소(IP)가 전달됩니다.',
-    '메일 발송 서비스: 비밀번호 재설정을 요청하면 가입한 이메일 주소로 이름과 재설정 링크가 담긴 안내 메일을 보냅니다.',
+    // The mail provider by name (server SMTP_HOST): what it receives, where it keeps it and for how long (resend.com/legal/dpa,
+    // resend.com/docs/knowledge-base/account-quotas-and-limits, read 2026-11-17). Change this line with the provider.
+    'Resend (Plus Five Five, Inc., 미국): 비밀번호 재설정을 요청한 경우에만, 가입한 이메일 주소로 이름과 재설정 링크가 담긴 안내 메일을 이 서비스를 통해 보냅니다. 이메일 주소, 메일 내용, 발송 기록이 미국에서 처리·저장되며 Resend가 30일 동안 보관한 뒤 지웁니다. 재설정을 요청하지 않으면 전송되지 않습니다. Resend의 개인정보 문의: privacy@resend.com',
     '지도·레시피·동영상·음악 서비스로 가는 링크: 누르면 그 서비스가 열리며 메뉴나 곡의 이름이 검색어로 전달됩니다. 누르지 않으면 전달되지 않습니다.',
   ];
   return [
