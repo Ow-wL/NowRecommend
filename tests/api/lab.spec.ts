@@ -2,9 +2,10 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 import { items } from '../../src/data';
 
 // AI lab (plans-music-ai.md, food added 2026-11-02): A = catalog + AI rerank (/api/recommend engine "catalog"),
-// B = free AI picks (/api/lab/{category}/free).
+// B = free AI picks (/api/lab/{category}/free). Since 2026-11-17 the lab is for admin accounts, so these run signed in as one.
 const API = 'http://127.0.0.1:5999';
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE' };
+const admin = { id: 'a1', email: 'admin@example.com', name: '검증', createdAt: null, isAdmin: true };
 const fulfill = (route: Route, body: unknown, status = 200) =>
   route.request().method() === 'OPTIONS' ? route.fulfill({ status: 204, headers: cors }) : route.fulfill({ status, headers: cors, contentType: 'application/json', body: JSON.stringify(body) });
 const pool = (ids: string[], mode = 'rag') => ({
@@ -19,8 +20,13 @@ async function setup(page: Page, opts: { freeFails?: boolean } = {}) {
   await page.addInitScript(() => {
     if (!localStorage.getItem('nowrecommend-prototype-v1')) localStorage.setItem('nowrecommend-prototype-v1', JSON.stringify({ version: 2, name: '검증',
       profiles: { food: { selected: ['f01', 'f02'], tags: [], disliked: [] }, music: { selected: ['m01', 'm05', 'm13', 'm14', 'm15'], tags: [], disliked: [] } }, favorites: [], history: [] }));
+    localStorage.setItem('nowrecommend-auth-v1', JSON.stringify({ token: 'tok-admin', user: { id: 'a1', email: 'admin@example.com', name: '검증', isAdmin: true } }));
   });
   await page.route(`${API}/api/catalog**`, route => fulfill(route, { catalogVersion: 'db-test', items }));
+  // The signed-in admin: the account answers, and its (empty) synced store accepts this browser's.
+  await page.route(`${API}/api/auth/me`, route => fulfill(route, { user: admin, hasStore: false, storeUpdatedAt: null, storeVersion: 0 }));
+  let storeVersion = 0;
+  await page.route(`${API}/api/me/store`, route => route.request().method() === 'PUT' ? fulfill(route, { updatedAt: '2026-11-17T00:00:00Z', bytes: 1, version: ++storeVersion }) : fulfill(route, { store: null, updatedAt: null, version: storeVersion }));
   await page.route(`${API}/api/lab/models`, route => fulfill(route, { models: ['lite', 'flash'] }));
   await page.route(`${API}/api/parse`, route => fulfill(route, { conditions: { tags: ['차분함'], excluded: [], maxPrice: null }, unparsed: [], source: 'rule', ai: 'not_needed' }));
   const bodies = { pool: [] as any[], free: [] as any[] };

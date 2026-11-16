@@ -199,6 +199,9 @@ export default function App() {
   // The store is saved together with the sync agreement that describes it, as one record (src/storage.ts).
   useEffect(() => { const failed = storageBlocked || !writeStore(store, sync.agreement()); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
+  // The AI lab compares engines and picks models: an admin tool since 2026-11-17 (the server refuses everyone else).
+  const labAllowed = apiEnabled() && !!account?.user.isAdmin;
+  useEffect(() => { if (page === 'lab' && !labAllowed) navigate('home'); }, [page, labAllowed]);  // eslint-disable-line react-hooks/exhaustive-deps
   // The account as the server has it now: being made an admin shows without logging in again. The server checks on every request anyway.
   useEffect(() => {
     if (!account || !apiEnabled()) return;
@@ -511,7 +514,7 @@ export default function App() {
             <b>{h.selected!.result.item.name}</b>
           </button>)}</div>
         </section>}
-        <p className="lab-link"><button className="text-button" onClick={() => navigate('type')}>내 취향 유형 알아보기 <ArrowRight size={14} /></button>{apiEnabled() && <button className="text-button" onClick={() => navigate('lab')}>AI 실험실 <ArrowRight size={14} /></button>}</p>
+        <p className="lab-link"><button className="text-button" onClick={() => navigate('type')}>내 취향 유형 알아보기 <ArrowRight size={14} /></button>{labAllowed && <button className="text-button" onClick={() => navigate('lab')}>AI 실험실 <ArrowRight size={14} /></button>}</p>
       </>}
 
       {page === 'onboard' && <>
@@ -700,9 +703,9 @@ export default function App() {
 
       {page === 'admin' && <AdminReports token={account?.token} onBack={() => navigate('taste')} />}
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
-        onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(apiEnabled() ? 'lab' : 'taste')} backLabel={apiEnabled() ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
+        onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
         onRecommend={(c, result) => { const base = { ...newSession(c), ...requestForType(c, result.code, undefined, result.counts) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
-      {page === 'lab' && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
+      {page === 'lab' && labAllowed && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
       {page === 'pair' && <Pairing items={items} {...pairingInput()} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
 
@@ -755,7 +758,7 @@ export default function App() {
           {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>오류 신고 관리</b><small>사용자가 보낸 사진·정보 오류 확인</small></span><ChevronRight size={18} /></button>}
           <button className="list-row" onClick={() => navigate('type')}><span className="list-copy"><b>취향 유형 테스트</b><small>음식·음악 취향을 네 글자로, 공유 카드까지</small></span><ChevronRight size={18} /></button>
           {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}
-          {apiEnabled() && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>후보 비교와 취향 유형 테스트</small></span><ChevronRight size={18} /></button>}
+          {labAllowed && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>후보 비교와 취향 유형 테스트</small></span><ChevronRight size={18} /></button>}
         </div>
       </>}
       {page === 'login' && <div className="login-panel">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readAccount, writeAccount } from './account';
+import { readAccount, sessionHeaders, writeAccount } from './account';
 import { authErrorMessage, fetchRemoteStore, pushRemoteStore, signup } from './api/auth';
 import { ApiError } from './api/client';
 import { emptyStore } from './domain';
@@ -16,6 +16,12 @@ describe('account storage', () => {
     expect(readAccount(storage)).toBeNull();
     storage.setItem('nowrecommend-auth-v1', '{"token":""}');
     expect(readAccount(storage)).toBeNull();
+  });
+  it('sends the token with requests the server counts per caller, and nothing for a guest', () => {
+    const storage = memory();
+    expect(sessionHeaders(storage)).toEqual({});
+    writeAccount(account, storage);
+    expect(sessionHeaders(storage)).toEqual({ Authorization: 'Bearer t.sig' });
   });
 });
 

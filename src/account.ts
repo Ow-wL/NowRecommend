@@ -12,6 +12,10 @@ export function readAccount(store: Storage | undefined = storage()): Account | n
     return v && typeof v.token === 'string' && v.token && v.user && typeof v.user.id === 'string' && typeof v.user.email === 'string' && typeof v.user.name === 'string' ? { token: v.token, user: v.user } : null;
   } catch { return null; }
 }
+/** `Authorization` for requests the server counts per caller (recommend, parse): a signed-in person has a day's
+ * allowance of their own instead of sharing the guests' at the same address. A token the server no longer accepts just
+ * makes the request a guest's. */
+export const sessionHeaders = (store: Storage | undefined = storage()): Record<string, string> => { const account = readAccount(store); return account ? { Authorization: `Bearer ${account.token}` } : {}; };
 export function writeAccount(account: Account | null, store: Storage | undefined = storage()): boolean {
   try { if (account) store?.setItem(KEY, JSON.stringify(account)); else store?.removeItem(KEY); return true; } catch { return false; }
 }

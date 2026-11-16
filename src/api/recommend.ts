@@ -3,12 +3,15 @@ import { normalizeItem } from '../data';
 import { knownCatalogItems } from '../catalog';
 import { validRecommendation } from '../sessionStorage';
 import { apiJson, API_BASE_URL } from './client';
+import { sessionHeaders } from '../account';
 
 export type Engine = 'ai' | 'catalog';
 export type RecommendMeta = { mode: 'rag' | 'retrieval_only'; eligibleCount: number; newCount: number; catalogVersion: string; requestId: string;
   contextSimilarity?: boolean; ai?: 'used' | 'failed' | 'off'; situational?: boolean;
   /** 2026-11-02: which engine answered. `engineWanted` is set when the AI engine fell back to the catalog. */
-  engine?: Engine; engineWanted?: 'ai'; model?: string | null; aiError?: string | null; issues?: string | null };
+  engine?: Engine; engineWanted?: 'ai'; model?: string | null; aiError?: string | null; issues?: string | null;
+  /** 2026-11-17: the AI was not asked because a daily limit was reached: this visitor's, this account's, or the whole service's. */
+  limit?: 'guest' | 'member' | 'service' };
 export type RemoteBatch = { results: Recommendation[]; meta: RecommendMeta };
 
 export function validRemoteBatch(v: any): v is RemoteBatch {
@@ -20,7 +23,8 @@ export function validRemoteBatch(v: any): v is RemoteBatch {
     && (m.ai === undefined || ['used', 'failed', 'off'].includes(m.ai)) && (m.contextSimilarity === undefined || typeof m.contextSimilarity === 'boolean')
     && (m.situational === undefined || typeof m.situational === 'boolean')
     && (m.engine === undefined || ['ai', 'catalog'].includes(m.engine)) && (m.engineWanted === undefined || m.engineWanted === 'ai')
-    && (m.model === undefined || m.model === null || typeof m.model === 'string');
+    && (m.model === undefined || m.model === null || typeof m.model === 'string')
+    && (m.limit === undefined || ['guest', 'member', 'service'].includes(m.limit));
 }
 
 /** What the person wrote, as words for the AI: "치킨: 바삭해서", or a typed-in favourite. Item names come from the catalog here. */
@@ -47,12 +51,12 @@ export function recommendBody(session: Session, profile: Profile, count?: number
 
 /** Older servers send no `ai`/`situational`/`engine`; treat that as "nothing to report" from the catalog. */
 export function qualityOf(meta: RecommendMeta): NonNullable<Session['quality']> {
-  return { ai: meta.ai ?? 'off', context: !meta.situational || meta.contextSimilarity !== false, engine: meta.engine ?? 'catalog', ...(meta.engineWanted ? { wanted: meta.engineWanted } : {}) };
+  return { ai: meta.ai ?? 'off', context: !meta.situational || meta.contextSimilarity !== false, engine: meta.engine ?? 'catalog', ...(meta.engineWanted ? { wanted: meta.engineWanted } : {}), ...(meta.limit ? { limited: meta.limit } : {}) };
 }
 
 export function fetchRecommendations(session: Session, profile: Profile, options: { count?: number; engine?: Engine; base?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {
   // Longer than the server's 10s rerank deadline plus the query embedding, so a slow model degrades to retrieval_only first.
   const { count, engine, base = API_BASE_URL, fetchImpl, timeoutMs = 15000 } = options;
-  return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', body: recommendBody(session, profile, count, engine) })
+  return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', headers: sessionHeaders(), body: recommendBody(session, profile, count, engine) })
     .then(batch => ({ ...batch, results: batch.results.map(r => ({ ...r, item: normalizeItem(r.item) })) }));
 }

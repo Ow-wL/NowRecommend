@@ -2,8 +2,10 @@ import type { Conditions, Profile } from '../domain';
 import type { Category, Item } from '../data';
 import { validItem } from '../catalog';
 import { apiJson, API_BASE_URL } from './client';
+import { sessionHeaders } from '../account';
 
-// Lab only (plans-music-ai.md): the model recommends from its own knowledge, outside the catalog. Since 2026-11-02 the
+// Lab only (plans-music-ai.md): the model recommends from its own knowledge, outside the catalog. Since 2026-11-17 the
+// server answers these only to an admin account, so the signed-in token goes with them. Since 2026-11-02 the
 // same endpoint exists for food (/api/lab/food/free) and every pick comes with the item the server stored for it.
 export type Confidence = 'high' | 'medium' | 'low';
 export type FreePick = { name: string; detail: string; tasteReason: string; contextReason: string; confidence: Confidence; tags: string[]; item: Item };
@@ -27,11 +29,11 @@ export function fetchFreePicks(category: Category, request: { raw: string; condi
   options: { base?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {
   const { base = API_BASE_URL, fetchImpl, timeoutMs = 15000 } = options;
   const { raw, conditions, profile, likedText, avoid, count = category === 'food' ? 3 : 5, model } = request;
-  return apiJson(`/api/lab/${category}/free`, validFreeBatch, { base, fetchImpl, timeoutMs, method: 'POST',
+  return apiJson(`/api/lab/${category}/free`, validFreeBatch, { base, fetchImpl, timeoutMs, method: 'POST', headers: sessionHeaders(),
     body: { raw, conditions: { tags: conditions.tags, excluded: conditions.excluded }, profile: { selected: profile.selected, tags: profile.tags, disliked: profile.disliked },
       likedText: likedText.slice(0, 10), avoid: avoid.slice(-60), count, ...(model ? { model } : {}) } });
 }
 
 const validModels = (v: any): v is { models: string[] } => !!v && Array.isArray(v.models) && v.models.length <= 10 && v.models.every((m: unknown) => typeof m === 'string' && m.length <= 60);
 export const fetchLabModels = (options: { base?: string; fetchImpl?: typeof fetch } = {}) =>
-  apiJson('/api/lab/models', validModels, { base: options.base ?? API_BASE_URL, fetchImpl: options.fetchImpl, timeoutMs: 8000 }).then(r => r.models);
+  apiJson('/api/lab/models', validModels, { base: options.base ?? API_BASE_URL, fetchImpl: options.fetchImpl, timeoutMs: 8000, headers: sessionHeaders() }).then(r => r.models);

@@ -19,7 +19,9 @@ export type Session = { years?: YearRange; yearsFromText?: boolean; preset?: { n
   /** How the server produced the current cards (only with source 'server'): AI used/failed/off, sentence meaning used. */
   quality?: { ai: 'used' | 'failed' | 'off'; context: boolean;
     /** 'ai': the model named the items itself; 'catalog': retrieval over reviewed items. `wanted` is set when the AI engine fell back. */
-    engine?: 'ai' | 'catalog'; wanted?: 'ai' } };
+    engine?: 'ai' | 'catalog'; wanted?: 'ai';
+    /** The AI was not asked because a daily limit was reached (server meta.limit). */
+    limited?: 'guest' | 'member' | 'service' } };
 /** `contrast` compares the card with the others shown with it ("추천 중 유일하게 …"). It is recomputed whenever the shown set
  * changes (withContrast); taste and context reasons only describe the card itself. */
 export type Recommendation = { item: Item; tasteReason: string; contextReason: string; contrast?: string;

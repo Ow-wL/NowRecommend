@@ -49,6 +49,12 @@ describe('recommend request and response', () => {
     expect(validRemoteBatch({ results: [{ ...result, item: { ...items[0], tags: 'x' } }], meta })).toBe(false);
     expect(validRemoteBatch({ results: [result], meta: { ...meta, mode: 'magic' } })).toBe(false);
     expect(validRemoteBatch({ results: [result], meta: { ...meta, ai: 'failed', situational: true, contextSimilarity: false } })).toBe(true);
+    // 2026-11-17: a daily limit is named, and only by the three names the notice knows.
+    expect(validRemoteBatch({ results: [result], meta: { ...meta, limit: 'guest' } })).toBe(true);
+    expect(validRemoteBatch({ results: [result], meta: { ...meta, limit: 'forever' } })).toBe(false);
+    const base = { mode: 'retrieval_only' as const, eligibleCount: 3, newCount: 3, catalogVersion: 'v', requestId: 'r' };
+    expect(qualityOf({ ...base, engine: 'catalog', engineWanted: 'ai', ai: 'off', limit: 'member' })).toMatchObject({ limited: 'member', wanted: 'ai' });
+    expect('limited' in qualityOf(base)).toBe(false);
     expect(validRemoteBatch({ results: [result], meta: { ...meta, ai: 'maybe' } })).toBe(false);
   });
   it('turns server meta into the quality shown on the results screen', () => {
