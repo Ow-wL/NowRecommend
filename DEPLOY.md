@@ -421,6 +421,8 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
 | 알림 정책 | `지금 추천 API 응답 없음` | 업타임 체크가 두 지역 이상에서 5분 넘게 실패 |
 | 알림 정책 | `지금 추천 API 서버 오류(5xx)` | 5분 동안 5xx 응답이 5건 초과 |
 | 알림 정책 | `지금 추천 API 응답 지연` | 응답 시간 p95가 12초를 넘는 상태가 10분 지속 |
+| 알림 정책 | `지금 추천 화면 오류(client error)` | 브라우저가 보낸 화면 오류 로그(`client error kind=`)가 한 건이라도 생기면. 알림은 6시간에 한 번까지 (2026-11-17 추가) |
+| 알림 정책 | `지금 추천 재설정 메일 실패` | `reset mail could not be sent` 또는 하루 전체 상한(`RESET_DAILY_TOTAL`) 로그가 생기면. 알림은 1시간에 한 번까지 (2026-11-17 추가, 메일을 켠 뒤부터 의미가 있음) |
 | 알림 채널 | `지금 추천 장애 알림 (이메일)` | gcloud에 로그인한 GCP 계정의 이메일 |
 
 - `/api/health`는 DB에 연결하지 못하면 503이므로, 업타임 체크 하나가 API와 DB를 함께 봅니다.
@@ -429,6 +431,8 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
 - 끄기: `gcloud monitoring policies update <정책 이름> --project harness-recommend --no-enabled`.
 - Git Bash에서 `--path=/api/health`처럼 `/`로 시작하는 값을 주면 `C:/Program Files/Git/...`로 바뀝니다. PowerShell에서 실행하거나 `MSYS_NO_PATHCONV=1`을 붙입니다.
 - 알림 채널은 `gcloud beta`가 없어 REST API(`monitoring.googleapis.com/v3/projects/harness-recommend/notificationChannels`)로 만들었습니다.
+- 로그 기반 알림 두 개는 `gcloud monitoring policies create --policy-from-file`로 만들었습니다(조건 `conditionMatchedLog`, 필터는 서비스 `nowrecommend-api`의 `textPayload`). 사건은 하루 뒤 자동으로 닫힙니다.
+- 첫 화면 오류 로그(2026-11-17 07:23, `crypto.randomUUID is not a function`)는 오래된 브라우저 문제였고 `src/polyfills.ts`로 고쳤습니다. 이 수정이 배포되기 전에는 같은 알림이 다시 올 수 있습니다.
 - 아직 없는 것: Gemini 키 프로젝트(`gen-lang-client-0956207237`)의 할당량 상한. 콘솔의 할당량 화면에서 겁니다.
 
 ## 4-2. 삭제 보호, 브랜치 보호, 복원 연습 (2026-11-17)
