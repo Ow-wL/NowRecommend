@@ -12,7 +12,9 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 log = logging.getLogger(__name__)
-LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login", "/api/reports"}
+LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login", "/api/reports",
+                 # every route that tries a password or sends mail
+                 "/api/auth/password", "/api/auth/delete", "/api/auth/logout-all", "/api/auth/reset/request", "/api/auth/reset/confirm"}
 # Account store uploads (PUT) get a bucket of their own: the browser saves 1.5s after every change, and a burst of saves
 # should neither be stopped by the recommend limit nor use it up.
 STORE_PATH = "/api/me/store"

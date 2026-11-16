@@ -27,4 +27,5 @@ def health(response: Response, db: DatabaseStatus = Depends(database_status), se
         "vocab": {"version": vocab.version, "food": len(vocab.food.tags), "music": len(vocab.music.tags)},
         "llm": {"configured": bool(settings.gemini_api_key)},
         "auth": {"enabled": bool(settings.auth_secret)},
+        "mail": {"configured": bool(settings.smtp_host and settings.mail_from)},
     }

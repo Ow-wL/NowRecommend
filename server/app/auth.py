@@ -1,8 +1,8 @@
 """Accounts: password hashing and signed session tokens, standard library only.
 
 Passwords use PBKDF2-HMAC-SHA256 with a per-user salt. Tokens are `base64url(payload).base64url(hmac)` signed with
-AUTH_SECRET; the payload carries the user id and an expiry, so the server keeps no session table. Rotating the secret
-signs everyone out, which is the intended way to revoke every token at once.
+AUTH_SECRET; the payload carries the user id, the account's token version and an expiry, so the server keeps no session
+table. Raising one account's token version signs that account out everywhere; rotating the secret signs everyone out.
 """
 import base64
 import hashlib
@@ -46,24 +46,56 @@ def valid_email(email: str) -> bool:
 
 @dataclass(frozen=True)
 class TokenSigner:
+    """Signs two kinds of token. A session token names the account and its `token_version`: raising that number on the
+    account (a new password, "sign out everywhere") ends every token issued before. A reset token is good for one
+    password change: it carries a fingerprint of the password hash it was issued for, so it dies with that password."""
     secret: str
     ttl_seconds: int = 30 * 24 * 3600
     now: Callable[[], float] = time.time
 
-    def issue(self, user_id: str) -> str:
-        payload = _b64(json.dumps({"sub": user_id, "exp": int(self.now()) + self.ttl_seconds}, separators=(",", ":")).encode())
-        return f"{payload}.{self._sign(payload)}"
+    def issue(self, user_id: str, version: int = 0) -> str:
+        return self._token({"sub": user_id, "ver": version, "exp": int(self.now()) + self.ttl_seconds})
+
+    def session(self, token: str) -> tuple[str, int] | None:
+        """(account id, token version) of a valid session token. A token from before versions counts as version 0."""
+        data = self._claims(token)
+        if data is None or "use" in data or not isinstance(data.get("ver", 0), int):
+            return None
+        return data["sub"], data.get("ver", 0)
 
     def verify(self, token: str) -> str | None:
-        """The user id of a valid, unexpired token; None for anything else (never raises on garbage)."""
+        """The account id of a validly signed, unexpired session token; None for anything else (never raises on garbage).
+        Signature only: whether the account still accepts the token is the caller's question (routes/auth.py)."""
+        claims = self.session(token)
+        return claims[0] if claims else None
+
+    def issue_reset(self, user_id: str, password_hash: str, ttl_seconds: int = 1800) -> str:
+        return self._token({"sub": user_id, "use": "reset", "pw": self.fingerprint(password_hash), "exp": int(self.now()) + ttl_seconds})
+
+    def reset(self, token: str) -> tuple[str, str] | None:
+        """(account id, password fingerprint) of a valid reset token."""
+        data = self._claims(token)
+        if data is None or data.get("use") != "reset" or not isinstance(data.get("pw"), str):
+            return None
+        return data["sub"], data["pw"]
+
+    def fingerprint(self, password_hash: str) -> str:
+        """Tells whether a password hash is still the one a reset token was issued for, without putting the hash in the token."""
+        return _b64(hmac.new(self.secret.encode("utf-8"), f"reset|{password_hash}".encode("utf-8"), hashlib.sha256).digest())[:22]
+
+    def _token(self, data: dict) -> str:
+        payload = _b64(json.dumps(data, separators=(",", ":")).encode())
+        return f"{payload}.{self._sign(payload)}"
+
+    def _claims(self, token: str) -> dict | None:
         try:
             payload, signature = token.split(".")
             if not hmac.compare_digest(self._sign(payload), signature):
                 return None
             data = json.loads(_unb64(payload))
-            if not isinstance(data.get("sub"), str) or not isinstance(data.get("exp"), int) or data["exp"] < self.now():
+            if not isinstance(data, dict) or not isinstance(data.get("sub"), str) or not isinstance(data.get("exp"), int) or data["exp"] < self.now():
                 return None
-            return data["sub"]
+            return data
         except (ValueError, TypeError, AttributeError):
             return None
 

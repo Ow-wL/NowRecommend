@@ -94,6 +94,8 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())  # set only by app.cli.admin
+    # Every session token carries this number; raising it (a new password, "sign out everywhere") ends the tokens before.
+    token_version: Mapped[int] = mapped_column(Integer, server_default="0")
 
 
 class UsageDaily(Base):

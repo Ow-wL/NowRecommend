@@ -1,24 +1,30 @@
-"""Accounts (2026-11-02): sign up, log in, and the synced browser store that follows the account.
+"""Accounts (2026-11-02): sign up, log in, and the synced browser store that follows the account. Since 2026-11-17 also
+changing the password, resetting a forgotten one by mail, and signing an account out everywhere.
 
 Tokens are stateless (app/auth.py). Without AUTH_SECRET every route here answers 503 and the app stays guest-only, so a
 deployment that has not set the secret yet is no worse than before accounts existed.
 """
+import hmac
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
-from ..budget import Allowance, signup_day
-from ..config import get_settings
+from ..budget import Allowance, guest_key, signup_day
+from ..config import Settings, get_settings
 from ..db import get_session
+from ..mail import Mailer, get_mailer, reset_mail
 from ..models import User
+from ..ratelimit import client_address
 
+log = logging.getLogger(__name__)
 router = APIRouter()
 
 Email = Annotated[str, StringConstraints(min_length=3, max_length=254)]
@@ -62,6 +68,28 @@ class DeleteRequest(BaseModel):
     password: Password
 
 
+class PasswordChange(BaseModel):
+    currentPassword: Password
+    newPassword: Password
+
+
+class ResetRequest(BaseModel):
+    email: Email
+
+    @field_validator("email")
+    @classmethod
+    def normalized(cls, value: str) -> str:
+        value = normalize_email(value)
+        if not valid_email(value):
+            raise ValueError("이메일 형식이 아니에요")
+        return value
+
+
+class ResetConfirm(BaseModel):
+    token: Annotated[str, StringConstraints(min_length=20, max_length=600)]
+    password: Password
+
+
 def get_signer() -> TokenSigner | None:
     """None without AUTH_SECRET: accounts are off."""
     settings = get_settings()
@@ -76,22 +104,27 @@ def require_signer(signer: TokenSigner | None = Depends(get_signer)) -> TokenSig
 
 def current_user(authorization: Annotated[str | None, Header()] = None, signer: TokenSigner = Depends(require_signer),
                  session: Session = Depends(get_session)) -> User:
-    scheme, _, token = (authorization or "").partition(" ")
-    user_id = signer.verify(token) if scheme.lower() == "bearer" and token else None
-    user = session.get(User, uuid.UUID(user_id)) if user_id and _is_uuid(user_id) else None
+    user = _token_user(authorization, signer, session)
     if user is None:
         raise HTTPException(401, "로그인이 필요해요.", headers={"WWW-Authenticate": "Bearer"})
     return user
 
 
+def _token_user(authorization: str | None, signer: TokenSigner | None, session: Session) -> User | None:
+    """The account a bearer token belongs to, if the account still accepts it: the token's version must be the account's
+    current one, so a changed password or "sign out everywhere" ends every token issued before."""
+    scheme, _, token = (authorization or "").partition(" ")
+    claims = signer.session(token) if signer and scheme.lower() == "bearer" and token else None
+    if not claims or not _is_uuid(claims[0]):
+        return None
+    user = session.get(User, uuid.UUID(claims[0]))
+    return user if user is not None and user.token_version == claims[1] else None
+
+
 def optional_user_id(authorization: Annotated[str | None, Header()] = None, signer: TokenSigner | None = Depends(get_signer),
                      session: Session = Depends(get_session)) -> uuid.UUID | None:
     """Who is calling, if signed in. A stale or bad token only makes it a guest's request."""
-    scheme, _, token = (authorization or "").partition(" ")
-    user_id = signer.verify(token) if signer and scheme.lower() == "bearer" and token else None
-    if not user_id or not _is_uuid(user_id):
-        return None
-    known = session.get(User, uuid.UUID(user_id))
+    known = _token_user(authorization, signer, session)
     return known.id if known else None
 
 
@@ -112,7 +145,7 @@ def _iso(value: datetime | None) -> str | None:
 
 
 def _session_answer(signer: TokenSigner, user: User) -> dict:
-    return {"token": signer.issue(str(user.id)), "user": public_user(user), "hasStore": user.store is not None}
+    return {"token": signer.issue(str(user.id), user.token_version), "user": public_user(user), "hasStore": user.store is not None}
 
 
 @router.post("/api/auth/signup", status_code=201)
@@ -180,3 +213,73 @@ def delete_account(request: DeleteRequest, user: User = Depends(current_user), s
     session.delete(user)
     session.commit()
     return Response(status_code=204)
+
+
+# ---- passwords and sessions (2026-11-17) ----
+
+def _end_sessions(user: User, session: Session) -> None:
+    """Every token issued so far stops working. One UPDATE, so two of these at once still move the number on twice."""
+    session.execute(update(User).where(User.id == user.id).values(token_version=User.token_version + 1))
+    session.commit()
+    session.refresh(user)
+
+
+@router.post("/api/auth/password")
+def change_password(request: PasswordChange, user: User = Depends(current_user), session: Session = Depends(get_session),
+                    signer: TokenSigner = Depends(require_signer)):
+    """A new password ends every other session; this one continues with the token in the answer."""
+    if not verify_password(request.currentPassword, user.password_hash):
+        raise HTTPException(401, "현재 비밀번호가 맞지 않아요.")
+    user.password_hash = hash_password(request.newPassword)
+    _end_sessions(user, session)
+    return _session_answer(signer, user)
+
+
+@router.post("/api/auth/logout-all", status_code=204)
+def logout_everywhere(user: User = Depends(current_user), session: Session = Depends(get_session)):
+    """Signs the account out on every device, this one included (a lost phone, a shared computer left signed in)."""
+    _end_sessions(user, session)
+    return Response(status_code=204)
+
+
+RESET_SENT = {"sent": True}
+
+
+@router.post("/api/auth/reset/request", status_code=202)
+def request_reset(request: ResetRequest, http: Request, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
+                  mailer: Mailer | None = Depends(get_mailer), settings: Settings = Depends(get_settings)):
+    """Mails a reset link if the address has an account. The answer is the same either way, so the form does not tell
+    which addresses are registered; whether a mail really left is in the log only."""
+    if mailer is None:
+        raise HTTPException(503, "이 서버에는 메일 발송이 설정되지 않았어요.")
+    address = client_address(http, settings.trust_proxy)
+    if not Allowance(session, f"reset:{guest_key(address, settings.auth_secret)}", settings.reset_daily_per_address, False).take():
+        raise HTTPException(429, "오늘은 더 요청할 수 없어요. 내일 다시 시도해주세요.")
+    user = session.scalar(select(User).where(User.email == request.email))
+    if user is None:
+        return RESET_SENT
+    # Per account as well, whoever asks and from wherever: an inbox cannot be flooded with these.
+    if not Allowance(session, f"reset:e:{guest_key(user.email, settings.auth_secret)}", settings.reset_daily_per_email, False).take():
+        log.warning("reset mail not sent: today's mails for this account are used up")
+        return RESET_SENT
+    token = signer.issue_reset(str(user.id), user.password_hash, settings.reset_token_minutes * 60)
+    link = f"{settings.public_app_url.rstrip('/')}/#/reset/{token}"
+    try:
+        mailer.send(user.email, *reset_mail(user.name, link, settings.reset_token_minutes))
+    except Exception:  # noqa: BLE001 - the form's answer must not depend on whether this address has an account
+        log.exception("reset mail could not be sent")
+    return RESET_SENT
+
+
+@router.post("/api/auth/reset/confirm")
+def confirm_reset(request: ResetConfirm, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer)):
+    """Sets the new password from a mailed link. The link works once: it names the password it was issued for, and that
+    password is gone after this. Every session of the account ends; the answer signs this browser in."""
+    claims = signer.reset(request.token)
+    user = session.get(User, uuid.UUID(claims[0])) if claims and _is_uuid(claims[0]) else None
+    if user is None or not hmac.compare_digest(signer.fingerprint(user.password_hash), claims[1]):
+        raise HTTPException(400, "링크가 만료됐거나 이미 사용됐어요. 비밀번호 재설정을 다시 요청해주세요.")
+    user.password_hash = hash_password(request.password)
+    user.last_login_at = datetime.now(timezone.utc)
+    _end_sessions(user, session)
+    return _session_answer(signer, user)

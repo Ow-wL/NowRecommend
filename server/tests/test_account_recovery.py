@@ -1,0 +1,236 @@
+"""Passwords and sessions (2026-11-17): changing a password, resetting a forgotten one by mail, signing out everywhere.
+The routes run on SQLite (users + the daily counters), with a mailer that only remembers what it was asked to send."""
+import re
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app import mail
+from app.auth import TokenSigner
+from app.config import Settings, get_settings
+from app.db import get_session
+from app.mail import SmtpMailer, get_mailer, reset_mail
+from app.main import create_app
+from app.models import UsageDaily, User
+from app.routes.auth import get_signer
+
+SIGNUP = {"email": "lee@example.com", "password": "password1", "name": "주형"}
+APP_URL = "https://app.example.com/now/"
+
+
+class Outbox:
+    def __init__(self, fails=False):
+        self.sent, self.fails = [], fails
+
+    def send(self, to, subject, text, html=None):
+        if self.fails:
+            raise OSError("smtp is down")
+        self.sent.append({"to": to, "subject": subject, "text": text, "html": html})
+
+    def link_token(self):
+        link = re.search(r"https://\S+", self.sent[-1]["text"]).group(0)
+        assert link.startswith(f"{APP_URL}#/reset/")
+        return link.rsplit("/", 1)[1]
+
+
+class Clock:
+    now = 1_800_000_000.0
+
+    def __call__(self):
+        return self.now
+
+
+@pytest.fixture
+def world():
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    User.__table__.create(engine)
+    UsageDaily.__table__.create(engine)
+    make = sessionmaker(engine, expire_on_commit=False)
+
+    def session():
+        with make() as s:
+            yield s
+
+    clock, outbox = Clock(), Outbox()
+    signer = TokenSigner("test-secret", ttl_seconds=3600, now=clock)
+    app = create_app()
+    app.dependency_overrides[get_session] = session
+    app.dependency_overrides[get_signer] = lambda: signer
+    app.dependency_overrides[get_mailer] = lambda: outbox
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, reset_daily_per_address=5, reset_daily_per_email=2,
+                                                              signup_daily_per_address=0, auth_secret="test-secret")
+    with TestClient(app) as client:
+        token = client.post("/api/auth/signup", json=SIGNUP).json()["token"]
+        yield client, {"Authorization": f"Bearer {token}"}, outbox, clock, signer, app
+
+
+def test_tokens_are_two_kinds_and_old_ones_count_as_version_zero():
+    clock = Clock()
+    signer = TokenSigner("secret", ttl_seconds=60, now=clock)
+    assert signer.session(signer.issue("u1", 3)) == ("u1", 3) and signer.verify(signer.issue("u1", 3)) == "u1"
+    # A token issued before versions existed: no number, read as 0.
+    old = signer._token({"sub": "u1", "exp": int(clock.now) + 60})
+    assert signer.session(old) == ("u1", 0)
+    reset = signer.issue_reset("u1", "pbkdf2$hash", ttl_seconds=30)
+    assert signer.reset(reset) == ("u1", signer.fingerprint("pbkdf2$hash"))
+    # Neither kind passes for the other, and the fingerprint is not the hash.
+    assert signer.session(reset) is None and signer.verify(reset) is None and signer.reset(signer.issue("u1", 0)) is None
+    assert "pbkdf2" not in reset and signer.fingerprint("pbkdf2$hash") != signer.fingerprint("pbkdf2$other")
+    assert signer.fingerprint("pbkdf2$hash") != TokenSigner("other").fingerprint("pbkdf2$hash")
+    clock.now += 31
+    assert signer.reset(reset) is None
+    assert signer.reset("garbage") is None and signer.session("a.b") is None
+
+
+def test_a_new_password_ends_the_other_sessions_and_keeps_this_one(world):
+    client, auth, *_ = world
+    other = {"Authorization": f"Bearer {client.post('/api/auth/login', json=SIGNUP).json()['token']}"}  # the same account on a phone
+    assert client.post("/api/auth/password", json={"currentPassword": "wrong-pass", "newPassword": "password2"}, headers=auth).status_code == 401
+    assert client.get("/api/auth/me", headers=other).status_code == 200  # a wrong guess changes nothing
+    assert client.post("/api/auth/password", json={"currentPassword": "password1", "newPassword": "short"}, headers=auth).status_code == 422
+    assert client.post("/api/auth/password", json={"currentPassword": "password1", "newPassword": "password2"}).status_code == 401
+
+    changed = client.post("/api/auth/password", json={"currentPassword": "password1", "newPassword": "password2"}, headers=auth)
+    assert changed.status_code == 200 and changed.json()["user"]["email"] == "lee@example.com"
+    fresh = {"Authorization": f"Bearer {changed.json()['token']}"}
+    assert client.get("/api/auth/me", headers=fresh).status_code == 200
+    assert client.get("/api/auth/me", headers=auth).status_code == 401 and client.get("/api/auth/me", headers=other).status_code == 401
+    assert client.put("/api/me/store", json={"store": {}}, headers=other).status_code == 401  # nor can an ended session write
+    assert client.post("/api/auth/login", json=SIGNUP).status_code == 401
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "password2"}).status_code == 200
+
+
+def test_signing_out_everywhere_ends_every_token_and_a_new_login_works(world):
+    client, auth, *_ = world
+    other = {"Authorization": f"Bearer {client.post('/api/auth/login', json=SIGNUP).json()['token']}"}
+    assert client.post("/api/auth/logout-all").status_code == 401
+    assert client.post("/api/auth/logout-all", headers=auth).status_code == 204
+    assert client.get("/api/auth/me", headers=auth).status_code == 401 and client.get("/api/auth/me", headers=other).status_code == 401
+    again = client.post("/api/auth/login", json=SIGNUP).json()["token"]
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {again}"}).status_code == 200
+
+
+def test_a_forgotten_password_is_reset_from_the_mailed_link_once(world):
+    client, auth, outbox, *_ = world
+    asked = client.post("/api/auth/reset/request", json={"email": " Lee@Example.com "})
+    assert asked.status_code == 202 and asked.json() == {"sent": True}
+    [mail_out] = outbox.sent
+    assert mail_out["to"] == "lee@example.com" and "비밀번호 재설정" in mail_out["subject"] and "30분" in mail_out["text"] and "주형" in mail_out["text"]
+    token = outbox.link_token()
+    assert token in mail_out["html"]
+
+    assert client.post("/api/auth/reset/confirm", json={"token": token, "password": "short"}).status_code == 422
+    done = client.post("/api/auth/reset/confirm", json={"token": token, "password": "new-password"})
+    assert done.status_code == 200 and done.json()["user"]["email"] == "lee@example.com"
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {done.json()['token']}"}).status_code == 200  # signed in here
+    assert client.get("/api/auth/me", headers=auth).status_code == 401                                               # and out everywhere else
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "new-password"}).status_code == 200
+    # The link named the old password, which is gone: it does not work twice.
+    again = client.post("/api/auth/reset/confirm", json={"token": token, "password": "another-pass"})
+    assert again.status_code == 400 and "다시 요청" in again.json()["detail"]
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "another-pass"}).status_code == 401
+
+
+def test_the_answer_does_not_tell_whether_an_address_has_an_account(world):
+    client, _, outbox, *_ = world
+    known = client.post("/api/auth/reset/request", json={"email": "lee@example.com"})
+    unknown = client.post("/api/auth/reset/request", json={"email": "nobody@example.com"})
+    assert (known.status_code, known.json()) == (unknown.status_code, unknown.json()) == (202, {"sent": True})
+    assert [m["to"] for m in outbox.sent] == ["lee@example.com"]
+    assert client.post("/api/auth/reset/request", json={"email": "not-an-address"}).status_code == 422
+
+
+def test_links_expire_and_other_tokens_are_not_links(world):
+    client, auth, outbox, clock, signer, _ = world
+    client.post("/api/auth/reset/request", json={"email": "lee@example.com"})
+    token = outbox.link_token()
+    session_token = auth["Authorization"].split(" ")[1]
+    for bad in (session_token, token[:-2] + "xx", "x" * 40, TokenSigner("other-secret", now=clock).issue_reset("id", "hash")):
+        assert client.post("/api/auth/reset/confirm", json={"token": bad, "password": "new-password"}).status_code == 400
+    clock.now += 30 * 60 + 1
+    assert client.post("/api/auth/reset/confirm", json={"token": token, "password": "new-password"}).status_code == 400
+    assert client.post("/api/auth/login", json=SIGNUP).status_code == 200  # nothing changed
+
+
+def test_a_password_changed_after_the_mail_was_sent_kills_the_link(world):
+    client, auth, outbox, *_ = world
+    client.post("/api/auth/reset/request", json={"email": "lee@example.com"})
+    token = outbox.link_token()
+    client.post("/api/auth/password", json={"currentPassword": "password1", "newPassword": "password2"}, headers=auth)
+    assert client.post("/api/auth/reset/confirm", json={"token": token, "password": "attacker-pw"}).status_code == 400
+
+
+def test_reset_mails_are_limited_per_account_and_per_address(world):
+    client, _, outbox, *_ = world
+    client.post("/api/auth/signup", json={**SIGNUP, "email": "kim@example.com"})
+    codes = [client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code for _ in range(3)]
+    assert codes == [202, 202, 202] and len(outbox.sent) == 2  # the third is answered the same, but not mailed
+    assert client.post("/api/auth/reset/request", json={"email": "kim@example.com"}).status_code == 202 and len(outbox.sent) == 3
+    assert client.post("/api/auth/reset/request", json={"email": "nobody@example.com"}).status_code == 202   # the fifth from this address
+    assert client.post("/api/auth/reset/request", json={"email": "kim@example.com"}).status_code == 429
+    assert len(outbox.sent) == 3
+
+
+def test_without_a_mailer_the_reset_is_off_and_a_failed_mail_reads_like_a_sent_one(world):
+    client, _, outbox, _, _, app = world
+    outbox.fails = True
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    app.dependency_overrides[get_mailer] = lambda: None
+    off = client.post("/api/auth/reset/request", json={"email": "lee@example.com"})
+    assert off.status_code == 503 and "메일" in off.json()["detail"]
+
+
+# ---- the SMTP sender ----
+
+class FakeSmtp:
+    made = []
+
+    def __init__(self, host, port, timeout=None, context=None):
+        self.host, self.port, self.steps, self.tls_from_start = host, port, [], context is not None
+        FakeSmtp.made.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.steps.append("quit")
+
+    def starttls(self, context=None):
+        self.steps.append("starttls")
+
+    def login(self, user, password):
+        self.steps.append(("login", user, password))
+
+    def send_message(self, message):
+        self.steps.append("send")
+        self.message = message
+
+
+def test_smtp_upgrades_before_the_password_and_sends_text_and_html(monkeypatch):
+    FakeSmtp.made.clear()
+    monkeypatch.setattr(mail.smtplib, "SMTP", FakeSmtp)
+    monkeypatch.setattr(mail.smtplib, "SMTP_SSL", FakeSmtp)
+    SmtpMailer("smtp.example.com", 587, "user", "secret", "지금 추천 <no-reply@example.com>").send("lee@example.com", "제목", "본문", "<p>본문</p>")
+    SmtpMailer("smtp.example.com", 465, None, None, "no-reply@example.com").send("lee@example.com", "제목", "본문")
+    plain, tls = FakeSmtp.made
+    assert plain.steps == ["starttls", ("login", "user", "secret"), "send", "quit"] and not plain.tls_from_start
+    assert tls.steps == ["send", "quit"] and tls.tls_from_start  # 465 is TLS already; no account, no login
+    message = plain.message
+    assert message["To"] == "lee@example.com" and "no-reply@example.com" in message["From"] and message["Subject"] == "제목"
+    assert [part.get_content_type() for part in message.iter_parts()] == ["text/plain", "text/html"]
+    assert tls.message["From"] == "no-reply@example.com" and not tls.message.is_multipart()
+
+
+def test_the_reset_mail_escapes_the_name_and_mail_is_off_without_settings(monkeypatch):
+    subject, text, html = reset_mail('<b>"주형"</b>', "https://app.example.com/#/reset/abc", 30)
+    assert "<b>" in text and "<b>" not in html and "&lt;b&gt;&quot;주형&quot;&lt;/b&gt;" in html and "비밀번호 재설정" in subject
+    assert 'href="https://app.example.com/#/reset/abc"' in html
+    monkeypatch.setattr(mail, "get_settings", lambda: Settings(smtp_host=None, mail_from=None))
+    assert get_mailer() is None
+    monkeypatch.setattr(mail, "get_settings", lambda: Settings(smtp_host="smtp.example.com", mail_from=None))
+    assert get_mailer() is None  # a sender address is needed too
+    monkeypatch.setattr(mail, "get_settings", lambda: Settings(smtp_host="smtp.example.com", mail_from="a@b.co", smtp_port=465))
+    assert isinstance(get_mailer(), SmtpMailer) and get_mailer().port == 465

@@ -60,6 +60,19 @@ class Settings(BaseSettings):
     # secret signs every account out. Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"
     auth_secret: str | None = None
     auth_token_days: int = 30
+    # Outgoing mail for the password reset link (app/mail.py). Without SMTP_HOST and MAIL_FROM the reset routes answer 503.
+    # Port 465 is TLS from the start; any other port must offer STARTTLS. MAIL_FROM: "지금 추천 <no-reply@example.com>".
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    mail_from: str | None = None
+    # Where the app is served: the reset link in the mail opens <PUBLIC_APP_URL>#/reset/<token>.
+    public_app_url: str = "https://ow-wl.github.io/NowRecommend/"
+    reset_token_minutes: int = 30
+    # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
+    reset_daily_per_address: int = 10
+    reset_daily_per_email: int = 3
     # Largest synced browser store accepted by PUT /api/me/store (backups cap at 5MB in the browser; 1MB ≈ 50 entries with rounds).
     store_max_bytes: int = 1_000_000
     # PUT /api/me/store per client per minute (0 = off). The browser waits 1.5s after a change, so 40 is its own ceiling.
