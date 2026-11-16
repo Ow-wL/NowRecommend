@@ -2,7 +2,7 @@
 
 React·TypeScript·Vite로 만든 음식·음악 추천 앱입니다. 둥근 카드와 사진 중심의 화면([DESIGN.md](./DESIGN.md) v6.1)에서 평소 취향과 이번 요청 조건을 분리하고, 추천 이유를 확인한 뒤 최종 선택을 기록합니다. 다크·시스템 테마와 강조색 설정, 로그인(계정 동기화), AI 음악 추천과 음식·음악 AI 실험실을 제공합니다.
 
-공개 사이트 [지금 추천](https://ow-wl.github.io/NowRecommend/)은 Google Cloud의 추천 API(유사도 검색 + AI 재순위)와 연결되어 있습니다. 배포 구성은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
+공개 사이트 [지금 추천](https://nowrec.kr/)은 Google Cloud의 추천 API(유사도 검색 + AI 재순위)와 연결되어 있습니다. 배포 구성은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
 ## 실행과 검증
 
@@ -301,7 +301,7 @@ py -3.14 -m venv .venv
 
 이 폴더가 GitHub 저장소 루트입니다. Settings → Pages → Source에서 GitHub Actions를 사용합니다. `main` 푸시가 `.github/workflows/deploy-pages.yml`의 단위 테스트·빌드·배포를 실행합니다. 지금은 저장소 변수 `VITE_API_BASE_URL`에 배포 API 주소가 있어 Pages가 서버 모드로 빌드됩니다. 변수를 지우면 오프라인 모드로 돌아갑니다. API 서버(Cloud Run + Cloud SQL)의 구성·재배포·되돌리기는 [DEPLOY.md](./DEPLOY.md)에 있습니다.
 
-실제 사이트: [지금 추천](https://ow-wl.github.io/NowRecommend/).
+실제 사이트: [지금 추천](https://nowrec.kr/).
 
 해시 경로(`#/history`)와 상대 정적 자산 경로로 저장소 하위 주소 새로고침을 지원합니다. 로컬과 배포 사이트의 브라우저 저장소는 분리됩니다. 브라우저 테스트는 로컬 검증이며 배포 Actions는 단위 테스트와 빌드를 실행합니다.
 

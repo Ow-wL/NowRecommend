@@ -2,9 +2,10 @@
 
 상태: **공개 배포 완료(2026-10-19)**. 프론트엔드는 GitHub Pages, API와 DB는 Google Cloud(Cloud Run + Cloud SQL)에 있습니다. [plans-rag.md](./plans-rag.md) §12 결정 2의 결과입니다.
 
-- 사이트: <https://ow-wl.github.io/NowRecommend/>
+- 사이트: <https://nowrec.kr/> (2026-11-17부터. 이전 주소 <https://ow-wl.github.io/NowRecommend/>와 `www.nowrec.kr`은 이 주소로 넘어옵니다)
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- 운영 중(2026-11-09 화면 전환·추가 기능 배포 뒤): 가격 제거 **2단계(열 삭제)까지 완료**, 계정 기능 **켜짐**, 음식·음악 모두 **AI 엔진**.
+- **운영 중(2026-11-17 출시 준비 묶음 배포 뒤)**: API 이미지 `api:33b9b29`, 리비전 `nowrecommend-api-00019-x4t`(트래픽 100%), DB 마이그레이션 `0010`, Pages는 `main` `33b9b29`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:33b9b29`. 자세한 것은 §4-3. 아래 줄부터는 그 이전 기록입니다.
+- 이전 운영 상태(2026-11-09 화면 전환·추가 기능 배포 뒤): 가격 제거 **2단계(열 삭제)까지 완료**, 계정 기능 **켜짐**, 음식·음악 모두 **AI 엔진**.
   - API: 이미지 `api:c6fb47e`, 리비전 `nowrecommend-api-00016-ztd`(트래픽 100%, 환경 변수 `SONG_STORE_DEADLINE_MS=2500`). AI 음악 곡을 Apple 스토어에서 확인해 등록된 곡을 먼저 보내고, 메뉴 이름과 검수 재료로 필수 제외를 확인합니다. 시드 작업은 `api:7a5e7cb`(비건·채식 메뉴 15개 추가, 카탈로그 음식 81개·음악 226곡)이고, 관리자 작업은 `api:1fab577` 그대로입니다.
   - Pages: `ef56b39`의 화면(디자인 v9, 같이 추천, 사진 없는 홈, 지난 선택·평가 반영, 취향 유형 16문항과 친구 궁합 링크, 양고기 제외, 설정의 미리듣기 볼륨). 문서만 바꾼 뒤 커밋이 있으면 화면은 같습니다. API 재배포(`d3a7de6`)는 서버만 바뀌어 화면은 같습니다.
   - DB: 마이그레이션 `0006`. 대기 중인 마이그레이션 없음.
@@ -443,9 +444,21 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
   - 인스턴스 생성부터 삭제까지 약 20분이 걸렸습니다. 실제 복구라면 2번의 대상을 운영 인스턴스로 하거나, 임시 인스턴스를 그대로 새 운영으로 쓰고 Cloud Run의 Cloud SQL 연결과 `database-url` 비밀 값을 바꿉니다.
   - Git Bash에서 `MSYS_NO_PATHCONV=1`을 켜면 gcloud가 실행되지 않습니다. `/`로 시작하는 인자가 있는 명령에만 붙입니다.
 
-## 4-3. 출시 준비 묶음(1~5단계)의 배포와 도메인 전환 — 계획 (2026-11-17 작성, 아직 실행 전)
+## 4-3. 출시 준비 묶음(1~5단계)의 배포와 도메인 전환 (2026-11-17 실행)
 
 브랜치 `launch-polish`가 `main`보다 앞서 있고, DB 마이그레이션 `0007`~`0010`(모두 확장)을 가져옵니다. 사이트 주소는 `https://nowrec.kr`로 바꿉니다(2026-11-17 구매).
+
+실행 결과(2026-11-17, 커밋 `33b9b29`):
+
+- 배포 전 수동 백업 `1794865023283`(DB `0006` 시점).
+- API: 리비전 `00018-82l`로 배포하면서 `0007`~`0010` 적용(`migrate: at 0006; upgraded to 0010`). 화면 배포 뒤 `SIGNUP_CONSENT_REQUIRED`를 지워 지금은 `00019-x4t`. 환경 변수에 `CORS_ORIGINS=["https://nowrec.kr","https://www.nowrec.kr","https://ow-wl.github.io"]`, `PUBLIC_APP_URL=https://nowrec.kr/`가 추가됐습니다.
+- 작업 네 개의 이미지를 `api:33b9b29`로 바꿨고, `nowrecommend-migrate-plan`이 `at 0010; nothing to apply`를 냈습니다.
+- Pages: 저장소 변수 `VITE_PUBLIC_URL=https://nowrec.kr/`, `main`을 `2a3c4ac` → `33b9b29`로 올림, 사용자 도메인 `nowrec.kr`, 인증서(`nowrec.kr`·`www.nowrec.kr`) 발급 뒤 HTTPS 강제.
+- 확인한 것: `https://nowrec.kr/`에서 연령 확인 창, 약관·처리방침의 운영자 이름과 문의 주소, 카탈로그·추천(AI 방식) 응답, CSP 메타와 서비스 워커 등록, 동의 없는 가입 422, `http://`와 `www`가 `https://nowrec.kr/`로 넘어감.
+- 확인하지 못한 것: 실제 가입과 두 기기 동기화, 기존 계정 로그인(운영에서 계정을 만들거나 비밀번호를 넣는 일은 운영자가 직접), 재설정 메일(SMTP 미설정이라 503).
+- **겪은 문제**: 배포 워크플로는 `actions/configure-pages`가 알려주는 경로로 빌드합니다(`--base`). 도메인을 설정하기 **전에** 빌드된 결과물은 파일 주소가 `/NowRecommend/…`라서, 도메인을 설정한 뒤 `nowrec.kr`에서 빈 화면이 됐습니다(약 10분). 워크플로를 다시 실행해(`gh run rerun`) `/` 경로로 빌드하니 해결됐습니다. 호스팅 경로가 바뀌는 일이 또 있으면 **경로를 먼저 바꾸고 바로 워크플로를 다시 실행**합니다. Pages 응답은 10분 캐시되므로(`max-age=600`) 그동안은 이전 페이지가 보일 수 있습니다.
+
+아래는 실행에 쓴 순서입니다.
 
 순서:
 
