@@ -67,3 +67,37 @@ test('a release ships its icons, its own address in link previews and a cache na
   expect(worker).not.toContain('__BUILD__');
   expect(worker).toMatch(/const VERSION = PREFIX \+ '[0-9a-z]+'/);
 });
+
+test('a browser a few years old still gets the app, not the error page', async ({ page }) => {
+  // What Safari before 15.4 and Chrome before 92-103 lack (src/polyfills.ts). The build lowers syntax only, so the first
+  // call to one of these used to replace the whole screen with the error page (seen in the error log, 2026-11-17).
+  const failures: string[] = [];
+  page.on('pageerror', error => failures.push(error.message));
+  await page.addInitScript(version => {
+    localStorage.setItem('nowrecommend-adult-v1', version);
+    localStorage.setItem('nowrecommend-prototype-v1', JSON.stringify({ version: 2, name: '검증', profiles: { food: { selected: ['f01', 'f02', 'f03', 'f04', 'f05'], tags: [], disliked: [] }, music: { selected: ['m01'], tags: [], disliked: [] } }, favorites: [], history: [], appearance: { mode: 'light' } }));
+    Object.defineProperty(Crypto.prototype, 'randomUUID', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(window, 'structuredClone', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(Array.prototype, 'at', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(String.prototype, 'at', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+  }, legal.version);
+  await page.route('https://itunes.apple.com/**', route => route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: '{"results":[]}' }));
+  await page.route(`${API}/api/catalog**`, route => fulfill(route, { catalogVersion: 'db-test', items }));
+  await page.route(`${API}/api/parse`, route => fulfill(route, { conditions: { tags: [], excluded: [], maxPrice: null }, unparsed: [], source: 'rule', ai: 'not_needed' }));
+  await page.route(`${API}/api/client-errors`, route => fulfill(route, {}));
+  await page.route(`${API}/api/recommend`, route => fulfill(route, {
+    results: ['f02', 'f12', 'f09'].map(id => ({ item: items.find(i => i.id === id)!, tasteReason: '이유', contextReason: '상황' })),
+    meta: { mode: 'retrieval_only', eligibleCount: 17, newCount: 3, catalogVersion: 'db-test', requestId: 'r' } }));
+  await page.goto('/');
+  expect(await page.evaluate(() => [typeof crypto.randomUUID, typeof structuredClone, typeof [].at, typeof ''.at, typeof AbortSignal.timeout])).toEqual(Array(5).fill('function'));
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  // A round of recommendations makes ids and copies conditions; choosing one writes a history entry.
+  await page.goto('/#/recommend/food');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.locator('.result-grid h3')).toHaveCount(3);
+  await expect(page).toHaveURL(/#\/recommend\/food\/results$/);
+  await page.goto('/#/recommend/music');
+  await expect(page.getByRole('button', { name: /추천받기$/ })).toBeVisible();
+  expect(failures).toEqual([]);
+});

@@ -1,3 +1,4 @@
+import './polyfills';  // first: adds what an older browser lacks before any other module runs
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
