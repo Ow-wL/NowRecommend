@@ -8,7 +8,9 @@ from app.models import UNMANAGED_TABLES, Base
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Keeps the loggers that exist already: the default turns every one of them off, so anything that migrates inside a
+    # running process (the test suite, a script) would lose the app's own log lines from then on.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
