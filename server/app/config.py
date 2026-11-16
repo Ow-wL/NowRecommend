@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     auth_token_days: int = 30
     # Largest synced browser store accepted by PUT /api/me/store (backups cap at 5MB in the browser; 1MB ≈ 50 entries with rounds).
     store_max_bytes: int = 1_000_000
+    # PUT /api/me/store per client per minute (0 = off). The browser waits 1.5s after a change, so 40 is its own ceiling.
+    store_writes_per_minute: int = 60
 
 
 @lru_cache

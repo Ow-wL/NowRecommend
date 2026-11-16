@@ -86,6 +86,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(Text)
     store: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"))
     store_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # +1 on every saved upload. An upload names the version it was built on, so a device that missed another's save is
+    # refused instead of overwriting it (routes/auth.py write_store).
+    store_version: Mapped[int] = mapped_column(Integer, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())  # set only by app.cli.admin

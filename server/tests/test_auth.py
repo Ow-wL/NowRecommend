@@ -10,6 +10,7 @@ from app.db import get_session
 from app.main import create_app
 from app.models import User
 from app.routes.auth import get_signer
+from tests.conftest import needs_db
 
 
 def test_password_hash_round_trip_and_rejects_garbage():
@@ -86,7 +87,7 @@ def test_store_sync_requires_a_valid_token_and_limits_size(client):
     auth = {"Authorization": f"Bearer {token}"}
     assert client.get("/api/me/store").status_code == 401
     assert client.get("/api/me/store", headers={"Authorization": "Bearer nope"}).status_code == 401
-    assert client.get("/api/me/store", headers=auth).json() == {"store": None, "updatedAt": None}
+    assert client.get("/api/me/store", headers=auth).json() == {"store": None, "updatedAt": None, "version": 0}
 
     store = {"version": 2, "name": "주형", "favorites": ["f01"], "history": []}
     saved = client.put("/api/me/store", json={"store": store}, headers=auth)
@@ -98,6 +99,81 @@ def test_store_sync_requires_a_valid_token_and_limits_size(client):
     big = {"history": ["x" * 1_100_000]}
     assert client.put("/api/me/store", json={"store": big}, headers=auth).status_code == 413
     assert client.get("/api/me/store", headers=auth).json()["store"] == store  # the oversized upload changed nothing
+
+
+def test_a_stale_device_cannot_overwrite_a_newer_store(client):
+    """Two devices on one account: the one that has not seen the other's save is refused, not obeyed (data loss, 2026-11-16)."""
+    token = client.post("/api/auth/signup", json=SIGNUP).json()["token"]
+    auth = {"Authorization": f"Bearer {token}"}
+    assert client.get("/api/me/store", headers=auth).json()["version"] == 0
+
+    phone = {"version": 2, "name": "주형", "favorites": ["f01", "f02"], "history": []}
+    saved = client.put("/api/me/store", json={"store": phone, "baseVersion": 0}, headers=auth)
+    assert saved.status_code == 200 and saved.json()["version"] == 1
+
+    laptop = {"version": 2, "name": "주형", "favorites": [], "history": []}  # still what it had before the phone saved
+    refused = client.put("/api/me/store", json={"store": laptop, "baseVersion": 0}, headers=auth)
+    assert refused.status_code == 409
+    read = client.get("/api/me/store", headers=auth).json()
+    assert read["store"] == phone and read["version"] == 1  # the refused upload changed nothing
+    assert client.get("/api/auth/me", headers=auth).json()["storeVersion"] == 1
+
+    merged = {**phone, "favorites": ["f01", "f02", "f03"]}
+    again = client.put("/api/me/store", json={"store": merged, "baseVersion": 1}, headers=auth)
+    assert again.status_code == 200 and again.json()["version"] == 2
+    assert client.put("/api/me/store", json={"store": merged, "baseVersion": -1}, headers=auth).status_code == 422
+
+
+def test_an_upload_without_a_base_version_still_saves(client):
+    """Browsers still running the build from before 2026-11-16 send no baseVersion; they keep working and move the version on."""
+    token = client.post("/api/auth/signup", json=SIGNUP).json()["token"]
+    auth = {"Authorization": f"Bearer {token}"}
+    store = {"version": 2, "name": "주형", "favorites": [], "history": []}
+    assert client.put("/api/me/store", json={"store": store}, headers=auth).json()["version"] == 1
+    assert client.put("/api/me/store", json={"store": store}, headers=auth).json()["version"] == 2
+    assert client.put("/api/me/store", json={"store": store, "baseVersion": 1}, headers=auth).status_code == 409
+
+
+@needs_db
+def test_on_postgresql_saves_racing_on_one_version_cannot_all_win(test_database_url):
+    """The real database: eight saves built on version 0 arrive together, one is saved and seven are refused, and the
+    winner is told the version its own save produced."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from sqlalchemy import text
+
+    engine = create_engine(test_database_url)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE users CASCADE"))
+    make = sessionmaker(engine, expire_on_commit=False)
+
+    def session():
+        with make() as s:
+            yield s
+
+    app = create_app()
+    app.dependency_overrides[get_session] = session
+    app.dependency_overrides[get_signer] = lambda: TokenSigner("test-secret", ttl_seconds=3600)
+    try:
+        with TestClient(app) as racing:
+            token = racing.post("/api/auth/signup", json=SIGNUP).json()["token"]
+            auth = {"Authorization": f"Bearer {token}"}
+
+            def save(n):
+                return n, racing.put("/api/me/store", json={"store": {"device": n, "이름": "주형"}, "baseVersion": 0}, headers=auth)
+
+            with ThreadPoolExecutor(8) as pool:
+                answers = list(pool.map(save, range(8)))
+            assert sorted(a.status_code for _, a in answers) == [200] + [409] * 7
+            winner, saved = next((n, a) for n, a in answers if a.status_code == 200)
+            assert saved.json()["version"] == 1
+            read = racing.get("/api/me/store", headers=auth).json()
+            assert read["version"] == 1 and read["store"] == {"device": winner, "이름": "주형"}
+            # Saves one after another each get their own number.
+            versions = [racing.put("/api/me/store", json={"store": {"n": n}, "baseVersion": 1 + n}, headers=auth).json()["version"] for n in range(3)]
+            assert versions == [2, 3, 4]
+    finally:
+        engine.dispose()
 
 
 def test_delete_account_needs_the_password(client):

@@ -13,6 +13,9 @@ from starlette.responses import JSONResponse
 
 log = logging.getLogger(__name__)
 LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login", "/api/reports"}
+# Account store uploads (PUT) get a bucket of their own: the browser saves 1.5s after every change, and a burst of saves
+# should neither be stopped by the recommend limit nor use it up.
+STORE_PATH = "/api/me/store"
 MAX_CLIENTS = 10_000
 
 
@@ -37,12 +40,23 @@ class SlidingWindow:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, per_minute: int, trust_proxy: bool = False, clock=time.monotonic):
+    def __init__(self, app, per_minute: int, trust_proxy: bool = False, clock=time.monotonic, store_per_minute: int = 0,
+                 store_max_bytes: int = 0):
         super().__init__(app)
-        self.window, self.trust_proxy, self.logged_shape = SlidingWindow(per_minute, clock), trust_proxy, False
+        self.window, self.trust_proxy, self.logged_shape = SlidingWindow(per_minute, clock) if per_minute > 0 else None, trust_proxy, False
+        self.store_window = SlidingWindow(store_per_minute, clock) if store_per_minute > 0 else None
+        self.store_max_bytes = store_max_bytes
 
     async def dispatch(self, request: Request, call_next):
-        if request.method == "POST" and request.url.path in LIMITED_PATHS:
+        if request.method == "PUT" and request.url.path == STORE_PATH:
+            # Refused on the declared length, before the body is read and parsed; the route measures the store itself again.
+            declared = request.headers.get("content-length", "")
+            if self.store_max_bytes and declared.isdigit() and int(declared) > self.store_max_bytes:
+                return JSONResponse({"detail": "저장 데이터가 너무 커요. 오래된 기록을 정리한 뒤 다시 시도해주세요."}, status_code=413)
+            if self.store_window and (wait := self.store_window.check(self.client_key(request))) is not None:
+                return JSONResponse({"detail": "저장 요청이 너무 많아요. 잠시 후 다시 시도해주세요."}, status_code=429,
+                                    headers={"Retry-After": str(max(1, round(wait)))})
+        if self.window and request.method == "POST" and request.url.path in LIMITED_PATHS:
             if (wait := self.window.check(self.client_key(request))) is not None:
                 return JSONResponse({"detail": "요청이 너무 많아요. 잠시 후 다시 시도해주세요."}, status_code=429,
                                     headers={"Retry-After": str(max(1, round(wait)))})

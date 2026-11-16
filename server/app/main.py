@@ -21,9 +21,11 @@ def create_app() -> FastAPI:
     settings = get_settings()
     # Innermost, so CORS (added last, outermost) still decorates the 500 it produces and browsers read it as a server error.
     app.add_middleware(ErrorResponseMiddleware)
-    if settings.rate_limit_per_minute > 0:
+    if settings.rate_limit_per_minute > 0 or settings.store_writes_per_minute > 0 or settings.store_max_bytes > 0:
         # Added before CORS so CORS stays outermost and 429 answers still carry CORS headers.
-        app.add_middleware(RateLimitMiddleware, per_minute=settings.rate_limit_per_minute, trust_proxy=settings.trust_proxy)
+        # The declared-length check leaves room for the JSON around the store ({"store": …, "baseVersion": n}).
+        app.add_middleware(RateLimitMiddleware, per_minute=settings.rate_limit_per_minute, trust_proxy=settings.trust_proxy,
+                           store_per_minute=settings.store_writes_per_minute, store_max_bytes=settings.store_max_bytes + 4096)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

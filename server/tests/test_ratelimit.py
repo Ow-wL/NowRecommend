@@ -56,5 +56,30 @@ def test_a_spoofed_forwarded_for_prefix_does_not_reset_the_limit():
     assert client.post("/api/parse", headers={"X-Forwarded-For": "9.9.9.2, 3.3.3.3"}).status_code == 429
 
 
+def test_store_uploads_have_their_own_bucket_and_a_declared_size_limit():
+    app = FastAPI()
+    app.add_middleware(RateLimitMiddleware, per_minute=1, store_per_minute=2, store_max_bytes=100)
+    app.post("/api/parse")(lambda: {"ok": True})
+    app.put("/api/me/store")(lambda: {"ok": True})
+    app.get("/api/me/store")(lambda: {"ok": True})
+    client = TestClient(app)
+    assert client.post("/api/parse").status_code == 200 and client.post("/api/parse").status_code == 429
+    # Saves are counted apart from the recommend limit, and reads are never counted.
+    assert [client.put("/api/me/store", json={"store": {}}).status_code for _ in range(3)] == [200, 200, 429]
+    assert all(client.get("/api/me/store").status_code == 200 for _ in range(5))
+    other = TestClient(app, client=("10.0.0.9", 50000))
+    assert other.put("/api/me/store", content=b"x" * 101, headers={"Content-Type": "application/json"}).status_code == 413
+
+
+def test_store_limits_stay_when_the_general_limit_is_off():
+    app = FastAPI()
+    app.add_middleware(RateLimitMiddleware, per_minute=0, store_per_minute=1, store_max_bytes=100)
+    app.post("/api/parse")(lambda: {"ok": True})
+    app.put("/api/me/store")(lambda: {"ok": True})
+    client = TestClient(app)
+    assert all(client.post("/api/parse").status_code == 200 for _ in range(3))
+    assert [client.put("/api/me/store", json={}).status_code for _ in range(2)] == [200, 429]
+
+
 def test_app_installs_the_limit_by_default():
     assert any(m.cls is RateLimitMiddleware for m in create_app().user_middleware)

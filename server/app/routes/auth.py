@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
-from pydantic import BaseModel, StringConstraints, field_validator
-from sqlalchemy import select
+from pydantic import BaseModel, Field, StringConstraints, field_validator
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
@@ -52,6 +52,9 @@ class SignupRequest(Credentials):
 
 class StoreUpload(BaseModel):
     store: dict
+    # The version this upload was built on (GET /api/me/store). None: a browser still running the build from before
+    # 2026-11-16, which is saved unconditionally as it always was.
+    baseVersion: Annotated[int, Field(ge=0)] | None = None
 
 
 class DeleteRequest(BaseModel):
@@ -125,22 +128,33 @@ def login(request: Credentials, session: Session = Depends(get_session), signer:
 
 @router.get("/api/auth/me")
 def me(user: User = Depends(current_user)):
-    return {"user": public_user(user), "hasStore": user.store is not None, "storeUpdatedAt": _iso(user.store_updated_at)}
+    return {"user": public_user(user), "hasStore": user.store is not None, "storeUpdatedAt": _iso(user.store_updated_at),
+            "storeVersion": user.store_version}
 
 
 @router.get("/api/me/store")
 def read_store(user: User = Depends(current_user)):
-    return {"store": user.store, "updatedAt": _iso(user.store_updated_at)}
+    return {"store": user.store, "updatedAt": _iso(user.store_updated_at), "version": user.store_version}
 
 
 @router.put("/api/me/store")
 def write_store(upload: StoreUpload, user: User = Depends(current_user), session: Session = Depends(get_session)):
+    """Saves the whole browser store. With `baseVersion` the save happens only if no other device saved since that version
+    (one UPDATE, so two uploads racing cannot both win); the refused device reads the newer store, merges and tries again."""
     size = len(json.dumps(upload.store, ensure_ascii=False).encode("utf-8"))
     if size > get_settings().store_max_bytes:
         raise HTTPException(413, "저장 데이터가 너무 커요. 오래된 기록을 정리한 뒤 다시 시도해주세요.")
-    user.store, user.store_updated_at = upload.store, datetime.now(timezone.utc)
+    unchanged_since = [] if upload.baseVersion is None else [User.store_version == upload.baseVersion]
+    # RETURNING: the version this very UPDATE produced. Reading the row again after the commit could return the version
+    # of a save that came right after, and the browser would then build its next save on data it never saw.
+    saved = session.execute(update(User).where(User.id == user.id, *unchanged_since)
+                            .values(store=upload.store, store_updated_at=datetime.now(timezone.utc), store_version=User.store_version + 1)
+                            .returning(User.store_version, User.store_updated_at)).first()
+    if saved is None:
+        session.rollback()
+        raise HTTPException(409, "다른 기기에서 먼저 저장했어요. 최신 데이터를 받아 다시 저장해주세요.")
     session.commit()
-    return {"updatedAt": _iso(user.store_updated_at), "bytes": size}
+    return {"updatedAt": _iso(saved.store_updated_at), "bytes": size, "version": saved.store_version}
 
 
 @router.post("/api/auth/delete", status_code=204)
