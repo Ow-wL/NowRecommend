@@ -15,9 +15,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 2,
   timeout: 30000,
-  use: { channel: 'msedge', headless: true, viewport: { width: 1440, height: 1050 } },
+  // Edge on a developer's Windows machine; CI sets PW_CHANNEL=chromium (the browser Playwright installs itself).
+  use: { channel: process.env.PW_CHANNEL || 'msedge', headless: true, viewport: { width: 1440, height: 1050 } },
   projects: [
-    { name: 'offline', testIgnore: '**/api/**', use: { baseURL } },
+    { name: 'offline', testIgnore: ['**/api/**', '**/dist/**'], use: { baseURL } },  // the built site has a config of its own (playwright.dist.config.ts)
     { name: 'api', testMatch: '**/api/**/*.spec.ts', use: { baseURL: apiBaseURL, storageState: { cookies: [], origins: [{ origin: apiBaseURL, localStorage: [{ name: 'nowrecommend-adult-v1', value: legal.version }] }] } } },
   ],
   webServer: [

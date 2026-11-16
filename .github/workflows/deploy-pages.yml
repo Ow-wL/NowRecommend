@@ -1,4 +1,4 @@
-name: Deploy prototype to GitHub Pages
+name: Deploy site to GitHub Pages
 
 on:
   push:
@@ -30,12 +30,15 @@ jobs:
         run: npm ci
       - name: Verify recommendation rules
         run: npm test
-      - name: Build prototype
+      - name: Build site
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           # Repository variable (Settings → Secrets and variables → Actions → Variables). Unset → offline mode
           # with the bundled catalog, exactly as before. Must be an https origin (Pages is served over https).
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          # The build's name in error reports and in the offline cache, and where the site is served (link previews).
+          VITE_RELEASE: ${{ github.sha }}
+          VITE_PUBLIC_URL: ${{ vars.VITE_PUBLIC_URL }}
           # Who runs the service and where to write (src/legal.ts): shown in the terms and the privacy policy. Both must
           # be set before a public launch; while they are missing the documents say that they are.
           VITE_OPERATOR_NAME: ${{ vars.VITE_OPERATOR_NAME }}

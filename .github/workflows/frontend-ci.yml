@@ -1,0 +1,48 @@
+name: Frontend tests
+
+# Unit tests, the type check and build, the browser tests against the dev server, and the built site (security policy,
+# icons, offline cache). Runs on every branch and pull request; pushing to main also deploys (deploy-pages.yml), so this
+# is the check to require on main once branch protection is on.
+on:
+  push:
+    paths-ignore: ['server/**', '**.md']
+  pull_request:
+    paths-ignore: ['server/**', '**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PW_CHANNEL: chromium  # the browser Playwright installs; a developer's machine uses Edge (playwright.config.ts)
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Install the test browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests (dev server)
+        run: npx playwright test
+      - name: Build as a server-mode site
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:5999
+          VITE_RELEASE: ${{ github.sha }}
+        run: npm run build
+      - name: Browser tests (built site)
+        run: npm run test:dist
