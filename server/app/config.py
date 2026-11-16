@@ -38,8 +38,9 @@ class Settings(BaseSettings):
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)
     db_connect_timeout: int = 3
-    # Store request sentences in recommendation_logs (local/evaluation only; set false when deployed).
-    log_raw_text: bool = True
+    # Store request sentences in recommendation_logs. Off unless turned on for a local evaluation: the privacy policy
+    # says the sentence is not kept (src/legal.ts), and that must not hang on someone remembering a deploy setting.
+    log_raw_text: bool = False
     # POSTs to /api/recommend and /api/parse per client per minute (0 = off); TRUST_PROXY reads X-Forwarded-For.
     rate_limit_per_minute: int = 30
     # The same limit for a visitor who is not signed in (0 = the limit above). A signed-in caller is counted per account,
@@ -55,6 +56,7 @@ class Settings(BaseSettings):
     # Sign-up needs the agreed terms version and the age confirmation the form sends (2026-11-17). False only for a
     # short deploy window with an older frontend still in browsers; the account is then stored without a consent record.
     signup_consent_required: bool = True
+    legal_path: Path = PROJECT_ROOT / "shared" / "legal.json"  # the documents' version and the service's age, shared with the frontend
     # The AI lab (/api/lab) compares engines and lets the caller pick a model: an admin tool. True opens it to everyone
     # (local experiments without accounts).
     lab_public: bool = False

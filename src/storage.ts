@@ -60,6 +60,18 @@ export function writeStore(store:Store, sync?: unknown):boolean {
 export function clearDamagedStore():boolean {
   try { localStorage.removeItem(KEY); return true; } catch { return false; }
 }
+/** Everything this app keeps in this browser, except what `keep` names: the store and the copies set aside from it
+ * (before a login, an import, an upgrade), the caches (songs checked, previews, AI picks seen), the lab's notes and this
+ * tab's session. The privacy policy promises that "clear this browser's data" does this (src/legal.ts). */
+export function clearBrowserData(keep: string[] = []): boolean {
+  try {
+    for (const area of [localStorage, sessionStorage]) {
+      const keys = Array.from({ length: area.length }, (_, n) => area.key(n)).filter((k): k is string => !!k && k.startsWith('nowrecommend-') && !keep.includes(k));
+      keys.forEach(k => area.removeItem(k));
+    }
+    return true;
+  } catch { return false; }
+}
 export function replaceStore(store:Store):boolean {
   try{const old=localStorage.getItem(KEY);if(old!==null)localStorage.setItem(KEY+'-before-import',old);localStorage.setItem(KEY,JSON.stringify(store));return true;}catch{return false;}
 }

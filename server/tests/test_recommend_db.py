@@ -117,7 +117,8 @@ def test_each_request_is_logged(catalog):
     with client_for(catalog) as client:
         meta = client.post("/api/recommend", json=body()).json()["meta"]
     entry = catalog.get(RecommendationLog, __import__("uuid").UUID(meta["requestId"]))
-    assert entry.mode == "retrieval_only" and entry.raw_text == "혼자 먹을 담백한 저녁"
+    # The sentence itself is not stored unless LOG_RAW_TEXT turns that on (the privacy policy says it is not kept).
+    assert entry.mode == "retrieval_only" and entry.raw_text is None
     assert entry.result_ids == entry.candidate_ids[:3] and len(entry.candidate_ids) == 10
     assert set(entry.candidate_scores[entry.result_ids[0]]) >= {"score", "context", "taste"}
     assert entry.params["selection"]["tau"] == 0

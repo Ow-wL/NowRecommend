@@ -61,8 +61,11 @@ def take(session: Session, bucket: str, limit: int, day: date | None = None) -> 
     limit" and counts nothing."""
     if limit <= 0:
         return 0
-    count = session.execute(_TAKE, {"day": day or today(), "bucket": bucket, "limit": limit}).scalar()
+    day = day or today()
+    count = session.execute(_TAKE, {"day": day, "bucket": bucket, "limit": limit}).scalar()
     session.commit()
+    if count == 1:  # a counter's first use of the day also clears the days nobody needs any more
+        forget_old(session, day)
     return count
 
 
@@ -71,7 +74,7 @@ def used(session: Session, bucket: str, day: date | None = None) -> int:
 
 
 def forget_old(session: Session, day: date | None = None) -> None:
-    session.execute(delete(UsageDaily).where(UsageDaily.day < (day or today()) - timedelta(days=KEEP_DAYS)))
+    session.execute(delete(UsageDaily).where(UsageDaily.day <= (day or today()) - timedelta(days=KEEP_DAYS)))
     session.commit()
 
 
@@ -83,10 +86,7 @@ def take_total() -> bool:
         return True
     try:
         with get_sessionmaker()() as session:
-            count = take(session, TOTAL, limit)
-            if count == 1:  # the first call of a day also clears the days nobody needs any more
-                forget_old(session)
-            return count is not None
+            return take(session, TOTAL, limit) is not None
     except Exception:  # noqa: BLE001 - whatever the database said, the answer here is "do not call the model"
         log.exception("AI budget could not be read; the model is not called")
         return False

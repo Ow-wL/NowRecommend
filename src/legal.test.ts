@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { LEGAL_VERSION, MIN_AGE, operatorKnown, privacySections, termsSections } from './legal';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import shared from '../shared/legal.json' with { type: 'json' };
+import { clearBrowserData } from './storage';
+import { ADULT_KEY, LEGAL_VERSION, MIN_AGE, adultConfirmed, confirmAdult, operatorKnown, privacySections, termsSections } from './legal';
 import { previewsOnOf, weatherModeOf } from './features';
 import { weatherUrl } from './weather';
 
@@ -47,5 +49,37 @@ describe('parts that depend on other companies\u2019 terms', () => {
   it('previews: on unless switched off', () => {
     expect(previewsOnOf({})).toBe(true);
     expect(previewsOnOf({ VITE_APPLE_PREVIEWS: 'off' })).toBe(false);
+  });
+});
+
+describe('what the documents promise about this browser', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const area = (entries: Record<string, string>) => {
+    const data = new Map(Object.entries(entries));
+    return { get length() { return data.size; }, key: (n: number) => [...data.keys()][n] ?? null, getItem: (k: string) => data.get(k) ?? null,
+      setItem: (k: string, v: string) => { data.set(k, v); }, removeItem: (k: string) => { data.delete(k); }, keys: () => [...data.keys()] };
+  };
+  it('the version and the age are the ones the server reads', () => {
+    expect(LEGAL_VERSION).toBe(shared.version);
+    expect(MIN_AGE).toBe(shared.minAge);
+  });
+  it('"clear this browser\u2019s data" removes the store, its set-aside copies and the caches, and nothing of another site', () => {
+    const local = area({ 'nowrecommend-prototype-v1': '{}', 'nowrecommend-prototype-v1-before-login': '{}', 'nowrecommend-prototype-v1-before-import': '{}',
+      'nowrecommend-known-items-v1': '{}', 'nowrecommend-song-check-v4': '{}', 'nowrecommend-preview-v1': '{}', 'nowrecommend-lab-v2': '{}',
+      'nowrecommend-auth-v1': '{"token":"t"}', [ADULT_KEY]: LEGAL_VERSION, 'someone-elses-key': 'kept' });
+    const session = area({ 'nowrecommend-session-v1': '{}', 'nowrecommend-weather-v1': '{}', 'other-tab-state': 'kept' });
+    vi.stubGlobal('localStorage', local); vi.stubGlobal('sessionStorage', session);
+    expect(clearBrowserData(['nowrecommend-auth-v1', ADULT_KEY])).toBe(true);
+    expect(local.keys().sort()).toEqual([ADULT_KEY, 'nowrecommend-auth-v1', 'someone-elses-key'].sort());
+    expect(session.keys()).toEqual(['other-tab-state']);
+  });
+  it('the age answer is remembered for the version it was given to', () => {
+    const local = area({});
+    vi.stubGlobal('localStorage', local);
+    expect(adultConfirmed()).toBe(false);
+    confirmAdult();
+    expect(adultConfirmed()).toBe(true);
+    local.setItem(ADULT_KEY, '2020-01-01');  // an answer to older documents: asked again
+    expect(adultConfirmed()).toBe(false);
   });
 });

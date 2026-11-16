@@ -49,10 +49,17 @@ def test_take_counts_up_to_the_limit_and_each_day_and_bucket_alone(counters):
 
 
 def test_old_days_are_forgotten_after_a_week(counters):
-    for back in (0, 7, 8, 30):
-        budget.take(counters, "a", 5, DAY - timedelta(days=back))
-    budget.forget_old(counters, DAY)
-    assert sorted(counters.scalars(select(UsageDaily.day))) == [DAY - timedelta(days=7), DAY]
+    """The privacy policy says seven days: the counters of today and the six days before stay, older ones go. Any counter's
+    first use of a day does the clearing, so it does not wait for one particular kind of request."""
+    for back in (1, 6, 7, 8, 30):
+        counters.add(UsageDaily(day=DAY - timedelta(days=back), bucket="a", count=3))
+    counters.commit()
+    assert budget.take(counters, "ai:g:someone", 5, DAY) == 1  # the first use of this counter today
+    assert sorted(counters.scalars(select(UsageDaily.day).where(UsageDaily.bucket == "a"))) == [DAY - timedelta(days=6), DAY - timedelta(days=1)]
+    counters.add(UsageDaily(day=DAY - timedelta(days=9), bucket="a", count=1))
+    counters.commit()
+    assert budget.take(counters, "ai:g:someone", 5, DAY) == 2  # not the first: nothing is scanned
+    assert counters.scalar(select(UsageDaily.count).where(UsageDaily.day == DAY - timedelta(days=9))) == 1
 
 
 def test_a_guest_is_kept_as_a_keyed_hash_not_an_address():

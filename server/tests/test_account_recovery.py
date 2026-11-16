@@ -259,20 +259,34 @@ def test_a_password_is_replaced_only_if_it_is_still_the_one_that_was_checked(wor
     assert client.get("/api/auth/me", headers=auth).status_code == 401  # and the sessions from before are over
 
 
-def test_sign_up_needs_the_agreed_terms_and_the_age_and_keeps_a_record(world):
-    """2026-11-17: the form sends what was agreed to; without it there is no account, and with it the account says so."""
+def test_sign_up_needs_each_agreement_for_the_documents_in_force_and_keeps_a_record(world):
+    """2026-11-17: the form sends what was agreed to; without all of it there is no account, and with it the account says so."""
     from sqlalchemy import select
+
+    from app.legal import get_legal
 
     client, _, _, _, _, app = world
     app.dependency_overrides[get_settings] = lambda: Settings(signup_consent_required=True, signup_daily_per_address=0, auth_secret="test-secret")
+    version = get_legal().version
+    assert get_legal().min_age == 18
     new = {"email": "kim@example.com", "password": "password1", "name": "지은"}
-    for missing in ({}, {"termsVersion": "2026-11-17"}, {"adult": True}, {"termsVersion": "2026-11-17", "adult": False}, {"termsVersion": "", "adult": True}):
-        refused = client.post("/api/auth/signup", json={**new, **missing})
-        assert refused.status_code == 422, missing
-    assert client.post("/api/auth/signup", json={**new, "termsVersion": "<script>", "adult": True}).status_code == 422
-    assert client.post("/api/auth/signup", json={**new, "termsVersion": "2026-11-17", "adult": True}).status_code == 201
+    full = {"termsVersion": version, "agreeTerms": True, "agreePrivacy": True, "adult": True}
+    for missing in ("termsVersion", "agreeTerms", "agreePrivacy", "adult"):
+        assert client.post("/api/auth/signup", json={**new, **{k: v for k, v in full.items() if k != missing}}).status_code == 422, missing
+    assert client.post("/api/auth/signup", json={**new, **full, "adult": False}).status_code == 422
+    assert client.post("/api/auth/signup", json={**new, **full, "termsVersion": "<script>"}).status_code == 422
+    # Agreed, but to documents that are not the ones in force (an old tab): told to reload, no account made.
+    stale = client.post("/api/auth/signup", json={**new, **full, "termsVersion": "2020-01-01"})
+    assert stale.status_code == 409 and "새로 고친" in stale.json()["detail"]
+    assert client.post("/api/auth/signup", json={**new, **full}).status_code == 201
     session = next(app.dependency_overrides[get_session]())
     kim, lee = (session.scalars(select(User).where(User.email == email)).one() for email in ("kim@example.com", "lee@example.com"))
-    assert kim.terms_version == "2026-11-17" and kim.terms_agreed_at is not None
+    assert kim.terms_version == version and kim.terms_agreed_at is not None
     assert lee.terms_version is None and lee.terms_agreed_at is None  # made while consent was not required: no record is invented
     assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password1"}).status_code == 200  # and it still signs in
+
+
+def test_the_request_sentence_is_not_stored_unless_that_is_turned_on(monkeypatch):
+    """The privacy policy says the sentence is not kept; that is the default, not a deploy setting someone must remember."""
+    monkeypatch.delenv("LOG_RAW_TEXT", raising=False)
+    assert Settings(_env_file=None).log_raw_text is False

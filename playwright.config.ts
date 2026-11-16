@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from '@playwright/test';
+// The age question (src/components/AgeGate.tsx) is answered once per browser. Server-mode specs start as a browser that
+// has answered it; tests/api/auth.spec.ts asks it again where the question itself is the subject.
+const legal = JSON.parse(readFileSync(new URL('./shared/legal.json', import.meta.url), 'utf8')) as { version: string };
 const port = Number(process.env.PLAYWRIGHT_PORT || 5173);
 const baseURL = `http://127.0.0.1:${port}`;
 // Server-mode specs run against a second dev server built with a fake API origin; tests/api routes intercept it.
@@ -14,7 +18,7 @@ export default defineConfig({
   use: { channel: 'msedge', headless: true, viewport: { width: 1440, height: 1050 } },
   projects: [
     { name: 'offline', testIgnore: '**/api/**', use: { baseURL } },
-    { name: 'api', testMatch: '**/api/**/*.spec.ts', use: { baseURL: apiBaseURL } },
+    { name: 'api', testMatch: '**/api/**/*.spec.ts', use: { baseURL: apiBaseURL, storageState: { cookies: [], origins: [{ origin: apiBaseURL, localStorage: [{ name: 'nowrecommend-adult-v1', value: legal.version }] }] } } },
   ],
   webServer: [
     { command: vite(port), url: baseURL, reuseExistingServer: false, timeout: 30000, env: { VITE_API_BASE_URL: '' } },

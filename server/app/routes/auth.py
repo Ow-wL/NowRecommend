@@ -20,6 +20,7 @@ from ..auth import TokenSigner, hash_password, normalize_email, valid_email, ver
 from ..budget import Allowance, guest_key, signup_day
 from ..config import Settings, get_settings
 from ..db import get_session
+from ..legal import get_legal
 from ..mail import Mailer, get_mailer, reset_mail
 from ..models import User
 from ..ratelimit import client_address
@@ -47,8 +48,11 @@ class Credentials(BaseModel):
 
 class SignupRequest(Credentials):
     name: Name
-    # What the person agreed to on the form (2026-11-17): the version of the terms and privacy policy, and being of age.
+    # What the person agreed to on the form (2026-11-17), each on its own: the terms and the privacy policy, at the
+    # version the form showed, and being of age. All three are needed, and the version must be the one in force.
     termsVersion: Annotated[str, StringConstraints(pattern=r"^[0-9A-Za-z.-]{1,20}$")] | None = None
+    agreeTerms: bool = False
+    agreePrivacy: bool = False
     adult: bool = False
 
     @field_validator("name")
@@ -155,8 +159,10 @@ def _session_answer(signer: TokenSigner, user: User, version: int | None = None)
 @router.post("/api/auth/signup", status_code=201)
 def signup(request: SignupRequest, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
            day: Allowance = Depends(signup_day), settings: Settings = Depends(get_settings)):
-    agreed = bool(request.termsVersion) and request.adult
+    agreed = request.agreeTerms and request.agreePrivacy and request.adult and request.termsVersion == get_legal().version
     if settings.signup_consent_required and not agreed:
+        if request.agreeTerms and request.agreePrivacy and request.adult and request.termsVersion:  # agreed, but to documents that are not the current ones
+            raise HTTPException(409, "약관이 바뀌었어요. 페이지를 새로 고친 뒤 다시 가입해주세요.")
         raise HTTPException(422, "이용약관과 개인정보 수집·이용에 동의하고, 이용 가능한 나이인지 확인해주세요.")
     if not day.left():  # an account raises the daily AI allowance, so accounts cannot be made without end from one place
         raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")

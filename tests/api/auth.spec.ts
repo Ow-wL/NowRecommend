@@ -79,7 +79,7 @@ test('signing up keeps this browser’s data, names it after the account and sta
   await page.getByRole('button', { name: '가입하고 시작하기' }).click();
   await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
   await expect(page.getByText('주형님, 가입을 환영해요.', { exact: false })).toBeVisible();
-  expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형', termsVersion: '2026-11-17', adult: true });
+  expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형', termsVersion: '2026-11-17', agreeTerms: true, agreePrivacy: true, adult: true });
   // The store was uploaded with the token; its content is still the local data, now carrying the account name.
   await expect.poll(() => calls.puts.length).toBeGreaterThan(0);
   expect(calls.auth[0]).toBe('Bearer tok-1');
@@ -424,12 +424,13 @@ test('sign-up waits for the three agreements; nothing is ticked beforehand and t
   await expect(boxes).toHaveCount(3);
   for (let n = 0; n < 3; n++) await expect(boxes.nth(n)).not.toBeChecked();
   await expect(submit).toBeDisabled();
-  await page.getByRole('checkbox', { name: /이용약관/ }).check();
+  await page.getByText('이용약관에 동의해요').click();  // the words tick the box; the document has a link of its own
+  await expect(page.getByRole('checkbox', { name: /이용약관/ })).toBeChecked();
   await page.getByRole('checkbox', { name: /개인정보 수집·이용/ }).check();
   await expect(submit).toBeDisabled();  // the age is asked too
   await expect(page.getByText('수집 항목: 이메일, 이름, 비밀번호', { exact: false })).toBeVisible();
   // The documents open in another tab, so what was typed stays.
-  const [terms] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('link', { name: '이용약관' }).click()]);
+  const [terms] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('link', { name: '이용약관 보기 (새 탭)' }).click()]);
   await expect(terms.getByRole('heading', { name: '이용약관', level: 1 })).toBeVisible();
   await terms.close();
   await expect(page.getByLabel('이메일')).toHaveValue('lee@example.com');
@@ -437,9 +438,7 @@ test('sign-up waits for the three agreements; nothing is ticked beforehand and t
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(page.getByText('가입을 환영해요', { exact: false })).toBeVisible();
-  expect(calls.signup[0]).toMatchObject({ termsVersion: '2026-11-17', adult: true });
-  // Logging in asks for no agreement.
-  await page.goto('/#/login');
+  expect(calls.signup[0]).toMatchObject({ termsVersion: '2026-11-17', agreeTerms: true, agreePrivacy: true, adult: true });
 });
 
 test('the terms and the privacy policy are one tap from the home screen and readable without an account', async ({ page }) => {
@@ -455,4 +454,42 @@ test('the terms and the privacy policy are one tap from the home screen and read
   await expect(page.getByText('알레르기 안전을 보장하지 않습니다', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '돌아가기' }).click();
   await expect(page).toHaveURL(/#\/home$/);
+});
+
+test('the age is asked once per browser before the AI can be used; the documents stay readable without answering', async ({ browser }) => {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });  // a browser that has not answered
+  const page = await context.newPage();
+  await setup(page);
+  await page.goto('/#/home');
+  const gate = page.getByRole('dialog', { name: '만 18세 이상이신가요?' });
+  await expect(gate).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(gate).toBeVisible();  // no way round it but an answer
+  const [terms] = await Promise.all([context.waitForEvent('page'), gate.getByRole('link', { name: '이용약관' }).click()]);
+  await expect(terms.getByRole('heading', { name: '이용약관', level: 1 })).toBeVisible();
+  await expect(terms.getByRole('dialog')).toHaveCount(0);  // reading the terms needs no answer
+  await terms.close();
+  await gate.getByRole('button', { name: '만 18세 이상이에요' }).click();
+  await expect(gate).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);  // remembered
+  await context.close();
+});
+
+test('clearing this browser removes the set-aside copies and caches too, and keeps the sign-in and the age answer', async ({ page }) => {
+  await setup(page, { hasStore: true });
+  await logIn(page);
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  await page.evaluate(() => { localStorage.setItem('nowrecommend-song-check-v4', '{"x":1}'); localStorage.setItem('nowrecommend-known-items-v1', '{"x":1}'); });
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-prototype-v1-before-login'))).not.toBeNull();  // set aside at login
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByRole('button', { name: '데이터 관리' }).click();
+  await page.getByRole('button', { name: /이 브라우저의 데이터 모두 초기화/ }).click();
+  await page.getByRole('button', { name: '삭제하기' }).click();
+  await expect(page.getByText('삭제했어요.')).toBeVisible();
+  const left = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('nowrecommend-')).sort());
+  expect(left).toEqual(['nowrecommend-adult-v1', 'nowrecommend-auth-v1', 'nowrecommend-prototype-v1']);  // the store is written again, empty
+  expect(await stored(page)).toMatchObject({ favorites: [], history: [] });
 });

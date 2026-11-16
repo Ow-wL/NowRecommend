@@ -44,7 +44,7 @@ import { TasteReasons } from './components/TasteReasons';
 import { TasteType } from './components/TasteType';
 import { requestForType } from './tasteType';
 import type { SongStatus } from './songCheck';
-import { readStoreResult, writeStore, replaceStore, downloadRecovery, clearDamagedStore } from './storage';
+import { readStoreResult, writeStore, replaceStore, downloadRecovery, clearBrowserData } from './storage';
 import { DataManagement } from './components/DataManagement';
 import { recordRound, selectResult,reviewSelection, addManual, MANUAL_RAW } from './history';
 import { HistoryDetails } from './components/HistoryDetails';
@@ -60,7 +60,8 @@ import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
 import { Legal } from './components/Legal';
-import { CONTACT_EMAIL } from './legal';
+import { ADULT_KEY, CONTACT_EMAIL, adultConfirmed, confirmAdult } from './legal';
+import { AgeGate } from './components/AgeGate';
 import { weatherMode } from './features';
 
 type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | 'changePassword' | null;
@@ -124,7 +125,10 @@ export default function App() {
   useEffect(() => { const onLink = () => { const token = takeResetToken(); if (token) { setResetToken(token); dispatchView({ page: 'login' }); } }; window.addEventListener('hashchange', onLink); onLink(); /* the address may have changed between the first render and here */ return () => window.removeEventListener('hashchange', onLink); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const [tasteDecade, setTasteDecade] = useState(0);
   // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.
-  const [weather, setWeather] = useState<Weather | null>(readWeather);
+  const [weather, setWeather] = useState<Weather | null>(() => weatherMode === 'off' ? null : readWeather());  // switched off: a weather kept from before is not used either
+  // The AI is for people of age (shared/legal.json): asked once per browser, wherever the app is opened, before anything else.
+  // The documents themselves stay readable without answering. Without a server there is no AI and nothing to ask.
+  const [adult, setAdult] = useState(() => !apiEnabled() || adultConfirmed());
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
@@ -271,7 +275,7 @@ export default function App() {
   // For a shared computer: what is not saved yet goes to the account first, and only then is this browser emptied.
   async function signOutAndClear() {
     if (!storageBlocked && !await sync.flush()) { notify('계정에 저장하지 못해 이 브라우저의 데이터를 지우지 않았어요. 연결을 확인한 뒤 다시 시도해주세요.'); return; }
-    if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); return; }
+    if (!clearBrowserData([ADULT_KEY])) { notify('데이터를 삭제하지 못했어요.'); return; }
     sync.forget(false); writeAccount(null); setAccount(null);
     setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setDialog(null); navigate('home');
     notify('로그아웃하고 이 브라우저의 데이터를 지웠어요. 계정에는 그대로 있어요.');
@@ -613,7 +617,7 @@ export default function App() {
         {step !== 'results' ? <>
           <div className="flow-body composer">
             <section className="panel compose-panel">
-              <div className="field-head"><label className="field-title" htmlFor="situation">지금의 상황</label>{voice.supported && <button type="button" className={`voice-button${voice.listening ? ' listening' : ''}`} aria-pressed={voice.listening} aria-label={voice.listening ? '음성 입력 중지' : '말로 입력'} onClick={() => voice.listening ? voice.stop() : voice.start()}>{voice.listening ? <Square size={13} fill="currentColor" /> : <Mic size={15} />}{voice.listening ? '듣는 중' : '말로 입력'}</button>}</div>
+              <div className="field-head"><label className="field-title" htmlFor="situation">지금의 상황</label>{voice.supported && <button type="button" className={`voice-button${voice.listening ? ' listening' : ''}`} aria-pressed={voice.listening} aria-label={voice.listening ? '음성 입력 중지' : '말로 입력'} title="말한 내용은 브라우저의 음성 인식 서비스로 전송돼 글자로 바뀌어요" onClick={() => voice.listening ? voice.stop() : voice.start()}>{voice.listening ? <Square size={13} fill="currentColor" /> : <Mic size={15} />}{voice.listening ? '듣는 중' : '말로 입력'}</button>}</div>
             {voice.listening && <p className="small muted send-note" role="status">말한 내용은 브라우저의 음성 인식 서비스로 전송돼 글자로 바뀌어요.</p>}
               {voice.interim && <p className="voice-interim" aria-live="polite">{voice.interim}</p>}
               <textarea id="situation" rows={3} maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && ctaReady) { e.preventDefault(); submit(); } }} placeholder={category === 'food' ? '예: 혼자 먹을 담백하고 따뜻한 저녁이 먹고 싶어' : '예: 과제하면서 들을 차분한 연주곡을 추천해줘'} />
@@ -848,8 +852,9 @@ export default function App() {
         <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
       </>}
     </Modal>}
+    {!adult && page !== 'terms' && page !== 'privacy' && <AgeGate onConfirm={() => { confirmAdult(); setAdult(true); }} />}
     {dialog === 'changePassword' && account && <Modal neutral title="비밀번호 변경" onClose={() => setDialog(null)}><p className="modal-description">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃돼요. 이 브라우저는 그대로 로그인되어 있어요.</p><form onSubmit={e => { e.preventDefault(); void submitPasswordChange(); }}><label className="field-title" htmlFor="current-password">현재 비밀번호</label><input id="current-password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><label className="field-title" htmlFor="new-password">새 비밀번호 <small>8자 이상</small></label><input id="new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button primary" disabled={deletePassword.length < 8 || newPassword.length < 8}>비밀번호 변경</button></div></form></Modal>}
     {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
-    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? account && storageBlocked ? '이 브라우저의 손상된 데이터를 지워요. 로그인 중이라 계정에 저장된 취향·기록을 다시 받아와요.' : account ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요. 로그인 중이라 계정에 저장된 데이터도 함께 지워져요. 이 브라우저에서만 지우려면 내 계정의 "로그아웃하고 이 브라우저에서 지우기"를 쓰세요.' : '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } if (storageBlocked) sync.forget(false); setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
+    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? account && storageBlocked ? '이 브라우저의 손상된 데이터를 지워요. 로그인 중이라 계정에 저장된 취향·기록을 다시 받아와요.' : account ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요. 로그인 중이라 계정에 저장된 데이터도 함께 지워져요. 이 브라우저에서만 지우려면 내 계정의 "로그아웃하고 이 브라우저에서 지우기"를 쓰세요.' : '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearBrowserData(['nowrecommend-auth-v1', ADULT_KEY])) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } if (storageBlocked) sync.forget(false); setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;
 }

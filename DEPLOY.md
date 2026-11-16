@@ -331,7 +331,7 @@ GCP 프로젝트는 `harness-recommend`, 리전은 `asia-northeast3`(서울)입�
 | 자원 | 이름 | 설정 |
 |---|---|---|
 | API | Cloud Run 서비스 `nowrecommend-api` | 포트 8000, 메모리 512Mi, CPU 1, 인스턴스 0~1개, 동시 요청 40, 공개 접근 |
-| DB | Cloud SQL `nowrecommend-db` | PostgreSQL 17 + pgvector 0.8.5, `db-f1-micro`(Enterprise), HDD 10GB, 단일 영역, **자동 백업 끔**(수동 백업 `1793084373805`·`1793050877375` 두 개) |
+| DB | Cloud SQL `nowrecommend-db` | PostgreSQL 17 + pgvector 0.8.5, `db-f1-micro`(Enterprise), HDD 10GB, 단일 영역, **자동 백업 켜짐**(매일, 7개 보관, 2026-11-16 조회. 개인정보 처리방침의 "백업 최대 7일"이 이 설정에 기댐) |
 | 데이터베이스·사용자 | `nowrecommend` / `nowrecommend` | 비밀번호는 무작위 생성 후 아래 비밀 값에만 저장 |
 | 이미지 | Artifact Registry `nowrecommend` | `asia-northeast3-docker.pkg.dev/harness-recommend/nowrecommend/api:<커밋 앞 7자리>` |
 | 비밀 값 | Secret Manager `gemini-api-key`, `database-url` | Cloud Run에 `GEMINI_API_KEY`, `DATABASE_URL`로 주입 |
@@ -341,7 +341,7 @@ GCP 프로젝트는 `harness-recommend`, 리전은 `asia-northeast3`(서울)입�
 | 열 삭제 작업 | Cloud Run 작업 `nowrecommend-contract`(§0 2단계에서 만듦, 아직 없음) | `python -m app.cli.migrate --contract` |
 | 프론트엔드 연결 | 저장소 Actions 변수 `VITE_API_BASE_URL` | 위 API 주소. Pages 빌드가 이 값으로 서버 모드가 됩니다 |
 
-API 환경 변수: `CORS_ORIGINS=["https://ow-wl.github.io"]`, `LOG_RAW_TEXT=false`(입력 문장 원문을 저장하지 않음, 결정 4), `TRUST_PROXY=true`(요청 제한을 실제 사용자 IP 기준으로), `LLM_MODEL=gemini-3.5-flash-lite`(2026-10-20부터, 아래 §4). 나머지는 기본값입니다.
+API 환경 변수: `CORS_ORIGINS=["https://ow-wl.github.io"]`, `LOG_RAW_TEXT=false`(입력 문장 원문을 저장하지 않음, 결정 4. 2026-11-17부터 코드 기본값도 false), `TRUST_PROXY=true`(요청 제한을 실제 사용자 IP 기준으로), `LLM_MODEL=gemini-3.5-flash-lite`(2026-10-20부터, 아래 §4). 나머지는 기본값입니다.
 
 - `DATABASE_URL`은 Cloud SQL 유닉스 소켓을 씁니다. 형식은 `postgresql+psycopg://nowrecommend:<비밀번호>@/nowrecommend?host=/cloudsql/harness-recommend:asia-northeast3:nowrecommend-db`입니다.
 - API는 **한 인스턴스**만 띄웁니다. 요청 제한·쿨다운·캐시가 프로세스 메모리에 있어서, 여러 인스턴스로 늘리면 인스턴스마다 따로 셉니다.
@@ -407,7 +407,7 @@ gcloud run jobs execute nowrecommend-seed --project harness-recommend --region a
 
 - **비용**: GCP 무료 크레딧($300)에서 나갑니다. 고정비는 주로 Cloud SQL `db-f1-micro`로 월 약 $10 안팎(추정)입니다. Cloud Run·Artifact Registry·Secret Manager는 지금 사용량이면 무료 범위이거나 아주 적습니다. 실제 금액은 GCP 결제 화면에서 확인합니다.
 - **Gemini 모델과 한도**: 코드 기본값 `gemini-3.6-flash`는 무료 등급에서 생성 요청이 분당 5회, 하루 20회라(R4 실측) 공개 시연에서는 금방 소진됩니다. 그래서 배포 서버는 `LLM_MODEL=gemini-3.5-flash-lite`를 씁니다. 2026-10-20 대표 10건 비교에서 Lite는 9건이 검증을 통과했고(1건 504), 고른 항목은 3.6과 비슷했지만 "평소 취향" 이유가 "새로운 취향" 위주로 약하고 조건 해석은 더 보수적이었습니다. 되돌리려면 `gcloud run services update nowrecommend-api --project harness-recommend --region asia-northeast3 --update-env-vars LLM_MODEL=gemini-3.6-flash`. 한도를 넘거나 모델이 10초 안에 답하지 않으면 결과가 `retrieval_only`(유사도 결과와 템플릿 이유)로 나옵니다. 키가 결제가 켜진 프로젝트에 속해 있으면 무료 한도 대신 요금이 청구될 수 있으니, AI Studio에서 키의 소속 프로젝트를 확인합니다.
-- **자동 백업 없음**: 서버 DB에는 카탈로그와 요청 로그만 있습니다. 사용자 취향·기록은 각 브라우저에 저장됩니다(결정 1). 자동 백업은 꺼 두고, 스키마를 바꾸기 전에만 수동 백업을 만듭니다. 지금 있는 수동 백업은 `1793084373805`(장르 규칙 배포 직전)와 `1793050877375`(1단계 직전) 두 개입니다.
+- **자동 백업**: 계정 기능을 켠 뒤로 Cloud SQL 자동 백업을 쓰고 있습니다(매일, 7개 보관, 2026-11-16 조회). 계정을 삭제한 사람의 데이터도 백업에는 최대 7일 남습니다. 보관 개수를 바꾸면 `src/legal.ts`의 보관 기간 문장도 함께 고칩니다.
 - 키가 로그·화면·저장소에 노출되면 즉시 새 키를 만들고 `gcloud secrets versions add gemini-api-key --project harness-recommend --data-file=<파일>`로 바꾼 뒤 서비스를 다시 배포합니다.
 
 ## 4-1. 모니터링과 알림 (2026-11-17)

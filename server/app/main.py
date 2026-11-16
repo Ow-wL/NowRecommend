@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .errors import ErrorResponseMiddleware
+from .legal import get_legal
 from .ratelimit import RateLimitMiddleware
 from .routes import auth, catalog, health, lab, parse, recommend, reports
 from .routes.auth import get_signer
@@ -14,6 +15,7 @@ from .vocab import get_vocab
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     get_vocab()  # A broken shared/vocab.json should stop startup, not surface mid-request.
+    get_legal()  # likewise shared/legal.json: sign-up cannot work without it
     yield
 
 

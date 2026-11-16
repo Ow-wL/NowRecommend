@@ -17,7 +17,9 @@ export const weatherMode = weatherModeOf();
 export const openMeteoKey = text(import.meta.env?.VITE_OPEN_METEO_KEY);
 
 /** Thirty-second previews and album covers are Apple's promotional content: allowed to promote the song itself, shown
- * next to a credit and a link to the store. VITE_APPLE_PREVIEWS=off removes the play buttons. */
+ * next to a credit and a link to the store. VITE_APPLE_PREVIEWS=off removes the play buttons, and only those: the album
+ * covers and the check that an AI-named song exists (browser and server) still use Apple's store. Leaving Apple
+ * altogether also takes SONG_STORE_CHECK=false on the server and a catalog without Apple covers. */
 export function previewsOnOf(env: Env = (import.meta.env ?? {}) as Env): boolean {
   return text(env.VITE_APPLE_PREVIEWS).toLowerCase() !== 'off';
 }

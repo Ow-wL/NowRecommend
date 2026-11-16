@@ -35,7 +35,7 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
         await requestReset(email.trim());
         setMailed(email.trim());
       } else {
-        const session = mode === 'signup' ? await signup(email.trim(), password, name.trim(), { termsVersion: LEGAL_VERSION, adult: agreed.adult }) : await login(email.trim(), password);
+        const session = mode === 'signup' ? await signup(email.trim(), password, name.trim(), { termsVersion: LEGAL_VERSION, agreeTerms: agreed.terms, agreePrivacy: agreed.privacy, adult: agreed.adult }) : await login(email.trim(), password);
         await onSuccess(session, mode);
       }
     } catch (err) {
@@ -68,9 +68,9 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
         {mode !== 'forgot' && <><label className="field-title" htmlFor="auth-password">비밀번호 <small>8자 이상</small></label>
           <input id="auth-password" type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상" /></>}
         {mode === 'signup' && <fieldset className="consent"><legend className="sr-only">가입에 필요한 동의</legend>
-          <label><input type="checkbox" checked={agreed.terms} onChange={e => setAgreed(a => ({ ...a, terms: e.target.checked }))} /><span><a href="#/terms" target="_blank" rel="noopener">이용약관</a>에 동의해요 <small>(필수)</small></span></label>
-          <label><input type="checkbox" checked={agreed.privacy} onChange={e => setAgreed(a => ({ ...a, privacy: e.target.checked }))} /><span><a href="#/privacy" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의해요 <small>(필수)</small></span></label>
-          <label><input type="checkbox" checked={agreed.adult} onChange={e => setAgreed(a => ({ ...a, adult: e.target.checked }))} /><span>만 {MIN_AGE}세 이상이에요 <small>(필수)</small></span></label>
+          <div className="consent-row"><label><input type="checkbox" required checked={agreed.terms} onChange={e => setAgreed(a => ({ ...a, terms: e.target.checked }))} /><span>이용약관에 동의해요 <small>(필수)</small></span></label><a href="#/terms" target="_blank" rel="noopener" aria-label="이용약관 보기 (새 탭)">보기</a></div>
+          <div className="consent-row"><label><input type="checkbox" required checked={agreed.privacy} onChange={e => setAgreed(a => ({ ...a, privacy: e.target.checked }))} /><span>개인정보 수집·이용에 동의해요 <small>(필수)</small></span></label><a href="#/privacy" target="_blank" rel="noopener" aria-label="개인정보 처리방침 보기 (새 탭)">보기</a></div>
+          <div className="consent-row"><label><input type="checkbox" required checked={agreed.adult} onChange={e => setAgreed(a => ({ ...a, adult: e.target.checked }))} /><span>만 {MIN_AGE}세 이상이에요 <small>(필수)</small></span></label></div>
           <p className="small muted">수집 항목: 이메일, 이름, 비밀번호. 로그인과 기기 간 동기화에 쓰고 계정을 삭제할 때까지 보관해요. 동의하지 않아도 로그인 없이 쓸 수 있어요.</p>
         </fieldset>}
         {error && <div className="error-box" role="alert">{error}</div>}
