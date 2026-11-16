@@ -121,9 +121,11 @@ export default function App() {
   const takeResetToken = () => { const token = resetTokenIn(window.location.hash); if (token) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/login`); return token; };
   const [resetToken, setResetToken] = useState(takeResetToken);
   const [mailAgain, setMailAgain] = useState(false);  // the link did not work: the login form opens on "send the mail again"
-  // Leaving the login page drops the link: it is not kept in memory for a later visit. (Declared before the effect
-  // below, so a link that arrives while the app is starting is taken after this has run, not wiped by it.)
-  useEffect(() => { if (page !== 'login') { setResetToken(''); setMailAgain(false); } }, [page]);
+  // Leaving the login page drops the link: it is not kept in memory for a later visit. Only the move away counts: a
+  // link that arrives while the app is still starting on another screen must not be wiped by this running first (or,
+  // in development, twice).
+  const onLoginPage = useRef(page === 'login');
+  useEffect(() => { if (onLoginPage.current && page !== 'login') { setResetToken(''); setMailAgain(false); } onLoginPage.current = page === 'login'; }, [page]);
   useEffect(() => { const onLink = () => { const token = takeResetToken(); if (token) { setResetToken(token); dispatchView({ page: 'login' }); } }; window.addEventListener('hashchange', onLink); onLink(); /* the address may have changed between the first render and here */ return () => window.removeEventListener('hashchange', onLink); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const [tasteDecade, setTasteDecade] = useState(0);
   // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.

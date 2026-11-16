@@ -430,6 +430,19 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
 - 알림 채널은 `gcloud beta`가 없어 REST API(`monitoring.googleapis.com/v3/projects/harness-recommend/notificationChannels`)로 만들었습니다.
 - 아직 없는 것: Gemini 키 프로젝트(`gen-lang-client-0956207237`)의 할당량 상한. 콘솔의 할당량 화면에서 겁니다.
 
+## 4-2. 삭제 보호, 브랜치 보호, 복원 연습 (2026-11-17)
+
+- **Cloud SQL 삭제 보호**를 켰습니다(`gcloud sql instances patch nowrecommend-db --deletion-protection`). 인스턴스를 지우려면 먼저 이 설정을 꺼야 합니다. 백업 복원으로 덮어쓰는 것은 막지 못하므로, 복원 명령의 `--restore-instance`는 항상 다시 확인합니다.
+- **`main` 브랜치 보호**: 강제 푸시와 삭제를 막고, `frontend` 검사(`.github/workflows/frontend-ci.yml`)가 통과한 커밋만 받습니다. 관리자에게도 적용됩니다. 평소처럼 작업 브랜치에 먼저 푸시해 검사가 통과한 뒤 `main`으로 올리면 됩니다. 급할 때는 저장소 Settings › Branches에서 잠시 끕니다.
+- **백업 복원 연습**(2026-11-17, 자동 백업 `1794852000000`, 2026-11-16 18:00 UTC 분):
+  1. 같은 사양의 임시 인스턴스 `nowrecommend-restore-drill`을 만들고(백업 없음, 승인된 네트워크 없음)
+  2. `gcloud sql backups restore <백업 ID> --restore-instance=nowrecommend-restore-drill --backup-instance=nowrecommend-db`로 복원(약 5분)
+  3. 임시 인스턴스에서만 DB 사용자 비밀번호를 새로 정하고, Cloud SQL Auth Proxy로 접속해 확인: 마이그레이션 `0006`, pgvector 0.8.5, 검수 항목 음식 81·음악 226, 계정 2, 신고 2, 요청 로그 133, 임베딩 307
+  4. 복원 사본에 API를 붙여 `/api/health` 200(`revision 0006`), `/api/catalog` 307개 확인
+  5. 임시 인스턴스 삭제, 남은 백업 없음 확인
+  - 인스턴스 생성부터 삭제까지 약 20분이 걸렸습니다. 실제 복구라면 2번의 대상을 운영 인스턴스로 하거나, 임시 인스턴스를 그대로 새 운영으로 쓰고 Cloud Run의 Cloud SQL 연결과 `database-url` 비밀 값을 바꿉니다.
+  - Git Bash에서 `MSYS_NO_PATHCONV=1`을 켜면 gcloud가 실행되지 않습니다. `/`로 시작하는 인자가 있는 명령에만 붙입니다.
+
 ## 5. 로컬 시연
 
 ```powershell
