@@ -1,13 +1,13 @@
 name: Frontend tests
 
 # Unit tests, the type check and build, the browser tests against the dev server, and the built site (security policy,
-# icons, offline cache). Runs on every branch and pull request; pushing to main also deploys (deploy-pages.yml), so this
-# is the check to require on main once branch protection is on.
+# icons, offline cache). Its job, `frontend`, is the check main requires (branch protection, 2026-11-17): a commit can be
+# pushed to main only after this passed for it on a branch. So it runs for every push, whatever the commit touches: a
+# required check that is skipped by a path filter never reports, and the commit could not reach main at all.
 on:
   push:
-    paths-ignore: ['server/**', '**.md']
+    branches-ignore: [main]  # main only receives commits this already passed for; deploy-pages.yml tests again before publishing
   pull_request:
-    paths-ignore: ['server/**', '**.md']
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
