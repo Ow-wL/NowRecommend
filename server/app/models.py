@@ -96,6 +96,10 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())  # set only by app.cli.admin
     # Every session token carries this number; raising it (a new password, "sign out everywhere") ends the tokens before.
     token_version: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Which version of the terms and privacy policy the person agreed to at sign-up, and when (src/legal.ts LEGAL_VERSION).
+    # NULL for accounts made before 2026-11-17.
+    terms_version: Mapped[str | None] = mapped_column(Text)
+    terms_agreed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class UsageDaily(Base):

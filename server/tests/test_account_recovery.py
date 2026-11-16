@@ -257,3 +257,22 @@ def test_a_password_is_replaced_only_if_it_is_still_the_one_that_was_checked(wor
     assert client.post("/api/auth/login", json={**SIGNUP, "password": "first-winner"}).status_code == 200
     assert client.post("/api/auth/login", json={**SIGNUP, "password": "second-loser"}).status_code == 401
     assert client.get("/api/auth/me", headers=auth).status_code == 401  # and the sessions from before are over
+
+
+def test_sign_up_needs_the_agreed_terms_and_the_age_and_keeps_a_record(world):
+    """2026-11-17: the form sends what was agreed to; without it there is no account, and with it the account says so."""
+    from sqlalchemy import select
+
+    client, _, _, _, _, app = world
+    app.dependency_overrides[get_settings] = lambda: Settings(signup_consent_required=True, signup_daily_per_address=0, auth_secret="test-secret")
+    new = {"email": "kim@example.com", "password": "password1", "name": "지은"}
+    for missing in ({}, {"termsVersion": "2026-11-17"}, {"adult": True}, {"termsVersion": "2026-11-17", "adult": False}, {"termsVersion": "", "adult": True}):
+        refused = client.post("/api/auth/signup", json={**new, **missing})
+        assert refused.status_code == 422, missing
+    assert client.post("/api/auth/signup", json={**new, "termsVersion": "<script>", "adult": True}).status_code == 422
+    assert client.post("/api/auth/signup", json={**new, "termsVersion": "2026-11-17", "adult": True}).status_code == 201
+    session = next(app.dependency_overrides[get_session]())
+    kim, lee = (session.scalars(select(User).where(User.email == email)).one() for email in ("kim@example.com", "lee@example.com"))
+    assert kim.terms_version == "2026-11-17" and kim.terms_agreed_at is not None
+    assert lee.terms_version is None and lee.terms_agreed_at is None  # made while consent was not required: no record is invented
+    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password1"}).status_code == 200  # and it still signs in

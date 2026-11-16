@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     ai_daily_per_member: int = 100
     ai_daily_per_guest: int = 40
     signup_daily_per_address: int = 20
+    # Sign-up needs the agreed terms version and the age confirmation the form sends (2026-11-17). False only for a
+    # short deploy window with an older frontend still in browsers; the account is then stored without a consent record.
+    signup_consent_required: bool = True
     # The AI lab (/api/lab) compares engines and lets the caller pick a model: an admin tool. True opens it to everyone
     # (local experiments without accounts).
     lab_public: bool = False

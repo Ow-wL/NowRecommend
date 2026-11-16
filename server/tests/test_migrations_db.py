@@ -71,7 +71,7 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
 
     # 2. The compatible API starts: expand only. 0003 waits and the old query still works.
     started = migrate()
-    assert started.target is None and started.waiting == ["0003", "0004", "0005", "0006", "0007", "0008", "0009"] and current_revision() == "0002"  # 0004 (users) waits behind the contract
+    assert started.target is None and started.waiting == ["0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010"] and current_revision() == "0002"  # 0004 (users) waits behind the contract
     assert {"price_label", "cost"} <= columns(migration_db)
     assert old_api_query(migration_db) == ("f01", "9,000–12,000원", 10000)
 
@@ -81,9 +81,9 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
     assert current_revision() == "0002" and {"price_label", "cost"} <= columns(migration_db)
 
     # 3. Contract, once no old revision runs: columns gone, values kept aside.
-    assert plan(include_contract=True).target == "0009"
+    assert plan(include_contract=True).target == "0010"
     migrate(include_contract=True)
-    assert current_revision() == "0009" and not {"price_label", "cost"} & columns(migration_db)
+    assert current_revision() == "0010" and not {"price_label", "cost"} & columns(migration_db)
     assert inspect(migration_db).has_table("users")
     with migration_db.connect() as conn:
         assert conn.execute(text("SELECT id, price_label, cost FROM items_price_backup")).all() == [("f01", "9,000–12,000원", 10000)]
@@ -100,12 +100,12 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
     assert current_revision() == "0002" and old_api_query(migration_db) == ("f01", "9,000–12,000원", 10000)
     assert not inspect(migration_db).has_table("items_price_backup")
     migrate(include_contract=True)  # and forward again
-    assert current_revision() == "0009"
+    assert current_revision() == "0010"
 
     # 5. The production path of 2026-11-03: a database at 0004 takes 0005 when the new image starts, with no contract step.
     downgrade("0004")
     assert current_revision() == "0004" and "release_year" not in columns(migration_db)
-    assert migrate().target == "0009" and current_revision() == "0009" and {"release_year", "parent_id"} <= columns(migration_db)
+    assert migrate().target == "0010" and current_revision() == "0010" and {"release_year", "parent_id"} <= columns(migration_db)
 
     # 6. 0007 (2026-11-16): an account that already holds a store starts at version 1, an empty one at 0.
     downgrade("0006")
@@ -113,7 +113,7 @@ def test_expand_keeps_old_code_working_and_contract_is_reversible(migration_db):
         for email, store in (("has@example.com", '{"version": 2}'), ("empty@example.com", None)):
             conn.execute(text("INSERT INTO users (id, email, name, password_hash, store) VALUES (gen_random_uuid(), :e, 'n', 'h', CAST(:s AS jsonb))"),
                          {"e": email, "s": store})
-    assert migrate().target == "0009"
+    assert migrate().target == "0010"
     with migration_db.connect() as conn:
         assert dict(conn.execute(text("SELECT email, store_version FROM users")).all()) == {"has@example.com": 1, "empty@example.com": 0}
 

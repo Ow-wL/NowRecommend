@@ -47,6 +47,9 @@ class Credentials(BaseModel):
 
 class SignupRequest(Credentials):
     name: Name
+    # What the person agreed to on the form (2026-11-17): the version of the terms and privacy policy, and being of age.
+    termsVersion: Annotated[str, StringConstraints(pattern=r"^[0-9A-Za-z.-]{1,20}$")] | None = None
+    adult: bool = False
 
     @field_validator("name")
     @classmethod
@@ -151,13 +154,17 @@ def _session_answer(signer: TokenSigner, user: User, version: int | None = None)
 
 @router.post("/api/auth/signup", status_code=201)
 def signup(request: SignupRequest, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
-           day: Allowance = Depends(signup_day)):
+           day: Allowance = Depends(signup_day), settings: Settings = Depends(get_settings)):
+    agreed = bool(request.termsVersion) and request.adult
+    if settings.signup_consent_required and not agreed:
+        raise HTTPException(422, "이용약관과 개인정보 수집·이용에 동의하고, 이용 가능한 나이인지 확인해주세요.")
     if not day.left():  # an account raises the daily AI allowance, so accounts cannot be made without end from one place
         raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
     if session.scalar(select(User).where(User.email == request.email)) is not None:
         raise HTTPException(409, "이미 가입된 이메일이에요. 로그인해주세요.")
-    user = User(email=request.email, name=request.name, password_hash=hash_password(request.password),
-                last_login_at=datetime.now(timezone.utc))
+    now = datetime.now(timezone.utc)
+    user = User(email=request.email, name=request.name, password_hash=hash_password(request.password), last_login_at=now,
+                terms_version=request.termsVersion if agreed else None, terms_agreed_at=now if agreed else None)
     session.add(user)
     session.commit()
     session.refresh(user)

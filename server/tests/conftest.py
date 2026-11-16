@@ -16,6 +16,8 @@ os.environ["SONG_STORE_CHECK"] = "false"
 # Daily limits (app/budget.py) are off unless a test sets them: the suite sends hundreds of requests from one address.
 for _limit in ("AI_DAILY_LIMIT", "AI_DAILY_PER_MEMBER", "AI_DAILY_PER_GUEST", "SIGNUP_DAILY_PER_ADDRESS", "RESET_DAILY_PER_ADDRESS", "RESET_DAILY_PER_EMAIL"):
     os.environ[_limit] = "0"
+# Sign-up consent (2026-11-17) is asked for only where a test is about it: the suite signs up everywhere.
+os.environ["SIGNUP_CONSENT_REQUIRED"] = "false"
 from app.config import get_settings  # noqa: E402 (after the environment above)
 
 DB_TESTS = os.environ.get("NOWREC_DB_TESTS") == "1"
