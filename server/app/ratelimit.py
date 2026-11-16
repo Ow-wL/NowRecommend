@@ -19,6 +19,8 @@ LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/la
 # Account store uploads (PUT) get a bucket of their own: the browser saves 1.5s after every change, and a burst of saves
 # should neither be stopped by the recommend limit nor use it up.
 STORE_PATH = "/api/me/store"
+# Routes whose whole request is a few short fields: a larger declared body is refused before it is read.
+SMALL_BODIES = {"/api/client-errors": 8192}
 MAX_CLIENTS = 10_000
 
 
@@ -72,6 +74,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if self.store_window and (wait := self.store_window.check(self.client_key(request))) is not None:
                 return JSONResponse({"detail": "저장 요청이 너무 많아요. 잠시 후 다시 시도해주세요."}, status_code=429,
                                     headers={"Retry-After": str(max(1, round(wait)))})
+        if request.method == "POST" and (limit := SMALL_BODIES.get(request.url.path)):
+            declared = request.headers.get("content-length", "")
+            if not declared.isdigit() or int(declared) > limit:
+                return JSONResponse({"detail": "요청이 너무 커요."}, status_code=413)
         if self.window and request.method == "POST" and request.url.path in LIMITED_PATHS:
             member = self.member(request)
             window, key = (self.window, f"u:{member}") if member else (self.guest_window or self.window, self.client_key(request))

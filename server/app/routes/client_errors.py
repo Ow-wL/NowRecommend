@@ -9,13 +9,15 @@ import logging
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 log = logging.getLogger("app.client_errors")
 router = APIRouter()
 
 
 class ClientError(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     kind: Literal["render", "error", "promise"]
     message: Annotated[str, StringConstraints(min_length=1, max_length=300)]
     stack: Annotated[str, StringConstraints(max_length=2000)] = ""

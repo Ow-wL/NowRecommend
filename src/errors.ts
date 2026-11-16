@@ -1,7 +1,8 @@
 import { API_BASE_URL, apiEnabled } from './api/client';
 
 // What went wrong in someone's browser reaches the server's log (POST /api/client-errors, 2026-11-17): the message, where
-// in the code, which screen and which build. Nothing the person typed and nothing about the account is sent on purpose.
+// in the code, which screen and which build. E-mail addresses and anything that looks like a token are cut out first
+// (scrub); an error's own words can still echo a little of what was on the screen, and the privacy policy says so.
 // Without it a blank screen in production is invisible. A handful per visit at most, each distinct error once.
 const MAX_PER_VISIT = 5;
 const sent = new Set<string>();
@@ -13,9 +14,16 @@ export const pageOf = (hash: string) => (hash.match(/^#\/([a-z]+)/)?.[1] ?? 'hom
 /** Noise that is not the app's: browser extensions, and a layout notice browsers raise on their own. */
 const ignorable = (message: string, stack: string) => /extension:\/\//.test(stack) || /^ResizeObserver loop/.test(message) || message === 'Script error.';
 
+/** Takes out what could identify someone if an error's text happened to carry it: e-mail addresses, long random-looking
+ * strings (tokens, ids), and whatever follows ? or # in an address. */
+export const scrub = (text: string) => text
+  .replace(/[^\s@"'<>()]+@[^\s@"'<>()]+\.[^\s@"'<>()]+/g, '[email]')
+  .replace(/([?#])[^\s"')]*/g, '$1…')
+  .replace(/[A-Za-z0-9_-]{24,}(?:\.[A-Za-z0-9_-]{16,})*/g, '[long]');
+
 export function describeError(kind: ClientError['kind'], error: unknown, hash: string, release = RELEASE): ClientError | null {
-  const message = String(error instanceof Error ? error.message : error ?? '').slice(0, 300);
-  const stack = error instanceof Error ? String(error.stack ?? '').slice(0, 2000) : '';
+  const message = scrub(String(error instanceof Error ? error.message : error ?? '')).slice(0, 300);
+  const stack = error instanceof Error ? scrub(String(error.stack ?? '')).slice(0, 2000) : '';
   if (!message || ignorable(message, stack)) return null;
   return { kind, message, stack, page: pageOf(hash), release };
 }

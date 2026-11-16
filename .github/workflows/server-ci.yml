@@ -40,9 +40,10 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: server/pyproject.toml
+          cache-dependency-path: server/requirements.lock
       - name: Install server
-        run: pip install -e ".[dev]"
+        # The exact versions the image installs (server/Dockerfile), then the app and the two test-only packages.
+        run: pip install -r requirements.lock && pip install --no-deps -e . && pip install "pytest>=8.3" "httpx2>=2.14"
       - name: Apply migrations
         # A fresh CI database goes to head, contract migrations included (0003 refuses a plain upgrade otherwise).
         env:

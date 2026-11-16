@@ -16,8 +16,9 @@ from dataclasses import dataclass
 
 # Work per password guess. 600,000 rounds of PBKDF2-HMAC-SHA256 is the current OWASP figure (it was 310,000 here until
 # 2026-11-17). Every stored hash names its own count, so older ones keep verifying and are redone at the next login
-# (needs_rehash). The environment variable exists for the test suite, which signs up hundreds of times.
-PBKDF2_ITERATIONS = int(os.environ.get("PBKDF2_ITERATIONS", "600000"))
+# (needs_rehash). Not a setting: nothing in a deployment can make it weaker. The test suite, which signs up hundreds of
+# times, lowers it for itself (tests/conftest.py).
+PBKDF2_ITERATIONS = 600_000
 RESET = "reset"  # the purpose of a password reset token (TokenSigner)
 SALT_BYTES = 16
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")

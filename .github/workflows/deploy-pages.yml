@@ -30,6 +30,20 @@ jobs:
         run: npm ci
       - name: Verify recommendation rules
         run: npm test
+      # A push to main is a release: the browser tests and the built-site checks (security policy, icons, offline
+      # cache) must pass before anything is published. The same steps as frontend-ci.yml.
+      - name: Install the test browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests (dev server)
+        env:
+          PW_CHANNEL: chromium
+        run: npx playwright test
+      - name: Browser tests (built site)
+        env:
+          PW_CHANNEL: chromium
+          VITE_API_BASE_URL: http://127.0.0.1:5999
+          VITE_RELEASE: ${{ github.sha }}
+        run: npm run build && npm run test:dist
       - name: Build site
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}

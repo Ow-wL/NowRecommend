@@ -182,12 +182,20 @@ def signup(request: SignupRequest, session: Session = Depends(get_session), sign
 def login(request: Credentials, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer)):
     user = session.scalar(select(User).where(User.email == request.email))
     # One message for both cases, so the form does not reveal which emails have accounts.
-    if user is None or not verify_password(request.password, user.password_hash):
+    checked = user.password_hash if user is not None else ""
+    if user is None or not verify_password(request.password, checked):
         raise HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
-    if needs_rehash(user.password_hash):  # made with fewer rounds than are used now: redone while the password is at hand
-        user.password_hash = hash_password(request.password)
-    user.last_login_at = datetime.now(timezone.utc)
+    if needs_rehash(checked):
+        # Made with fewer rounds than are used now: redone while the password is at hand, but only if the stored hash is
+        # still the one just checked. Without that condition a reset finished in between would be overwritten with the
+        # old password's new hash.
+        redone = session.execute(update(User).where(User.id == user.id, User.password_hash == checked).values(password_hash=hash_password(request.password)))
+        if redone.rowcount == 0:
+            session.rollback()
+            raise HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
+    session.execute(update(User).where(User.id == user.id).values(last_login_at=datetime.now(timezone.utc)))
     session.commit()
+    session.refresh(user)
     return _session_answer(signer, user)
 
 

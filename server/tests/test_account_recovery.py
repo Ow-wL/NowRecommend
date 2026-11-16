@@ -314,17 +314,44 @@ def test_an_old_weaker_hash_is_redone_at_the_next_login(world):
     assert client.post("/api/auth/login", json=SIGNUP).status_code == 200  # and the new hash is the same password
 
 
-def test_the_default_round_count_is_the_current_recommendation(monkeypatch):
+def test_the_round_count_is_the_current_recommendation_and_not_a_setting(monkeypatch):
     import importlib
 
     from app import auth
 
-    monkeypatch.delenv("PBKDF2_ITERATIONS", raising=False)
+    lowered = auth.PBKDF2_ITERATIONS  # what tests/conftest.py set for the suite
+    monkeypatch.setenv("PBKDF2_ITERATIONS", "1000")  # an environment cannot weaken it
     try:
         assert importlib.reload(auth).PBKDF2_ITERATIONS == 600_000
     finally:
-        monkeypatch.undo()
-        importlib.reload(auth)
+        auth.PBKDF2_ITERATIONS = lowered
+
+
+def test_the_rehash_at_login_does_not_bring_back_a_password_changed_in_between(world, monkeypatch):
+    """The login checked the old hash; before it saves the stronger one, a reset finishes. The old password must stay dead."""
+    from sqlalchemy import select, update
+
+    from app import auth
+    from app.routes import auth as routes
+
+    client, _, _, _, _, app = world
+    session = next(app.dependency_overrides[get_session]())
+    user = session.scalars(select(User)).one()
+    session.execute(update(User).where(User.id == user.id).values(password_hash=auth.hash_password("password1", iterations=100)))
+    session.commit()
+    real = routes.hash_password
+
+    def reset_finishes_first(password, iterations=None):
+        other = next(app.dependency_overrides[get_session]())  # another request, another session
+        other.execute(update(User).where(User.id == user.id).values(password_hash=real("brand-new-pass")))
+        other.commit()
+        return real(password, iterations)
+
+    monkeypatch.setattr(routes, "hash_password", reset_finishes_first)
+    assert client.post("/api/auth/login", json=SIGNUP).status_code == 401  # the old password, checked a moment too early
+    monkeypatch.setattr(routes, "hash_password", real)
+    assert client.post("/api/auth/login", json=SIGNUP).status_code == 401
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "brand-new-pass"}).status_code == 200
 
 
 def test_a_browser_error_becomes_one_log_line(world, caplog):
@@ -338,3 +365,6 @@ def test_a_browser_error_becomes_one_log_line(world, caplog):
     assert client.post("/api/client-errors", json={**report, "message": "x" * 301}).status_code == 422
     assert client.post("/api/client-errors", json={**report, "page": "../etc"}).status_code == 422
     assert client.post("/api/client-errors", json={**report, "kind": "other"}).status_code == 422
+    assert client.post("/api/client-errors", json={**report, "extra": "field"}).status_code == 422
+    # A body far larger than any report is refused on its declared length, before it is read.
+    assert client.post("/api/client-errors", content=b"x" * 9000, headers={"Content-Type": "application/json"}).status_code == 413

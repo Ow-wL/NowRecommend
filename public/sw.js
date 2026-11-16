@@ -7,7 +7,18 @@ const PREFIX = 'nowrecommend-shell-';
 const VERSION = PREFIX + '__BUILD__';
 const PAGE = new URL('./index.html', self.registration.scope).href;
 
-self.addEventListener('install', () => { self.skipWaiting(); });
+// The new release is fetched whole before this worker takes over: the page, and the script and stylesheet it names. Only
+// then are the older caches dropped (activate), so going offline right after an update still finds everything. If the
+// fetch fails (offline while updating), the install fails and the worker from before simply stays.
+self.addEventListener('install', event => {
+  event.waitUntil(fetch(PAGE, { cache: 'no-store' }).then(async response => {
+    if (!response.ok) throw new Error(`page ${response.status}`);
+    const cache = await caches.open(VERSION), html = await response.clone().text();
+    const assets = [...html.matchAll(/(?:src|href)="([^"]*assets\/[^"]+)"/g)].map(match => new URL(match[1], PAGE).href);
+    await cache.put(PAGE, response);
+    await cache.addAll(assets);
+  }).then(() => self.skipWaiting()));
+});
 self.addEventListener('activate', event => {
   // Only this app's own older caches: another site on the same address (other pages of the same host) keeps its own.
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(PREFIX) && key !== VERSION).map(key => caches.delete(key)))).then(() => self.clients.claim()));
