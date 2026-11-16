@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyStore, type HistoryEntry, type Store } from './domain';
-import { decodeStore } from './storage';
-import { AccountDataError, canonical, indexStore, mark, mergeStores, metaFor, planLogin, readSyncMeta, storeMark, syncStore, writeSyncMeta, type SyncApi, type SyncMeta } from './sync';
+import { decodeStore, readStoreResult, writeStore } from './storage';
+import { AccountDataError, canonical, indexStore, mark, mergeStores, metaFor, parseSyncMeta, planLogin, storeMark, syncStore, type SyncApi, type SyncMeta } from './sync';
 
 const entry = (id: string, date: string, extra: Partial<HistoryEntry> = {}): HistoryEntry => ({ id, date, category: 'food', raw: `요청 ${id}`, conditions: { tags: [], excluded: [] }, resultIds: [], rounds: [], ...extra });
 const make = (change: Partial<Store> = {}): Store => ({ ...emptyStore(), name: '주형', ...change });
@@ -244,16 +244,28 @@ describe('signing in', () => {
 });
 
 describe('sync memory', () => {
-  const memory = () => { const data = new Map<string, string>(); return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v); }, removeItem: (k: string) => { data.delete(k); } }; };
-  it('round-trips and rejects anything malformed', () => {
-    const storage = memory(), meta = metaFor('u1', 4, make({ favorites: ['f01'], history: [entry('h1', '2026-11-01T00:00:00Z')] }));
-    expect(writeSyncMeta(meta, storage)).toBe(true);
-    expect(readSyncMeta(storage)).toEqual(meta);
-    storage.setItem('nowrecommend-sync-v1', JSON.stringify({ ...meta, base: { ...meta.base, favorites: [1] } }));
-    expect(readSyncMeta(storage)).toBeNull();
-    storage.setItem('nowrecommend-sync-v1', '{oops');
-    expect(readSyncMeta(storage)).toBeNull();
-    writeSyncMeta(null, storage);
-    expect(readSyncMeta(storage)).toBeNull();
+  afterEach(() => vi.unstubAllGlobals());
+  it('is one record with the store: read together, written together, and never part of the store itself', () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v); }, removeItem: (k: string) => { data.delete(k); } });
+    const store = make({ favorites: ['f01'], history: [entry('h1', '2026-11-01T00:00:00Z')] }), meta = metaFor('u1', 4, store);
+    expect(writeStore(store, meta)).toBe(true);
+    expect([...data.keys()]).toEqual(['nowrecommend-prototype-v1']);
+    const read = readStoreResult();
+    expect(parseSyncMeta(read.sync)).toEqual(meta);
+    expect(read.store).toEqual(store);                       // the agreement is not in the store the app uses
+    expect('_sync' in (read.store as object)).toBe(false);
+    expect(decodeStore(data.get('nowrecommend-prototype-v1')!)).toEqual(store);  // nor in a backup or an upload made from it
+    writeStore(store, null);
+    expect(readStoreResult().sync).toBeUndefined();
+  });
+  it('rejects anything malformed', () => {
+    const meta = metaFor('u1', 4, make({ favorites: ['f01'] }));
+    expect(parseSyncMeta(JSON.parse(JSON.stringify(meta)))).toEqual(meta);
+    expect(parseSyncMeta({ ...meta, version: null })).toMatchObject({ version: null });  // a server without versions
+    expect(parseSyncMeta({ ...meta, base: { ...meta.base, favorites: [1] } })).toBeNull();
+    expect(parseSyncMeta({ ...meta, version: -1 })).toBeNull();
+    expect(parseSyncMeta(undefined)).toBeNull();
+    expect(parseSyncMeta('oops')).toBeNull();
   });
 });

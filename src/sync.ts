@@ -3,7 +3,8 @@ import type { Category } from './data';
 import type { Account } from './account';
 
 // Account sync without losing data (2026-11-16). The account holds one copy of the Store with a version number that
-// moves on every save. A browser remembers which version it last agreed with and a small index of that copy (`base`),
+// moves on every save. A browser remembers which version it last agreed with and a small index of that copy (`base`,
+// saved in the same localStorage record as the store),
 // so when another device saved in between it can tell what each side changed and merge instead of overwriting:
 //   lists (favourites, liked, disliked, tags): what one side added stays added, what it removed stays removed;
 //   history, presets, typed-in tastes (by id): an entry only one side touched is taken from that side, and when both
@@ -11,11 +12,8 @@ import type { Account } from './account';
 //   single values (name, appearance, taste type): the side that changed it wins, this browser on a tie.
 // Without a base (a browser from before this change, or first contact) nothing is treated as removed: the two are united.
 
-const KEY = 'nowrecommend-sync-v1';
 const CATEGORIES: Category[] = ['food', 'music'];
 const LISTS = ['selected', 'tags', 'disliked'] as const;
-type Storage = Pick<globalThis.Storage, 'getItem' | 'setItem' | 'removeItem'>;
-const storage = (): Storage | undefined => { try { return localStorage; } catch { return undefined; } };
 
 /** JSON with sorted keys and no undefined: the server's JSONB reorders keys, so plain JSON.stringify cannot compare copies. */
 export function canonical(value: unknown): string {
@@ -59,14 +57,10 @@ function validIndex(v: any): v is StoreIndex {
   return !!v && typeof v.name === 'string' && typeof v.appearance === 'string' && textMap(v.tasteTypes) && texts(v.favorites) && textMap(v.history) && textMap(v.presets)
     && CATEGORIES.every(c => { const p = v.profiles?.[c]; return !!p && LISTS.every(k => texts(p[k])) && textMap(p.reasons) && textMap(p.custom); });
 }
-export function readSyncMeta(store: Storage | undefined = storage()): SyncMeta | null {
-  try {
-    const v = JSON.parse(store?.getItem(KEY) || 'null');
-    return v && typeof v.userId === 'string' && (v.version === null || Number.isInteger(v.version) && v.version >= 0) && typeof v.mark === 'string' && validIndex(v.base) ? v : null;
-  } catch { return null; }
-}
-export function writeSyncMeta(meta: SyncMeta | null, store: Storage | undefined = storage()): boolean {
-  try { if (meta) store?.setItem(KEY, JSON.stringify(meta)); else store?.removeItem(KEY); return true; } catch { return false; }
+/** The agreement as it was saved next to the store (src/storage.ts), or null when there is none or it is malformed. */
+export function parseSyncMeta(v: any): SyncMeta | null {
+  return v && typeof v.userId === 'string' && (v.version === null || Number.isInteger(v.version) && v.version >= 0) && typeof v.mark === 'string' && validIndex(v.base)
+    ? { userId: v.userId, version: v.version, base: v.base, mark: v.mark } : null;
 }
 
 // ---- merge ----

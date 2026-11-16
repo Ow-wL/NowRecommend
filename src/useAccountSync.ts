@@ -4,7 +4,7 @@ import type { Store } from './domain';
 import { ApiError } from './api/client';
 import { fetchMe, fetchRemoteStore, pushRemoteStore } from './api/auth';
 import { writeStore } from './storage';
-import { AccountDataError, indexStore, mergeStores, planLogin, readSyncMeta, storeMark, syncStore, writeSyncMeta, type SyncApi, type SyncMeta } from './sync';
+import { AccountDataError, indexStore, mergeStores, parseSyncMeta, planLogin, storeMark, syncStore, type SyncApi, type SyncMeta } from './sync';
 
 export type SyncState = 'idle' | 'saving' | 'saved' | 'failed';
 const SAVE_DELAY = 1500;       // after the last change
@@ -16,17 +16,19 @@ const RECHECK_AFTER = 60_000;  // a tab that comes back to the front asks whethe
  *
  * Each tab remembers its own agreement with the account (`meta`): another tab's agreement says nothing about the store
  * this tab holds, and saving this tab's store on top of it would silently drop what the other tab added. The store and
- * the agreement are always written to localStorage together, so the saved pair comes from one tab at one moment. */
-export function useAccountSync({ account, store, setStore, paused, onExpired, notify }: {
-  account: Account | null; store: Store; setStore: Dispatch<SetStateAction<Store>>; paused: boolean; onExpired: () => void; notify: (message: string) => void;
+ * the agreement are one localStorage record (src/storage.ts), read together when the tab opens (`savedAgreement`) and
+ * written together, so the pair always comes from one tab at one moment. */
+export function useAccountSync({ account, store, setStore, savedAgreement, paused, onExpired, notify }: {
+  account: Account | null; store: Store; setStore: Dispatch<SetStateAction<Store>>; savedAgreement: unknown; paused: boolean; onExpired: () => void; notify: (message: string) => void;
 }) {
   const [state, setState] = useState<SyncState>('idle');
   const latest = useRef({ account, store, paused, onExpired, notify });
   latest.current = { account, store, paused, onExpired, notify };
-  const meta = useRef<SyncMeta | null | undefined>(undefined);  // undefined: not read from localStorage yet
-  const known = () => meta.current === undefined ? (meta.current = readSyncMeta()) : meta.current;
-  /** Saves the pair. The agreement is not written without the store it describes. */
-  const persist = (next: Store, agreed: SyncMeta | null) => { meta.current = agreed; if (!latest.current.paused && writeStore(next)) writeSyncMeta(agreed); };
+  const [first] = useState(() => parseSyncMeta(savedAgreement));
+  const meta = useRef<SyncMeta | null>(first);
+  const known = () => meta.current;
+  /** Saves the store and the agreement that describes it, as one record. */
+  const persist = (next: Store, agreed: SyncMeta | null) => { meta.current = agreed; if (!latest.current.paused) writeStore(next, agreed); };
   const running = useRef(false), queued = useRef<'push' | 'pull' | null>(null), failureTold = useRef(false), checkedAt = useRef(0), skipPull = useRef(false);
 
   /** One sync at a time; a request made meanwhile runs right after. True when the account and this tab agreed at the end. */
@@ -43,14 +45,13 @@ export function useAccountSync({ account, store, setStore, paused, onExpired, no
         if (mode === 'push' && agreed?.userId === who.user.id && agreed.mark === storeMark(snapshot)) { setState(s => s === 'saving' ? 'saved' : s); continue; }
         setState('saving');
         const api: SyncApi = { fetch: () => fetchRemoteStore(who.token), push: (next, version) => pushRemoteStore(who.token, next, version) };
-        let result: { store: Store; meta: SyncMeta; replaced: boolean };
+        let result: { store: Store; meta: SyncMeta; replaced: boolean }, foreign = false;
         try {
           if (agreed && agreed.userId !== who.user.id) {
-            // The data here is another account's (signed in from another tab, or left by a session that ended oddly):
-            // it is set aside and never merged into this account, exactly as the login form does.
+            // The data here is another account's (left by a session that ended oddly): it is set aside and replaced,
+            // never merged into this account, exactly as the login form does.
             const plan = planLogin(snapshot, agreed, await api.fetch(), who);
-            if (still() && plan.keepAside) keepLocalCopy(JSON.stringify(snapshot));
-            result = { store: plan.store, meta: plan.meta, replaced: true };
+            result = { store: plan.store, meta: plan.meta, replaced: true }; foreign = true;
           } else result = await syncStore(snapshot, agreed, who.user.id, api, mode);
         } catch (error) {
           if (!still()) continue;  // signed out or switched meanwhile: this failure is nobody's here
@@ -67,6 +68,16 @@ export function useAccountSync({ account, store, setStore, paused, onExpired, no
         failureTold.current = false;
         setState('saved');
         const seen = latest.current.store;
+        if (foreign) {
+          // Whatever was changed while the request was out was changed in the other account's data: it goes aside with
+          // the rest and is not replayed on this account's store.
+          keepLocalCopy(JSON.stringify(seen));
+          persist(result.store, result.meta);
+          latest.current = { ...latest.current, store: result.store };
+          setStore(result.store);
+          queued.current = null;
+          break;
+        }
         if (!result.replaced) { persist(seen, result.meta); continue; }
         // Changes made while the request was out are replayed on the merged store; the store effect then saves them.
         const merged = result.store, next = seen === snapshot ? merged : mergeStores(indexStore(snapshot), seen, merged);
@@ -128,9 +139,7 @@ export function useAccountSync({ account, store, setStore, paused, onExpired, no
     /** The login form read the account's copy itself (planLogin): take its result and skip the read on sign-in once. */
     adopt: (next: Store, agreed: SyncMeta) => { skipPull.current = true; persist(next, agreed); },
     /** The data in this browser is nobody's from now on (the account was deleted, or the browser was emptied). */
-    forget: () => { meta.current = null; writeSyncMeta(null); },
-    /** Written right after the store, by the effect that saves the store (App.tsx). */
-    saveAgreement: () => { writeSyncMeta(known()); },
+    forget: (save = true) => { if (save) persist(latest.current.store, null); else meta.current = null; },  // `false`: the caller is about to replace the store anyway
     /** Saves what is not saved yet. True only when the account has exactly what this tab holds now, edits made while
      * saving included (asked before this browser's data is cleared). */
     flush: async (): Promise<boolean> => {

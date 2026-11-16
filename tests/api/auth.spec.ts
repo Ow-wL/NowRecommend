@@ -242,8 +242,9 @@ test('logging out and clearing saves what is unsaved first, then empties this br
   await page.getByRole('button', { name: /로그아웃하고 이 브라우저에서 지우기/ }).click();  // right away, before the 1.5s save
   await expect(page.getByText('로그아웃하고 이 브라우저의 데이터를 지웠어요', { exact: false })).toBeVisible();
   expect(calls.server.store.name).toBe('새 이름');
-  expect(await page.evaluate(() => [localStorage.getItem('nowrecommend-auth-v1'), localStorage.getItem('nowrecommend-sync-v1')])).toEqual([null, null]);
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();
   expect(await stored(page)).toMatchObject({ favorites: [], history: [] });
+  expect((await stored(page))._sync).toBeUndefined();  // nobody's data: no agreement with any account is kept
   await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
 });
 

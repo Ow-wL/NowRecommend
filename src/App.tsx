@@ -196,8 +196,8 @@ export default function App() {
   const offTopicCount = session.conditions.tags.length && session.quality?.engine !== 'ai' ? results.filter(r => !r.item.tags.some(t => session.conditions.tags.includes(t))).length : 0;
 
   const storeNow = useRef(store); storeNow.current = store;
-  // The sync agreement is written right after the store it describes, never without it (useAccountSync).
-  useEffect(() => { const failed = storageBlocked || !writeStore(store); if (!failed) sync.saveAgreement(); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
+  // The store is saved together with the sync agreement that describes it, as one record (src/storage.ts).
+  useEffect(() => { const failed = storageBlocked || !writeStore(store, sync.agreement()); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
   // The account as the server has it now: being made an admin shows without logging in again. The server checks on every request anyway.
   useEffect(() => {
@@ -227,7 +227,7 @@ export default function App() {
   async function signOutAndClear() {
     if (!storageBlocked && !await sync.flush()) { notify('계정에 저장하지 못해 이 브라우저의 데이터를 지우지 않았어요. 연결을 확인한 뒤 다시 시도해주세요.'); return; }
     if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); return; }
-    sync.forget(); writeAccount(null); setAccount(null);
+    sync.forget(false); writeAccount(null); setAccount(null);
     setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setDialog(null); navigate('home');
     notify('로그아웃하고 이 브라우저의 데이터를 지웠어요. 계정에는 그대로 있어요.');
   }
@@ -240,7 +240,7 @@ export default function App() {
   useEffect(()=>{ const frame=requestAnimationFrame(()=>{window.scrollTo({top:0,behavior:'instant'});const title=document.querySelector<HTMLElement>('main h1');title?.setAttribute('tabindex','-1');title?.focus({preventScroll:true});});return ()=>cancelAnimationFrame(frame);},[page,step]);
 
   const notify = (message: string, undo?: () => void) => {setToastPaused(false);setToast({ message: storageWarning ? '화면에 반영했지만 브라우저에는 저장하지 못했어요.' : message, undo });};
-  const sync = useAccountSync({ account, store, setStore, paused: storageBlocked, notify,
+  const sync = useAccountSync({ account, store, setStore, savedAgreement: loaded.sync, paused: storageBlocked, notify,
     onExpired: () => { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); } });
   const syncState = sync.state;
   // The buttons pressed here disappear with the toast, so a keyboard user continues from the page instead of the top of the document.
@@ -800,6 +800,6 @@ export default function App() {
       </>}
     </Modal>}
     {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
-    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? account && storageBlocked ? '이 브라우저의 손상된 데이터를 지워요. 로그인 중이라 계정에 저장된 취향·기록을 다시 받아와요.' : account ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요. 로그인 중이라 계정에 저장된 데이터도 함께 지워져요. 이 브라우저에서만 지우려면 내 계정의 "로그아웃하고 이 브라우저에서 지우기"를 쓰세요.' : '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } if (storageBlocked) sync.forget(); setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
+    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? account && storageBlocked ? '이 브라우저의 손상된 데이터를 지워요. 로그인 중이라 계정에 저장된 취향·기록을 다시 받아와요.' : account ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요. 로그인 중이라 계정에 저장된 데이터도 함께 지워져요. 이 브라우저에서만 지우려면 내 계정의 "로그아웃하고 이 브라우저에서 지우기"를 쓰세요.' : '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } if (storageBlocked) sync.forget(false); setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;
 }
