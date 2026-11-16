@@ -96,22 +96,38 @@ curl http://127.0.0.1:8010/api/catalog?category=food
 |---|---|
 | `POST /api/auth/signup` `{email, password(8~128자), name(1~16자)}` | 가입하고 토큰을 돌려줍니다(201). 같은 이메일은 409 |
 | `POST /api/auth/login` `{email, password}` | 토큰과 사용자 정보. 이메일·비밀번호가 틀리면 둘 다 같은 401 문구 |
-| `GET /api/auth/me` | `Authorization: Bearer <토큰>`으로 현재 사용자 |
-| `GET` / `PUT /api/me/store` | 브라우저 저장소(`Store` 전체 JSON)를 계정에 저장·복원. 1MB(`STORE_MAX_BYTES`) 초과는 413 |
+| `GET /api/auth/me` | `Authorization: Bearer <토큰>`으로 현재 사용자와 저장 버전(`storeVersion`) |
+| `GET /api/me/store` | 계정에 저장된 브라우저 저장소(`Store` 전체 JSON)와 버전(`version`) |
+| `PUT /api/me/store` `{store, baseVersion}` | 저장하고 새 버전을 돌려줍니다. 다른 기기가 `baseVersion` 뒤에 먼저 저장했으면 409. 1MB(`STORE_MAX_BYTES`) 초과는 413, 분당 60회(`STORE_WRITES_PER_MINUTE`) 초과는 429 |
 | `POST /api/auth/delete` `{password}` | 계정과 저장 데이터를 삭제(204) |
 
 - 비밀번호는 PBKDF2-HMAC-SHA256(사용자별 솔트)으로 저장하고, 토큰은 `AUTH_SECRET`으로 서명한 30일(`AUTH_TOKEN_DAYS`) 만료 토큰입니다. 세션 표가 없어서 비밀 값을 바꾸면 모두 로그아웃됩니다.
 - 가입·로그인 경로도 기존 요청 제한(IP당 분당 30회)을 받습니다. `/api/health`의 `auth.enabled`로 설정 여부를 확인할 수 있습니다.
-- 서버는 `store` 내용을 해석하지 않고 크기만 확인합니다. 어떤 데이터가 들어가는지는 프론트의 `Store` 타입(`src/domain.ts`)이 정합니다.
+- 서버는 `store` 내용을 해석하지 않고 크기와 버전만 확인합니다. 어떤 데이터가 들어가는지는 프론트의 `Store` 타입(`src/domain.ts`)이 정합니다.
+- 저장 버전(`users.store_version`, 마이그레이션 `0007`)은 저장할 때마다 1씩 오릅니다. 조건부 저장은 `UPDATE … WHERE store_version = baseVersion` 한 문장이라, 동시에 온 두 저장이 둘 다 성공하지 않습니다. `baseVersion` 없이 보내는 옛 프론트는 전처럼 무조건 저장되고 버전만 오릅니다.
 - 테스트: `server/tests/test_auth.py`는 PostgreSQL 없이 SQLite의 `users` 표만 만들어 경로를 검사합니다.
 
 프론트엔드(서버 모드)에서는 상단 바의 "로그인" 또는 `#/login`에서 로그인·회원가입을 합니다(`src/components/AuthPanel.tsx`, `src/account.ts`, `src/api/auth.ts`).
 
 - 로그인 없이도 전과 같이 이 브라우저에서 바로 쓸 수 있습니다(게스트). 토큰은 `nowrecommend-auth-v1`에 저장하고 `Store`·백업에는 들어가지 않습니다.
-- **가입**: 이 브라우저의 취향·즐겨찾기·기록을 그대로 계정에 올립니다(이름이 기본값이면 계정 이름으로). **로그인**: 계정에 저장된 데이터가 있으면 그것으로 바꾸고, 바꾸기 전 로컬 데이터는 `nowrecommend-prototype-v1-before-login`에 보관합니다. 계정에 데이터가 없으면 로컬 데이터를 올립니다.
-- 로그인 상태에서는 `Store`가 바뀔 때마다 1.5초 뒤 `PUT /api/me/store`로 저장합니다(내 계정 모달에 저장 상태 표시). 401이 오면 토큰이 만료된 것으로 보고 로그아웃하며 데이터는 브라우저에 남습니다.
-- 로그아웃은 토큰만 지우고 브라우저 데이터는 남깁니다. 계정 삭제는 비밀번호를 다시 확인한 뒤 서버의 계정과 데이터를 지웁니다.
-- 브라우저 테스트 `tests/api/auth.spec.ts`가 가입 → 업로드, 로그인 → 다운로드와 로컬 보관, 잘못된 비밀번호, 로그아웃을 가짜 API로 검사합니다.
+- **계정 데이터는 덮어쓰지 않고 합칩니다(2026-11-16, `src/sync.ts`·`src/useAccountSync.ts`).** 브라우저는 마지막으로 계정과 일치했던 버전과 그때의 색인을 `nowrecommend-sync-v1`에 기억합니다.
+  - 앱을 열 때, 탭으로 돌아올 때(버전만 확인), 저장이 409로 거절됐을 때 계정의 데이터를 받아 합친 뒤 그 버전 위에 다시 저장합니다.
+  - 합치는 규칙: 목록(즐겨찾기·선호·비선호·태그)은 한쪽이 넣은 것은 넣고 뺀 것은 뺍니다. 기록·프리셋·직접 입력 취향은 id별로, 한쪽만 고친 것은 그쪽 것을 쓰고 둘 다 고쳤으면 더 나중에 손댄 것을 씁니다. 한쪽이 지웠어도 다른 쪽이 고친 항목은 남깁니다. 이름·화면 설정·취향 유형은 바꾼 쪽 값을 씁니다.
+  - 기억이 없는 브라우저(이 변경 전에 로그인한 브라우저)는 아무것도 지워진 것으로 보지 않고 둘을 합칩니다.
+  - 계정 데이터를 읽지 못했으면(연결 실패, 이 빌드가 해석할 수 없는 데이터) 올리지 않습니다. 로그인 중이었다면 로그인하지 않은 상태로 남습니다.
+  - 변경 내용은 1.5초 뒤 저장하고, 내 계정 모달에 저장 상태를 보여줍니다. 401이 오면 토큰이 만료된 것으로 보고 로그아웃하며 데이터는 브라우저에 남습니다.
+- **가입·로그인이 이 브라우저의 데이터에 하는 일(`planLogin`)**:
+  - 계정 없이 쓰던 데이터: 계정에 저장된 것이 없으면 계정에 올리고(이름이 기본값이면 계정 이름으로), 있으면 계정 것으로 바꾸며 로컬 데이터는 `nowrecommend-prototype-v1-before-login`에 보관합니다.
+  - 같은 계정이 쓰던 데이터: 계정 것과 합칩니다.
+  - 다른 계정이 쓰던 데이터(로그아웃하고 남은 것): 올리지 않고 보관만 합니다. 새 계정은 자기 데이터나 빈 상태로 시작합니다.
+- 로그아웃은 토큰만 지우고 브라우저 데이터는 남깁니다. "로그아웃하고 이 브라우저에서 지우기"는 아직 저장하지 않은 변경을 먼저 계정에 올리고, 성공했을 때만 이 브라우저의 데이터를 지웁니다. 계정 삭제는 비밀번호를 다시 확인한 뒤 서버의 계정과 데이터를 지웁니다.
+- 로그인 중에 "이 브라우저의 데이터 모두 초기화"를 하면 그 삭제도 계정에 반영됩니다(확인 창에 적혀 있습니다).
+- 탭마다 자기가 계정과 맞춘 버전을 따로 기억하고, 저장소와 그 기억은 항상 함께 localStorage에 씁니다. 그래서 같은 계정으로 연 두 탭이 서로의 변경을 지우지 않습니다. 다른 탭에서 로그인·로그아웃·계정 전환을 하면 이 탭은 새로 고쳐집니다.
+- 버전이 없는 서버(`0007` 이전 API)를 만나면 저장할 때마다 먼저 읽고 합친 뒤 올립니다. 서버가 거절해 주지 못하므로, 읽기와 쓰기 사이의 짧은 틈은 남습니다.
+- 계정을 삭제하면 이 브라우저에 남은 데이터는 주인 없는 데이터가 되어, 이후 새로 가입하는 계정에 올라갑니다(같은 사람이 다시 가입하는 경우를 위한 선택).
+- 한계: 같은 항목을 두 기기에서 동시에 고치면 한쪽 수정만 남습니다(항목 안쪽은 합치지 않습니다). 합친 결과가 한도(기록 50개, 프리셋 분야별 20개)를 넘으면 오래된 기록과 넘친 프리셋은 빠집니다. 로그인하지 않은 브라우저의 두 탭은 전처럼 나중에 저장한 탭의 내용이 남습니다.
+- API를 `0007` 이전 이미지로 되돌리려면 먼저 `python -m app.cli.migrate --downgrade 0006`이 필요합니다(그 이미지는 `0007`을 모르면 시작하지 못합니다).
+- 테스트: `src/sync.test.ts`(합치는 규칙, 두 기기 시나리오, 읽기 실패, 버전 없는 서버, 로그인 결정), `tests/api/auth.spec.ts`(가입 → 업로드, 로그인 → 다운로드와 로컬 보관, 잘못된 비밀번호, 로그아웃, 이미 로그인된 브라우저가 먼저 읽는지, 409 병합, 읽기 실패 시 로그인 중단, 두 번째 사람의 가입, 로그아웃하고 지우기, 두 탭), `server/tests/test_auth.py`(오래된 기기의 저장 거절, PostgreSQL에서 동시에 온 저장 8개 중 하나만 성공).
 
 ### 카탈로그 늘리기 (AI 초안 → 사람 검수)
 
@@ -251,7 +267,7 @@ F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·A
 - `src/styles/tokens.css`, `src/styles.css`: 색·간격 토큰과 v6.1 스타일시트.
 - `src/moment.ts`, `src/weather.ts`, `src/voice.ts`, `src/share.ts`, `src/preview.ts`, `src/stats.ts`, `src/calendar.ts`, `src/typo.ts`, `src/typeCard.ts`: 2026-11-09 추가 기능의 규칙과 브라우저 API 호출. `src/components/LoadingResults.tsx`, `PreviewButton.tsx`, `Playlist.tsx`, `HistoryCalendar.tsx`, `ManualRecord.tsx`: 그 화면 조각.
 - `src/songCheck.ts`: AI가 고른 곡을 Apple 검색으로 확인하고 커버와 곡 링크를 붙여요.
-- `src/account.ts`, `src/api/auth.ts`, `src/components/AuthPanel.tsx`: 로그인·회원가입과 계정 동기화. `src/knownItems.ts`: 카탈로그 밖 AI 추천 항목의 브라우저 기억. `src/components/Lab.tsx`, `src/lab.ts`, `src/api/lab.ts`: AI 실험실.
+- `src/account.ts`, `src/api/auth.ts`, `src/components/AuthPanel.tsx`: 로그인·회원가입. `src/sync.ts`, `src/useAccountSync.ts`: 계정 동기화(버전, 병합, 로그인 시 데이터 처리). `src/knownItems.ts`: 카탈로그 밖 AI 추천 항목의 브라우저 기억. `src/components/Lab.tsx`, `src/lab.ts`, `src/api/lab.ts`: AI 실험실.
 - `src/media.json`, `src/media.ts`, `src/components/ItemArt.tsx`: 항목 사진·앨범 커버와 생성 커버(DESIGN.md v3). 앨범 커버는 `python -m app.cli.media covers`(iTunes Search API, 약 15분)로 다시 받고, 영어 제목 후보(`check`)는 사람이 확인한 뒤 표시합니다. 음식 사진은 Wikimedia Commons에서 메뉴별로 골라 촬영자·라이선스와 함께 적습니다.
 - `server/`: FastAPI·SQLAlchemy·Alembic 추천 서버, CLI(시드·임베딩·초안·검수·평가), pytest.
 - `shared/`: 프론트와 서버가 함께 쓰는 어휘(`vocab.json`)와 공통 사례(`parse-cases.json`, `filter-cases.json`).
