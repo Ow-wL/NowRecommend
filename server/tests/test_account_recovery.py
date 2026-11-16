@@ -397,3 +397,30 @@ def test_a_login_that_proved_the_old_password_gets_no_token_once_the_password_ha
     fresh = client.post("/api/auth/login", json={**SIGNUP, "password": "brand-new-pass"})
     assert fresh.status_code == 200
     assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {fresh.json()['token']}"}).status_code == 200  # the token carries the version it saw
+
+
+def test_a_failed_mail_is_logged_by_kind_and_never_with_the_address(world, caplog):
+    """A mail server's refusal quotes the recipient. The log says what kind of failure it was and nothing more."""
+    import smtplib
+
+    client, _, _, _, _, app = world
+
+    class Refusing:
+        def send(self, to, subject, text, html=None):
+            raise smtplib.SMTPRecipientsRefused({to: (550, f"5.1.1 <{to}>: no such user".encode())})
+
+    app.dependency_overrides[get_mailer] = lambda: Refusing()
+    with caplog.at_level("ERROR"):
+        assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert "reset mail could not be sent: SMTPRecipientsRefused 550" in caplog.text
+    assert "lee@example.com" not in caplog.text and "Traceback" not in caplog.text
+
+    class Rejected:
+        def send(self, to, subject, text, html=None):
+            raise smtplib.SMTPAuthenticationError(535, b"bad key")
+
+    app.dependency_overrides[get_mailer] = lambda: Rejected()
+    caplog.clear()
+    with caplog.at_level("ERROR"):
+        assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert "SMTPAuthenticationError 535" in caplog.text and "bad key" not in caplog.text
