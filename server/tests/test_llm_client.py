@@ -93,3 +93,24 @@ def test_gemini_model_rejects_non_object_answers():
     for text in ("[]", "not json", ""):
         with pytest.raises(ValueError):
             GeminiJsonModel("k", "m", client=SimpleNamespace(models=FakeModels(text))).generate_json("s", {}, {})
+
+
+def test_each_call_logs_its_token_counts_and_nothing_of_the_request(caplog):
+    """What a call costs is read from these lines (DEPLOY.md). The sentence asked and the answer never appear in them."""
+    class Counted(FakeModels):
+        def generate_content(self, **kwargs):
+            answer = super().generate_content(**kwargs)
+            answer.usage_metadata = SimpleNamespace(prompt_token_count=1200, candidates_token_count=340, thoughts_token_count=None, total_token_count=1540)
+            return answer
+
+    model = GeminiJsonModel("secret-key", "gemini-3.5-flash-lite", client=SimpleNamespace(models=Counted('{"picks": ["비밀 메뉴"]}')))
+    with caplog.at_level("WARNING", logger="app.usage"):
+        model.generate_json("system words", {"text": "오늘 혼자 먹을 저녁"}, {})
+    assert "model usage model=gemini-3.5-flash-lite prompt=1200 output=340 thinking=0 total=1540" in caplog.text
+    assert "저녁" not in caplog.text and "비밀 메뉴" not in caplog.text and "secret-key" not in caplog.text and "system words" not in caplog.text
+    # An answer without the counts (an older client, a fake) logs nothing and still works.
+    caplog.clear()
+    plain = GeminiJsonModel("k", "m", client=SimpleNamespace(models=FakeModels('{"ok": true}')))
+    with caplog.at_level("WARNING", logger="app.usage"):
+        assert plain.generate_json("s", {}, {}) == {"ok": True}
+    assert caplog.text == ""

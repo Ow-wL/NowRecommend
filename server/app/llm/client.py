@@ -4,9 +4,13 @@ gemini-3.6-flash ignores temperature (plans-rag.md §3), so output stability com
 instruction, a JSON schema and server-side validation; variety comes from the retrieval τ instead.
 """
 import json
+import logging
 import re
 import time
 from typing import Protocol
+
+
+usage_log = logging.getLogger("app.usage")
 
 
 class JsonModel(Protocol):
@@ -38,10 +42,27 @@ class GeminiJsonModel:
                 thinking_config=types.ThinkingConfig(thinking_level=self.thinking_level),
             ),
         )
+        _log_usage(self.model, response)
         value = json.loads(response.text or "")
         if not isinstance(value, dict):
             raise ValueError("model returned non-object JSON")
         return value
+
+
+def _log_usage(model: str, response) -> None:
+    """One line per model call with the token counts the API reports, and nothing of what was asked or answered. What a
+    call costs is these numbers times the model's price; the daily limits (app/budget.py) are set from them."""
+    usage = getattr(response, "usage_metadata", None)
+    if usage is None:
+        return
+
+    def count(name: str) -> int:
+        value = getattr(usage, name, None)
+        return value if isinstance(value, int) else 0
+
+    # At warning level on purpose: the server shows warnings and above only (no logging setup), and this line is wanted.
+    usage_log.warning("model usage model=%s prompt=%d output=%d thinking=%d total=%d", model, count("prompt_token_count"),
+                      count("candidates_token_count"), count("thoughts_token_count"), count("total_token_count"))
 
 
 class CoolingDown(RuntimeError):
