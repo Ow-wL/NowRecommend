@@ -14,7 +14,7 @@ os.environ["FOOD_ENGINE"] = "catalog"
 # Tests never ask Apple's store; a test of the check passes its own fake (tests/test_song_store.py).
 os.environ["SONG_STORE_CHECK"] = "false"
 # Daily limits (app/budget.py) are off unless a test sets them: the suite sends hundreds of requests from one address.
-for _limit in ("AI_DAILY_LIMIT", "AI_DAILY_PER_MEMBER", "AI_DAILY_PER_GUEST", "SIGNUP_DAILY_PER_ADDRESS", "RESET_DAILY_PER_ADDRESS", "RESET_DAILY_PER_EMAIL",
+for _limit in ("AI_DAILY_LIMIT", "AI_DAILY_PER_MEMBER", "AI_DAILY_PER_GUEST", "SIGNUP_DAILY_PER_ADDRESS", "RESET_DAILY_PER_ADDRESS", "RESET_DAILY_PER_EMAIL", "RESET_DAILY_TOTAL",
                "LOGIN_FAILS_PER_HOUR"):
     os.environ[_limit] = "0"
 # Sign-up consent (2026-11-17) is asked for only where a test is about it: the suite signs up everywhere.

@@ -488,6 +488,61 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
   4. Pages는 되돌리는 커밋을 작업 브랜치에 올려 `frontend` 검사를 통과시킨 뒤 `main`으로 올립니다(강제 푸시는 막혀 있습니다).
 - 데이터가 망가진 경우에만 백업 복원을 씁니다(§4-2의 연습 절차).
 
+## 4-4. 재설정 메일 켜기 (준비 2026-11-17, 미실행)
+
+비밀번호 재설정 메일은 SMTP 값 다섯 개가 들어가면 켜집니다(`server/app/mail.py`). 발송 서비스는 Resend로 정했습니다(처리방침에 업체·국가·보관 기간 기재, `src/legal.ts`). 지금 운영은 값이 없어 `/api/health`의 `mail.configured`가 `false`이고 재설정 요청은 503입니다.
+
+**운영자가 먼저 할 일**(가입과 DNS는 운영자만 할 수 있습니다):
+
+1. resend.com 가입 → Domains → Add Domain에 `nowrec.kr`, 리전 Tokyo(`ap-northeast-1`).
+2. Resend 화면이 보여 주는 DNS 레코드를 가비아 DNS 관리에 그대로 넣습니다. 보통 세 개이고 **값은 화면의 것을 그대로** 씁니다(아래는 형태만).
+
+   | 종류 | 호스트 | 값 | 비고 |
+   |---|---|---|---|
+   | MX | `send` | `feedback-smtp.ap-northeast-1.amazonses.com` | 우선순위 10. 반송 메일을 받는 주소 |
+   | TXT | `send` | `v=spf1 include:amazonses.com ~all` | SPF |
+   | TXT | `resend._domainkey` | `p=…`로 시작하는 긴 값 | DKIM. 계정마다 다릅니다 |
+   | TXT | `_dmarc` | `v=DMARC1; p=none;` | 선택. 넣으면 받는 쪽 신뢰가 올라갑니다 |
+
+   - 가비아의 호스트 칸에는 `send`처럼 앞부분만 적습니다(`send.nowrec.kr`로 적으면 `send.nowrec.kr.nowrec.kr`이 됩니다).
+   - 2026-11-17 조회로 `nowrec.kr`에는 TXT·MX·DMARC 레코드가 하나도 없어, 겹치는 것이 없습니다. A 레코드 4개와 `www` CNAME(GitHub Pages)은 건드리지 않습니다.
+3. Resend에서 도메인이 Verified가 되면 API 키를 만듭니다(권한 Sending access, 도메인 `nowrec.kr`).
+4. 키는 GCP 콘솔 Secret Manager(프로젝트 `harness-recommend`)에 이름 `smtp-password`로 넣습니다. 채팅이나 문서에 붙이지 않습니다.
+
+**그다음 순서**(명령은 PowerShell 기준. `MAIL_FROM`에 쉼표가 없어도 한글·공백·꺾쇠가 있으므로 구분자를 `##`로 바꿔 넘깁니다):
+
+1. **비밀 값 읽기 권한**:
+   ```
+   gcloud secrets add-iam-policy-binding smtp-password --project harness-recommend --member serviceAccount:nowrecommend-api@harness-recommend.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor
+   ```
+2. **새 이미지 배포**: `launch-polish`의 커밋(발송 실패 로그, 시험 발송 명령, 하루 상한, 처리방침 문구)이 운영 이미지 `api:33b9b29`에는 없습니다. §2 "서버 코드를 바꿨을 때"대로 이미지를 빌드·푸시하고 서비스와 작업 네 개의 이미지를 바꿉니다. DB 마이그레이션은 없습니다(`0010` 그대로).
+3. **처리방침 먼저**: `launch-polish`를 `main`으로 올려 Pages에 Resend가 적힌 처리방침이 나간 것을 확인합니다(첫 메일보다 방침이 먼저). 약관 버전은 올리지 않았습니다.
+4. **서비스에 켜기 전에 작업으로 확인**: 관리자 작업에만 메일 값을 넣고 시험합니다.
+   ```
+   gcloud run jobs update nowrecommend-admin --project harness-recommend --region asia-northeast3 --update-secrets SMTP_PASSWORD=smtp-password:latest --update-env-vars "^##^SMTP_HOST=smtp.resend.com##SMTP_PORT=587##SMTP_USER=resend##MAIL_FROM=지금 추천 <no-reply@nowrec.kr>##PUBLIC_APP_URL=https://nowrec.kr/"
+   gcloud run jobs execute nowrecommend-admin --project harness-recommend --region asia-northeast3 --wait --args=-m,app.cli.mail,check
+   gcloud run jobs execute nowrecommend-admin --project harness-recommend --region asia-northeast3 --wait --args=-m,app.cli.mail,send,<운영자 본인 주소>
+   ```
+   - `check`는 접속·STARTTLS·로그인까지만 하고 아무것도 보내지 않습니다. 실행 로그의 첫 줄(`server smtp.resend.com:587 (STARTTLS), user set, key set, from 지금 추천 <no-reply@nowrec.kr>, …`)에서 **보낸 사람 이름의 한글이 깨지지 않았는지** 봅니다. 깨졌으면 Cloud Run 콘솔의 변수 편집 화면에서 `MAIL_FROM`을 직접 고칩니다.
+   - `send`가 `send: ok`면 받은편지함과 스팸함을 봅니다. 메일 원문(헤더 보기)에서 `SPF`·`DKIM`·`DMARC`가 모두 `pass`인지 확인합니다.
+   - 실패하면 종류와 고칠 곳만 나옵니다. `SMTPAuthenticationError 535`: 키나 사용자 이름. `SMTPDataError`·`SMTPSenderRefused`: 도메인 미인증이나 `MAIL_FROM`의 도메인 불일치. `TimeoutError`: 호스트·포트. 키와 주소는 로그에 남지 않습니다(작업 인자에 적은 받는 주소는 실행 기록에 남으므로 운영자 본인 주소만 씁니다).
+5. **서비스에 켜기**:
+   ```
+   gcloud run services update nowrecommend-api --project harness-recommend --region asia-northeast3 --update-secrets SMTP_PASSWORD=smtp-password:latest --update-env-vars "^##^SMTP_HOST=smtp.resend.com##SMTP_PORT=587##SMTP_USER=resend##MAIL_FROM=지금 추천 <no-reply@nowrec.kr>"
+   ```
+   `PUBLIC_APP_URL=https://nowrec.kr/`는 이미 들어 있습니다. `/api/health`의 `mail.configured`가 `true`인지 확인합니다.
+6. **실제 흐름 확인(운영자)**: 사이트의 로그인 화면 → "비밀번호를 잊으셨나요?" → 본인 계정 주소. 메일의 버튼이 `https://nowrec.kr/#/reset/…`을 열고, 새 비밀번호로 로그인되며, 다른 기기는 로그아웃되는지 봅니다. 가입되지 않은 주소로 요청해도 화면 응답이 같은지도 봅니다.
+
+**운영 중 알아둘 것**:
+
+- 한도: 한 계정 하루 3통, 한 주소에서 하루 10번, 서비스 전체 하루 80통(`RESET_DAILY_TOTAL`). Resend 무료 플랜은 하루 100통·월 3,000통입니다(2026-11-17 확인). 전체 상한에 닿으면 `RESET_DAILY_TOTAL`이 들어간 오류 로그가 남고 화면 응답은 그대로입니다.
+- 발송 실패는 `reset mail could not be sent: <종류> <코드>` 한 줄로만 남습니다(§4-1의 로그 알림).
+- 끄기: `gcloud run services update nowrecommend-api … --remove-env-vars SMTP_HOST`. 재설정 요청이 다시 503이 되고 화면은 "지금은 메일로 비밀번호를 다시 정할 수 없어요"라고 알립니다. 다른 기능은 그대로입니다.
+- 키 바꾸기: Resend에서 새 키를 만들어 `smtp-password`에 새 버전을 추가한 뒤 `gcloud run services update … --update-secrets SMTP_PASSWORD=smtp-password:latest`로 새 리비전을 냅니다(`latest`는 인스턴스가 시작할 때 읽습니다). 그다음 옛 키를 Resend에서 지웁니다.
+- 발송 업체를 바꾸면 SMTP 값 다섯 개와 `src/legal.ts`의 업체 줄을 함께 바꿉니다.
+
+**로컬에서 확인한 것(2026-11-17)**: STARTTLS와 인증을 요구하는 임시 SMTP 서버를 띄워 `check`·`send`를 실제 SMTP 대화로 돌렸습니다. 암호화 전에는 인증을 보내지 않고, 틀린 사용자·신뢰할 수 없는 인증서·닫힌 포트를 각각 구분해 알리며, 메일에는 `Date`·`Message-ID`(`@nowrec.kr`)·`Auto-Submitted`와 한글 제목·보낸 사람이 인코딩되어 들어갑니다. Resend를 상대로 한 확인은 하지 못했습니다(계정 없음).
+
 ## 5. 로컬 시연
 
 ```powershell

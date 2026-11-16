@@ -338,6 +338,9 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
     if not Allowance(session, f"reset:e:{guest_key(user.email, settings.auth_secret)}", settings.reset_daily_per_email, False).take():
         log.warning("reset mail not sent: today's mails for this account are used up")
         return RESET_SENT
+    if not Allowance(session, "reset:total", settings.reset_daily_total, False).take():
+        log.error("reset mail not sent: today's mails for the whole service are used up (RESET_DAILY_TOTAL)")
+        return RESET_SENT
     token = signer.issue_reset(str(user.id), user.password_hash, settings.reset_token_minutes * 60)
     link = f"{settings.public_app_url.rstrip('/')}/#/reset/{token}"
     try:

@@ -498,3 +498,15 @@ def test_no_address_is_kept_in_the_count(world):
     with next(app.dependency_overrides[get_session]()) as session:
         buckets = list(session.scalars(select(UsageDaily.bucket)))
     assert len(buckets) == 1 and buckets[0].startswith("login:") and "lee" not in buckets[0] and "@" not in buckets[0]
+
+
+def test_the_whole_service_stops_sending_at_its_daily_total_and_still_answers_the_same(world, caplog):
+    client, _, outbox, _, _, app = world
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
+                                                              reset_daily_per_address=0, reset_daily_per_email=0, reset_daily_total=2)
+    client.post("/api/auth/signup", json={"email": "kim@example.com", "password": "password1", "name": "김"})
+    with caplog.at_level("ERROR"):
+        answers = [client.post("/api/auth/reset/request", json={"email": email}) for email in ("lee@example.com", "kim@example.com", "lee@example.com", "nobody@example.com")]
+    assert [a.status_code for a in answers] == [202] * 4 and all(a.json() == {"sent": True} for a in answers)
+    assert [m["to"] for m in outbox.sent] == ["lee@example.com", "kim@example.com"]  # the third had an account and got no mail
+    assert caplog.text.count("RESET_DAILY_TOTAL") == 1  # an address without an account does not reach the count

@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
     reset_daily_per_address: int = 10
     reset_daily_per_email: int = 3
+    # Reset mails of the whole service per day (0 = off). The mail service's free plan sends 100 a day (2026-11-17): past
+    # this the form still answers the same and no mail leaves, so one day's flood cannot use the plan up or get the
+    # sender's domain marked as a spammer.
+    reset_daily_total: int = 80
     # Wrong passwords for one account per hour, from anywhere (0 = off). The per-minute limit counts one address; this one
     # counts the account, so guesses spread over many addresses stop too. At the limit every login for that account waits
     # for the next hour, the right password included; sessions that are already signed in go on, and a reset mail gets in.
