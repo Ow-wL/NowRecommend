@@ -69,6 +69,17 @@ def take(session: Session, bucket: str, limit: int, day: date | None = None) -> 
     return count
 
 
+_GIVE_BACK = text("UPDATE usage_daily SET count = count - 1 WHERE day = :day AND bucket = :bucket AND count > 0")
+
+
+def give_back(session: Session, bucket: str, limit: int, day: date | None = None) -> None:
+    """Undoes one `take` whose purpose came to nothing (an account that was counted and then not made)."""
+    if limit <= 0:
+        return
+    session.execute(_GIVE_BACK, {"day": day or today(), "bucket": bucket})
+    session.commit()
+
+
 def used(session: Session, bucket: str, day: date | None = None) -> int:
     return session.scalar(select(UsageDaily.count).where(UsageDaily.day == (day or today()), UsageDaily.bucket == bucket)) or 0
 
@@ -110,6 +121,9 @@ class Allowance:
 
     def take(self) -> bool:
         return take(self.session, self.bucket, self.limit) is not None
+
+    def give_back(self) -> None:
+        give_back(self.session, self.bucket, self.limit)
 
 
 class Gate:

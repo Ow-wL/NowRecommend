@@ -179,8 +179,9 @@ def signup(request: SignupRequest, session: Session = Depends(get_session), sign
     session.add(user)
     try:
         session.commit()
-    except IntegrityError:  # the same address signed up a moment earlier
+    except IntegrityError:  # the same address signed up a moment earlier, between the look above and this commit
         session.rollback()
+        day.give_back()  # no account was made: like the "already registered" answer above, it uses nothing up
         raise taken from None
     session.refresh(user)
     return _session_answer(signer, user)

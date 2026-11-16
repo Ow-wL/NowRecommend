@@ -148,6 +148,46 @@ def test_signups_from_one_address_stop_for_the_day(counters):
         assert client.post("/api/auth/login", json={"email": "p0@example.com", "password": "password1"}).status_code == 200  # signing in is not sign-up
 
 
+def test_a_sign_up_that_loses_the_race_for_an_address_is_told_so_and_uses_nothing_up(counters, monkeypatch):
+    """Two forms with one address arriving together both pass the "is it registered" look; the database lets one in. The
+    other reads like any repeat (409), and the day's count goes back to what it was."""
+    from app.routes import auth as routes
+
+    app = create_app()
+    app.dependency_overrides[get_session] = lambda: counters
+    app.dependency_overrides[get_signer] = lambda: SIGNER
+    app.dependency_overrides[get_settings] = lambda: Settings(signup_daily_per_address=2)
+    real_hash = routes.hash_password
+
+    def someone_else_first(password):
+        """Runs between the look and the commit: the same address is registered on another connection's behalf."""
+        with sessionmaker(counters.get_bind(), expire_on_commit=False)() as other:
+            other.add(User(email="race@example.com", name="먼저", password_hash=real_hash("password2")))
+            other.commit()
+        return real_hash(password)
+
+    with TestClient(app) as client:
+        monkeypatch.setattr(routes, "hash_password", someone_else_first)
+        lost = client.post("/api/auth/signup", json={"email": "race@example.com", "password": "password1", "name": "나중"})
+        monkeypatch.setattr(routes, "hash_password", real_hash)
+        assert lost.status_code == 409 and "이미 가입된" in lost.json()["detail"]
+        assert counters.scalar(select(User.name).where(User.email == "race@example.com")) == "먼저"  # the first one's account, untouched
+        assert budget.used(counters, counters.scalar(select(UsageDaily.bucket))) == 0
+        # Both of today's two are still there for this address.
+        codes = [client.post("/api/auth/signup", json={"email": f"q{n}@example.com", "password": "password1", "name": "이름"}).status_code for n in range(3)]
+        assert codes == [201, 201, 429]
+        assert client.post("/api/auth/login", json={"email": "race@example.com", "password": "password2"}).status_code == 200
+
+
+def test_giving_back_never_goes_below_zero_and_does_nothing_without_a_limit(counters):
+    assert budget.take(counters, "a", 2, DAY) == 1
+    budget.give_back(counters, "a", 2, DAY)
+    budget.give_back(counters, "a", 2, DAY)
+    assert budget.used(counters, "a", DAY) == 0 and [budget.take(counters, "a", 2, DAY) for _ in range(3)] == [1, 2, None]
+    budget.give_back(counters, "a", 0, DAY)  # no limit: nothing was counted, nothing to undo
+    assert budget.used(counters, "a", DAY) == 2
+
+
 # ---- routes, on the real database ----
 
 class Picks(Recording):
