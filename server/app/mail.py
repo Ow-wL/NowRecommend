@@ -8,8 +8,9 @@ is sent. Without SMTP_HOST there is no mailer and the routes that need one answe
 import logging
 import smtplib
 import ssl
+from datetime import datetime, timezone
 from email.message import EmailMessage
-from email.utils import formataddr, parseaddr
+from email.utils import format_datetime, formataddr, make_msgid, parseaddr
 from typing import Protocol
 
 from .config import get_settings
@@ -31,23 +32,41 @@ class SmtpMailer:
         message["From"] = formataddr((name, address)) if name else address
         message["To"] = to
         message["Subject"] = subject
+        # Neither smtplib nor EmailMessage adds these, and a mail without them reads as spam to the receiving side.
+        # The id is made in the sender's own domain (the default would name this container's host).
+        message["Date"] = format_datetime(datetime.now(timezone.utc))
+        message["Message-ID"] = make_msgid(domain=address.rpartition("@")[2] or None)
+        message["Auto-Submitted"] = "auto-generated"  # RFC 3834: vacation responders and the like do not answer it
         message.set_content(text)
         if html:
             message.add_alternative(html, subtype="html")
         return message
 
     def send(self, to: str, subject: str, text: str, html: str | None = None) -> None:
+        with self._connect() as server:
+            server.send_message(self.message(to, subject, text, html))
+
+    def check(self) -> None:
+        """Connects, upgrades and signs in, and sends nothing: raises what `send` would raise up to that point."""
+        with self._connect() as server:
+            server.noop()
+
+    def _connect(self) -> smtplib.SMTP:
+        """A connection that is encrypted and signed in. Closed again if either step fails."""
         context = ssl.create_default_context()
         if self.port == 465:
             server = smtplib.SMTP_SSL(self.host, self.port, timeout=self.timeout, context=context)
         else:
             server = smtplib.SMTP(self.host, self.port, timeout=self.timeout)
-        with server:
+        try:
             if self.port != 465:
                 server.starttls(context=context)  # raises when the server cannot upgrade: the password never goes out in the clear
             if self.user:
                 server.login(self.user, self.password or "")
-            server.send_message(self.message(to, subject, text, html))
+        except BaseException:
+            server.close()
+            raise
+        return server
 
 
 def get_mailer() -> Mailer | None:
@@ -68,6 +87,26 @@ def reset_mail(name: str, link: str, minutes: int) -> tuple[str, str, str]:
             f'<p><a href="{_escape(link)}" style="display:inline-block;padding:10px 18px;border-radius:999px;background:#222;color:#fff;text-decoration:none">새 비밀번호 정하기</a></p>'
             f'<p style="color:#666;font-size:13px">이 링크는 {minutes}분 동안, 한 번만 쓸 수 있어요.<br>요청하신 적이 없다면 이 메일은 무시하셔도 돼요. 비밀번호는 바뀌지 않아요.</p></div>')
     return subject, text, html
+
+
+def trial_mail() -> tuple[str, str, str]:
+    """Subject, plain text and HTML of the mail an operator sends to see that sending works (python -m app.cli.mail)."""
+    subject = "[지금 추천] 메일 발송 확인"
+    text = "지금 추천의 메일 발송 설정을 확인하려고 운영자가 보낸 시험 메일이에요.\n이 메일이 보이면 발송이 정상이에요. 따로 하실 일은 없어요.\n"
+    html = ('<div style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#222">'
+            "<p>지금 추천의 메일 발송 설정을 확인하려고 운영자가 보낸 시험 메일이에요.</p>"
+            '<p style="color:#666;font-size:13px">이 메일이 보이면 발송이 정상이에요. 따로 하실 일은 없어요.</p></div>')
+    return subject, text, html
+
+
+def failure(error: Exception) -> str:
+    """What kind of failure it was, for a log or a console: the error's name and the SMTP reply code. Not its text and
+    not a traceback - a mail server's refusal quotes the recipient's address, and addresses are not written to the log."""
+    code = getattr(error, "smtp_code", None)
+    refused = getattr(error, "recipients", None)  # SMTPRecipientsRefused: {address: (code, reply)}
+    if code is None and isinstance(refused, dict) and refused:
+        code = next(iter(refused.values()))[0]
+    return type(error).__name__ + (f" {code}" if isinstance(code, int) else "")
 
 
 def _escape(value: str) -> str:

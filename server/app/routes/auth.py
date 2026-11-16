@@ -22,7 +22,7 @@ from ..budget import Allowance, guest_key, signup_day
 from ..config import Settings, get_settings
 from ..db import get_session
 from ..legal import get_legal
-from ..mail import Mailer, get_mailer, reset_mail
+from ..mail import Mailer, failure as mail_failure, get_mailer, reset_mail
 from ..models import User
 from ..ratelimit import client_address
 
@@ -316,18 +316,8 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
     try:
         mailer.send(user.email, *reset_mail(user.name, link, settings.reset_token_minutes))
     except Exception as error:  # noqa: BLE001 - the form's answer must not depend on whether this address has an account
-        log.error("reset mail could not be sent: %s", _mail_failure(error))
+        log.error("reset mail could not be sent: %s", mail_failure(error))
     return RESET_SENT
-
-
-def _mail_failure(error: Exception) -> str:
-    """What kind of failure it was, for the log: the error's name and the SMTP reply code. Not its text and not a
-    traceback - a mail server's refusal quotes the recipient's address, and addresses are not written to the log."""
-    code = getattr(error, "smtp_code", None)
-    refused = getattr(error, "recipients", None)  # SMTPRecipientsRefused: {address: (code, reply)}
-    if code is None and isinstance(refused, dict) and refused:
-        code = next(iter(refused.values()))[0]
-    return type(error).__name__ + (f" {code}" if isinstance(code, int) else "")
 
 
 @router.post("/api/auth/reset/confirm")
