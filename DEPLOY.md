@@ -410,6 +410,26 @@ gcloud run jobs execute nowrecommend-seed --project harness-recommend --region a
 - **자동 백업 없음**: 서버 DB에는 카탈로그와 요청 로그만 있습니다. 사용자 취향·기록은 각 브라우저에 저장됩니다(결정 1). 자동 백업은 꺼 두고, 스키마를 바꾸기 전에만 수동 백업을 만듭니다. 지금 있는 수동 백업은 `1793084373805`(장르 규칙 배포 직전)와 `1793050877375`(1단계 직전) 두 개입니다.
 - 키가 로그·화면·저장소에 노출되면 즉시 새 키를 만들고 `gcloud secrets versions add gemini-api-key --project harness-recommend --data-file=<파일>`로 바꾼 뒤 서비스를 다시 배포합니다.
 
+## 4-1. 모니터링과 알림 (2026-11-17)
+
+Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-recommend`에 있습니다.
+
+| 자원 | 이름 | 내용 |
+|---|---|---|
+| 업타임 체크 | `지금 추천 API 상태` (`api-VxQ6y-BRSk0`) | `GET /api/health`를 5분마다 아시아·미국·유럽 세 지역에서 요청. 10초 안에 2xx가 아니면 실패 |
+| 알림 정책 | `지금 추천 API 응답 없음` | 업타임 체크가 두 지역 이상에서 5분 넘게 실패 |
+| 알림 정책 | `지금 추천 API 서버 오류(5xx)` | 5분 동안 5xx 응답이 5건 초과 |
+| 알림 정책 | `지금 추천 API 응답 지연` | 응답 시간 p95가 12초를 넘는 상태가 10분 지속 |
+| 알림 채널 | `지금 추천 장애 알림 (이메일)` | gcloud에 로그인한 GCP 계정의 이메일 |
+
+- `/api/health`는 DB에 연결하지 못하면 503이므로, 업타임 체크 하나가 API와 DB를 함께 봅니다.
+- 업타임 체크가 5분마다 세 지역에서 들어오므로 인스턴스가 0개로 내려가는 일이 줄어듭니다(첫 요청 지연이 줄고, 요청 처리 시간만큼의 Cloud Run 비용이 조금 듭니다).
+- 확인: `gcloud monitoring uptime list-configs --project harness-recommend`, `gcloud monitoring policies list --project harness-recommend`.
+- 끄기: `gcloud monitoring policies update <정책 이름> --project harness-recommend --no-enabled`.
+- Git Bash에서 `--path=/api/health`처럼 `/`로 시작하는 값을 주면 `C:/Program Files/Git/...`로 바뀝니다. PowerShell에서 실행하거나 `MSYS_NO_PATHCONV=1`을 붙입니다.
+- 알림 채널은 `gcloud beta`가 없어 REST API(`monitoring.googleapis.com/v3/projects/harness-recommend/notificationChannels`)로 만들었습니다.
+- 아직 없는 것: Gemini 키 프로젝트(`gen-lang-client-0956207237`)의 할당량 상한. 콘솔의 할당량 화면에서 겁니다.
+
 ## 5. 로컬 시연
 
 ```powershell
