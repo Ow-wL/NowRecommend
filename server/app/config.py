@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
     reset_daily_per_address: int = 10
     reset_daily_per_email: int = 3
+    # Wrong passwords for one account per hour, from anywhere (0 = off). The per-minute limit counts one address; this one
+    # counts the account, so guesses spread over many addresses stop too. At the limit every login for that account waits
+    # for the next hour, the right password included; sessions that are already signed in go on, and a reset mail gets in.
+    login_fails_per_hour: int = 10
     # Largest synced browser store accepted by PUT /api/me/store (backups cap at 5MB in the browser; 1MB ≈ 50 entries with rounds).
     store_max_bytes: int = 1_000_000
     # PUT /api/me/store per client per minute (0 = off). The browser waits 1.5s after a change, so 40 is its own ceiling.

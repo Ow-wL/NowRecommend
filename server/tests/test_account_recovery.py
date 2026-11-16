@@ -424,3 +424,77 @@ def test_a_failed_mail_is_logged_by_kind_and_never_with_the_address(world, caplo
     with caplog.at_level("ERROR"):
         assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
     assert "SMTPAuthenticationError 535" in caplog.text and "bad key" not in caplog.text
+
+
+# ---- wrong passwords, counted per account (2026-11-17) ----
+
+def limited(app, per_hour: int) -> None:
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
+                                                              reset_daily_per_address=0, reset_daily_per_email=0, login_fails_per_hour=per_hour)
+
+
+def test_wrong_passwords_stop_an_accounts_logins_for_the_hour_and_right_ones_cost_nothing(world, monkeypatch):
+    from datetime import datetime, timedelta
+
+    from app.budget import KST
+    from app.routes import auth as routes
+
+    client, auth, outbox, _, _, app = world
+    limited(app, 3)
+    now = [datetime(2026, 11, 17, 14, 20, tzinfo=KST)]
+    monkeypatch.setattr(routes, "_hour", lambda: now[0])
+    wrong, right = {"email": "lee@example.com", "password": "wrong-password"}, {"email": "lee@example.com", "password": "password1"}
+    # Signing in correctly any number of times uses nothing up, and neither does it clear what was got wrong.
+    assert [client.post("/api/auth/login", json=body).status_code for body in (right, right, right, right, wrong, wrong, right, wrong)] == [200, 200, 200, 200, 401, 401, 200, 401]
+    stopped = client.post("/api/auth/login", json=right)  # the right password waits as well: otherwise guessing could go on
+    assert stopped.status_code == 429 and stopped.headers["retry-after"] == "2400" and "비밀번호를 다시 정" in stopped.json()["detail"]
+    # The account, not the caller: the session that is signed in goes on, and another account is not touched.
+    assert client.get("/api/auth/me", headers=auth).status_code == 200
+    client.post("/api/auth/signup", json={"email": "kim@example.com", "password": "password1", "name": "김"})
+    assert client.post("/api/auth/login", json={"email": "kim@example.com", "password": "password1"}).status_code == 200
+    # A mailed reset link is the way in while the logins wait.
+    limited(app, 3)
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert client.post("/api/auth/reset/confirm", json={"token": outbox.link_token(), "password": "password2"}).status_code == 200
+    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password2"}).status_code == 429
+    now[0] += timedelta(minutes=40)  # 15:00: a new hour
+    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password2"}).status_code == 200
+
+
+def test_an_address_without_an_account_is_stopped_the_same_way(world):
+    """Otherwise the refusal would tell which addresses are registered."""
+    client, _, _, _, _, app = world
+    limited(app, 2)
+    nobody = {"email": "nobody@example.com", "password": "password1"}
+    assert [client.post("/api/auth/login", json=nobody).status_code for _ in range(3)] == [401, 401, 429]
+    # Written differently, it is the same address.
+    assert client.post("/api/auth/login", json={"email": " Nobody@Example.com ", "password": "password1"}).status_code == 429
+
+
+def test_a_signed_in_session_cannot_guess_the_password_without_end_either(world):
+    """Changing the password and deleting the account both ask for the current password. Tries there count with the logins."""
+    client, auth, _, _, _, app = world
+    limited(app, 3)
+    assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "guess-one", "newPassword": "password9"}).status_code == 403
+    assert client.post("/api/auth/delete", headers=auth, json={"password": "guess-two"}).status_code == 401
+    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "guess-three"}).status_code == 401
+    assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "password1", "newPassword": "password9"}).status_code == 429
+    assert client.post("/api/auth/delete", headers=auth, json={"password": "password1"}).status_code == 429
+    assert client.get("/api/auth/me", headers=auth).status_code == 200  # nothing was changed or deleted
+
+    limited(app, 0)  # off: nothing is counted or refused
+    assert [client.post("/api/auth/login", json={"email": "lee@example.com", "password": "nope-nope"}).status_code for _ in range(5)] == [401] * 5
+    changed = client.post("/api/auth/password", headers=auth, json={"currentPassword": "password1", "newPassword": "password9"})
+    assert changed.status_code == 200
+    assert client.post("/api/auth/delete", headers={"Authorization": f"Bearer {changed.json()['token']}"}, json={"password": "password9"}).status_code == 204
+
+
+def test_no_address_is_kept_in_the_count(world):
+    from sqlalchemy import select
+
+    client, _, _, _, _, app = world
+    limited(app, 5)
+    client.post("/api/auth/login", json={"email": "lee@example.com", "password": "wrong-password"})
+    with next(app.dependency_overrides[get_session]()) as session:
+        buckets = list(session.scalars(select(UsageDaily.bucket)))
+    assert len(buckets) == 1 and buckets[0].startswith("login:") and "lee" not in buckets[0] and "@" not in buckets[0]

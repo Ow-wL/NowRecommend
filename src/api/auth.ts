@@ -74,7 +74,8 @@ export function authErrorMessage(error: unknown, mode: 'login' | 'signup' | 'for
   if (error.kind === 'offline') return '서버에 연결하지 못했어요. 네트워크를 확인해주세요.';
   if (error.kind === 'timeout') return '서버 응답이 늦어요. 잠시 후 다시 시도해주세요.';
   if (error.status === 503) return mode === 'forgot' ? '지금은 메일로 비밀번호를 다시 정할 수 없어요. 잠시 후 다시 시도해주세요.' : '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
-  if (error.status === 429) return mode === 'forgot' || mode === 'signup' ? error.message || '시도가 너무 많아요. 잠시 후 다시 시도해주세요.' : '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';
+  // The server's own sentence: it tells a busy minute from an account whose password was got wrong too often (and what to do then).
+  if (error.status === 429) return error.message || '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';
   if (mode === 'reset') return error.status === 400 ? '링크가 만료됐거나 이미 사용됐어요. 메일을 다시 받아주세요.' : error.status === 422 ? '비밀번호는 8자 이상이어야 해요.' : error.message || '비밀번호를 바꾸지 못했어요.';
   if (mode === 'forgot') return error.status === 422 ? '이메일 형식을 확인해주세요.' : error.message || '요청을 처리하지 못했어요.';
   if (error.status === 401) return '이메일 또는 비밀번호가 맞지 않아요.';

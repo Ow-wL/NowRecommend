@@ -8,7 +8,7 @@ import hmac
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import TokenSigner, hash_password, needs_rehash, normalize_email, valid_email, verify_password
-from ..budget import Allowance, guest_key, signup_day
+from ..budget import KST, Allowance, guest_key, signup_day
 from ..config import Settings, get_settings
 from ..db import get_session
 from ..legal import get_legal
@@ -187,8 +187,28 @@ def signup(request: SignupRequest, session: Session = Depends(get_session), sign
     return _session_answer(signer, user)
 
 
+def _hour() -> datetime:
+    return datetime.now(KST)
+
+
+def password_attempt(email: str, session: Session, settings: Settings) -> Allowance:
+    """One try at an account's password, counted for the account and the hour (LOGIN_FAILS_PER_HOUR) before the password
+    is looked at, so tries arriving together cannot all slip under the limit; a try that turns out right is given back,
+    which leaves the wrong ones counted. Counted for the address typed, whether or not it has an account: the refusal
+    must not tell which addresses are registered. The address is kept as a keyed hash, like a guest's (budget.py)."""
+    now = _hour()
+    attempt = Allowance(session, f"login:{guest_key(email, settings.auth_secret)}:{now:%H}", settings.login_fails_per_hour, False)
+    if not attempt.take():
+        wait = int((now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1) - now).total_seconds())
+        raise HTTPException(429, "이 계정의 비밀번호를 여러 번 틀렸어요. 잠시 후 다시 시도하거나 비밀번호를 다시 정해주세요.",
+                            headers={"Retry-After": str(max(1, wait))})
+    return attempt
+
+
 @router.post("/api/auth/login")
-def login(request: Credentials, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer)):
+def login(request: Credentials, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
+          settings: Settings = Depends(get_settings)):
+    attempt = password_attempt(request.email, session, settings)
     user = session.scalar(select(User).where(User.email == request.email))
     # One message for both cases, so the form does not reveal which emails have accounts.
     checked = user.password_hash if user is not None else ""
@@ -205,6 +225,7 @@ def login(request: Credentials, session: Session = Depends(get_session), signer:
     session.commit()
     if version is None:
         raise refused
+    attempt.give_back()
     session.refresh(user)
     return _session_answer(signer, user, version)
 
@@ -241,9 +262,12 @@ def write_store(upload: StoreUpload, user: User = Depends(current_user), session
 
 
 @router.post("/api/auth/delete", status_code=204)
-def delete_account(request: DeleteRequest, user: User = Depends(current_user), session: Session = Depends(get_session)):
+def delete_account(request: DeleteRequest, user: User = Depends(current_user), session: Session = Depends(get_session),
+                   settings: Settings = Depends(get_settings)):
+    attempt = password_attempt(user.email, session, settings)  # a session someone else got hold of cannot guess without end either
     if not verify_password(request.password, user.password_hash):
         raise HTTPException(401, "비밀번호가 맞지 않아요.")
+    attempt.give_back()
     session.delete(user)
     session.commit()
     return Response(status_code=204)
@@ -273,12 +297,14 @@ def _replace_password(user: User, session: Session, checked_hash: str, password:
 
 @router.post("/api/auth/password")
 def change_password(request: PasswordChange, user: User = Depends(current_user), session: Session = Depends(get_session),
-                    signer: TokenSigner = Depends(require_signer)):
+                    signer: TokenSigner = Depends(require_signer), settings: Settings = Depends(get_settings)):
     """A new password ends every other session; this one continues with the token in the answer. A wrong current
     password is 403, so the browser can tell it from an ended session (401)."""
+    attempt = password_attempt(user.email, session, settings)
     checked = user.password_hash
     if not verify_password(request.currentPassword, checked):
         raise HTTPException(403, "현재 비밀번호가 맞지 않아요.")
+    attempt.give_back()
     version = _replace_password(user, session, checked, request.newPassword)
     if version is None:  # changed elsewhere between the check and the save
         raise HTTPException(401, "비밀번호가 방금 다른 곳에서 바뀌었어요. 다시 로그인해주세요.", headers={"WWW-Authenticate": "Bearer"})
