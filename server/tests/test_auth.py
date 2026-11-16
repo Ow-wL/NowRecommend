@@ -176,6 +176,46 @@ def test_on_postgresql_saves_racing_on_one_version_cannot_all_win(test_database_
         engine.dispose()
 
 
+@needs_db
+def test_on_postgresql_one_reset_link_used_by_requests_arriving_together_works_once(test_database_url):
+    """2026-11-17: eight confirms of the same link at once: one sets its password, seven are told the link is spent."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from sqlalchemy import select, text
+
+    engine = create_engine(test_database_url)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE users CASCADE"))
+    make = sessionmaker(engine, expire_on_commit=False)
+
+    def session():
+        with make() as s:
+            yield s
+
+    signer = TokenSigner("test-secret", ttl_seconds=3600)
+    app = create_app()
+    app.dependency_overrides[get_session] = session
+    app.dependency_overrides[get_signer] = lambda: signer
+    try:
+        with TestClient(app) as racing:
+            racing.post("/api/auth/signup", json=SIGNUP)
+            with make() as s:
+                user = s.scalars(select(User)).one()
+                link = signer.issue_reset(str(user.id), user.password_hash)
+
+            def confirm(n):
+                return n, racing.post("/api/auth/reset/confirm", json={"token": link, "password": f"password-{n:02d}"})
+
+            with ThreadPoolExecutor(8) as pool:
+                answers = list(pool.map(confirm, range(8)))
+            assert sorted(a.status_code for _, a in answers) == [200] + [400] * 7
+            winner, done = next((n, a) for n, a in answers if a.status_code == 200)
+            assert racing.post("/api/auth/login", json={"email": "lee@example.com", "password": f"password-{winner:02d}"}).status_code == 200
+            assert racing.get("/api/auth/me", headers={"Authorization": f"Bearer {done.json()['token']}"}).status_code == 200  # its token carries its own version
+    finally:
+        engine.dispose()
+
+
 def test_delete_account_needs_the_password(client):
     token = client.post("/api/auth/signup", json=SIGNUP).json()["token"]
     auth = {"Authorization": f"Bearer {token}"}

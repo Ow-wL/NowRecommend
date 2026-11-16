@@ -80,6 +80,12 @@ def test_tokens_are_two_kinds_and_old_ones_count_as_version_zero():
     assert signer.session(reset) is None and signer.verify(reset) is None and signer.reset(signer.issue("u1", 0)) is None
     assert "pbkdf2" not in reset and signer.fingerprint("pbkdf2$hash") != signer.fingerprint("pbkdf2$other")
     assert signer.fingerprint("pbkdf2$hash") != TokenSigner("other").fingerprint("pbkdf2$hash")
+    # A reset token is signed with its own key: code that checks only the signature with the secret itself (every API
+    # revision from before 2026-11-17) cannot take it for a session.
+    payload, signature = reset.split(".")
+    assert signature != signer._sign(payload) and signature == signer._sign(payload, "reset")
+    forged = signer._token({"sub": "u1", "use": "reset", "pw": signer.fingerprint("pbkdf2$hash"), "exp": int(clock.now) + 60})  # signed as a session
+    assert signer.reset(forged) is None
     clock.now += 31
     assert signer.reset(reset) is None
     assert signer.reset("garbage") is None and signer.session("a.b") is None
@@ -88,7 +94,7 @@ def test_tokens_are_two_kinds_and_old_ones_count_as_version_zero():
 def test_a_new_password_ends_the_other_sessions_and_keeps_this_one(world):
     client, auth, *_ = world
     other = {"Authorization": f"Bearer {client.post('/api/auth/login', json=SIGNUP).json()['token']}"}  # the same account on a phone
-    assert client.post("/api/auth/password", json={"currentPassword": "wrong-pass", "newPassword": "password2"}, headers=auth).status_code == 401
+    assert client.post("/api/auth/password", json={"currentPassword": "wrong-pass", "newPassword": "password2"}, headers=auth).status_code == 403  # not 401: the session is fine
     assert client.get("/api/auth/me", headers=other).status_code == 200  # a wrong guess changes nothing
     assert client.post("/api/auth/password", json={"currentPassword": "password1", "newPassword": "short"}, headers=auth).status_code == 422
     assert client.post("/api/auth/password", json={"currentPassword": "password1", "newPassword": "password2"}).status_code == 401
@@ -234,3 +240,20 @@ def test_the_reset_mail_escapes_the_name_and_mail_is_off_without_settings(monkey
     assert get_mailer() is None  # a sender address is needed too
     monkeypatch.setattr(mail, "get_settings", lambda: Settings(smtp_host="smtp.example.com", mail_from="a@b.co", smtp_port=465))
     assert isinstance(get_mailer(), SmtpMailer) and get_mailer().port == 465
+
+
+def test_a_password_is_replaced_only_if_it_is_still_the_one_that_was_checked(world):
+    """What makes a link single-use when two requests arrive together: the UPDATE names the hash that was checked."""
+    from sqlalchemy import select
+
+    from app.routes.auth import _replace_password
+
+    client, auth, _, _, _, app = world
+    session = next(app.dependency_overrides[get_session]())
+    user = session.scalars(select(User)).one()
+    checked = user.password_hash
+    assert _replace_password(user, session, checked, "first-winner") == 1       # the version this very UPDATE produced
+    assert _replace_password(user, session, checked, "second-loser") is None    # the hash it checked is gone
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "first-winner"}).status_code == 200
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "second-loser"}).status_code == 401
+    assert client.get("/api/auth/me", headers=auth).status_code == 401  # and the sessions from before are over

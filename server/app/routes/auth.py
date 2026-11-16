@@ -144,8 +144,9 @@ def _iso(value: datetime | None) -> str | None:
     return value.astimezone(timezone.utc).isoformat() if value and value.tzinfo else (value.replace(tzinfo=timezone.utc).isoformat() if value else None)
 
 
-def _session_answer(signer: TokenSigner, user: User) -> dict:
-    return {"token": signer.issue(str(user.id), user.token_version), "user": public_user(user), "hasStore": user.store is not None}
+def _session_answer(signer: TokenSigner, user: User, version: int | None = None) -> dict:
+    """`version`: the token version a route's own UPDATE produced, when it changed it (not what a later read shows)."""
+    return {"token": signer.issue(str(user.id), user.token_version if version is None else version), "user": public_user(user), "hasStore": user.store is not None}
 
 
 @router.post("/api/auth/signup", status_code=201)
@@ -221,18 +222,34 @@ def _end_sessions(user: User, session: Session) -> None:
     """Every token issued so far stops working. One UPDATE, so two of these at once still move the number on twice."""
     session.execute(update(User).where(User.id == user.id).values(token_version=User.token_version + 1))
     session.commit()
-    session.refresh(user)
+
+
+def _replace_password(user: User, session: Session, checked_hash: str, password: str, **also) -> int | None:
+    """Sets a new password and ends every session, but only if the stored hash is still the one that was checked: one
+    UPDATE, so of two requests holding the same reset link (or the same old password) exactly one wins, and neither can
+    undo a change that was finished in between. Returns the token version this UPDATE produced (RETURNING: reading the
+    row again could show a later one, and hand a token that outlives someone else's "sign out everywhere"), or None."""
+    version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked_hash)
+                              .values(password_hash=hash_password(password), token_version=User.token_version + 1, **also)
+                              .returning(User.token_version)).scalar()
+    session.commit()
+    if version is not None:
+        session.refresh(user)
+    return version
 
 
 @router.post("/api/auth/password")
 def change_password(request: PasswordChange, user: User = Depends(current_user), session: Session = Depends(get_session),
                     signer: TokenSigner = Depends(require_signer)):
-    """A new password ends every other session; this one continues with the token in the answer."""
-    if not verify_password(request.currentPassword, user.password_hash):
-        raise HTTPException(401, "현재 비밀번호가 맞지 않아요.")
-    user.password_hash = hash_password(request.newPassword)
-    _end_sessions(user, session)
-    return _session_answer(signer, user)
+    """A new password ends every other session; this one continues with the token in the answer. A wrong current
+    password is 403, so the browser can tell it from an ended session (401)."""
+    checked = user.password_hash
+    if not verify_password(request.currentPassword, checked):
+        raise HTTPException(403, "현재 비밀번호가 맞지 않아요.")
+    version = _replace_password(user, session, checked, request.newPassword)
+    if version is None:  # changed elsewhere between the check and the save
+        raise HTTPException(401, "비밀번호가 방금 다른 곳에서 바뀌었어요. 다시 로그인해주세요.", headers={"WWW-Authenticate": "Bearer"})
+    return _session_answer(signer, user, version)
 
 
 @router.post("/api/auth/logout-all", status_code=204)
@@ -277,9 +294,11 @@ def confirm_reset(request: ResetConfirm, session: Session = Depends(get_session)
     password is gone after this. Every session of the account ends; the answer signs this browser in."""
     claims = signer.reset(request.token)
     user = session.get(User, uuid.UUID(claims[0])) if claims and _is_uuid(claims[0]) else None
-    if user is None or not hmac.compare_digest(signer.fingerprint(user.password_hash), claims[1]):
-        raise HTTPException(400, "링크가 만료됐거나 이미 사용됐어요. 비밀번호 재설정을 다시 요청해주세요.")
-    user.password_hash = hash_password(request.password)
-    user.last_login_at = datetime.now(timezone.utc)
-    _end_sessions(user, session)
-    return _session_answer(signer, user)
+    checked = user.password_hash if user is not None else ""
+    spent = HTTPException(400, "링크가 만료됐거나 이미 사용됐어요. 비밀번호 재설정을 다시 요청해주세요.")
+    if user is None or not hmac.compare_digest(signer.fingerprint(checked), claims[1]):
+        raise spent
+    version = _replace_password(user, session, checked, request.password, last_login_at=datetime.now(timezone.utc))
+    if version is None:  # the same link, used a moment earlier by another request
+        raise spent
+    return _session_answer(signer, user, version)

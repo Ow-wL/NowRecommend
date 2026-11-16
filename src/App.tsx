@@ -111,9 +111,14 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('');
   // A password reset link from the mail (#/reset/<token>): read once here and on later address changes; the router then
   // moves the address to #/login, so the token does not stay in the address bar or the history.
-  const [resetToken, setResetToken] = useState(() => resetTokenIn(window.location.hash));
+  // The address is replaced in place (not navigated away from), so the link does not stay in the browser's history either.
+  const takeResetToken = () => { const token = resetTokenIn(window.location.hash); if (token) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/login`); return token; };
+  const [resetToken, setResetToken] = useState(takeResetToken);
   const [mailAgain, setMailAgain] = useState(false);  // the link did not work: the login form opens on "send the mail again"
-  useEffect(() => { const onLink = () => { const token = resetTokenIn(window.location.hash); if (token) setResetToken(token); }; window.addEventListener('hashchange', onLink); return () => window.removeEventListener('hashchange', onLink); }, []);
+  // Leaving the login page drops the link: it is not kept in memory for a later visit. (Declared before the effect
+  // below, so a link that arrives while the app is starting is taken after this has run, not wiped by it.)
+  useEffect(() => { if (page !== 'login') { setResetToken(''); setMailAgain(false); } }, [page]);
+  useEffect(() => { const onLink = () => { const token = takeResetToken(); if (token) { setResetToken(token); dispatchView({ page: 'login' }); } }; window.addEventListener('hashchange', onLink); onLink(); /* the address may have changed between the first render and here */ return () => window.removeEventListener('hashchange', onLink); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const [tasteDecade, setTasteDecade] = useState(0);
   // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.
   const [weather, setWeather] = useState<Weather | null>(readWeather);
@@ -241,13 +246,23 @@ export default function App() {
       const next: Account = { token: session.token, user: session.user };
       writeAccount(next); setAccount(next); setDeletePassword(''); setNewPassword(''); setDialog(null);
       notify('비밀번호를 바꿨어요. 다른 기기에서는 로그아웃됐어요.');
-    } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '현재 비밀번호가 맞지 않아요.' : err instanceof ApiError && err.status === 429 ? '시도가 너무 많아요. 잠시 후 다시 시도해주세요.' : '비밀번호를 바꾸지 못했어요. 잠시 후 다시 시도해주세요.'); }
+    } catch (err) {
+      // 403: the current password was wrong. 401: this session has ended (expired, or the password was changed elsewhere).
+      if (err instanceof ApiError && err.status === 401) { writeAccount(null); setAccount(null); setDialog(null); notify('로그인이 끝나 있어 비밀번호를 바꾸지 못했어요. 다시 로그인한 뒤 시도해주세요.'); return; }
+      setDeleteError(err instanceof ApiError && err.status === 403 ? '현재 비밀번호가 맞지 않아요.' : err instanceof ApiError && err.status === 429 ? '시도가 너무 많아요. 잠시 후 다시 시도해주세요.' : '비밀번호를 바꾸지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
   }
   // A lost phone, a computer left signed in: the server stops accepting every token of the account, this one too.
   async function signOutEverywhere() {
     if (!account) return;
     try { await logoutEverywhere(account.token); }
-    catch (err) { if (!(err instanceof ApiError && err.status === 401)) { notify('모든 기기에서 로그아웃하지 못했어요. 연결을 확인한 뒤 다시 시도해주세요.'); return; } }
+    catch (err) {
+      // 401: this browser's own session had already ended, so the server ended nothing. Saying "done" would leave the
+      // other devices signed in without the person knowing.
+      if (err instanceof ApiError && err.status === 401) { writeAccount(null); setAccount(null); setDialog(null); notify('로그인이 끝나 있어 다른 기기를 로그아웃하지 못했어요. 다시 로그인한 뒤 시도해주세요.'); }
+      else notify('모든 기기에서 로그아웃하지 못했어요. 연결을 확인한 뒤 다시 시도해주세요.');
+      return;
+    }
     writeAccount(null); setAccount(null); setDialog(null); notify('모든 기기에서 로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.');
   }
   // For a shared computer: what is not saved yet goes to the account first, and only then is this browser emptied.

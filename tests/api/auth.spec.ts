@@ -321,9 +321,17 @@ test('a forgotten password: the form asks for the mail and says the same whoever
 test('the mailed link sets a new password and signs in; the token leaves the address bar', async ({ page }) => {
   const calls = await setup(page, { hasStore: true });
   const token = 'eyJzdWIiOiJ1MSIsInVzZSI6InJlc2V0In0.c2lnbmF0dXJlLXNpZ25hdHVyZQ';
-  await page.goto(`/#/reset/${token}`);
+  await page.goto('/#/home');
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await page.goto(`/#/reset/${token}`);  // the link, opened in a tab where the app is already running
   await expect(page.getByRole('heading', { name: '새 비밀번호 정하기' })).toBeVisible();
   await expect(page).toHaveURL(/#\/login$/);
+  // Replaced in place, not navigated away from: one step back is the home screen, not the link.
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/home$/);
+  expect(await page.evaluate(() => window.location.href)).not.toContain(token);
+  await page.goto(`/#/reset/${token}`);  // leaving the login page dropped the link; the mail's link still works
+  await expect(page.getByRole('heading', { name: '새 비밀번호 정하기' })).toBeVisible();
   await expect(page.getByLabel('이메일')).toHaveCount(0);
   await page.getByLabel('새 비밀번호', { exact: false }).fill('brand-new-pass');
   await page.getByRole('button', { name: '비밀번호 바꾸고 로그인' }).click();
@@ -354,7 +362,7 @@ test('changing the password keeps this browser signed in with the new token; a w
   await page.getByRole('button', { name: '내 계정' }).click();
   await page.getByRole('button', { name: '비밀번호 변경' }).click();
   const dialog = page.getByRole('dialog');
-  calls.passwordStatus = 401;
+  calls.passwordStatus = 403;
   await dialog.getByLabel('현재 비밀번호').fill('wrong-pass');
   await dialog.getByLabel('새 비밀번호', { exact: false }).fill('password2');
   await dialog.getByRole('button', { name: '비밀번호 변경' }).click();
@@ -383,4 +391,17 @@ test('signing out everywhere tells the server, then signs this browser out and k
   expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();
   expect(await stored(page)).toMatchObject({ favorites: ['m01', 'f09'] });
   await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
+});
+
+test('an ended session is told as such: nothing is claimed about the other devices', async ({ page }) => {
+  const calls = await setup(page, { hasStore: true });
+  await logIn(page);
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  await page.route(`${API}/api/auth/logout-all`, route => route.request().method() === 'OPTIONS' ? fulfill(route, {}) : fulfill(route, { detail: '로그인이 필요해요.' }, 401));
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByRole('button', { name: /모든 기기에서 로그아웃/ }).click();
+  await expect(page.getByText('다른 기기를 로그아웃하지 못했어요', { exact: false })).toBeVisible();
+  await expect(page.getByText('모든 기기에서 로그아웃했어요', { exact: false })).toHaveCount(0);
+  expect(calls.logoutAll).toEqual([]);
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();  // this browser's session was over anyway
 });

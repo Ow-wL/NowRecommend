@@ -15,6 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 PBKDF2_ITERATIONS = 310_000
+RESET = "reset"  # the purpose of a password reset token (TokenSigner)
 SALT_BYTES = 16
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -70,11 +71,11 @@ class TokenSigner:
         return claims[0] if claims else None
 
     def issue_reset(self, user_id: str, password_hash: str, ttl_seconds: int = 1800) -> str:
-        return self._token({"sub": user_id, "use": "reset", "pw": self.fingerprint(password_hash), "exp": int(self.now()) + ttl_seconds})
+        return self._token({"sub": user_id, "use": "reset", "pw": self.fingerprint(password_hash), "exp": int(self.now()) + ttl_seconds}, RESET)
 
     def reset(self, token: str) -> tuple[str, str] | None:
         """(account id, password fingerprint) of a valid reset token."""
-        data = self._claims(token)
+        data = self._claims(token, RESET)
         if data is None or data.get("use") != "reset" or not isinstance(data.get("pw"), str):
             return None
         return data["sub"], data["pw"]
@@ -83,14 +84,14 @@ class TokenSigner:
         """Tells whether a password hash is still the one a reset token was issued for, without putting the hash in the token."""
         return _b64(hmac.new(self.secret.encode("utf-8"), f"reset|{password_hash}".encode("utf-8"), hashlib.sha256).digest())[:22]
 
-    def _token(self, data: dict) -> str:
+    def _token(self, data: dict, purpose: str = "") -> str:
         payload = _b64(json.dumps(data, separators=(",", ":")).encode())
-        return f"{payload}.{self._sign(payload)}"
+        return f"{payload}.{self._sign(payload, purpose)}"
 
-    def _claims(self, token: str) -> dict | None:
+    def _claims(self, token: str, purpose: str = "") -> dict | None:
         try:
             payload, signature = token.split(".")
-            if not hmac.compare_digest(self._sign(payload), signature):
+            if not hmac.compare_digest(self._sign(payload, purpose), signature):
                 return None
             data = json.loads(_unb64(payload))
             if not isinstance(data, dict) or not isinstance(data.get("sub"), str) or not isinstance(data.get("exp"), int) or data["exp"] < self.now():
@@ -99,8 +100,12 @@ class TokenSigner:
         except (ValueError, TypeError, AttributeError):
             return None
 
-    def _sign(self, payload: str) -> str:
-        return _b64(hmac.new(self.secret.encode("utf-8"), payload.encode("ascii"), hashlib.sha256).digest())
+    def _sign(self, payload: str, purpose: str = "") -> str:
+        """Session tokens are signed with the secret itself, as they always were. Every other kind gets a key derived for
+        it, so it cannot pass for a session anywhere: not here, and not in code from before the kinds existed (an older
+        API revision still serving during a rollout or after a rollback checks the signature only)."""
+        key = f"{self.secret}|{purpose}" if purpose else self.secret
+        return _b64(hmac.new(key.encode("utf-8"), payload.encode("ascii"), hashlib.sha256).digest())
 
 
 def _b64(raw: bytes) -> str:
