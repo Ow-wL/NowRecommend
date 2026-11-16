@@ -57,6 +57,8 @@ async function setup(page: Page, opts: { hasStore?: boolean; loginStatus?: numbe
   return calls;
 }
 const stored = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem('nowrecommend-prototype-v1')!));
+/** Ticks what sign-up asks agreement to. The boxes themselves are clicked: the labels hold links that open the documents. */
+async function agree(page: Page) { for (const name of [/이용약관/, /개인정보 수집·이용/, /만 18세 이상/]) await page.getByRole('checkbox', { name }).check(); }
 async function logIn(page: Page) {
   await page.goto('/#/login');
   await page.getByLabel('이메일').fill('lee@example.com');
@@ -73,10 +75,11 @@ test('signing up keeps this browser’s data, names it after the account and sta
   await page.getByLabel('이름').fill('주형');
   await page.getByLabel('이메일').fill('Lee@example.com');
   await page.getByLabel('비밀번호', { exact: false }).fill('password1');
+  await agree(page);
   await page.getByRole('button', { name: '가입하고 시작하기' }).click();
   await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
   await expect(page.getByText('주형님, 가입을 환영해요.', { exact: false })).toBeVisible();
-  expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형' });
+  expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형', termsVersion: '2026-11-17', adult: true });
   // The store was uploaded with the token; its content is still the local data, now carrying the account name.
   await expect.poll(() => calls.puts.length).toBeGreaterThan(0);
   expect(calls.auth[0]).toBe('Bearer tok-1');
@@ -234,6 +237,7 @@ test('a second person signing up in the same browser does not receive the first 
   await page.getByLabel('이름').fill('지은');
   await page.getByLabel('이메일').fill('kim@example.com');
   await page.getByLabel('비밀번호', { exact: false }).fill('password2');
+  await agree(page);
   await page.getByRole('button', { name: '가입하고 시작하기' }).click();
   await expect(page.getByText('다른 계정의 데이터는 올리지 않았어요', { exact: false })).toBeVisible();
   await expect.poll(() => calls.puts.length).toBeGreaterThan(before);
@@ -404,4 +408,51 @@ test('an ended session is told as such: nothing is claimed about the other devic
   await expect(page.getByText('모든 기기에서 로그아웃했어요', { exact: false })).toHaveCount(0);
   expect(calls.logoutAll).toEqual([]);
   expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();  // this browser's session was over anyway
+});
+
+// ---- 2026-11-17: what a person agrees to, and where to read it ----
+
+test('sign-up waits for the three agreements; nothing is ticked beforehand and the documents open beside the form', async ({ page }) => {
+  const calls = await setup(page);
+  await page.goto('/#/login');
+  await page.getByRole('button', { name: '회원가입', exact: true }).click();
+  await page.getByLabel('이름').fill('주형');
+  await page.getByLabel('이메일').fill('lee@example.com');
+  await page.getByLabel('비밀번호', { exact: false }).fill('password1');
+  const submit = page.getByRole('button', { name: '가입하고 시작하기' });
+  const boxes = page.getByRole('checkbox');
+  await expect(boxes).toHaveCount(3);
+  for (let n = 0; n < 3; n++) await expect(boxes.nth(n)).not.toBeChecked();
+  await expect(submit).toBeDisabled();
+  await page.getByRole('checkbox', { name: /이용약관/ }).check();
+  await page.getByRole('checkbox', { name: /개인정보 수집·이용/ }).check();
+  await expect(submit).toBeDisabled();  // the age is asked too
+  await expect(page.getByText('수집 항목: 이메일, 이름, 비밀번호', { exact: false })).toBeVisible();
+  // The documents open in another tab, so what was typed stays.
+  const [terms] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('link', { name: '이용약관' }).click()]);
+  await expect(terms.getByRole('heading', { name: '이용약관', level: 1 })).toBeVisible();
+  await terms.close();
+  await expect(page.getByLabel('이메일')).toHaveValue('lee@example.com');
+  await page.getByRole('checkbox', { name: /만 18세 이상/ }).check();
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.getByText('가입을 환영해요', { exact: false })).toBeVisible();
+  expect(calls.signup[0]).toMatchObject({ termsVersion: '2026-11-17', adult: true });
+  // Logging in asks for no agreement.
+  await page.goto('/#/login');
+});
+
+test('the terms and the privacy policy are one tap from the home screen and readable without an account', async ({ page }) => {
+  await setup(page);
+  await page.goto('/#/home');
+  await page.getByRole('button', { name: '개인정보 처리방침' }).click();
+  await expect(page).toHaveURL(/#\/privacy$/);
+  await expect(page.getByRole('heading', { name: '개인정보 처리방침', level: 1 })).toBeVisible();
+  for (const line of ['Google LLC', 'Apple Inc.', '계정을 삭제할 때까지', '만 18세']) await expect(page.getByText(line, { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('운영자 정보가 아직 등록되지 않았어요.')).toBeVisible();  // this build names no operator: said, not hidden
+  await page.getByRole('button', { name: '이용약관 보기' }).click();
+  await expect(page).toHaveURL(/#\/terms$/);
+  await expect(page.getByText('알레르기 안전을 보장하지 않습니다', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '돌아가기' }).click();
+  await expect(page).toHaveURL(/#\/home$/);
 });

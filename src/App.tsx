@@ -59,6 +59,9 @@ import { planLogin } from './sync';
 import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
+import { Legal } from './components/Legal';
+import { CONTACT_EMAIL } from './legal';
+import { weatherMode } from './features';
 
 type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | 'changePassword' | null;
 const hasTaste = (p: Profile) => p.selected.length > 0 || p.tags.length > 0 || !!p.custom?.length;
@@ -451,7 +454,7 @@ export default function App() {
   }
   const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} now={momentPreset(c, slot, weather)} onPreview={chooseQuickCondition} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
 
-  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', admin: '오류 신고 관리', lab: 'AI 실험실', pair: '같이 추천' };
+  const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '체험 시작', complete: '선택 완료', type: '취향 유형 테스트', terms: '이용약관', privacy: '개인정보 처리방침', admin: '오류 신고 관리', lab: 'AI 실험실', pair: '같이 추천' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
   const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
@@ -554,6 +557,7 @@ export default function App() {
           </button>)}</div>
         </section>}
         <p className="lab-link"><button className="text-button" onClick={() => navigate('type')}>내 취향 유형 알아보기 <ArrowRight size={14} /></button>{labAllowed && <button className="text-button" onClick={() => navigate('lab')}>AI 실험실 <ArrowRight size={14} /></button>}</p>
+        <p className="legal-links"><button className="text-button" onClick={() => navigate('terms')}>이용약관</button><button className="text-button" onClick={() => navigate('privacy')}>개인정보 처리방침</button>{CONTACT_EMAIL && <a className="text-button" href={`mailto:${CONTACT_EMAIL}`}>문의</a>}</p>
       </>}
 
       {page === 'onboard' && <>
@@ -610,6 +614,7 @@ export default function App() {
           <div className="flow-body composer">
             <section className="panel compose-panel">
               <div className="field-head"><label className="field-title" htmlFor="situation">지금의 상황</label>{voice.supported && <button type="button" className={`voice-button${voice.listening ? ' listening' : ''}`} aria-pressed={voice.listening} aria-label={voice.listening ? '음성 입력 중지' : '말로 입력'} onClick={() => voice.listening ? voice.stop() : voice.start()}>{voice.listening ? <Square size={13} fill="currentColor" /> : <Mic size={15} />}{voice.listening ? '듣는 중' : '말로 입력'}</button>}</div>
+            {voice.listening && <p className="small muted send-note" role="status">말한 내용은 브라우저의 음성 인식 서비스로 전송돼 글자로 바뀌어요.</p>}
               {voice.interim && <p className="voice-interim" aria-live="polite">{voice.interim}</p>}
               <textarea id="situation" rows={3} maxLength={300} value={session.raw} onChange={e => setSession(s => changeText(s, e.target.value))} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && ctaReady) { e.preventDefault(); submit(); } }} placeholder={category === 'food' ? '예: 혼자 먹을 담백하고 따뜻한 저녁이 먹고 싶어' : '예: 과제하면서 들을 차분한 연주곡을 추천해줘'} />
               <div className="textarea-caption">
@@ -645,7 +650,8 @@ export default function App() {
               {(category === 'food' ? [{label:'상황', values:situationTags.food}, {label:'원하는 맛·특징', values:options.food.filter(t => !situationTags.food.includes(t))}] : [{label:'상황',values:situationTags.music},{label:'분위기',values:options.music.filter(t => ![...situationTags.music,'보컬','연주곡'].includes(t))},{label:'보컬',values:['보컬','연주곡']}]).map(group => <div className="chip-group" key={group.label}><h3>{group.label}</h3>{chips(group.values,session.conditions.tags,v=>conditionTag(v))}</div>)}
               <div className="chip-group"><h3>반드시 제외 <small>선호 조건보다 먼저 적용해요</small></h3>{chips(exclusions[category], session.conditions.excluded, v => conditionTag(v, true), 'exclude')}</div>
               <div className="preset-panel">
-                <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>
+                <p className="moment-note"><CloudSun size={15} /><span>지금은 {slotLabel[slot]}{weather ? ` · ${weatherLabel(weather)}` : ''}</span>{weatherMode === 'off' ? null : weather ? <button className="text-button" onClick={() => { clearWeather(); setWeather(null); }}>날씨 반영 끄기</button> : <button className="text-button" disabled={weatherBusy} onClick={applyWeather}>{weatherBusy ? '날씨 확인 중' : '지금 날씨 반영'}</button>}</p>
+                {weatherMode !== 'off' && <p className="small muted send-note">{weather ? <>날씨 정보: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></> : '날씨를 반영하면 대략적인 위치(약 1km 단위)를 날씨 서비스 Open-Meteo에 보내요.'}</p>}
                 {presetList(category)}
                 <button className="text-button" disabled={conflicts.length>0 || (store.presets || []).filter(p=>p.category===category).length>=20} onClick={()=>{setPresetName('');setSavePresetOpen(true);}}>현재 조건을 프리셋으로 저장</button>
               </div>
@@ -741,6 +747,7 @@ export default function App() {
       </div>; })()}
 
       {page === 'admin' && <AdminReports token={account?.token} onBack={() => navigate('taste')} />}
+      {(page === 'terms' || page === 'privacy') && <Legal kind={page} onBack={() => navigate('home')} onOther={() => navigate(page === 'terms' ? 'privacy' : 'terms')} />}
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
         onRecommend={(c, result) => { const base = { ...newSession(c), ...requestForType(c, result.code, undefined, result.counts) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}

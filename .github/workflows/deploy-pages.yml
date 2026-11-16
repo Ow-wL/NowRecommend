@@ -36,6 +36,15 @@ jobs:
           # Repository variable (Settings → Secrets and variables → Actions → Variables). Unset → offline mode
           # with the bundled catalog, exactly as before. Must be an https origin (Pages is served over https).
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          # Who runs the service and where to write (src/legal.ts): shown in the terms and the privacy policy. Both must
+          # be set before a public launch; while they are missing the documents say that they are.
+          VITE_OPERATOR_NAME: ${{ vars.VITE_OPERATOR_NAME }}
+          VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
+          # Parts that depend on another company's terms (src/features.ts): VITE_WEATHER=off hides the weather button,
+          # VITE_OPEN_METEO_KEY switches it to the paid API, VITE_APPLE_PREVIEWS=off removes the 30-second previews.
+          VITE_WEATHER: ${{ vars.VITE_WEATHER }}
+          VITE_OPEN_METEO_KEY: ${{ vars.VITE_OPEN_METEO_KEY }}
+          VITE_APPLE_PREVIEWS: ${{ vars.VITE_APPLE_PREVIEWS }}
         run: npm run build -- --base="${PAGES_BASE_PATH}/"
       - name: Upload static website
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5

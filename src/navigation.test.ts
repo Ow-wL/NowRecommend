@@ -33,3 +33,8 @@ it('no token is read from other addresses or from a malformed link', () => {
   expect(resetTokenIn(`#/reset/${resetToken}?x=<script>`)).toBe('');
   expect(resetTokenIn(`#/reset/${resetToken}/more`)).toBe('');
 });
+it('the terms and the privacy policy have addresses of their own', () => {
+  expect(parseRoute('#/terms').page).toBe('terms');
+  expect(parseRoute('#/privacy').page).toBe('privacy');
+  expect(routeFor({ ...defaultView, page: 'privacy' })).toBe('#/privacy');
+});

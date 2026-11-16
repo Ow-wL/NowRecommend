@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Info, KeyRound, LogIn, Mail, UserPlus } from 'lucide-react';
 import { authErrorMessage, confirmReset, login, requestReset, signup, type AuthSession } from '../api/auth';
+import { LEGAL_VERSION, MIN_AGE } from '../legal';
 
 type Mode = 'login' | 'signup' | 'forgot';
 
@@ -14,7 +15,10 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [name, setName] = useState(initialName);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [mailed, setMailed] = useState('');
-  const ready = online && !busy && (resetToken ? password.length >= 8 : !!email.trim() && (mode === 'forgot' || password.length >= 8 && (mode === 'login' || !!name.trim())));
+  // Sign-up: the terms, the privacy policy and the age, each agreed to on its own. Nothing is ticked beforehand.
+  const [agreed, setAgreed] = useState({ terms: false, privacy: false, adult: false });
+  const allAgreed = agreed.terms && agreed.privacy && agreed.adult;
+  const ready = online && !busy && (resetToken ? password.length >= 8 : !!email.trim() && (mode === 'forgot' || password.length >= 8 && (mode === 'login' || !!name.trim() && allAgreed)));
   const go = (next: Mode) => { setMode(next); setError(''); setMailed(''); };
 
   async function submit(e: React.FormEvent) {
@@ -31,7 +35,7 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
         await requestReset(email.trim());
         setMailed(email.trim());
       } else {
-        const session = mode === 'signup' ? await signup(email.trim(), password, name.trim()) : await login(email.trim(), password);
+        const session = mode === 'signup' ? await signup(email.trim(), password, name.trim(), { termsVersion: LEGAL_VERSION, adult: agreed.adult }) : await login(email.trim(), password);
         await onSuccess(session, mode);
       }
     } catch (err) {
@@ -63,6 +67,12 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
         <input id="auth-email" type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
         {mode !== 'forgot' && <><label className="field-title" htmlFor="auth-password">비밀번호 <small>8자 이상</small></label>
           <input id="auth-password" type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상" /></>}
+        {mode === 'signup' && <fieldset className="consent"><legend className="sr-only">가입에 필요한 동의</legend>
+          <label><input type="checkbox" checked={agreed.terms} onChange={e => setAgreed(a => ({ ...a, terms: e.target.checked }))} /><span><a href="#/terms" target="_blank" rel="noopener">이용약관</a>에 동의해요 <small>(필수)</small></span></label>
+          <label><input type="checkbox" checked={agreed.privacy} onChange={e => setAgreed(a => ({ ...a, privacy: e.target.checked }))} /><span><a href="#/privacy" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의해요 <small>(필수)</small></span></label>
+          <label><input type="checkbox" checked={agreed.adult} onChange={e => setAgreed(a => ({ ...a, adult: e.target.checked }))} /><span>만 {MIN_AGE}세 이상이에요 <small>(필수)</small></span></label>
+          <p className="small muted">수집 항목: 이메일, 이름, 비밀번호. 로그인과 기기 간 동기화에 쓰고 계정을 삭제할 때까지 보관해요. 동의하지 않아도 로그인 없이 쓸 수 있어요.</p>
+        </fieldset>}
         {error && <div className="error-box" role="alert">{error}</div>}
         <button className="button primary full-width" disabled={!ready}>{busy ? <span className="spinner" /> : mode === 'signup' ? <UserPlus size={17} /> : mode === 'forgot' ? <Mail size={17} /> : <LogIn size={17} />}{busy ? (mode === 'signup' ? '가입하는 중' : mode === 'forgot' ? '보내는 중' : '로그인하는 중') : mode === 'signup' ? '가입하고 시작하기' : mode === 'forgot' ? '재설정 메일 받기' : '로그인'}</button>
       </form>}

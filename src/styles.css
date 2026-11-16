@@ -611,6 +611,23 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .auth-note { margin-top: 16px; }
 .auth-guest { margin-top: 8px; }
 .auth-forgot { margin-top: 12px; }
+.consent { display: grid; gap: 10px; margin: 4px 0 16px; padding: 0; border: 0; }
+.consent label { display: flex; align-items: flex-start; gap: 10px; min-height: 28px; font-size: 14px; }
+.consent input[type="checkbox"] { width: 18px; height: 18px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--text); }
+.consent a { text-decoration: underline; text-underline-offset: 3px; }
+.consent small { color: var(--text-muted); }
+.legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 20px; margin-top: 28px; }
+.legal-links .text-button { color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.send-note { margin-top: 6px; }
+.send-note a { text-decoration: underline; text-underline-offset: 3px; }
+.legal-page { max-width: 720px; margin: 0 auto; padding: 8px 0 48px; }
+.legal-page h1 { margin: 12px 0 4px; }
+.legal-page h2 { margin: 32px 0 10px; font-size: 18px; }
+.legal-page p, .legal-page li { font-size: 15px; line-height: 1.7; color: var(--text); }
+.legal-page p + p, .legal-page ul + p, .legal-page p + ul { margin-top: 10px; }
+.legal-page ul { display: grid; gap: 8px; padding-left: 20px; list-style: disc; }
+.legal-page .notice { margin-top: 16px; }
+.legal-other { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); }
 .login-panel .notice { margin-bottom: 20px; }
 
 /* ── Dialogs ──────────────────────────────────────── */

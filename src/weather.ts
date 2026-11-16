@@ -1,5 +1,8 @@
-/** Current weather near the person, from Open-Meteo (no key, no account). Asked only when they press the button, kept in
- * this tab for half an hour, and sent with coordinates rounded to about a kilometre. */
+import { openMeteoKey, weatherMode } from './features';
+
+/** Current weather near the person, from Open-Meteo. Asked only when they press the button, kept in this tab for half an
+ * hour, and sent with coordinates rounded to about a kilometre. The free API is for non-commercial use; with a key the
+ * paid API's own host is used (src/features.ts). */
 export type Weather = { temperature: number; rain: boolean; snow: boolean; hot: boolean; cold: boolean; fetchedAt: string };
 const KEY = 'nowrecommend-weather-v1', TTL_MS = 30 * 60 * 1000;
 type Current = { temperature_2m: number; precipitation: number; weather_code: number };
@@ -9,9 +12,14 @@ export function weatherFrom(current: Current, fetchedAt = new Date().toISOString
   const rain = snow || current.precipitation > 0 || RAIN.includes(current.weather_code);
   return { temperature: Math.round(current.temperature_2m), rain, snow, hot: current.temperature_2m >= 28, cold: current.temperature_2m <= 5, fetchedAt };
 }
+export function weatherUrl(query: URLSearchParams, mode = weatherMode, key = openMeteoKey): string {
+  if (mode !== 'paid') return `https://api.open-meteo.com/v1/forecast?${query}`;
+  const paid = new URLSearchParams(query); paid.set('apikey', key);
+  return `https://customer-api.open-meteo.com/v1/forecast?${paid}`;
+}
 export async function requestWeather(latitude: number, longitude: number, fetcher: typeof fetch = fetch): Promise<Weather> {
   const query = new URLSearchParams({ latitude: latitude.toFixed(2), longitude: longitude.toFixed(2), current: 'temperature_2m,precipitation,weather_code', timezone: 'Asia/Seoul' });
-  const response = await fetcher(`https://api.open-meteo.com/v1/forecast?${query}`, { signal: AbortSignal.timeout(8000) });
+  const response = await fetcher(weatherUrl(query), { signal: AbortSignal.timeout(8000) });
   if (!response.ok) throw new Error(`weather ${response.status}`);
   const json = (await response.json()) as { current?: Current };
   if (!json.current || typeof json.current.temperature_2m !== 'number') throw new Error('weather shape');

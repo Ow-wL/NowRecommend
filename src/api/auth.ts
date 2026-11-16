@@ -18,8 +18,9 @@ const nothing = (v: unknown): v is null => v === null;
 type Options = { base?: string; fetchImpl?: typeof fetch };
 export const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-export function signup(email: string, password: string, name: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
-  return apiJson('/api/auth/signup', validSession, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password, name: name.trim() }, timeoutMs: 15000 });
+/** `consent`: the version of the terms and privacy policy the person agreed to on the form, and that they said they are of age. */
+export function signup(email: string, password: string, name: string, consent: { termsVersion: string; adult: boolean }, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson('/api/auth/signup', validSession, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password, name: name.trim(), termsVersion: consent.termsVersion, adult: consent.adult }, timeoutMs: 15000 });
 }
 export function login(email: string, password: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
   return apiJson('/api/auth/login', validSession, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password }, timeoutMs: 15000 });
@@ -77,6 +78,6 @@ export function authErrorMessage(error: unknown, mode: 'login' | 'signup' | 'for
   if (mode === 'forgot') return error.status === 422 ? '이메일 형식을 확인해주세요.' : error.message || '요청을 처리하지 못했어요.';
   if (error.status === 401) return '이메일 또는 비밀번호가 맞지 않아요.';
   if (error.status === 409) return '이미 가입된 이메일이에요. 로그인해주세요.';
-  if (error.status === 422) return mode === 'signup' ? '이메일 형식, 8자 이상의 비밀번호, 16자 이내의 이름을 확인해주세요.' : '이메일 형식과 비밀번호를 확인해주세요.';
+  if (error.status === 422) return mode === 'signup' ? '이메일 형식, 8자 이상의 비밀번호, 16자 이내의 이름과 약관 동의를 확인해주세요.' : '이메일 형식과 비밀번호를 확인해주세요.';
   return error.message || '요청을 처리하지 못했어요.';
 }

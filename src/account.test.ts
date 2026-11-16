@@ -30,10 +30,10 @@ describe('auth API', () => {
   it('sends credentials and returns the session', async () => {
     let seen: any;
     const fetchImpl = (async (url: string, init: RequestInit) => { seen = [url, init]; return new Response(JSON.stringify({ token: 't', user: account.user, hasStore: false }), { status: 201 }); }) as typeof fetch;
-    const session = await signup(' a@b.co ', 'password1', '주형', { base: 'http://api.test', fetchImpl });
+    const session = await signup(' a@b.co ', 'password1', '주형', { termsVersion: '2026-11-17', adult: true }, { base: 'http://api.test', fetchImpl });
     expect(session.user.name).toBe('주형');
     expect(seen[0]).toBe('http://api.test/api/auth/signup');
-    expect(JSON.parse(seen[1].body)).toEqual({ email: 'a@b.co', password: 'password1', name: '주형' });
+    expect(JSON.parse(seen[1].body)).toEqual({ email: 'a@b.co', password: 'password1', name: '주형', termsVersion: '2026-11-17', adult: true });  // what was agreed to goes with it
   });
   it('reads the synced store with the bearer token and tells an unreadable blob from none', async () => {
     let headers: any;
@@ -61,7 +61,7 @@ describe('auth API', () => {
     // The save another device beat: 409, which src/sync.ts answers by reading and merging.
     await expect(pushRemoteStore('tok', emptyStore(), 3, { base: 'http://api.test', fetchImpl: json({ detail: '다른 기기에서 먼저 저장했어요.' }, 409) })).rejects.toMatchObject({ status: 409 });
     const failing = json({ detail: '이미 가입된 이메일이에요. 로그인해주세요.' }, 409);
-    await expect(signup('a@b.co', 'password1', 'x', { base: 'http://api.test', fetchImpl: failing })).rejects.toMatchObject({ status: 409, message: '이미 가입된 이메일이에요. 로그인해주세요.' });
+    await expect(signup('a@b.co', 'password1', 'x', { termsVersion: '2026-11-17', adult: true }, { base: 'http://api.test', fetchImpl: failing })).rejects.toMatchObject({ status: 409, message: '이미 가입된 이메일이에요. 로그인해주세요.' });
   });
   it('explains failures in the form’s words', () => {
     expect(authErrorMessage(new ApiError('http', 'x', 401), 'login')).toBe('이메일 또는 비밀번호가 맞지 않아요.');
