@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } fro
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
 import { SoundSettings } from './components/SoundSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, PenLine, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, KeyRound, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, PenLine, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, situationTags, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -50,17 +50,17 @@ import { recordRound, selectResult,reviewSelection, addManual, MANUAL_RAW } from
 import { HistoryDetails } from './components/HistoryDetails';
 import { Modal } from './components/Modal';
 import { RecommendationCard } from './components/RecommendationCard';
-import { navigationDirection, parseRoute, routeFor, viewReducer, type Page, type Step, type View } from './navigation';
+import { navigationDirection, parseRoute, resetTokenIn, routeFor, viewReducer, type Page, type Step, type View } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
 import { isAiPick, rememberItems, resolveItem } from './knownItems';
 import { keepLocalCopy, readAccount, writeAccount, type Account } from './account';
-import { fetchMe, deleteAccount, fetchRemoteStore, type AuthSession } from './api/auth';
+import { changePassword, fetchMe, deleteAccount, fetchRemoteStore, logoutEverywhere, type AuthSession } from './api/auth';
 import { planLogin } from './sync';
 import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
 
-type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | null;
+type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | 'changePassword' | null;
 const hasTaste = (p: Profile) => p.selected.length > 0 || p.tags.length > 0 || !!p.custom?.length;
 /** Today, yesterday and each earlier date, newest first, in Korean time. */
 function historyGroups(entries: HistoryEntry[]): [string, HistoryEntry[]][] {
@@ -108,6 +108,12 @@ export default function App() {
   // The signed-in account (server mode). Its store follows the account and is merged with it, never blindly overwritten (useAccountSync).
   const [account, setAccount] = useState<Account | null>(readAccount);
   const [deletePassword, setDeletePassword] = useState(''), [deleteError, setDeleteError] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  // A password reset link from the mail (#/reset/<token>): read once here and on later address changes; the router then
+  // moves the address to #/login, so the token does not stay in the address bar or the history.
+  const [resetToken, setResetToken] = useState(() => resetTokenIn(window.location.hash));
+  const [mailAgain, setMailAgain] = useState(false);  // the link did not work: the login form opens on "send the mail again"
+  useEffect(() => { const onLink = () => { const token = resetTokenIn(window.location.hash); if (token) setResetToken(token); }; window.addEventListener('hashchange', onLink); return () => window.removeEventListener('hashchange', onLink); }, []);
   const [tasteDecade, setTasteDecade] = useState(0);
   // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.
   const [weather, setWeather] = useState<Weather | null>(readWeather);
@@ -226,6 +232,24 @@ export default function App() {
   }
   // The data stays and stays marked as this account's (sync meta), so another account signing in here never uploads it.
   function signOut() { writeAccount(null); setAccount(null); setDialog(null); notify('로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.'); }
+  // A new password: every other device is signed out by the server, and this browser goes on with the token it is given.
+  async function submitPasswordChange() {
+    if (!account) return;
+    setDeleteError('');
+    try {
+      const session = await changePassword(account.token, deletePassword, newPassword);
+      const next: Account = { token: session.token, user: session.user };
+      writeAccount(next); setAccount(next); setDeletePassword(''); setNewPassword(''); setDialog(null);
+      notify('비밀번호를 바꿨어요. 다른 기기에서는 로그아웃됐어요.');
+    } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '현재 비밀번호가 맞지 않아요.' : err instanceof ApiError && err.status === 429 ? '시도가 너무 많아요. 잠시 후 다시 시도해주세요.' : '비밀번호를 바꾸지 못했어요. 잠시 후 다시 시도해주세요.'); }
+  }
+  // A lost phone, a computer left signed in: the server stops accepting every token of the account, this one too.
+  async function signOutEverywhere() {
+    if (!account) return;
+    try { await logoutEverywhere(account.token); }
+    catch (err) { if (!(err instanceof ApiError && err.status === 401)) { notify('모든 기기에서 로그아웃하지 못했어요. 연결을 확인한 뒤 다시 시도해주세요.'); return; } }
+    writeAccount(null); setAccount(null); setDialog(null); notify('모든 기기에서 로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.');
+  }
   // For a shared computer: what is not saved yet goes to the account first, and only then is this browser emptied.
   async function signOutAndClear() {
     if (!storageBlocked && !await sync.flush()) { notify('계정에 저장하지 못해 이 브라우저의 데이터를 지우지 않았어요. 연결을 확인한 뒤 다시 시도해주세요.'); return; }
@@ -763,10 +787,10 @@ export default function App() {
       </>}
       {page === 'login' && <div className="login-panel">
         <div className="login-body">
-        <h1>{account ? `${account.user.name}님, 로그인되어 있어요.` : '로그인'}</h1>
-        <p>{account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 저장해 다른 기기에서도 이어 쓸 수 있어요.'}</p>
-        {account ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={() => { signOut(); document.getElementById('main-content')?.focus({ preventScroll: true }); }}><LogOut size={16} />로그아웃</button></div>
-          : <AuthPanel online={apiEnabled()} initialName={store.name === '취향 탐험가' ? '' : store.name} onSuccess={signIn} onGuest={() => navigate('home')} />}
+        <h1>{resetToken ? '새 비밀번호 정하기' : account ? `${account.user.name}님, 로그인되어 있어요.` : '로그인'}</h1>
+        <p>{resetToken ? '메일로 받은 링크예요. 새 비밀번호를 정하면 바로 로그인돼요.' : account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 저장해 다른 기기에서도 이어 쓸 수 있어요.'}</p>
+        {account && !resetToken ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={() => { signOut(); document.getElementById('main-content')?.focus({ preventScroll: true }); }}><LogOut size={16} />로그아웃</button></div>
+          : <AuthPanel key={resetToken ? 'reset' : mailAgain ? 'again' : 'auth'} online={apiEnabled()} initialMode={mailAgain ? 'forgot' : 'login'} initialName={store.name === '취향 탐험가' ? '' : store.name} resetToken={resetToken || undefined} onResetDone={again => { setResetToken(''); setMailAgain(!!again); }} onSuccess={signIn} onGuest={() => navigate('home')} />}
         </div>
         <div className="login-wall" aria-hidden="true">{showcase('food', 3).flatMap((f, n) => [f, showcase('music', 3)[n]]).filter(Boolean).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
       </div>}
@@ -793,7 +817,7 @@ export default function App() {
           : <p className="modal-description">{apiEnabled() ? '지금은 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요.'}</p>}
         {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
         <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
-        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button onClick={signOutAndClear}><LogOut size={17} /> 로그아웃하고 이 브라우저에서 지우기 <small>(계정에는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
+        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button onClick={signOutAndClear}><LogOut size={17} /> 로그아웃하고 이 브라우저에서 지우기 <small>(계정에는 남아요)</small></button><button onClick={signOutEverywhere}><LogOut size={17} /> 모든 기기에서 로그아웃 <small>(잃어버린 기기가 있을 때)</small></button><button onClick={() => { setDeletePassword(''); setNewPassword(''); setDeleteError(''); setDialog('changePassword'); }}><KeyRound size={17} /> 비밀번호 변경</button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
       </>}
       {settingsTab === 'screen' && <AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/>}
       {settingsTab === 'sound' && <SoundSettings />}
@@ -802,6 +826,7 @@ export default function App() {
         <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
       </>}
     </Modal>}
+    {dialog === 'changePassword' && account && <Modal neutral title="비밀번호 변경" onClose={() => setDialog(null)}><p className="modal-description">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃돼요. 이 브라우저는 그대로 로그인되어 있어요.</p><form onSubmit={e => { e.preventDefault(); void submitPasswordChange(); }}><label className="field-title" htmlFor="current-password">현재 비밀번호</label><input id="current-password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><label className="field-title" htmlFor="new-password">새 비밀번호 <small>8자 이상</small></label><input id="new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button primary" disabled={deletePassword.length < 8 || newPassword.length < 8}>비밀번호 변경</button></div></form></Modal>}
     {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
     {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? account && storageBlocked ? '이 브라우저의 손상된 데이터를 지워요. 로그인 중이라 계정에 저장된 취향·기록을 다시 받아와요.' : account ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요. 로그인 중이라 계정에 저장된 데이터도 함께 지워져요. 이 브라우저에서만 지우려면 내 계정의 "로그아웃하고 이 브라우저에서 지우기"를 쓰세요.' : '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } if (storageBlocked) sync.forget(false); setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;

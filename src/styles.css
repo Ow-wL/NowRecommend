@@ -610,6 +610,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .auth-form .button { margin-top: 4px; }
 .auth-note { margin-top: 16px; }
 .auth-guest { margin-top: 8px; }
+.auth-forgot { margin-top: 12px; }
 .login-panel .notice { margin-bottom: 20px; }
 
 /* ── Dialogs ──────────────────────────────────────── */

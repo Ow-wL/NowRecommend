@@ -7,7 +7,10 @@ export function viewReducer(state: View, patch: Partial<View>): View { return { 
 export function routeFor(view: View): string {
   return ['recommend','onboard'].includes(view.page) ? `#/${view.page}/${view.category}/${view.step}` : `#/${view.page}`;
 }
+/** The token of a password reset link (`#/reset/<token>`, mailed by the server), or '' for any other address. */
+export const resetTokenIn = (hash: string): string => hash.match(/^#\/reset\/([A-Za-z0-9_.-]{20,600})$/)?.[1] ?? '';
 export function parseRoute(hash: string): View {
+  if (hash.startsWith('#/reset/')) return { ...defaultView, page: 'login' };  // the login page shows the new-password form
   const match = hash.match(/^#\/(recommend|onboard)\/(food|music)(?:\/(input|confirm|results))?$/);
   if (match) return { page: match[1] as Page, category: match[2] as Category, step: match[3] === 'results' ? 'results' : 'input' };
   const page = hash.slice(2);

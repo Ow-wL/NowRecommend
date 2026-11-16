@@ -21,12 +21,23 @@ async function setup(page: Page, opts: { hasStore?: boolean; loginStatus?: numbe
   await browser.route(`${API}/api/catalog**`, route => fulfill(route, { catalogVersion: 'db-test', items }));
   // The account on the server: its store and the version that moves on every accepted save.
   const server = { store: (opts.hasStore === false ? null : remoteStore) as any, version: opts.hasStore === false ? 0 : 3, getFails: false, signupUser: user };
-  const calls = { signup: [] as any[], login: [] as any[], puts: [] as any[], refused: 0, gets: 0, auth: [] as string[], order: [] as string[], server };
+  const calls = { signup: [] as any[], login: [] as any[], puts: [] as any[], refused: 0, gets: 0, auth: [] as string[], order: [] as string[], server,
+    // passwords and sessions (2026-11-17): what was sent, and what the fake server should answer
+    password: [] as any[], logoutAll: [] as (string | undefined)[], resetRequests: [] as any[], resetConfirms: [] as any[], passwordStatus: 200, resetStatus: 200, mailStatus: 202 };
   await browser.route(`${API}/api/auth/signup`, route => { if (route.request().method() === 'OPTIONS') return fulfill(route, {}); calls.signup.push(route.request().postDataJSON());
     server.store = null; server.version = 0;  // a new account has nothing saved
     return fulfill(route, { token: 'tok-1', user: server.signupUser, hasStore: false }, 201); });
   await browser.route(`${API}/api/auth/login`, route => { if (route.request().method() === 'OPTIONS') return fulfill(route, {}); calls.login.push(route.request().postDataJSON());
     return opts.loginStatus ? fulfill(route, { detail: '이메일 또는 비밀번호가 맞지 않아요.' }, opts.loginStatus) : fulfill(route, { token: 'tok-2', user, hasStore: server.store !== null }); });
+  const post = (path: string, answer: (body: any, authorization?: string) => [unknown, number]) => browser.route(`${API}${path}`, route => {
+    if (route.request().method() === 'OPTIONS') return fulfill(route, {});
+    const [body, status] = answer(route.request().postDataJSON(), route.request().headers()['authorization']);
+    return status === 204 ? route.fulfill({ status: 204, headers: cors }) : fulfill(route, body, status);
+  });
+  await post('/api/auth/password', (body, authorization) => { calls.password.push({ ...body, authorization }); return calls.passwordStatus === 200 ? [{ token: 'tok-new', user, hasStore: true }, 200] : [{ detail: '현재 비밀번호가 맞지 않아요.' }, calls.passwordStatus]; });
+  await post('/api/auth/logout-all', (_, authorization) => { calls.logoutAll.push(authorization); return [null, 204]; });
+  await post('/api/auth/reset/request', body => { calls.resetRequests.push(body); return calls.mailStatus === 202 ? [{ sent: true }, 202] : [{ detail: '이 서버에는 메일 발송이 설정되지 않았어요.' }, calls.mailStatus]; });
+  await post('/api/auth/reset/confirm', body => { calls.resetConfirms.push(body); return calls.resetStatus === 200 ? [{ token: 'tok-reset', user, hasStore: server.store !== null }, 200] : [{ detail: '링크가 만료됐거나 이미 사용됐어요.' }, calls.resetStatus]; });
   await browser.route(`${API}/api/auth/me`, route => fulfill(route, { user, hasStore: server.store !== null, storeUpdatedAt: null, storeVersion: server.version }));
   await browser.route(`${API}/api/me/store`, route => {
     const method = route.request().method();
@@ -283,4 +294,93 @@ test('signing out in one tab restarts the other tab, which then is signed out to
   await page.getByRole('button', { name: /^로그아웃 \(/ }).click();
   await expect(second.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
   await expect(second.getByRole('button', { name: '내 계정' })).toHaveCount(0);
+});
+
+// ---- 2026-11-17: a forgotten password, a changed one, and signing out everywhere ----
+
+test('a forgotten password: the form asks for the mail and says the same whoever asks', async ({ page }) => {
+  const calls = await setup(page, { hasStore: true });
+  await page.goto('/#/login');
+  await page.getByRole('button', { name: '비밀번호를 잊으셨나요?' }).click();
+  await expect(page.getByLabel('비밀번호', { exact: false })).toHaveCount(0);  // only the address is asked for
+  await page.getByLabel('이메일').fill(' Lee@example.com ');
+  await page.getByRole('button', { name: '재설정 메일 받기' }).click();
+  await expect(page.getByText('메일을 확인해주세요.')).toBeVisible();
+  await expect(page.getByText('가입된 계정이 있다면', { exact: false })).toBeVisible();  // no word on whether it exists
+  expect(calls.resetRequests).toEqual([{ email: 'Lee@example.com' }]);
+  await page.getByRole('button', { name: '로그인으로 돌아가기' }).click();
+  await expect(page.getByRole('button', { name: '비밀번호를 잊으셨나요?' })).toBeVisible();
+  // A server that cannot send mail says so instead of pretending.
+  calls.mailStatus = 503;
+  await page.getByRole('button', { name: '비밀번호를 잊으셨나요?' }).click();
+  await page.getByLabel('이메일').fill('lee@example.com');
+  await page.getByRole('button', { name: '재설정 메일 받기' }).click();
+  await expect(page.getByRole('alert')).toContainText('지금은 메일로 비밀번호를 다시 정할 수 없어요');
+});
+
+test('the mailed link sets a new password and signs in; the token leaves the address bar', async ({ page }) => {
+  const calls = await setup(page, { hasStore: true });
+  const token = 'eyJzdWIiOiJ1MSIsInVzZSI6InJlc2V0In0.c2lnbmF0dXJlLXNpZ25hdHVyZQ';
+  await page.goto(`/#/reset/${token}`);
+  await expect(page.getByRole('heading', { name: '새 비밀번호 정하기' })).toBeVisible();
+  await expect(page).toHaveURL(/#\/login$/);
+  await expect(page.getByLabel('이메일')).toHaveCount(0);
+  await page.getByLabel('새 비밀번호', { exact: false }).fill('brand-new-pass');
+  await page.getByRole('button', { name: '비밀번호 바꾸고 로그인' }).click();
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  expect(calls.resetConfirms).toEqual([{ token, password: 'brand-new-pass' }]);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nowrecommend-auth-v1')!).token)).toBe('tok-reset');
+  await expect(page.getByRole('button', { name: '내 계정' })).toBeVisible();
+  await page.goto('/#/login');  // the link is spent: the login page is the ordinary one again
+  await expect(page.getByRole('heading', { name: '새 비밀번호 정하기' })).toHaveCount(0);
+});
+
+test('a spent or expired link says so and offers a new mail', async ({ page }) => {
+  const calls = await setup(page, { hasStore: true });
+  calls.resetStatus = 400;
+  await page.goto('/#/reset/eyJzdWIiOiJ1MSIsInVzZSI6InJlc2V0In0.b2xkLXNpZ25hdHVyZQ');
+  await page.getByLabel('새 비밀번호', { exact: false }).fill('brand-new-pass');
+  await page.getByRole('button', { name: '비밀번호 바꾸고 로그인' }).click();
+  await expect(page.getByRole('alert')).toContainText('링크가 만료됐거나 이미 사용됐어요');
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();
+  await page.getByRole('button', { name: '메일 다시 받기' }).click();
+  await expect(page.getByRole('button', { name: '재설정 메일 받기' })).toBeVisible();
+});
+
+test('changing the password keeps this browser signed in with the new token; a wrong current password stays in the dialog', async ({ page }) => {
+  const calls = await setup(page, { hasStore: true });
+  await logIn(page);
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByRole('button', { name: '비밀번호 변경' }).click();
+  const dialog = page.getByRole('dialog');
+  calls.passwordStatus = 401;
+  await dialog.getByLabel('현재 비밀번호').fill('wrong-pass');
+  await dialog.getByLabel('새 비밀번호', { exact: false }).fill('password2');
+  await dialog.getByRole('button', { name: '비밀번호 변경' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('현재 비밀번호가 맞지 않아요.');
+  calls.passwordStatus = 200;
+  await dialog.getByLabel('현재 비밀번호').fill('password1');
+  await dialog.getByRole('button', { name: '비밀번호 변경' }).click();
+  await expect(page.getByText('비밀번호를 바꿨어요. 다른 기기에서는 로그아웃됐어요.')).toBeVisible();
+  expect(calls.password.at(-1)).toEqual({ currentPassword: 'password1', newPassword: 'password2', authorization: 'Bearer tok-2' });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nowrecommend-auth-v1')!).token)).toBe('tok-new');
+  // The next save goes out with the new token.
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByLabel('이름', { exact: true }).fill('지은');
+  await page.getByRole('button', { name: '이름 변경' }).click();
+  await expect.poll(() => calls.auth.at(-1)).toBe('Bearer tok-new');
+});
+
+test('signing out everywhere tells the server, then signs this browser out and keeps its data', async ({ page }) => {
+  const calls = await setup(page, { hasStore: true });
+  await logIn(page);
+  await expect(page.getByText('계정의 취향·기록을 불러왔어요', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '내 계정' }).click();
+  await page.getByRole('button', { name: /모든 기기에서 로그아웃/ }).click();
+  await expect(page.getByText('모든 기기에서 로그아웃했어요', { exact: false })).toBeVisible();
+  expect(calls.logoutAll).toEqual(['Bearer tok-2']);
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();
+  expect(await stored(page)).toMatchObject({ favorites: ['m01', 'f09'] });
+  await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
 });

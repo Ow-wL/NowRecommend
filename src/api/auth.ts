@@ -46,14 +46,35 @@ export function deleteAccount(token: string, password: string, { base = API_BASE
   return apiJson('/api/auth/delete', nothing, { base, fetchImpl, method: 'POST', body: { password }, headers: authHeaders(token), timeoutMs: 15000 });
 }
 
-/** What the form should say for a failed sign-up or login. */
-export function authErrorMessage(error: unknown, mode: 'login' | 'signup'): string {
+// Passwords and sessions (2026-11-17, server/app/routes/auth.py).
+const validSent = (v: any): v is { sent: boolean } => !!v && v.sent === true;
+/** A new password ends every other session of the account; the answer carries this browser's new token. */
+export function changePassword(token: string, currentPassword: string, newPassword: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson('/api/auth/password', validSession, { base, fetchImpl, method: 'POST', body: { currentPassword, newPassword }, headers: authHeaders(token), timeoutMs: 15000 });
+}
+/** Ends every session of the account, this one included. */
+export function logoutEverywhere(token: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson('/api/auth/logout-all', nothing, { base, fetchImpl, method: 'POST', headers: authHeaders(token), timeoutMs: 15000 });
+}
+/** Asks for the reset mail. The server answers the same whether or not the address has an account. */
+export function requestReset(email: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson('/api/auth/reset/request', validSent, { base, fetchImpl, method: 'POST', body: { email: email.trim() }, timeoutMs: 20000 });
+}
+/** Sets the new password from the mailed link and signs this browser in. */
+export function confirmReset(token: string, password: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson('/api/auth/reset/confirm', validSession, { base, fetchImpl, method: 'POST', body: { token, password }, timeoutMs: 15000 });
+}
+
+/** What the form should say for a failed sign-up, login or password reset. */
+export function authErrorMessage(error: unknown, mode: 'login' | 'signup' | 'forgot' | 'reset'): string {
   if (error instanceof AccountDataError) return error.message;
   if (!(error instanceof ApiError)) return '요청을 보내지 못했어요. 잠시 후 다시 시도해주세요.';
   if (error.kind === 'offline') return '서버에 연결하지 못했어요. 네트워크를 확인해주세요.';
   if (error.kind === 'timeout') return '서버 응답이 늦어요. 잠시 후 다시 시도해주세요.';
-  if (error.status === 503) return '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
-  if (error.status === 429) return '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';
+  if (error.status === 503) return mode === 'forgot' ? '지금은 메일로 비밀번호를 다시 정할 수 없어요. 잠시 후 다시 시도해주세요.' : '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
+  if (error.status === 429) return mode === 'forgot' || mode === 'signup' ? error.message || '시도가 너무 많아요. 잠시 후 다시 시도해주세요.' : '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';
+  if (mode === 'reset') return error.status === 400 ? '링크가 만료됐거나 이미 사용됐어요. 메일을 다시 받아주세요.' : error.status === 422 ? '비밀번호는 8자 이상이어야 해요.' : error.message || '비밀번호를 바꾸지 못했어요.';
+  if (mode === 'forgot') return error.status === 422 ? '이메일 형식을 확인해주세요.' : error.message || '요청을 처리하지 못했어요.';
   if (error.status === 401) return '이메일 또는 비밀번호가 맞지 않아요.';
   if (error.status === 409) return '이미 가입된 이메일이에요. 로그인해주세요.';
   if (error.status === 422) return mode === 'signup' ? '이메일 형식, 8자 이상의 비밀번호, 16자 이내의 이름을 확인해주세요.' : '이메일 형식과 비밀번호를 확인해주세요.';

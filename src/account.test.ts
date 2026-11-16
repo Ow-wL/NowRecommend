@@ -69,5 +69,9 @@ describe('auth API', () => {
     expect(authErrorMessage(new ApiError('http', 'x', 409), 'signup')).toContain('이미 가입된');
     expect(authErrorMessage(new ApiError('offline', 'x'), 'signup')).toContain('연결하지 못했어요');
     expect(authErrorMessage(new Error('boom'), 'login')).toContain('다시 시도');
+    // 2026-11-17: the reset form's own words
+    expect(authErrorMessage(new ApiError('http', 'x', 400), 'reset')).toContain('링크가 만료됐거나');
+    expect(authErrorMessage(new ApiError('http', 'x', 503), 'forgot')).toContain('메일로 비밀번호를 다시 정할 수 없어요');
+    expect(authErrorMessage(new ApiError('http', '오늘은 더 요청할 수 없어요.', 429), 'forgot')).toBe('오늘은 더 요청할 수 없어요.');
   });
 });

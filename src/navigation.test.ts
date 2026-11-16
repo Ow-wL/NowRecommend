@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { defaultView, navigationDirection, parseRoute, routeFor, viewReducer, type View } from './navigation';
+import { defaultView, navigationDirection, parseRoute, resetTokenIn, routeFor, viewReducer, type View } from './navigation';
 it('keeps routing free of raw text and uses GitHub Pages compatible hashes', () => {
   const view = viewReducer(defaultView, { page: 'recommend', category: 'music', step: 'results' });
   expect(parseRoute(routeFor(view))).toEqual(view);
@@ -19,4 +19,17 @@ it('reads a move deeper or to the right as forward, and back up or to the left a
   expect(navigationDirection(v({ page: 'taste' }), v({ page: 'favorites' }))).toBe('back');
   expect(navigationDirection(v({ page: 'recommend' }), v({ page: 'recommend', category: 'music' }))).toBe('forward');
   expect(navigationDirection(v({ page: 'taste' }), v({}))).toBe('back');
+});
+
+// 2026-11-17: the password reset link mailed by the server (#/reset/<token>).
+const resetToken = 'eyJzdWIiOiJ1MSJ9.c2lnbmF0dXJlLXNpZ25hdHVyZQ';
+it('a reset link opens the login page and gives its token once', () => {
+  expect(parseRoute(`#/reset/${resetToken}`).page).toBe('login');
+  expect(resetTokenIn(`#/reset/${resetToken}`)).toBe(resetToken);
+});
+it('no token is read from other addresses or from a malformed link', () => {
+  expect(resetTokenIn('#/login')).toBe('');
+  expect(resetTokenIn('#/reset/short')).toBe('');
+  expect(resetTokenIn(`#/reset/${resetToken}?x=<script>`)).toBe('');
+  expect(resetTokenIn(`#/reset/${resetToken}/more`)).toBe('');
 });
