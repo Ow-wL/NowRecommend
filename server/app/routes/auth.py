@@ -17,8 +17,8 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..auth import TokenSigner, hash_password, needs_rehash, normalize_email, valid_email, verify_password
-from ..budget import KST, Allowance, guest_key, signup_day
+from ..auth import TokenSigner, absent_hash, hash_password, needs_rehash, normalize_email, valid_email, verify_password
+from ..budget import KST, Allowance, give_back, guest_key, signup_day, take
 from ..config import Settings, get_settings
 from ..db import get_session
 from ..legal import get_legal
@@ -191,29 +191,62 @@ def _hour() -> datetime:
     return datetime.now(KST)
 
 
-def password_attempt(email: str, session: Session, settings: Settings) -> Allowance:
-    """One try at an account's password, counted for the account and the hour (LOGIN_FAILS_PER_HOUR) before the password
-    is looked at, so tries arriving together cannot all slip under the limit; a try that turns out right is given back,
-    which leaves the wrong ones counted. Counted for the address typed, whether or not it has an account: the refusal
-    must not tell which addresses are registered. The address is kept as a keyed hash, like a guest's (budget.py)."""
-    now = _hour()
-    attempt = Allowance(session, f"login:{guest_key(email, settings.auth_secret)}:{now:%H}", settings.login_fails_per_hour, False)
-    if not attempt.take():
-        wait = int((now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1) - now).total_seconds())
-        raise HTTPException(429, "이 계정의 비밀번호를 여러 번 틀렸어요. 잠시 후 다시 시도하거나 비밀번호를 다시 정해주세요.",
-                            headers={"Retry-After": str(max(1, wait))})
-    return attempt
+class PasswordAttempt:
+    """One try at a password, counted in each of `counters` (bucket, limit per hour) before the password is looked at, so
+    tries arriving together cannot all slip under a limit. A try that turns out right is given back, which leaves the
+    wrong ones counted. The hour and the day are read once, so the count that is given back is the one that was taken."""
+
+    def __init__(self, session: Session, counters: list[tuple[str, int]], now: datetime | None = None):
+        now = now or _hour()
+        self.session, self.day, self.taken = session, now.date(), []
+        for name, limit in counters:
+            bucket = f"{name}:{now:%H}"
+            if take(session, bucket, limit, self.day) is None:
+                self.give_back()  # what the counters before this one took for this try
+                wait = int((now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1) - now).total_seconds())
+                raise HTTPException(429, "이 계정의 비밀번호를 여러 번 틀렸어요. 잠시 후 다시 시도하거나 비밀번호를 다시 정해주세요.",
+                                    headers={"Retry-After": str(max(1, wait))})
+            self.taken.append((bucket, limit))
+
+    def give_back(self) -> None:
+        for bucket, limit in self.taken:
+            give_back(self.session, bucket, limit, self.day)
+        self.taken = []
+
+
+def login_attempt(email: str, http: Request, session: Session, settings: Settings) -> PasswordAttempt:
+    """Wrong passwords at the login form are counted twice, both per hour:
+
+    - for this account from this address (LOGIN_FAILS_PER_HOUR): the per-minute limit forgets with the minute, this adds
+      the hour up. Someone guessing at an account is stopped; the owner, at another address, is not;
+    - for this account from everywhere together (LOGIN_FAILS_PER_HOUR_ANY, much higher): guesses spread over many
+      addresses stop too. Reaching it takes many addresses, and only then does the owner's own login wait as well (the
+      mailed reset link still gets in, and sessions that are signed in go on).
+
+    Counted for the address typed whether or not it has an account, so a refusal does not tell which are registered. Both
+    the account and the caller are kept as keyed hashes, like a guest's (budget.py)."""
+    secret, address = settings.auth_secret, client_address(http, settings.trust_proxy)
+    return PasswordAttempt(session, [(f"login:{guest_key(f'{email}|{address}', secret)}", settings.login_fails_per_hour),
+                                     (f"login:{guest_key(email, secret)}", settings.login_fails_per_hour_any)])
+
+
+def password_attempt(user: User, session: Session, settings: Settings) -> PasswordAttempt:
+    """Wrong current passwords from a signed-in session (changing the password, deleting the account): a session someone
+    else got hold of cannot guess without end. Counted apart from the login form, under the account's id, so nobody
+    outside the account can use these tries up and keep its owner from changing the password."""
+    return PasswordAttempt(session, [(f"pw:{user.id}", settings.login_fails_per_hour)])
 
 
 @router.post("/api/auth/login")
-def login(request: Credentials, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
+def login(request: Credentials, http: Request, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
           settings: Settings = Depends(get_settings)):
-    attempt = password_attempt(request.email, session, settings)
+    attempt = login_attempt(request.email, http, session, settings)
     user = session.scalar(select(User).where(User.email == request.email))
-    # One message for both cases, so the form does not reveal which emails have accounts.
+    # One message for both cases, so the form does not reveal which emails have accounts. An address without an account is
+    # checked against a hash nothing matches, so the answer takes as long as it does for one that has.
     checked = user.password_hash if user is not None else ""
     refused = HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
-    if user is None or not verify_password(request.password, checked):
+    if not verify_password(request.password, checked or absent_hash()) or user is None:
         raise refused
     # One UPDATE, and only if the stored hash is still the one just checked: a password changed or reset between the
     # check and here leaves this login with nothing (it proved the old password), and the token is issued for the
@@ -264,7 +297,7 @@ def write_store(upload: StoreUpload, user: User = Depends(current_user), session
 @router.post("/api/auth/delete", status_code=204)
 def delete_account(request: DeleteRequest, user: User = Depends(current_user), session: Session = Depends(get_session),
                    settings: Settings = Depends(get_settings)):
-    attempt = password_attempt(user.email, session, settings)  # a session someone else got hold of cannot guess without end either
+    attempt = password_attempt(user, session, settings)
     if not verify_password(request.password, user.password_hash):
         raise HTTPException(401, "비밀번호가 맞지 않아요.")
     attempt.give_back()
@@ -300,7 +333,7 @@ def change_password(request: PasswordChange, user: User = Depends(current_user),
                     signer: TokenSigner = Depends(require_signer), settings: Settings = Depends(get_settings)):
     """A new password ends every other session; this one continues with the token in the answer. A wrong current
     password is 403, so the browser can tell it from an ended session (401)."""
-    attempt = password_attempt(user.email, session, settings)
+    attempt = password_attempt(user, session, settings)
     checked = user.password_hash
     if not verify_password(request.currentPassword, checked):
         raise HTTPException(403, "현재 비밀번호가 맞지 않아요.")
@@ -335,10 +368,12 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
     if user is None:
         return RESET_SENT
     # Per account as well, whoever asks and from wherever: an inbox cannot be flooded with these.
-    if not Allowance(session, f"reset:e:{guest_key(user.email, settings.auth_secret)}", settings.reset_daily_per_email, False).take():
+    mine = Allowance(session, f"reset:e:{guest_key(user.email, settings.auth_secret)}", settings.reset_daily_per_email, False)
+    if not mine.take():
         log.warning("reset mail not sent: today's mails for this account are used up")
         return RESET_SENT
     if not Allowance(session, "reset:total", settings.reset_daily_total, False).take():
+        mine.give_back()  # no mail leaves, so this account's own three are not used up by it
         log.error("reset mail not sent: today's mails for the whole service are used up (RESET_DAILY_TOTAL)")
         return RESET_SENT
     token = signer.issue_reset(str(user.id), user.password_hash, settings.reset_token_minutes * 60)

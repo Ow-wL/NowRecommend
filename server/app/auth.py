@@ -11,6 +11,7 @@ import json
 import os
 import re
 import time
+from functools import lru_cache
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -40,6 +41,17 @@ def verify_password(password: str, stored: str) -> bool:
         return hmac.compare_digest(expected, _unb64(digest))
     except (ValueError, TypeError):
         return False
+
+
+@lru_cache(maxsize=2)
+def _absent(iterations: int) -> str:
+    return hash_password(os.urandom(32).hex(), iterations)
+
+
+def absent_hash() -> str:
+    """A hash that no password matches, made with the rounds in use now. A login for an address without an account is
+    checked against it, so that answer takes as long as one for an address that has an account (made once per process)."""
+    return _absent(PBKDF2_ITERATIONS)
 
 
 def needs_rehash(stored: str, iterations: int | None = None) -> bool:

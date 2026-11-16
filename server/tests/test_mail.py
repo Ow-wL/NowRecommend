@@ -17,6 +17,7 @@ class Server:
     """Stands in for smtplib.SMTP / SMTP_SSL: records the steps, and fails at the step a test names."""
     made: list["Server"] = []
     fail_at: dict[str, Exception] = {}
+    noop_answer: tuple[int, bytes] = (250, b"OK")
 
     def __init__(self, host, port, timeout=None, context=None):
         self.host, self.port, self.steps, self.closed = host, port, [], False
@@ -45,6 +46,7 @@ class Server:
 
     def noop(self):
         self._step("noop")
+        return Server.noop_answer
 
     def send_message(self, message):
         self.message = message
@@ -53,7 +55,7 @@ class Server:
 
 @pytest.fixture
 def server(monkeypatch):
-    Server.made, Server.fail_at = [], {}
+    Server.made, Server.fail_at, Server.noop_answer = [], {}, (250, b"OK")
     monkeypatch.setattr(mail.smtplib, "SMTP", Server)
     monkeypatch.setattr(mail.smtplib, "SMTP_SSL", Server)
     return Server
@@ -84,6 +86,11 @@ def test_check_signs_in_and_sends_nothing_and_a_failed_sign_in_closes_the_connec
     with pytest.raises(smtplib.SMTPNotSupportedError):
         mailer.check()
     assert server.made[2].steps == ["connect", "starttls"] and server.made[2].closed  # the key was never offered
+    # Signed in, but the server will not take a command: that is not "ok".
+    server.fail_at, server.noop_answer = {}, (421, b"4.7.0 try again later, lee@example.com")
+    with pytest.raises(smtplib.SMTPResponseException) as refused:
+        mailer.check()
+    assert failure(refused.value) == "SMTPResponseException 421" and server.made[3].closed
 
 
 def test_a_failure_is_named_by_kind_and_reply_code_only():

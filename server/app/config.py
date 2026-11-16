@@ -82,10 +82,13 @@ class Settings(BaseSettings):
     # this the form still answers the same and no mail leaves, so one day's flood cannot use the plan up or get the
     # sender's domain marked as a spammer.
     reset_daily_total: int = 80
-    # Wrong passwords for one account per hour, from anywhere (0 = off). The per-minute limit counts one address; this one
-    # counts the account, so guesses spread over many addresses stop too. At the limit every login for that account waits
-    # for the next hour, the right password included; sessions that are already signed in go on, and a reset mail gets in.
+    # Wrong passwords per hour (0 = off; routes/auth.py login_attempt). For one account from one address: someone guessing
+    # is stopped for the hour, and the owner at another address is not. A signed-in session trying the current password
+    # (change, delete) has the same number, counted apart.
     login_fails_per_hour: int = 10
+    # For one account from every address together: guesses spread over many addresses stop too. Only at this number do
+    # all logins for the account wait for the next hour; signed-in sessions go on and a mailed reset link gets in.
+    login_fails_per_hour_any: int = 100
     # Largest synced browser store accepted by PUT /api/me/store (backups cap at 5MB in the browser; 1MB ≈ 50 entries with rounds).
     store_max_bytes: int = 1_000_000
     # PUT /api/me/store per client per minute (0 = off). The browser waits 1.5s after a change, so 40 is its own ceiling.

@@ -49,7 +49,9 @@ class SmtpMailer:
     def check(self) -> None:
         """Connects, upgrades and signs in, and sends nothing: raises what `send` would raise up to that point."""
         with self._connect() as server:
-            server.noop()
+            code, reply = server.noop()
+            if code != 250:  # signed in, yet the server will not take a command
+                raise smtplib.SMTPResponseException(code, reply)
 
     def _connect(self) -> smtplib.SMTP:
         """A connection that is encrypted and signed in. Closed again if either step fails."""

@@ -426,58 +426,104 @@ def test_a_failed_mail_is_logged_by_kind_and_never_with_the_address(world, caplo
     assert "SMTPAuthenticationError 535" in caplog.text and "bad key" not in caplog.text
 
 
-# ---- wrong passwords, counted per account (2026-11-17) ----
+# ---- wrong passwords, counted by the hour (2026-11-17) ----
 
-def limited(app, per_hour: int) -> None:
-    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
-                                                              reset_daily_per_address=0, reset_daily_per_email=0, login_fails_per_hour=per_hour)
+def limited(app, per_hour: int, anywhere: int = 0, **more) -> None:
+    """`per_hour`: one account from one address. `anywhere`: one account from every address together."""
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret", trust_proxy=True,
+                                                              reset_daily_per_address=0, reset_daily_per_email=0, reset_daily_total=0,
+                                                              login_fails_per_hour=per_hour, login_fails_per_hour_any=anywhere, **more)
 
 
-def test_wrong_passwords_stop_an_accounts_logins_for_the_hour_and_right_ones_cost_nothing(world, monkeypatch):
+def at(address: str) -> dict:
+    return {"X-Forwarded-For": address}
+
+
+WRONG, RIGHT = {"email": "lee@example.com", "password": "wrong-password"}, {"email": "lee@example.com", "password": "password1"}
+
+
+def counts(app) -> dict[str, int]:
+    from sqlalchemy import select
+
+    with next(app.dependency_overrides[get_session]()) as session:
+        return {bucket: count for bucket, count in session.execute(select(UsageDaily.bucket, UsageDaily.count))}
+
+
+def test_wrong_passwords_from_one_place_stop_that_place_for_the_hour_and_not_the_owner(world, monkeypatch):
+    from datetime import datetime, timedelta
+
+    from app.budget import KST
+    from app.routes import auth as routes
+
+    client, auth, _, _, _, app = world
+    limited(app, 3)
+    now = [datetime(2026, 11, 17, 14, 20, tzinfo=KST)]
+    monkeypatch.setattr(routes, "_hour", lambda: now[0])
+    guesser, owner = at("203.0.113.9"), at("198.51.100.7")
+    # Signing in correctly any number of times uses nothing up, and neither does it clear what was got wrong.
+    tries = [client.post("/api/auth/login", json=body, headers=guesser).status_code for body in (RIGHT, RIGHT, RIGHT, RIGHT, WRONG, WRONG, RIGHT, WRONG)]
+    assert tries == [200, 200, 200, 200, 401, 401, 200, 401]
+    stopped = client.post("/api/auth/login", json=RIGHT, headers=guesser)  # the right password waits as well: otherwise guessing could go on
+    assert stopped.status_code == 429 and stopped.headers["retry-after"] == "2400" and "비밀번호를 다시 정" in stopped.json()["detail"]
+    # Whoever guessed is stopped. The owner, somewhere else, signs in as always, and so does a session that is signed in.
+    assert client.post("/api/auth/login", json=RIGHT, headers=owner).status_code == 200
+    assert client.get("/api/auth/me", headers=auth).status_code == 200
+    # Another account from the guesser's address is not touched either.
+    client.post("/api/auth/signup", json={"email": "kim@example.com", "password": "password1", "name": "김"}, headers=guesser)
+    assert client.post("/api/auth/login", json={"email": "kim@example.com", "password": "password1"}, headers=guesser).status_code == 200
+    now[0] += timedelta(minutes=40)  # 15:00: a new hour
+    assert client.post("/api/auth/login", json=RIGHT, headers=guesser).status_code == 200
+
+
+def test_guesses_spread_over_many_addresses_stop_the_account_and_a_mailed_link_still_gets_in(world, monkeypatch):
     from datetime import datetime, timedelta
 
     from app.budget import KST
     from app.routes import auth as routes
 
     client, auth, outbox, _, _, app = world
-    limited(app, 3)
-    now = [datetime(2026, 11, 17, 14, 20, tzinfo=KST)]
+    limited(app, 2, anywhere=5)
+    now = [datetime(2026, 11, 17, 9, 0, tzinfo=KST)]
     monkeypatch.setattr(routes, "_hour", lambda: now[0])
-    wrong, right = {"email": "lee@example.com", "password": "wrong-password"}, {"email": "lee@example.com", "password": "password1"}
-    # Signing in correctly any number of times uses nothing up, and neither does it clear what was got wrong.
-    assert [client.post("/api/auth/login", json=body).status_code for body in (right, right, right, right, wrong, wrong, right, wrong)] == [200, 200, 200, 200, 401, 401, 200, 401]
-    stopped = client.post("/api/auth/login", json=right)  # the right password waits as well: otherwise guessing could go on
-    assert stopped.status_code == 429 and stopped.headers["retry-after"] == "2400" and "비밀번호를 다시 정" in stopped.json()["detail"]
-    # The account, not the caller: the session that is signed in goes on, and another account is not touched.
+    spread = [client.post("/api/auth/login", json=WRONG, headers=at(f"203.0.113.{n}")).status_code for n in range(1, 7)]
+    assert spread == [401, 401, 401, 401, 401, 429]  # five from five places: the account's hour is used up
+    assert client.post("/api/auth/login", json=RIGHT, headers=at("198.51.100.7")).status_code == 429  # now the owner waits too
+    refused = counts(app)
+    assert sorted(count for count in refused.values() if count) == [1, 1, 1, 1, 1, 5]  # a refused try is counted nowhere: what it took for its address was given back
+    # A session that is signed in goes on, and the mailed link is the way in.
     assert client.get("/api/auth/me", headers=auth).status_code == 200
-    client.post("/api/auth/signup", json={"email": "kim@example.com", "password": "password1", "name": "김"})
-    assert client.post("/api/auth/login", json={"email": "kim@example.com", "password": "password1"}).status_code == 200
-    # A mailed reset link is the way in while the logins wait.
-    limited(app, 3)
-    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}, headers=at("198.51.100.7")).status_code == 202
     assert client.post("/api/auth/reset/confirm", json={"token": outbox.link_token(), "password": "password2"}).status_code == 200
-    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password2"}).status_code == 429
-    now[0] += timedelta(minutes=40)  # 15:00: a new hour
-    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password2"}).status_code == 200
+    now[0] += timedelta(hours=1)
+    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password2"}, headers=at("198.51.100.7")).status_code == 200
 
 
-def test_an_address_without_an_account_is_stopped_the_same_way(world):
-    """Otherwise the refusal would tell which addresses are registered."""
+def test_an_address_without_an_account_is_stopped_and_checked_the_same_way(world, monkeypatch):
+    """Otherwise the refusal, or how long the answer takes, would tell which addresses are registered."""
+    from app.routes import auth as routes
+
     client, _, _, _, _, app = world
     limited(app, 2)
+    checked, real = [], routes.verify_password
+    monkeypatch.setattr(routes, "verify_password", lambda password, stored: checked.append(stored) or real(password, stored))
     nobody = {"email": "nobody@example.com", "password": "password1"}
     assert [client.post("/api/auth/login", json=nobody).status_code for _ in range(3)] == [401, 401, 429]
+    # Each try that was let through did the work of checking a password, against a hash nothing matches.
+    assert len(checked) == 2 and all(stored.startswith("pbkdf2_sha256$") for stored in checked) and len(set(checked)) == 1
     # Written differently, it is the same address.
     assert client.post("/api/auth/login", json={"email": " Nobody@Example.com ", "password": "password1"}).status_code == 429
 
 
-def test_a_signed_in_session_cannot_guess_the_password_without_end_either(world):
-    """Changing the password and deleting the account both ask for the current password. Tries there count with the logins."""
+def test_a_signed_in_sessions_tries_are_its_own_and_nobody_outside_can_use_them_up(world):
+    """Changing the password and deleting the account both ask for the current password. A session someone else got
+    hold of cannot guess without end, and wrong logins from outside do not keep the owner from changing the password."""
     client, auth, _, _, _, app = world
-    limited(app, 3)
-    assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "guess-one", "newPassword": "password9"}).status_code == 403
+    limited(app, 3, anywhere=3)
+    assert [client.post("/api/auth/login", json=WRONG, headers=at(f"203.0.113.{n}")).status_code for n in range(1, 5)] == [401, 401, 401, 429]
+    assert client.post("/api/auth/login", json=RIGHT).status_code == 429  # the login form is closed for the hour...
+    assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "guess-one", "newPassword": "password9"}).status_code == 403  # ...the session is not
     assert client.post("/api/auth/delete", headers=auth, json={"password": "guess-two"}).status_code == 401
-    assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "guess-three"}).status_code == 401
+    assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "guess-three", "newPassword": "password9"}).status_code == 403
     assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "password1", "newPassword": "password9"}).status_code == 429
     assert client.post("/api/auth/delete", headers=auth, json={"password": "password1"}).status_code == 429
     assert client.get("/api/auth/me", headers=auth).status_code == 200  # nothing was changed or deleted
@@ -489,15 +535,52 @@ def test_a_signed_in_session_cannot_guess_the_password_without_end_either(world)
     assert client.post("/api/auth/delete", headers={"Authorization": f"Bearer {changed.json()['token']}"}, json={"password": "password9"}).status_code == 204
 
 
-def test_no_address_is_kept_in_the_count(world):
-    from sqlalchemy import select
+def test_the_counts_keep_no_address_and_a_right_password_leaves_nothing_behind(world):
+    client, auth, _, _, _, app = world
+    limited(app, 5, anywhere=50)
+    for _ in range(3):
+        assert client.post("/api/auth/login", json=RIGHT, headers=at("203.0.113.9")).status_code == 200
+    assert client.post("/api/auth/password", headers=auth, json={"currentPassword": "password1", "newPassword": "password1"}).status_code == 200
+    assert set(counts(app).values()) <= {0}  # every count that was taken was given back
+    client.post("/api/auth/login", json=WRONG, headers=at("203.0.113.9"))
+    kept = {bucket: count for bucket, count in counts(app).items() if count}
+    assert len(kept) == 2 and all(bucket.startswith("login:") for bucket in kept)
+    assert not any(part in bucket for bucket in kept for part in ("lee", "@", "203.0.113"))
 
-    client, _, _, _, _, app = world
-    limited(app, 5)
-    client.post("/api/auth/login", json={"email": "lee@example.com", "password": "wrong-password"})
+
+def test_a_try_that_crosses_the_hour_or_midnight_gives_back_the_count_it_took(world, monkeypatch):
+    from datetime import date, datetime
+
+    from app import budget
+    from app.budget import KST, Allowance
+    from app.routes.auth import PasswordAttempt
+
+    _, _, _, _, _, app = world
     with next(app.dependency_overrides[get_session]()) as session:
-        buckets = list(session.scalars(select(UsageDaily.bucket)))
-    assert len(buckets) == 1 and buckets[0].startswith("login:") and "lee" not in buckets[0] and "@" not in buckets[0]
+        late = PasswordAttempt(session, [("login:x", 5)], now=datetime(2026, 11, 17, 23, 59, 59, tzinfo=KST))
+        other = PasswordAttempt(session, [("login:x", 5)], now=datetime(2026, 11, 18, 0, 0, 1, tzinfo=KST))  # someone's try in the new hour
+        late.give_back()  # the first one turned out right, after midnight
+        assert budget.used(session, "login:x:23", date(2026, 11, 17)) == 0 and budget.used(session, "login:x:00", date(2026, 11, 18)) == 1
+        other.give_back()
+        # The daily counters (sign-ups, mails) remember their day the same way.
+        days = iter([date(2026, 11, 17), date(2026, 11, 18)])
+        monkeypatch.setattr(budget, "today", lambda: next(days, date(2026, 11, 18)))
+        yesterday = Allowance(session, "signup:y", 5, False)
+        assert yesterday.take()
+        budget.take(session, "signup:y", 5, date(2026, 11, 18))
+        yesterday.give_back()
+        assert budget.used(session, "signup:y", date(2026, 11, 17)) == 0 and budget.used(session, "signup:y", date(2026, 11, 18)) == 1
+
+
+def test_a_mail_the_service_total_stopped_does_not_use_up_the_accounts_own(world):
+    client, _, outbox, _, _, app = world
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
+                                                              reset_daily_per_address=0, reset_daily_per_email=1, reset_daily_total=1)
+    client.post("/api/auth/signup", json={"email": "kim@example.com", "password": "password1", "name": "김"})
+    for email in ("kim@example.com", "lee@example.com", "lee@example.com"):
+        assert client.post("/api/auth/reset/request", json={"email": email}).status_code == 202
+    assert [m["to"] for m in outbox.sent] == ["kim@example.com"]
+    assert sorted(counts(app).values()) == [0, 1, 1]  # the total and kim's one; lee's own is still there for tomorrow's first mail
 
 
 def test_the_whole_service_stops_sending_at_its_daily_total_and_still_answers_the_same(world, caplog):

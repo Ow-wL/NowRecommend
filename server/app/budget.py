@@ -115,15 +115,19 @@ class Allowance:
     bucket: str
     limit: int
     member: bool
+    day: date | None = None  # the day the last `take` was counted on
 
     def left(self) -> bool:
         return self.limit <= 0 or used(self.session, self.bucket) < self.limit
 
     def take(self) -> bool:
-        return take(self.session, self.bucket, self.limit) is not None
+        self.day = today()
+        return take(self.session, self.bucket, self.limit, self.day) is not None
 
     def give_back(self) -> None:
-        give_back(self.session, self.bucket, self.limit)
+        """Undoes this object's last `take`, on the day it was counted: a request that crosses midnight gives back
+        yesterday's count, not one of today's."""
+        give_back(self.session, self.bucket, self.limit, self.day)
 
 
 class Gate:
