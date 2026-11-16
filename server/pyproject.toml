@@ -17,6 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# httpx2: what starlette.testclient imports (TestClient); the app itself does not use it.
 dev = ["pytest>=8.3", "httpx2>=2.14"]
 
 [build-system]

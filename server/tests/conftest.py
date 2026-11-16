@@ -18,6 +18,8 @@ for _limit in ("AI_DAILY_LIMIT", "AI_DAILY_PER_MEMBER", "AI_DAILY_PER_GUEST", "S
     os.environ[_limit] = "0"
 # Sign-up consent (2026-11-17) is asked for only where a test is about it: the suite signs up everywhere.
 os.environ["SIGNUP_CONSENT_REQUIRED"] = "false"
+# Password hashing at full strength would take minutes over the suite; the count itself is tested where it matters.
+os.environ.setdefault("PBKDF2_ITERATIONS", "1000")
 from app.config import get_settings  # noqa: E402 (after the environment above)
 
 DB_TESTS = os.environ.get("NOWREC_DB_TESTS") == "1"

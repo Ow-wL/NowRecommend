@@ -34,6 +34,9 @@ class DatabaseStatus:
     pgvector_available: str | None = None
     pgvector_installed: str | None = None
     error: str | None = None
+    # The migration the database is at (alembic_version), or None when it has never been migrated: a database restored
+    # empty, or the wrong one, answers "SELECT 1" just as well.
+    revision: str | None = None
 
 
 def check_database() -> DatabaseStatus:
@@ -44,7 +47,9 @@ def check_database() -> DatabaseStatus:
             row = conn.execute(
                 text("SELECT default_version, installed_version FROM pg_available_extensions WHERE name = 'vector'")
             ).first()
+            migrated = conn.execute(text("SELECT to_regclass('alembic_version')")).scalar() is not None
+            revision = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() if migrated else None
     except SQLAlchemyError as exc:
         # Only the error class: connection strings and hosts stay out of responses.
         return DatabaseStatus(ok=False, error=type(exc).__name__)
-    return DatabaseStatus(ok=True, pgvector_available=row[0] if row else None, pgvector_installed=row[1] if row else None)
+    return DatabaseStatus(ok=True, pgvector_available=row[0] if row else None, pgvector_installed=row[1] if row else None, revision=revision)

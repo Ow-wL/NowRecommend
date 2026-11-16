@@ -4,7 +4,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /srv
 COPY shared/ shared/
 COPY server/ server/
-RUN pip install --no-cache-dir -e ./server
+# Exact versions first (requirements.lock), then the app itself without resolving anything again.
+RUN pip install --no-cache-dir -r server/requirements.lock && pip install --no-cache-dir --no-deps -e ./server
+# The server needs to write nothing to its own files, so it does not run as root: a flaw in the app or a library is
+# then not a flaw with the whole container's rights.
+RUN useradd --system --no-create-home --uid 10001 app
+USER app
 WORKDIR /srv/server
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \

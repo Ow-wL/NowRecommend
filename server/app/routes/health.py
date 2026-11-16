@@ -14,7 +14,8 @@ def database_status() -> DatabaseStatus:
 @router.get("/api/health")
 def health(response: Response, db: DatabaseStatus = Depends(database_status), settings: Settings = Depends(get_settings)):
     vocab = get_vocab()
-    ready = db.ok and db.pgvector_available is not None
+    # Reachable is not enough: without the migrations there are no tables to answer from (a database restored empty).
+    ready = db.ok and db.pgvector_available is not None and db.revision is not None
     if not ready:
         response.status_code = 503
     return {
@@ -23,6 +24,7 @@ def health(response: Response, db: DatabaseStatus = Depends(database_status), se
             "ok": db.ok,
             "error": db.error,
             "pgvector": {"available": db.pgvector_available, "installed": db.pgvector_installed},
+            "revision": db.revision,
         },
         "vocab": {"version": vocab.version, "food": len(vocab.food.tags), "music": len(vocab.music.tags)},
         "llm": {"configured": bool(settings.gemini_api_key)},

@@ -290,3 +290,51 @@ def test_the_request_sentence_is_not_stored_unless_that_is_turned_on(monkeypatch
     """The privacy policy says the sentence is not kept; that is the default, not a deploy setting someone must remember."""
     monkeypatch.delenv("LOG_RAW_TEXT", raising=False)
     assert Settings(_env_file=None).log_raw_text is False
+
+
+def test_an_old_weaker_hash_is_redone_at_the_next_login(world):
+    """2026-11-17: the round count went up. A hash from before still verifies, and is replaced while the password is at hand."""
+    from sqlalchemy import select
+
+    from app import auth
+
+    client, _, _, _, _, app = world
+    session = next(app.dependency_overrides[get_session]())
+    user = session.scalars(select(User)).one()
+    user.password_hash = auth.hash_password("password1", iterations=100)
+    session.commit()
+    assert auth.needs_rehash(user.password_hash) and not auth.needs_rehash(auth.hash_password("x"))
+    assert auth.needs_rehash("not-a-hash") and auth.needs_rehash("pbkdf2_sha256$310000$a$b", iterations=600_000)
+    assert client.post("/api/auth/login", json={**SIGNUP, "password": "wrong-pass"}).status_code == 401
+    session.refresh(user)
+    assert user.password_hash.split("$")[1] == "100"  # a wrong password changes nothing
+    assert client.post("/api/auth/login", json=SIGNUP).status_code == 200
+    session.refresh(user)
+    assert user.password_hash.split("$")[1] == str(auth.PBKDF2_ITERATIONS)
+    assert client.post("/api/auth/login", json=SIGNUP).status_code == 200  # and the new hash is the same password
+
+
+def test_the_default_round_count_is_the_current_recommendation(monkeypatch):
+    import importlib
+
+    from app import auth
+
+    monkeypatch.delenv("PBKDF2_ITERATIONS", raising=False)
+    try:
+        assert importlib.reload(auth).PBKDF2_ITERATIONS == 600_000
+    finally:
+        monkeypatch.undo()
+        importlib.reload(auth)
+
+
+def test_a_browser_error_becomes_one_log_line(world, caplog):
+    client, *_ = world
+    report = {"kind": "render", "message": "Cannot read properties of undefined\nFAKE LINE level=ERROR", "stack": "at App (App.tsx:10)\n  at main.tsx:5", "page": "home", "release": "abc1234"}
+    with caplog.at_level("WARNING", logger="app.client_errors"):
+        assert client.post("/api/client-errors", json=report).status_code == 204
+    [line] = [r.getMessage() for r in caplog.records if r.name == "app.client_errors"]
+    assert "\n" not in line and "kind=render page=home release=abc1234" in line and "Cannot read properties of undefined | FAKE LINE" in line
+    # Only what the form of a report allows: no long text, no made-up page names.
+    assert client.post("/api/client-errors", json={**report, "message": "x" * 301}).status_code == 422
+    assert client.post("/api/client-errors", json={**report, "page": "../etc"}).status_code == 422
+    assert client.post("/api/client-errors", json={**report, "kind": "other"}).status_code == 422

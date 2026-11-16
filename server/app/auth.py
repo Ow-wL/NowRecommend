@@ -14,13 +14,17 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
-PBKDF2_ITERATIONS = 310_000
+# Work per password guess. 600,000 rounds of PBKDF2-HMAC-SHA256 is the current OWASP figure (it was 310,000 here until
+# 2026-11-17). Every stored hash names its own count, so older ones keep verifying and are redone at the next login
+# (needs_rehash). The environment variable exists for the test suite, which signs up hundreds of times.
+PBKDF2_ITERATIONS = int(os.environ.get("PBKDF2_ITERATIONS", "600000"))
 RESET = "reset"  # the purpose of a password reset token (TokenSigner)
 SALT_BYTES = 16
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-def hash_password(password: str, iterations: int = PBKDF2_ITERATIONS) -> str:
+def hash_password(password: str, iterations: int | None = None) -> str:
+    iterations = PBKDF2_ITERATIONS if iterations is None else iterations
     salt = os.urandom(SALT_BYTES)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
     return f"pbkdf2_sha256${iterations}${_b64(salt)}${_b64(digest)}"
@@ -35,6 +39,14 @@ def verify_password(password: str, stored: str) -> bool:
         return hmac.compare_digest(expected, _unb64(digest))
     except (ValueError, TypeError):
         return False
+
+
+def needs_rehash(stored: str, iterations: int | None = None) -> bool:
+    """True for a hash made with fewer rounds than are used now (or one that cannot be read)."""
+    try:
+        return int(stored.split("$")[1]) < (PBKDF2_ITERATIONS if iterations is None else iterations)
+    except (IndexError, ValueError):
+        return True
 
 
 def normalize_email(email: str) -> str:

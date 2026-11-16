@@ -7,7 +7,7 @@ from .config import get_settings
 from .errors import ErrorResponseMiddleware
 from .legal import get_legal
 from .ratelimit import RateLimitMiddleware
-from .routes import auth, catalog, health, lab, parse, recommend, reports
+from .routes import auth, catalog, client_errors, health, lab, parse, recommend, reports
 from .routes.auth import get_signer
 from .vocab import get_vocab
 
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(lab.router)
     app.include_router(auth.router)
     app.include_router(reports.router)
+    app.include_router(client_errors.router)
     return app
 
 

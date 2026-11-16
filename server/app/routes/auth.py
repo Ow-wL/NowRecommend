@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from ..auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
+from ..auth import TokenSigner, hash_password, needs_rehash, normalize_email, valid_email, verify_password
 from ..budget import Allowance, guest_key, signup_day
 from ..config import Settings, get_settings
 from ..db import get_session
@@ -184,6 +184,8 @@ def login(request: Credentials, session: Session = Depends(get_session), signer:
     # One message for both cases, so the form does not reveal which emails have accounts.
     if user is None or not verify_password(request.password, user.password_hash):
         raise HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
+    if needs_rehash(user.password_hash):  # made with fewer rounds than are used now: redone while the password is at hand
+        user.password_hash = hash_password(request.password)
     user.last_login_at = datetime.now(timezone.utc)
     session.commit()
     return _session_answer(signer, user)
