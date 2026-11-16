@@ -2,7 +2,9 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ARRAY, JSON, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, Text, Uuid, false, func, text
+from datetime import date
+
+from sqlalchemy import ARRAY, JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, Text, Uuid, false, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -92,6 +94,15 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())  # set only by app.cli.admin
+
+
+class UsageDaily(Base):
+    """One counter per day and bucket (app/budget.py): the service's model calls, one caller's requests, one address's sign-ups."""
+    __tablename__ = "usage_daily"
+
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    bucket: Mapped[str] = mapped_column(Text, primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, server_default="0")
 
 
 class Report(Base):

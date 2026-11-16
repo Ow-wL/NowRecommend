@@ -14,6 +14,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
+from ..budget import signup_allowed
 from ..config import get_settings
 from ..db import get_session
 from ..models import User
@@ -83,6 +84,17 @@ def current_user(authorization: Annotated[str | None, Header()] = None, signer: 
     return user
 
 
+def optional_user_id(authorization: Annotated[str | None, Header()] = None, signer: TokenSigner | None = Depends(get_signer),
+                     session: Session = Depends(get_session)) -> uuid.UUID | None:
+    """Who is calling, if signed in. A stale or bad token only makes it a guest's request."""
+    scheme, _, token = (authorization or "").partition(" ")
+    user_id = signer.verify(token) if signer and scheme.lower() == "bearer" and token else None
+    if not user_id or not _is_uuid(user_id):
+        return None
+    known = session.get(User, uuid.UUID(user_id))
+    return known.id if known else None
+
+
 def _is_uuid(value: str) -> bool:
     try:
         uuid.UUID(value)
@@ -104,7 +116,10 @@ def _session_answer(signer: TokenSigner, user: User) -> dict:
 
 
 @router.post("/api/auth/signup", status_code=201)
-def signup(request: SignupRequest, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer)):
+def signup(request: SignupRequest, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
+           allowed: bool = Depends(signup_allowed)):
+    if not allowed:  # an account raises the daily AI allowance, so accounts cannot be made without end from one place
+        raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
     if session.scalar(select(User).where(User.email == request.email)) is not None:
         raise HTTPException(409, "이미 가입된 이메일이에요. 로그인해주세요.")
     user = User(email=request.email, name=request.name, password_hash=hash_password(request.password),

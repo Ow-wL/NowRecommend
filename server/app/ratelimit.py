@@ -39,13 +39,26 @@ class SlidingWindow:
         return None
 
 
+def client_address(request: Request, trust_proxy: bool) -> str:
+    """The caller's address. Behind a trusted proxy it is the right end of X-Forwarded-For: the left end is whatever the
+    client sent (a spoofed header bypassed the limit, review 2026-10-26); the proxy appends the address it saw."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if trust_proxy and forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, per_minute: int, trust_proxy: bool = False, clock=time.monotonic, store_per_minute: int = 0,
-                 store_max_bytes: int = 0):
+                 store_max_bytes: int = 0, guest_per_minute: int = 0, signer=None):
         super().__init__(app)
         self.window, self.trust_proxy, self.logged_shape = SlidingWindow(per_minute, clock) if per_minute > 0 else None, trust_proxy, False
         self.store_window = SlidingWindow(store_per_minute, clock) if store_per_minute > 0 else None
         self.store_max_bytes = store_max_bytes
+        # Guests get a smaller window of their own. `signer` (auth.TokenSigner) tells a signed-in caller by the token's
+        # signature alone, with no database read; without it everyone is a guest of the general window.
+        self.guest_window = SlidingWindow(guest_per_minute, clock) if 0 < guest_per_minute < per_minute and signer else None
+        self.signer = signer
 
     async def dispatch(self, request: Request, call_next):
         if request.method == "PUT" and request.url.path == STORE_PATH:
@@ -57,18 +70,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({"detail": "저장 요청이 너무 많아요. 잠시 후 다시 시도해주세요."}, status_code=429,
                                     headers={"Retry-After": str(max(1, round(wait)))})
         if self.window and request.method == "POST" and request.url.path in LIMITED_PATHS:
-            if (wait := self.window.check(self.client_key(request))) is not None:
+            member = self.member(request)
+            window, key = (self.window, f"u:{member}") if member else (self.guest_window or self.window, self.client_key(request))
+            if (wait := window.check(key)) is not None:
                 return JSONResponse({"detail": "요청이 너무 많아요. 잠시 후 다시 시도해주세요."}, status_code=429,
                                     headers={"Retry-After": str(max(1, round(wait)))})
         return await call_next(request)
 
+    def member(self, request: Request) -> str | None:
+        """The account id of a validly signed token, if any. Counting per account keeps people behind one shared address
+        (a campus, a cafe) from using up each other's minute."""
+        if not self.signer:
+            return None
+        scheme, _, token = request.headers.get("authorization", "").partition(" ")
+        return self.signer.verify(token) if scheme.lower() == "bearer" and token else None
+
     def client_key(self, request: Request) -> str:
-        forwarded = request.headers.get("x-forwarded-for", "")
-        if self.trust_proxy and forwarded:
-            if not self.logged_shape:  # once per process: confirms the proxy adds one address (no addresses logged)
-                self.logged_shape = True
-                log.warning("rate limit: X-Forwarded-For carries %d address(es)", len(forwarded.split(",")))
-            # The left end is whatever the client sent (a spoofed header bypassed the limit, review 2026-10-26);
-            # the proxy appends the address it saw on the right.
-            return forwarded.split(",")[-1].strip()
-        return request.client.host if request.client else "unknown"
+        if self.trust_proxy and not self.logged_shape and (forwarded := request.headers.get("x-forwarded-for", "")):
+            self.logged_shape = True  # once per process: confirms the proxy adds one address (no addresses logged)
+            log.warning("rate limit: X-Forwarded-For carries %d address(es)", len(forwarded.split(",")))
+        return client_address(request, self.trust_proxy)

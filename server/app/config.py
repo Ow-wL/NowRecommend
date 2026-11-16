@@ -42,6 +42,19 @@ class Settings(BaseSettings):
     log_raw_text: bool = True
     # POSTs to /api/recommend and /api/parse per client per minute (0 = off); TRUST_PROXY reads X-Forwarded-For.
     rate_limit_per_minute: int = 30
+    # The same limit for a visitor who is not signed in (0 = the limit above). A signed-in caller is counted per account,
+    # a guest per address.
+    rate_limit_guest_per_minute: int = 15
+    # Daily limits kept in the database (app/budget.py; the day is Korean time; 0 = off). AI_DAILY_LIMIT: model calls of
+    # the whole service, the ceiling on the bill. Past it, and past a caller's own allowance, answers come from the
+    # catalog and the rules, as they do when the model fails.
+    ai_daily_limit: int = 3000
+    ai_daily_per_member: int = 100
+    ai_daily_per_guest: int = 40
+    signup_daily_per_address: int = 20
+    # The AI lab (/api/lab) compares engines and lets the caller pick a model: an admin tool. True opens it to everyone
+    # (local experiments without accounts).
+    lab_public: bool = False
     trust_proxy: bool = False
     # Accounts (2026-11-02). Without AUTH_SECRET the auth routes answer 503 and the app stays guest-only. Rotating the
     # secret signs every account out. Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"

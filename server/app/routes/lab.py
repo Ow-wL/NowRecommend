@@ -24,10 +24,26 @@ from ..llm.free import build_payload, recommend_free, validate_free
 from ..llm.provider import model_named
 from ..parsing.rules import situation_text
 from ..schemas import Conditions, Profile
+from ..models import User
 from ..vocab import get_vocab
+from .auth import optional_user_id
 
 log = logging.getLogger(__name__)
-router = APIRouter()
+
+
+def lab_guard(user_id: uuid.UUID | None = Depends(optional_user_id), session: Session = Depends(get_session)) -> None:
+    """The lab lets its caller choose a model and skips checks the main flow makes, so since 2026-11-17 it is for admin
+    accounts only (LAB_PUBLIC=true opens it for local experiments)."""
+    if get_settings().lab_public:
+        return
+    user = session.get(User, user_id) if user_id else None
+    if user is None:
+        raise HTTPException(401, "로그인이 필요해요.", headers={"WWW-Authenticate": "Bearer"})
+    if not user.is_admin:
+        raise HTTPException(403, "관리자만 쓸 수 있어요.")
+
+
+router = APIRouter(dependencies=[Depends(lab_guard)])
 
 # "name - detail" built from names of up to 80 characters each (llm/free.py NAME_LIMIT).
 Label = Annotated[str, StringConstraints(min_length=1, max_length=170)]
@@ -57,7 +73,7 @@ def get_free_models() -> dict[str, JsonModel]:
     settings = get_settings()
     if not settings.rerank_enabled:
         return {}
-    return {name: model for name in settings.lab_free_models if (model := model_named(name)) is not None}
+    return {name: model for name in settings.lab_free_models if (model := model_named(name, True)) is not None}
 
 
 @router.get("/api/lab/models")

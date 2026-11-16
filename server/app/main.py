@@ -7,6 +7,7 @@ from .config import get_settings
 from .errors import ErrorResponseMiddleware
 from .ratelimit import RateLimitMiddleware
 from .routes import auth, catalog, health, lab, parse, recommend, reports
+from .routes.auth import get_signer
 from .vocab import get_vocab
 
 
@@ -25,7 +26,8 @@ def create_app() -> FastAPI:
         # Added before CORS so CORS stays outermost and 429 answers still carry CORS headers.
         # The declared-length check leaves room for the JSON around the store ({"store": …, "baseVersion": n}).
         app.add_middleware(RateLimitMiddleware, per_minute=settings.rate_limit_per_minute, trust_proxy=settings.trust_proxy,
-                           store_per_minute=settings.store_writes_per_minute, store_max_bytes=settings.store_max_bytes + 4096)
+                           store_per_minute=settings.store_writes_per_minute, store_max_bytes=settings.store_max_bytes + 4096,
+                           guest_per_minute=settings.rate_limit_guest_per_minute, signer=get_signer())
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

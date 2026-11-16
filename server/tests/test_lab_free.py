@@ -5,7 +5,7 @@ from app.catalog import load_seed, seed_items
 from app.db import get_session
 from app.llm.free import pick_key, validate_free
 from app.main import create_app
-from app.routes.lab import DailyCap, get_daily_cap, get_free_models
+from app.routes.lab import DailyCap, get_daily_cap, get_free_models, lab_guard
 from app.vocab import get_vocab
 from tests.conftest import needs_db
 
@@ -76,6 +76,7 @@ def client_for(session, model):
     app = create_app()
     app.dependency_overrides[get_session] = lambda: session
     app.dependency_overrides[get_free_models] = lambda: {} if model is None else {model.model: model}
+    app.dependency_overrides[lab_guard] = lambda: None  # as an admin; the guard itself: test_the_lab_is_for_admin_accounts
     return TestClient(app)
 
 
@@ -142,6 +143,7 @@ def test_free_route_uses_the_requested_lab_model_only(catalog):
     app = create_app()
     app.dependency_overrides[get_session] = lambda: catalog
     app.dependency_overrides[get_free_models] = lambda: {"lite": lite, "flash": flash}
+    app.dependency_overrides[lab_guard] = lambda: None
     with TestClient(app) as client:
         assert client.get("/api/lab/models").json() == {"models": ["lite", "flash"]}
         assert client.get("/api/lab/music/models").json() == {"models": ["lite", "flash"]}
@@ -169,6 +171,7 @@ def test_extra_lab_models_stop_at_the_daily_cap_and_filtered_answers_count_as_us
     app = create_app()
     app.dependency_overrides[get_session] = lambda: catalog
     app.dependency_overrides[get_free_models] = lambda: {"lite": lite, "flash": flash}
+    app.dependency_overrides[lab_guard] = lambda: None
     cap = DailyCap()
     app.dependency_overrides[get_daily_cap] = lambda: cap
     with TestClient(app) as client:
@@ -184,3 +187,38 @@ def test_long_avoid_labels_fit_the_name_limit():
     from app.routes.lab import FreeRequest
     label = f"{'가' * 80} - {'나' * 80}"
     assert FreeRequest(avoid=[label]).avoid == [label]
+
+
+def test_the_lab_is_for_admin_accounts(db_session):
+    """Since 2026-11-17: a guest is asked to sign in, a member is refused, an admin gets in (and LAB_PUBLIC opens it)."""
+    from sqlalchemy import text
+
+    from app.auth import TokenSigner, hash_password
+    from app.config import get_settings
+    from app.models import User
+    from app.routes.auth import get_signer
+
+    signer = TokenSigner("test-secret", ttl_seconds=3600)
+    db_session.execute(text("TRUNCATE users CASCADE"))
+    member, admin = (User(email=f"{name}@example.com", name=name, password_hash=hash_password("password1", 1000), is_admin=name == "admin") for name in ("member", "admin"))
+    db_session.add_all([member, admin])
+    db_session.commit()
+    app = create_app()
+    app.dependency_overrides[get_session] = lambda: db_session
+    app.dependency_overrides[get_signer] = lambda: signer
+    app.dependency_overrides[get_free_models] = lambda: {}
+    bearer = lambda user: {"Authorization": f"Bearer {signer.issue(str(user.id))}"}  # noqa: E731
+    with TestClient(app) as client:
+        for path, send in (("/api/lab/models", client.get), ("/api/lab/music/free", lambda p, **kw: client.post(p, json={"raw": "산책"}, **kw))):
+            assert send(path).status_code == 401
+            assert send(path, headers=bearer(member)).status_code == 403
+            assert send(path, headers=bearer(admin)).status_code == 200
+    get_settings.cache_clear()
+    try:
+        import os
+        os.environ["LAB_PUBLIC"] = "true"
+        with TestClient(app) as client:
+            assert client.get("/api/lab/models").status_code == 200
+    finally:
+        os.environ.pop("LAB_PUBLIC", None)
+        get_settings.cache_clear()

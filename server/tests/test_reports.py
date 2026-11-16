@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.ai_items import persist_picks
 from app.auth import TokenSigner
@@ -107,3 +107,17 @@ def test_deleting_an_account_keeps_the_report_without_its_author(client, db_sess
     db_session.expire_all()
     assert db_session.get(Report, report).user_id is None
     assert db_session.get(Item, "f13") is not None
+
+
+def test_a_repeated_report_and_a_pile_on_one_item_add_no_rows(client, db_session):
+    """2026-11-17: the same thing said again answers with the report already open; one item holds at most OPEN_PER_ITEM open."""
+    from app.routes.reports import OPEN_PER_ITEM
+
+    item = db_session.scalars(select(Item.id).where(Item.status == "reviewed")).first()
+    first = client.post("/api/reports", json={"itemId": item, "kind": "wrong_info", "note": "재료가 달라요"})
+    again = client.post("/api/reports", json={"itemId": item, "kind": "wrong_info", "note": "재료가 달라요"})
+    assert first.status_code == again.status_code == 201 and first.json()["id"] == again.json()["id"]
+    assert client.post("/api/reports", json={"itemId": item, "kind": "wrong_image"}).json()["id"] != first.json()["id"]  # another complaint is another report
+    for n in range(OPEN_PER_ITEM + 5):
+        assert client.post("/api/reports", json={"itemId": item, "kind": "other", "note": f"다른 말 {n}"}).status_code == 201
+    assert db_session.scalar(select(func.count()).select_from(Report).where(Report.item_id == item)) == OPEN_PER_ITEM

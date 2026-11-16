@@ -7,22 +7,22 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..ai_items import is_ai_pick
-from ..auth import TokenSigner
 from ..db import get_session
 from ..models import Item, Report, User
-from .auth import _iso, _is_uuid, current_user, get_signer
+from .auth import _iso, current_user, optional_user_id
 
 router = APIRouter()
 
 Kind = Literal["wrong_image", "wrong_info", "not_exist", "other"]
 Status = Literal["open", "resolved", "dismissed"]
 LIST_LIMIT = 200
+OPEN_PER_ITEM = 20
 # Set on an AI pick whose borrowed picture an admin took away: not None, so a later pick of the same name does not link it again.
 NO_PARENT = ""
 
@@ -44,17 +44,6 @@ def require_admin(user: User = Depends(current_user)) -> User:
     return user
 
 
-def optional_user_id(authorization: Annotated[str | None, Header()] = None, signer: TokenSigner | None = Depends(get_signer),
-                     session: Session = Depends(get_session)) -> uuid.UUID | None:
-    """Who is reporting, if signed in. A stale or bad token only makes it a guest's report."""
-    scheme, _, token = (authorization or "").partition(" ")
-    user_id = signer.verify(token) if signer and scheme.lower() == "bearer" and token else None
-    if not user_id or not _is_uuid(user_id):
-        return None
-    known = session.get(User, uuid.UUID(user_id))
-    return known.id if known else None
-
-
 def public_report(report: Report, item: Item | None) -> dict:
     return {
         "id": str(report.id), "createdAt": _iso(report.created_at), "kind": report.kind, "note": report.note, "status": report.status,
@@ -70,6 +59,13 @@ def create_report(request: ReportRequest, session: Session = Depends(get_session
     item = session.get(Item, request.itemId)
     if item is None:
         raise HTTPException(404, "신고할 항목을 찾지 못했어요.")
+    # The same thing said again adds nothing for the admin, and an item cannot be buried under reports: a repeat of an open
+    # report (same account, or a guest repeating a guest), or one more on an item that already has OPEN_PER_ITEM open,
+    # answers with the report that is already there. A member saying what a guest said is still recorded: it is signed.
+    waiting = session.scalars(select(Report).where(Report.item_id == item.id, Report.status == "open").order_by(Report.created_at.desc())).all()
+    same = next((r for r in waiting if r.kind == request.kind and r.note == request.note and r.user_id == user_id), None)
+    if same or len(waiting) >= OPEN_PER_ITEM:
+        return {"id": str((same or waiting[0]).id)}
     report = Report(item_id=item.id, category=item.category, item_name=item.name, item_subtitle=item.subtitle, kind=request.kind,
                     note=request.note, user_id=user_id)
     session.add(report)
