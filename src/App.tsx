@@ -53,8 +53,10 @@ import { RecommendationCard } from './components/RecommendationCard';
 import { navigationDirection, parseRoute, routeFor, viewReducer, type Page, type Step, type View } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
 import { isAiPick, rememberItems, resolveItem } from './knownItems';
-import { keepLocalCopy, mergeOnLogin, readAccount, writeAccount, type Account } from './account';
-import { fetchMe, deleteAccount, fetchRemoteStore, pushRemoteStore, type AuthSession } from './api/auth';
+import { keepLocalCopy, readAccount, writeAccount, type Account } from './account';
+import { fetchMe, deleteAccount, fetchRemoteStore, type AuthSession } from './api/auth';
+import { planLogin } from './sync';
+import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
 
@@ -103,9 +105,8 @@ export default function App() {
   const [editingProfile, setEditingProfile] = useState(initial.editingProfile || false);
   const [filter, setFilter] = useState<'all' | Category>('all');
   const [dialog, setDialog] = useState<Dialog>(null);
-  // The signed-in account (server mode). Its store follows the account: downloaded on login, uploaded after each change.
+  // The signed-in account (server mode). Its store follows the account and is merged with it, never blindly overwritten (useAccountSync).
   const [account, setAccount] = useState<Account | null>(readAccount);
-  const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [deletePassword, setDeletePassword] = useState(''), [deleteError, setDeleteError] = useState('');
   const [tasteDecade, setTasteDecade] = useState(0);
   // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.
@@ -116,8 +117,6 @@ export default function App() {
   const voice = useVoiceInput(text => setSession(s => changeText(s, (s.raw.trim() ? `${s.raw.trimEnd()} ` : '') + text)), message => notify(message));
   const [reportItem, setReportItem] = useState<Item | null>(null), [reportedIds, setReportedIds] = useState<string[]>([]);
   const [songChecks, setSongChecks] = useState<Record<string, SongStatus>>({});
-  const [syncAttempt, setSyncAttempt] = useState(0), syncFailureTold = useRef(false);
-  const syncSkip = useRef(0);  // store versions that came from the server need no upload
   const [feedbackItem, setFeedbackItem] = useState<Item | null>(null);
   const [historyPreview, setHistoryPreview] = useState<HistoryEntry | null>(null);
   const [presetPreview,setPresetPreview]=useState<Preset|null>(null);
@@ -196,7 +195,9 @@ export default function App() {
   // AI picks carry the model's own tags, so a missing tag is not a shortage of registered candidates: no off-topic notice for them.
   const offTopicCount = session.conditions.tags.length && session.quality?.engine !== 'ai' ? results.filter(r => !r.item.tags.some(t => session.conditions.tags.includes(t))).length : 0;
 
-  useEffect(() => { const failed = storageBlocked || !writeStore(store); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
+  const storeNow = useRef(store); storeNow.current = store;
+  // The sync agreement is written right after the store it describes, never without it (useAccountSync).
+  useEffect(() => { const failed = storageBlocked || !writeStore(store); if (!failed) sync.saveAgreement(); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
   // The account as the server has it now: being made an admin shows without logging in again. The server checks on every request anyway.
   useEffect(() => {
@@ -205,32 +206,31 @@ export default function App() {
     fetchMe(account.token).then(me => { if (live && !!me.user.isAdmin !== !!account.user.isAdmin) { const next = { ...account, user: me.user }; writeAccount(next); setAccount(next); } }).catch(() => { /* the store sync reports an expired sign-in */ });
     return () => { live = false; };
   }, [account?.token]);  // eslint-disable-line react-hooks/exhaustive-deps
-  // Upload the store to the account 1.5s after the last change. A 401 means the token expired: sign out, keep the local data.
-  useEffect(() => {
-    if (!account || !apiEnabled()) return;
-    if (syncSkip.current > 0) { syncSkip.current--; return; }
-    const token = account.token, snapshot = store;
-    setSyncState('saving');
-    const timer = setTimeout(() => {
-      pushRemoteStore(token, snapshot).then(() => { syncFailureTold.current = false; setSyncState('saved'); }).catch(error => {
-        setSyncState('failed');
-        if (error instanceof ApiError && error.status === 401) { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); }
-        else if (!syncFailureTold.current) { syncFailureTold.current = true; notify('계정에 저장하지 못했어요. 이 브라우저에는 남아 있고, 내 계정에서 다시 저장할 수 있어요.'); }
-      });
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [store, account, syncAttempt]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // What signing in does to this browser's data is decided by planLogin (src/sync.ts). The account's copy is read first: if
+  // that fails, nobody is signed in and nothing is uploaded, so a failed read can never replace the account's data.
   async function signIn(session: AuthSession, mode: 'login' | 'signup') {
     const next: Account = { token: session.token, user: session.user };
-    const remote = session.hasStore ? (await fetchRemoteStore(session.token).catch(() => ({ store: null }))).store : null;
-    const merged = mergeOnLogin(store, remote, next);
-    if (merged.action === 'downloaded') { keepLocalCopy(localStorage.getItem('nowrecommend-prototype-v1')); syncSkip.current++; }
-    writeAccount(next); setAccount(next); setStore(merged.store); setNameDraft(merged.store.name);
+    const remote = await fetchRemoteStore(session.token);
+    // Decided on the store as it is now: something changed while the request was out is part of it.
+    const local = storeNow.current, plan = planLogin(local, sync.agreement(), remote, next);
+    if (plan.keepAside) keepLocalCopy(JSON.stringify(local));
+    sync.adopt(plan.store, plan.meta);  // store and agreement are saved together, before the account is
+    writeAccount(next); setAccount(next); setStore(plan.store); setNameDraft(plan.store.name);
     setActive(false); setSession(newSession(category)); setCompletedId(''); selectionLock.current = ''; setDialog(null);
     navigate('home');
-    notify(mode === 'signup' ? `${session.user.name}님, 가입을 환영해요. 이 브라우저의 데이터를 계정에 저장했어요.` : merged.action === 'downloaded' ? `${session.user.name}님, 계정의 취향·기록을 불러왔어요.` : `${session.user.name}님, 로그인했어요. 이 브라우저의 데이터를 계정에 저장해요.`);
+    const told = { downloaded: '계정의 취향·기록을 불러왔어요.', merged: '계정의 취향·기록에 이 브라우저에서 바뀐 내용을 합쳤어요.', uploaded: '로그인했어요. 이 브라우저의 데이터를 계정에 저장해요.', fresh: '로그인했어요. 이 브라우저에 있던 다른 계정의 데이터는 올리지 않았어요.' }[plan.action];
+    notify(mode === 'signup' && plan.action === 'uploaded' ? `${session.user.name}님, 가입을 환영해요. 이 브라우저의 데이터를 계정에 저장했어요.` : mode === 'signup' ? `${session.user.name}님, 가입을 환영해요. 이 브라우저에 있던 다른 계정의 데이터는 올리지 않았어요.` : `${session.user.name}님, ${told}`);
   }
-  function signOut() { writeAccount(null); setAccount(null); setSyncState('idle'); setDialog(null); notify('로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.'); }
+  // The data stays and stays marked as this account's (sync meta), so another account signing in here never uploads it.
+  function signOut() { writeAccount(null); setAccount(null); setDialog(null); notify('로그아웃했어요. 취향·기록은 이 브라우저에 그대로 남아요.'); }
+  // For a shared computer: what is not saved yet goes to the account first, and only then is this browser emptied.
+  async function signOutAndClear() {
+    if (!storageBlocked && !await sync.flush()) { notify('계정에 저장하지 못해 이 브라우저의 데이터를 지우지 않았어요. 연결을 확인한 뒤 다시 시도해주세요.'); return; }
+    if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); return; }
+    sync.forget(); writeAccount(null); setAccount(null);
+    setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setDialog(null); navigate('home');
+    notify('로그아웃하고 이 브라우저의 데이터를 지웠어요. 계정에는 그대로 있어요.');
+  }
   useEffect(() => { if (!toast || toastPaused || reportItem || dialog || feedbackItem || historyPreview || presetPreview || savePresetOpen || detail || compareOpen) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast, toastPaused, dialog, feedbackItem, historyPreview, presetPreview, savePresetOpen, detail, compareOpen, reportItem]);
   useEffect(() => { if (previousPage.current !== page) { window.scrollTo({ top: 0, behavior: 'instant' }); previousPage.current = page; } }, [page]);
   // A preview belongs to the screen it started on.
@@ -240,6 +240,9 @@ export default function App() {
   useEffect(()=>{ const frame=requestAnimationFrame(()=>{window.scrollTo({top:0,behavior:'instant'});const title=document.querySelector<HTMLElement>('main h1');title?.setAttribute('tabindex','-1');title?.focus({preventScroll:true});});return ()=>cancelAnimationFrame(frame);},[page,step]);
 
   const notify = (message: string, undo?: () => void) => {setToastPaused(false);setToast({ message: storageWarning ? '화면에 반영했지만 브라우저에는 저장하지 못했어요.' : message, undo });};
+  const sync = useAccountSync({ account, store, setStore, paused: storageBlocked, notify,
+    onExpired: () => { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); } });
+  const syncState = sync.state;
   // The buttons pressed here disappear with the toast, so a keyboard user continues from the page instead of the top of the document.
   const dismissToast = () => { setToast(null); document.getElementById('main-content')?.focus({ preventScroll: true }); };
   function navigate(next: Page) { requestCounter.current++; setBusy(false); setParsing(false); setRequestError(false); setToast(null); setPage(next); setQuery(''); setTasteFilter(''); setTasteDecade(0); setFilter('all'); setHistoryQuery(''); setHistoryDay(''); }
@@ -783,11 +786,11 @@ export default function App() {
     {dialog === 'account' && <Modal neutral title="설정" onClose={() => setDialog(null)}>
       <div className="filter-tabs settings-tabs" role="group" aria-label="설정 구역">{([['profile', '프로필'], ['screen', '화면'], ['sound', '소리'], ['data', '데이터 관리']] as const).map(([id, name]) => <button key={id} aria-pressed={settingsTab === id} className={settingsTab === id ? 'active' : ''} onClick={() => setSettingsTab(id)}>{name}</button>)}</div>
       {settingsTab === 'profile' && <>
-        {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status" tabIndex={-1}>{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span>{syncState === 'failed' && <button className="text-button" onClick={e => { e.currentTarget.parentElement?.querySelector<HTMLElement>('.sync-state')?.focus(); setSyncAttempt(n => n + 1); }}>다시 저장</button>}</div>
+        {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status" tabIndex={-1}>{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span>{syncState === 'failed' && <button className="text-button" onClick={e => { e.currentTarget.parentElement?.querySelector<HTMLElement>('.sync-state')?.focus(); sync.retry(); }}>다시 저장</button>}</div>
           : <p className="modal-description">{apiEnabled() ? '지금은 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요.'}</p>}
         {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
         <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
-        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
+        {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button onClick={signOutAndClear}><LogOut size={17} /> 로그아웃하고 이 브라우저에서 지우기 <small>(계정에는 남아요)</small></button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
       </>}
       {settingsTab === 'screen' && <AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/>}
       {settingsTab === 'sound' && <SoundSettings />}
@@ -796,7 +799,7 @@ export default function App() {
         <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
       </>}
     </Modal>}
-    {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
-    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
+    {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
+    {['reset', 'deleteHistory', 'resetTaste'].includes(dialog || '') && <Modal neutral title={dialog === 'reset' ? '체험 데이터를 초기화할까요?' : dialog === 'resetTaste' ? `${categoryLabel[category]} 취향을 초기화할까요?` : '이 추천 기록을 삭제할까요?'} onClose={() => setDialog(null)}><p className="modal-description">{dialog === 'reset' ? account && storageBlocked ? '이 브라우저의 손상된 데이터를 지워요. 로그인 중이라 계정에 저장된 취향·기록을 다시 받아와요.' : account ? '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요. 로그인 중이라 계정에 저장된 데이터도 함께 지워져요. 이 브라우저에서만 지우려면 내 계정의 "로그아웃하고 이 브라우저에서 지우기"를 쓰세요.' : '이 브라우저의 취향, 즐겨찾기와 추천 기록을 모두 삭제해요.' : dialog === 'resetTaste' ? '이 분야의 선호 항목과 장기 비선호를 삭제해요. 즐겨찾기와 기록은 유지해요.' : '삭제한 기록은 복구할 수 없어요. 취향과 즐겨찾기는 유지해요.'}</p><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" onClick={() => { if (dialog === 'reset') { if (!clearDamagedStore()) { notify('데이터를 삭제하지 못했어요.'); setDialog(null); return; } if (storageBlocked) sync.forget(); setStorageBlocked(false); setStore(emptyStore()); setSession(newSession()); setActive(false); setToast(null); navigate('home'); } else if (dialog === 'resetTaste') { setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: { selected: [], tags: [], disliked: [] } } })); } else setStore(s => ({ ...s, history: s.history.filter(h => h.id !== deleteId) })); setDialog(null); notify('삭제했어요.'); }}>삭제하기</button></div></Modal>}
   </div>;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeOnLogin, readAccount, writeAccount } from './account';
+import { readAccount, writeAccount } from './account';
 import { authErrorMessage, fetchRemoteStore, pushRemoteStore, signup } from './api/auth';
 import { ApiError } from './api/client';
 import { emptyStore } from './domain';
@@ -19,18 +19,6 @@ describe('account storage', () => {
   });
 });
 
-describe('store merge on login', () => {
-  const local = { ...emptyStore(), favorites: ['f01'] };
-  it('takes the account copy when there is one', () => {
-    const remote = { ...emptyStore(), name: '', favorites: ['m01'] };
-    expect(mergeOnLogin(local, remote, account)).toEqual({ store: { ...remote, name: '주형' }, action: 'downloaded' });
-  });
-  it('uploads the local data for a fresh account, naming it after the account', () => {
-    expect(mergeOnLogin(local, null, account)).toEqual({ store: { ...local, name: '주형' }, action: 'uploaded' });
-    expect(mergeOnLogin({ ...local, name: '지은' }, null, account).store.name).toBe('지은');
-  });
-});
-
 describe('auth API', () => {
   const json = (body: unknown, status = 200) => async () => new Response(JSON.stringify(body), { status });
   it('sends credentials and returns the session', async () => {
@@ -41,22 +29,31 @@ describe('auth API', () => {
     expect(seen[0]).toBe('http://api.test/api/auth/signup');
     expect(JSON.parse(seen[1].body)).toEqual({ email: 'a@b.co', password: 'password1', name: '주형' });
   });
-  it('reads the synced store with the bearer token and ignores an unreadable blob', async () => {
+  it('reads the synced store with the bearer token and tells an unreadable blob from none', async () => {
     let headers: any;
     const fetchImpl = (async (_: string, init: RequestInit) => { headers = init.headers; return new Response(JSON.stringify({ store: { version: 99 }, updatedAt: '2026-11-02T00:00:00Z' })); }) as typeof fetch;
     const answer = await fetchRemoteStore('tok', { base: 'http://api.test', fetchImpl });
     expect(headers.Authorization).toBe('Bearer tok');
-    expect(answer).toEqual({ store: null, updatedAt: '2026-11-02T00:00:00Z' });
-    const good = await fetchRemoteStore('tok', { base: 'http://api.test', fetchImpl: json({ store: emptyStore(), updatedAt: null }) });
+    // A blob this build cannot read is not "no store": the caller must not upload over it.
+    expect(answer).toEqual({ store: null, updatedAt: '2026-11-02T00:00:00Z', version: null, unreadable: true });  // and a server that names no version
+    const good = await fetchRemoteStore('tok', { base: 'http://api.test', fetchImpl: json({ store: emptyStore(), updatedAt: null, version: 7 }) });
+    expect(good).toMatchObject({ version: 7, unreadable: false });
     expect(good.store?.version).toBe(2);
-    const empty = await fetchRemoteStore('tok', { base: 'http://api.test', fetchImpl: json({ store: null, updatedAt: null }) });
-    expect(empty.store).toBeNull();
+    const empty = await fetchRemoteStore('tok', { base: 'http://api.test', fetchImpl: json({ store: null, updatedAt: null, version: 0 }) });
+    expect(empty).toMatchObject({ store: null, unreadable: false });
   });
   it('uploads with PUT and surfaces the server detail on failure', async () => {
-    let method = '';
-    const fetchImpl = (async (_: string, init: RequestInit) => { method = init.method!; return new Response(JSON.stringify({ updatedAt: 'now', bytes: 12 })); }) as typeof fetch;
-    expect(await pushRemoteStore('tok', emptyStore(), { base: 'http://api.test', fetchImpl })).toEqual({ updatedAt: 'now', bytes: 12 });
+    let method = '', body: any;
+    const fetchImpl = (async (_: string, init: RequestInit) => { method = init.method!; body = JSON.parse(init.body as string); return new Response(JSON.stringify({ updatedAt: 'now', bytes: 12, version: 4 })); }) as typeof fetch;
+    expect(await pushRemoteStore('tok', emptyStore(), 3, { base: 'http://api.test', fetchImpl })).toEqual({ updatedAt: 'now', bytes: 12, version: 4 });
     expect(method).toBe('PUT');
+    expect(body.baseVersion).toBe(3);
+    // A server without versions: no baseVersion is sent, and the answer says so with null.
+    const old = (async (_: string, init: RequestInit) => { body = JSON.parse(init.body as string); return new Response(JSON.stringify({ updatedAt: 'now', bytes: 12 })); }) as typeof fetch;
+    expect((await pushRemoteStore('tok', emptyStore(), null, { base: 'http://api.test', fetchImpl: old })).version).toBeNull();
+    expect('baseVersion' in body).toBe(false);
+    // The save another device beat: 409, which src/sync.ts answers by reading and merging.
+    await expect(pushRemoteStore('tok', emptyStore(), 3, { base: 'http://api.test', fetchImpl: json({ detail: '다른 기기에서 먼저 저장했어요.' }, 409) })).rejects.toMatchObject({ status: 409 });
     const failing = json({ detail: '이미 가입된 이메일이에요. 로그인해주세요.' }, 409);
     await expect(signup('a@b.co', 'password1', 'x', { base: 'http://api.test', fetchImpl: failing })).rejects.toMatchObject({ status: 409, message: '이미 가입된 이메일이에요. 로그인해주세요.' });
   });
