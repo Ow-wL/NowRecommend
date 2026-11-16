@@ -325,7 +325,12 @@ test('a forgotten password: the form asks for the mail and says the same whoever
 test('the mailed link sets a new password and signs in; the token leaves the address bar', async ({ page }) => {
   const calls = await setup(page, { hasStore: true });
   const token = 'eyJzdWIiOiJ1MSIsInVzZSI6InJlc2V0In0.c2lnbmF0dXJlLXNpZ25hdHVyZQ';
+  // "Already running" means started: the catalog request is made by the app's start-up effects, so its answer marks the
+  // moment they are done. (On the dev server those effects run twice, and a link landing between the first paint and
+  // them is sent back home by the address sync; a built site corrects itself, the dev server does not.)
+  const started = page.waitForResponse(response => response.url().includes('/api/catalog'));
   await page.goto('/#/home');
+  await started;
   await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
   await page.goto(`/#/reset/${token}`);  // the link, opened in a tab where the app is already running
   await expect(page.getByRole('heading', { name: '새 비밀번호 정하기' })).toBeVisible();
