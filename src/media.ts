@@ -1,8 +1,8 @@
 import media from './media.json';
 import type { Item } from './data';
 
-// Item images: food photos hand-picked from Pexels (saved in public/food), Unsplash and Wikimedia Commons with their credit, album covers from the
-// iTunes Search API with the track's Apple Music page (server/app/cli/media.py). Images load from those hosts; an
+// Item images: food photos hand-picked from Pexels and Unsplash (saved in public/food) and Wikimedia Commons with their credit, album covers from the
+// iTunes Search API with the track's Apple Music page (server/app/cli/media.py). The others load from those hosts; an
 // item without one, or whose image fails, gets a generated cover instead (ItemArt).
 export type Credit = { author: string; license: string; licenseUrl: string; page: string };
 // `link`: the track's own Apple Music song page (only when the store listed that exact track); `album`: the album page.
@@ -18,8 +18,11 @@ export const addMedia = (id: string, entry: Media) => { found.set(id, entry); };
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
 const localPhoto = /^food\/[\w-]+\.jpg$/;
-/** The same picture at the size of a small tile, where its host can resize it. */
-export const tileImage = (url: string) => url.replace('w=960&h=960', 'w=420&h=420').replace('/600x600bb', '/300x300bb');
+/** The same picture at the size of a small tile: a picture host is asked for it, a photo saved with the site has its own
+ *  small copy beside it (public/food/tile, made by scripts/make-tiles.cjs). */
+export const tileImage = (url: string) => /^https:\/\//.test(url)
+  ? url.replace('w=960&h=960', 'w=420&h=420').replace('/600x600bb', '/300x300bb')
+  : url.replace(/(^|\/)food\/([\w-]+\.jpg)$/, '$1food/tile/$2');
 
 /** Covers still marked for a person to confirm (`check`) are not shown. A photo saved with the site is served from its base path. */
 export function mediaFor(id: string): Media | undefined {

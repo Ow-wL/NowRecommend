@@ -85,7 +85,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     // What Apple says its embedded player collects (apple.com/legal/privacy/data/ko/apple-music-web, read 2026-11-17).
     ...(info.player ? ['Apple Inc. (Apple Music 플레이어, 미국 등): 곡 상세에서 "Apple Music 플레이어 열기"를 누른 경우에만 Apple의 플레이어를 화면 안에 불러옵니다. 이때부터 Apple은 플레이어가 놓인 사이트의 주소, 브라우저와 기기 정보, 접속 주소(IP), 재생한 곡 같은 이용 내역을 하루 동안 유지되는 식별자와 함께 수집하고, 플레이어에서 Apple 계정으로 로그인하면 이용 내역이 그 계정과 연결됩니다. Apple은 자체 쿠키와 저장소를 쓰며 이 정보를 최대 2년 보관한다고 밝히고 있습니다(https://www.apple.com/legal/privacy/data/ko/apple-music-web/). 로그인은 Apple의 창에서 이뤄지고, 지금 추천은 Apple 계정의 아이디·비밀번호·로그인 정보나 구독 여부를 받지 않습니다. 지금 추천에서 로그아웃하거나 데이터를 지워도 Apple 쪽의 로그인과 기록은 그대로이므로, 필요하면 플레이어나 Apple의 설정에서 로그아웃해 주세요. 버튼을 누르지 않으면 플레이어를 불러오지 않습니다.'] : []),
     ...(info.weather ? ['Open-Meteo (독일 등): "지금 날씨 반영"을 누른 경우에만, 약 1km 단위로 줄인 위치 좌표를 보내 현재 날씨를 받습니다. 좌표는 서버에 저장하지 않습니다.'] : []),
-    'GitHub, jsDelivr, Unsplash, Wikimedia 등 화면과 글꼴·이미지를 전달하는 서비스: 페이지와 이미지를 불러올 때 접속 주소(IP)가 전달됩니다.',
+    'GitHub, jsDelivr, Wikimedia 등 화면과 글꼴·이미지를 전달하는 서비스: 페이지와 이미지를 불러올 때 접속 주소(IP)가 전달됩니다.',
     // The mail provider by name (server SMTP_HOST): what it receives, where it keeps it and for how long (resend.com/legal/dpa,
     // resend.com/docs/knowledge-base/account-quotas-and-limits, read 2026-11-17). Change this line with the provider.
     'Resend (Plus Five Five, Inc., 미국): 비밀번호 재설정을 요청한 경우에만, 가입한 이메일 주소로 이름과 재설정 링크가 담긴 안내 메일을 이 서비스를 통해 보냅니다. 이메일 주소, 메일 내용, 발송 기록이 미국에서 처리·저장되며 Resend가 30일 동안 보관한 뒤 지웁니다. 재설정을 요청하지 않으면 전송되지 않습니다. Resend의 개인정보 문의: privacy@resend.com',
