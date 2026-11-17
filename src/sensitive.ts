@@ -18,7 +18,7 @@
 // The list is words that say something about a body or an illness, not about taste: "매운 거 못 먹어요" is a
 // preference, "위염이라 매운 거 못 먹어요" is health. It is a list, so it misses what it does not name (the policy says
 // so); a word too many costs one question, once.
-import type { Profile, Store } from './domain';
+import { emptyStore, type Profile, type Store } from './domain';
 import { LEGAL_VERSION } from './legal';
 
 export type HealthConsent = { version: string; at: string };
@@ -61,9 +61,11 @@ const about = (text: string | undefined) => healthTerms(text).length > 0;
 const profileTexts = (profile: Profile): (string | undefined)[] => [...Object.values(profile.reasons || {}), ...(profile.custom || []).flatMap(c => [c.name, c.reason])];
 /** Every text a person typed that the store keeps. */
 export function storeTexts(store: Store): (string | undefined)[] {
-  return [...Object.values(store.profiles).flatMap(profileTexts), ...store.history.flatMap(h => [h.raw, h.review?.note, ...h.rounds.map(r => r.raw)]), ...(store.presets || []).map(p => p.name)];
+  return [store.name, ...Object.values(store.profiles).flatMap(profileTexts), ...store.history.flatMap(h => [h.raw, h.review?.note, ...h.rounds.map(r => r.raw)]), ...(store.presets || []).map(p => p.name)];
 }
 export const storeHealthTerms = (store: Store): string[] => healthTerms(...storeTexts(store));
+/** The store holds such words and no consent under the policy in force: it is not uploaded, and the person is asked. */
+export const owesHealthAnswer = (store: Store): boolean => store.health?.version !== LEGAL_VERSION && storeHealthTerms(store).length > 0;
 
 /** The profile without what was written about health: such reasons, and typed-in favourites named that way. */
 export function withoutHealthProfile(profile: Profile): Profile {
@@ -75,7 +77,7 @@ export function withoutHealthProfile(profile: Profile): Profile {
 /** The store without the texts that have health words in them. What was recommended, chosen and rated stays; a sentence
  * becomes "no sentence", a note is emptied, a preset keeps its conditions under a plain name. */
 export function withoutHealthTexts(store: Store): Store {
-  return { ...store,
+  return { ...store, name: about(store.name) ? emptyStore().name : store.name,
     profiles: Object.fromEntries(Object.entries(store.profiles).map(([category, profile]) => [category, withoutHealthProfile(profile)])) as Store['profiles'],
     history: store.history.map(h => ({ ...h, raw: about(h.raw) ? NO_SENTENCE : h.raw, rounds: h.rounds.map(r => about(r.raw) ? { ...r, raw: NO_SENTENCE } : r),
       ...(h.review && about(h.review.note) ? { review: { ...h.review, note: '' } } : {}) })),

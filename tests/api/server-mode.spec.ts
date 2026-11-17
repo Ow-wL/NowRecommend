@@ -104,6 +104,11 @@ async function submitSentence(page: Page, text = SENTENCE) {
   await page.goto('/#/recommend/food');
   await page.locator('#situation').fill(text);
   await page.getByRole('button', { name: /추천받기$/ }).click();
+  // "속이 안 좋아서" is about health: nothing is sent until the person agrees (src/sensitive.ts).
+  if (text === SENTENCE) {
+    await expect(page.getByRole('dialog', { name: '건강과 관련된 내용을 적으셨어요' })).toBeVisible();
+    await page.getByRole('button', { name: /동의하고 계속/ }).click();
+  }
 }
 const recommendRoute = (page: Page, sink: any[] = []) => page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sink.push(route.request().postDataJSON()); return fulfill(route, batch(['f02', 'f12', 'f09'])); });
 

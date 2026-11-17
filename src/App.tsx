@@ -152,6 +152,7 @@ export default function App() {
    * screen and from the taste being edited. What was recommended, chosen and rated stays. */
   function dropHealthTexts() {
     noteHealthConsent(null);
+    requestCounter.current++; setBusy(false); setParsing(false);
     setStore(s => { const { health: _, ...rest } = withoutHealthTexts(s); return rest; });
     if (healthTerms(session.raw).length) setSession(current => changeText(current, ''));
     setDraftProfile(withoutHealthProfile);
@@ -386,6 +387,9 @@ export default function App() {
   // Offline (no VITE_API_BASE_URL) or an explicit fallback computes locally and synchronously, exactly as before.
   // With the API server, the request is async: stale answers are dropped via requestCounter and failures offer a retry.
   function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
+    // A sentence restored from before the consent was asked, or kept after it was withdrawn: asked here, whatever
+    // button led to it (again, restore, feedback, the local fallback), before anything is requested or recorded.
+    if (!healthConsented() && healthTerms(base.raw).length) { withHealth([base.raw], () => withBatch(base, profile, done, local)); return; }
     // Past choices steer this ranking only; `base` is what the request keeps.
     const past = signalsFrom(store.history, base.category, base.id), ranked = rankingSession(base, past), rankedProfile = rankingProfile(profile, past, base.category, base.conditions.tags);
     if (!apiEnabled() || local) { done({ ...applyBatch(base, recommend({ ...ranked, currentIds: undefined, snapshot: undefined }, rankedProfile)), source: local ? 'local' : undefined, quality: undefined }); return; }
@@ -467,9 +471,12 @@ export default function App() {
     return { signals: { food: signalsFrom(store.history, 'food'), music: signalsFrom(store.history, 'music') }, profiles: store.profiles };
   }
   function choosePair(pair: Pair, request: PairRequest) {
-    const made = recordPair(store.history, request, pair, store.profiles, items);
-    setStore(s => ({ ...s, history: made.history }));
-    notify('추천 기록에 남겼어요.', () => setStore(s => ({ ...s, history: s.history.filter(h => !made.ids.includes(h.id)) })));
+    // A pair shown again after a reload keeps its sentence (Pairing.tsx): asked before it is recorded.
+    withHealth([request.raw, request.label], () => {
+      const made = recordPair(store.history, request, pair, store.profiles, items);
+      setStore(s => ({ ...s, history: made.history }));
+      notify('추천 기록에 남겼어요.', () => setStore(s => ({ ...s, history: s.history.filter(h => !made.ids.includes(h.id)) })));
+    });
   }
   function chooseQuickCondition(preset: Preset) {
     const writing = active && session.category === preset.category && (session.raw.trim() || session.conditions.tags.length || session.conditions.excluded.length);
@@ -477,6 +484,7 @@ export default function App() {
   }
   function recommendSaved(c:Category,ids:string[]) { start(c,'',true);setSession({...newSession(c),editor:createEditor('',c),candidateScope:'favorites',candidateIds:[...ids]}); }
   function replaceOne(id:string) {
+    if (!healthConsented() && healthTerms(session.raw).length) { withHealth([session.raw], () => replaceOne(id)); return; }
     const done=(next:Session|null)=>{if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.');};
     const past = signalsFrom(store.history, session.category, session.id), ranked = rankingSession(session, past), profile = rankingProfile(store.profiles[session.category], past, session.category, session.conditions.tags);
     if(!apiEnabled()){done(canReplace(session,results,id) ? applyReplacement(session,results,id,recommend(replacementRequest(ranked,results),profile)) : null);return;}
@@ -878,7 +886,7 @@ export default function App() {
         {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status" tabIndex={-1}>{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span>{syncState === 'failed' && <button className="text-button" onClick={e => { e.currentTarget.parentElement?.querySelector<HTMLElement>('.sync-state')?.focus(); sync.retry(); }}>다시 저장</button>}</div>
           : <p className="modal-description">{apiEnabled() ? '지금은 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요.'}</p>}
         {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
-        <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
+        <form onSubmit={e => { e.preventDefault(); withHealth([nameDraft], () => { setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
         {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button onClick={signOutAndClear}><LogOut size={17} /> 로그아웃하고 이 브라우저에서 지우기 <small>(계정에는 남아요)</small></button><button onClick={signOutEverywhere}><LogOut size={17} /> 모든 기기에서 로그아웃 <small>(잃어버린 기기가 있을 때)</small></button><button onClick={() => { setDeletePassword(''); setNewPassword(''); setDeleteError(''); setDialog('changePassword'); }}><KeyRound size={17} /> 비밀번호 변경</button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
       </>}
       {settingsTab === 'screen' && <AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/>}
@@ -893,7 +901,7 @@ export default function App() {
       </>}
     </Modal>}
     {healthAsk ? <HealthConsent terms={healthAsk.terms} onDecline={() => setHealthAsk(null)} onAgree={() => { const { proceed } = healthAsk; agreeHealth(); setHealthAsk(null); proceed(); }} />
-      : healthOwed.length > 0 && adult && page !== 'terms' && page !== 'privacy' && <HealthConsent existing terms={healthOwed} onAgree={agreeHealth} onDecline={() => { dropHealthTexts(); notify('건강 관련 표현이 든 글을 지웠어요.'); }} />}
+      : healthOwed.length > 0 && adult && !['terms', 'privacy', 'login'].includes(page) && <HealthConsent existing terms={healthOwed} onAgree={agreeHealth} onDecline={() => { dropHealthTexts(); notify('건강 관련 표현이 든 글을 지웠어요.'); }} />}
     {!adult && page !== 'terms' && page !== 'privacy' && <AgeGate onConfirm={() => { confirmAdult(); setAdult(true); }} />}
     {dialog === 'changePassword' && account && <Modal neutral title="비밀번호 변경" onClose={() => setDialog(null)}><p className="modal-description">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃돼요. 이 브라우저는 그대로 로그인되어 있어요.</p><form onSubmit={e => { e.preventDefault(); void submitPasswordChange(); }}><label className="field-title" htmlFor="current-password">현재 비밀번호</label><input id="current-password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><label className="field-title" htmlFor="new-password">새 비밀번호 <small>8자 이상</small></label><input id="new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button primary" disabled={deletePassword.length < 8 || newPassword.length < 8}>비밀번호 변경</button></div></form></Modal>}
     {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}

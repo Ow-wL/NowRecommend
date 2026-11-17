@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LEGAL_VERSION } from './legal';
-import { HealthConsentNeeded, healthConsented, healthTerms, newHealthConsent, noteHealthConsent, sendable, sendableNotes, storeHealthTerms, withoutHealthProfile, withoutHealthTexts } from './sensitive';
+import { HealthConsentNeeded, healthConsented, healthTerms, newHealthConsent, noteHealthConsent, owesHealthAnswer, sendable, sendableNotes, storeHealthTerms, withoutHealthProfile, withoutHealthTexts } from './sensitive';
 import { recommendBody, fetchRecommendations } from './api/recommend';
 import { fetchParse } from './api/parse';
 import { emptyConditions, emptyStore, type HistoryEntry, type Store } from './domain';
 import { newSession } from './sessionStorage';
 import { decodeStore } from './storage';
-import { indexStore, mergeStores } from './sync';
+import { indexStore, mergeStores, metaFor, syncStore, type SyncApi } from './sync';
 
 afterEach(() => { noteHealthConsent(null); vi.unstubAllGlobals(); });
 
@@ -77,6 +77,11 @@ describe('a store that holds such words', () => {
   it('is seen in every text a person typed', () => {
     expect(storeHealthTerms(emptyStore())).toEqual([]);
     expect(storeHealthTerms(storeWith()).sort()).toEqual(['감기', '당뇨', '속이 안 좋', '알레르기', '위염', '임신'].sort());
+    expect(storeHealthTerms({ ...emptyStore(), name: '당뇨 환자' })).toEqual(['당뇨', '환자']);  // the name shown is typed too
+    expect(owesHealthAnswer(storeWith())).toBe(true);
+    expect(owesHealthAnswer({ ...storeWith(), health: newHealthConsent() })).toBe(false);
+    expect(owesHealthAnswer({ ...storeWith(), health: { version: '2020-01-01', at: '2020-01-01T00:00:00.000Z' } })).toBe(true);  // a consent to older documents
+    expect(owesHealthAnswer(emptyStore())).toBe(false);
   });
 
   it('loses only those texts when the person does not agree: what was chosen and rated stays', () => {
@@ -93,6 +98,8 @@ describe('a store that holds such words', () => {
     expect(after.presets!.map(p => p.name)).toEqual(['내 조건', '야식']);
     expect(before.history[1].raw).toBe('땅콩 알레르기 있어요');  // the store handed in is not changed
     expect(withoutHealthProfile(emptyStore().profiles.food)).toEqual(emptyStore().profiles.food);
+    expect(withoutHealthTexts({ ...emptyStore(), name: '당뇨 환자' }).name).toBe(emptyStore().name);
+    expect(owesHealthAnswer(after)).toBe(false);  // what is looked at is what is removed: the question does not come back
   });
 
   it('carries the consent: through storage, and between devices in both directions', () => {
@@ -113,4 +120,35 @@ describe('a store that holds such words', () => {
     expect(mergeStores(older, agreed, plain).health).toEqual(consent);
     expect(mergeStores(older, plain, agreed).health).toEqual(consent);
   });
+
+  it('is not saved to the account until the person has answered, whatever started the save', async () => {
+    const calls: string[] = [];
+    const account = (remote: Store | null, version = 4): SyncApi => ({
+      fetch: async () => { calls.push('fetch'); return { store: remote, version }; },
+      push: async () => { calls.push('push'); return { version: version + 1 }; },
+    });
+    // A save on top of the known version: held, and the agreement is left as it was.
+    const local = storeWith(), agreement = metaFor('u1', 4, emptyStore());
+    const held = await syncStore(local, agreement, 'u1', account(emptyStore()), 'push');
+    expect(held).toMatchObject({ held: true, replaced: false, meta: agreement });
+    expect(calls).toEqual([]);
+    // A read first (opening the app, signing in): the account's copy is read and merged, and nothing is written.
+    const read = await syncStore(local, null, 'u1', account(emptyStore()), 'pull');
+    expect(read.held).toBe(true);
+    expect(read.meta.version).toBe(4);
+    expect(calls).toEqual(['fetch']);
+    // The words came from the account's side of the merge (a device that still had the sentence): held just the same.
+    calls.length = 0;
+    const came = await syncStore(emptyStore(), metaFor('u1', 3, emptyStore()), 'u1', account(withoutConsent(storeWith())), 'pull');
+    expect(came.held).toBe(true);
+    expect(owesHealthAnswer(came.store)).toBe(true);  // handed to the screen, which asks
+    expect(calls).toEqual(['fetch']);
+    // With the consent, or once the texts are removed, the save goes through.
+    calls.length = 0;
+    expect((await syncStore({ ...local, health: newHealthConsent() }, agreement, 'u1', account(emptyStore()), 'push')).held).toBeUndefined();
+    expect((await syncStore(withoutHealthTexts(local), agreement, 'u1', account(emptyStore()), 'push')).held).toBeUndefined();
+    expect(calls).toEqual(['push', 'push']);
+  });
 });
+
+function withoutConsent(store: Store): Store { const { health: _, ...rest } = store; return rest; }

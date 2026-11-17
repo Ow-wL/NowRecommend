@@ -1,6 +1,7 @@
 import { emptyStore, type CustomTaste, type HistoryEntry, type Preset, type Profile, type Store } from './domain';
 import type { Category } from './data';
 import type { Account } from './account';
+import { owesHealthAnswer } from './sensitive';
 
 // Account sync without losing data (2026-11-16). The account holds one copy of the Store with a version number that
 // moves on every save. A browser remembers which version it last agreed with and a small index of that copy (`base`,
@@ -126,7 +127,8 @@ export function mergeStores(base: StoreIndex | null, local: Store, remote: Store
   const tasteTypes = Object.fromEntries(CATEGORIES.map(c => [c, single(b?.tasteTypes[c], local.tasteTypes?.[c], remote.tasteTypes?.[c])]).filter(([, v]) => v !== undefined));
   const appearance = single(b?.appearance, local.appearance, remote.appearance);
   // The consent about health words: given on one device, it holds on the others; withdrawn on one, it is withdrawn.
-  const health = single(b?.health, local.health, remote.health);
+  // An agreement saved before the consent existed was made when neither side could have one.
+  const health = single(b ? b.health ?? mark(null) : undefined, local.health, remote.health);
   // A browser that never named itself takes the account's name on first contact.
   const name = !b && local.name === emptyStore().name ? remote.name : local.name === remote.name || !b || local.name !== b.name ? local.name : remote.name;
   const merged: Store = {
@@ -150,13 +152,17 @@ export class AccountDataError extends Error {
   constructor(message = '계정에 저장된 데이터를 읽지 못했어요. 페이지를 새로 고쳐 최신 버전으로 다시 시도해주세요.') { super(message); this.name = 'AccountDataError'; }
 }
 const refused = (error: unknown) => !!error && typeof error === 'object' && (error as { status?: number }).status === 409;
-export type Synced = { store: Store; meta: SyncMeta; /** the store differs from the one passed in */ replaced: boolean };
+export type Synced = { store: Store; meta: SyncMeta; /** the store differs from the one passed in */ replaced: boolean;
+  /** Nothing was saved: the store has words about health and no consent (src/sensitive.ts). It is handed back so the
+   * person can be asked; `meta` still describes the account's copy, and the save happens after the answer. */
+  held?: true };
 
 /** Makes this browser and the account agree. `push` first tries to save on top of the version this browser knows and
  * only reads the account when that is refused; `pull` reads first. A refused save is never repeated blindly: the newer
  * copy is read and merged, then saved on top of the version just read. */
 export async function syncStore(local: Store, meta: SyncMeta | null, userId: string, api: SyncApi, start: 'push' | 'pull' = 'push'): Promise<Synced> {
   const mine = meta && meta.userId === userId ? meta : null;
+  if (start === 'push' && mine && mine.version !== null && owesHealthAnswer(local)) return { store: local, meta: mine, replaced: false, held: true };
   if (start === 'push' && mine && mine.version !== null) {
     try { return { store: local, meta: metaFor(userId, (await api.push(local, mine.version)).version, local), replaced: false }; }
     catch (error) { if (!refused(error)) throw error; }
@@ -168,6 +174,9 @@ export async function syncStore(local: Store, meta: SyncMeta | null, userId: str
     const merged = !remote.store || unchanged ? local : mergeStores(mine?.base ?? null, local, remote.store);
     const replaced = storeMark(merged) !== storeMark(local);
     if (remote.store && storeMark(merged) === storeMark(remote.store)) return { store: merged, meta: metaFor(userId, remote.version, merged), replaced };
+    // The merge may have brought such words together with no consent (a record edited on another device after the
+    // consent was withdrawn here): the account's copy is left as it is, and this browser asks.
+    if (owesHealthAnswer(merged)) return { store: merged, meta: metaFor(userId, remote.version, remote.store ?? emptyStore()), replaced, held: true };
     try { return { store: merged, meta: metaFor(userId, (await api.push(merged, remote.version)).version, merged), replaced }; }
     catch (error) { if (!refused(error)) throw error; }  // saved elsewhere again in between: read and merge once more
   }

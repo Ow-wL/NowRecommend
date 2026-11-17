@@ -45,7 +45,7 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
         if (mode === 'push' && agreed?.userId === who.user.id && agreed.mark === storeMark(snapshot)) { setState(s => s === 'saving' ? 'saved' : s); continue; }
         setState('saving');
         const api: SyncApi = { fetch: () => fetchRemoteStore(who.token), push: (next, version) => pushRemoteStore(who.token, next, version) };
-        let result: { store: Store; meta: SyncMeta; replaced: boolean }, foreign = false;
+        let result: { store: Store; meta: SyncMeta; replaced: boolean; held?: true }, foreign = false;
         try {
           if (agreed && agreed.userId !== who.user.id) {
             // The data here is another account's (left by a session that ended oddly): it is set aside and replaced,
@@ -66,7 +66,7 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
         if (!still()) continue;  // the answer belongs to an account that is no longer signed in here: not remembered
         checkedAt.current = Date.now();
         failureTold.current = false;
-        setState('saved');
+        setState(result.held ? 'idle' : 'saved');  // held: waiting for the answer about health words, nothing was saved
         const seen = latest.current.store;
         if (foreign) {
           // Whatever was changed while the request was out was changed in the other account's data: it goes aside with
