@@ -10,6 +10,9 @@ export const LEGAL_VERSION: string = shared.version;
 /** Earlier versions, newest first, each kept as shown on the site in public/legal/<version>/ (scripts/legal-snapshot.cjs,
  * run on the live site before a new version is deployed). */
 export const PREVIOUS_VERSIONS: string[] = ['2026-11-18', '2026-11-17'];
+/** A version as people read it: the date it took effect, and which of that day's versions it is when there were more
+ * (2026-11-18.2: a second version the same day, in force from its deploy). */
+export const versionLabel = (version: string): string => version.replace(/^(\d{4}-\d{2}-\d{2})\.(\d+)$/, (_, day: string, n: string) => `${day} (그날 ${n === '2' ? '두' : n} 번째 판)`);
 /** The AI provider's terms allow its API only in services for people of 18 and over, so that is the service's age. */
 export const MIN_AGE: number = shared.minAge;
 /** Where this browser remembers that the person said they are of age (asked once, before the AI is used). */
@@ -185,7 +188,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     { title: '11. 방침의 변경', blocks: [
       '이 방침을 바꿀 때는 시행 7일 전(이용자에게 중요한 변경은 30일 전)부터 서비스 화면에 알립니다. 수집하는 항목이나 이용 목적을 바꾸지 않고 설명을 보완하는 경우에는 바꾼 날 아래 이력에 적습니다.',
       [
-        `${LEGAL_VERSION}: 지금의 판. 가입할 때 이메일 확인을 받고(이메일 확인 일시, 가입 확인 메일의 발송, 확인하지 않은 가입의 삭제), "의견 보내기"로 받은 의견(항목·목적·근거·보관 기간·삭제 방법)을 더했습니다. 이전 판은 이 문서 아래의 링크에서 볼 수 있습니다.`,
+        `${versionLabel(LEGAL_VERSION)}: 지금의 판. 가입할 때 이메일 확인을 받고(이메일 확인 일시, 가입 확인 메일의 발송, 확인하지 않은 가입의 삭제), "의견 보내기"로 받은 의견(항목·목적·근거·보관 기간·삭제 방법)을 더했습니다. 서비스를 공개하기 전(비공개 베타 준비 중)이어서 알림 기간 없이 바로 시행했습니다. 이전 판은 이 문서 아래의 링크에서 볼 수 있습니다.`,
         '2026-11-18: 2026-11-17 판에 그날과 다음 날 보탠 내용(아래)을 하나의 판으로 정리했습니다. 수집하는 항목과 이용 목적은 2026-11-17 판의 마지막 내용과 같습니다.',
         '2026-11-17: 처음 시행.',
         '2026-11-17 보완: 메일 발송 업체(Resend), 파기 방법, 브라우저 저장을 막는 방법, 한도 기록을 지우는 시점을 적었습니다.',

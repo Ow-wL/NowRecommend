@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import shared from '../shared/legal.json' with { type: 'json' };
 import { clearBrowserData } from './storage';
-import { ADULT_KEY, LEGAL_VERSION, MIN_AGE, PREVIOUS_VERSIONS, adultConfirmed, confirmAdult, operatorKnown, privacySections, termsSections } from './legal';
+import { ADULT_KEY, LEGAL_VERSION, MIN_AGE, PREVIOUS_VERSIONS, adultConfirmed, confirmAdult, operatorKnown, privacySections, termsSections, versionLabel } from './legal';
 import { HEALTH_CONSENT_VERSION, consentInForce } from './sensitive';
 import { YOUTUBE_TERMS_VERSION } from './fullPlay';
 import { previewsOnOf, weatherModeOf } from './features';
@@ -23,7 +23,7 @@ describe('terms and privacy policy', () => {
     expect(MIN_AGE).toBe(18);
     expect(text(termsSections(info))).toContain('만 18세 이상');
     expect(text(privacySections(info))).toContain('만 18세');
-    expect(LEGAL_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(LEGAL_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}(\.\d+)?$/);  // the day it took effect, and its number that day if not the first
   });
   it('lists every place data leaves to, and the weather service only while that feature is on', () => {
     const policy = text(privacySections(info));
@@ -31,7 +31,9 @@ describe('terms and privacy policy', () => {
     // The mail provider: who it is, where the mail is kept and for how long, and that nothing is sent unless a reset is asked for.
     const mail = privacySections(info).flatMap(section => section.blocks).flat().find(line => line.startsWith('Resend'))!;
     for (const part of ['Plus Five Five, Inc., 미국', '이메일 주소', '확인·재설정 링크', '가입할 때', '30일']) expect(mail).toContain(part);
-    // 2026-11-25: sign-up confirms the address by mail; feedback is kept a year and is not tied to the account.
+    expect(versionLabel('2026-11-18.2')).toBe('2026-11-18 (그날 두 번째 판)');
+    expect(versionLabel('2026-11-17')).toBe('2026-11-17');
+    // 2026-11-18.2: sign-up confirms the address by mail; feedback is kept a year and is not tied to the account.
     for (const line of ['이메일을 확인한 일시', '이메일을 확인하지 않은 가입 신청: 7일', '의견: 받은 날부터 1년', '계정과 연결하지 않으며', '보낸 의견의 삭제']) expect(policy).toContain(line);
     expect(text(privacySections({ ...info, weather: false }))).not.toContain('Open-Meteo');
     // What a person can do themselves, and what is never collected.
@@ -133,7 +135,7 @@ describe('versions of the documents', () => {
         expect(page).toContain('지난 판');
       }
     }
-    expect(text(privacySections(info))).toContain(`${LEGAL_VERSION}: 지금의 판`);
+    expect(text(privacySections(info))).toContain(`${versionLabel(LEGAL_VERSION)}: 지금의 판`);
   });
   it('does not ask the health consent or the YouTube agreement again for a version that leaves them alone', () => {
     expect(HEALTH_CONSENT_VERSION <= LEGAL_VERSION && YOUTUBE_TERMS_VERSION <= LEGAL_VERSION).toBe(true);

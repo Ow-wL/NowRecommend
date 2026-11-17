@@ -8,7 +8,7 @@ const { mkdirSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 
 const [version, site = 'https://nowrec.kr/'] = process.argv.slice(2);
-if (!/^\d{4}-\d{2}-\d{2}$/.test(version || '')) { console.error('usage: node scripts/legal-snapshot.cjs <YYYY-MM-DD> [site]'); process.exit(2); }
+if (!/^\d{4}-\d{2}-\d{2}(\.\d+)?$/.test(version || '')) { console.error('usage: node scripts/legal-snapshot.cjs <YYYY-MM-DD[.N]> [site]'); process.exit(2); }
 const out = join(__dirname, '..', 'public', 'legal', version);
 const escape = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 

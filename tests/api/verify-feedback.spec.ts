@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { items } from '../../src/data';
 
-// Sign-up confirms the address by mail (2026-11-25), and 의견 보내기. The server is faked: it answers sign-up with
+// Sign-up confirms the address by mail (2026-11-18.2), and 의견 보내기. The server is faked: it answers sign-up with
 // "a mail was sent", the confirmation link with "confirmed", a login before that with 403, and keeps what feedback came.
 const API = 'http://127.0.0.1:5999';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE' };
