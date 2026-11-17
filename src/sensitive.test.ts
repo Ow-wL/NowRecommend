@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LEGAL_VERSION } from './legal';
-import { HealthConsentNeeded, healthConsented, healthTerms, newHealthConsent, noteHealthConsent, owesHealthAnswer, sendable, sendableNotes, storeHealthTerms, withoutHealthProfile, withoutHealthTexts } from './sensitive';
+import { HealthConsentNeeded, consentInForce, healthConsented, healthTerms, laterHealth, newHealthConsent, noteHealthConsent, owesHealthAnswer, sendable, sendableNotes, storeHealthTerms, withdrawnHealthConsent, withoutHealthProfile, withoutHealthTexts } from './sensitive';
 import { recommendBody, fetchRecommendations } from './api/recommend';
 import { fetchParse } from './api/parse';
 import { emptyConditions, emptyStore, type HistoryEntry, type Store } from './domain';
@@ -46,6 +46,8 @@ describe('words about health in what a person types', () => {
     expect(healthConsented()).toBe(false);  // given to older documents: asked again
     noteHealthConsent({ version: LEGAL_VERSION } as never);
     expect(healthConsented()).toBe(false);  // not a consent
+    noteHealthConsent(withdrawnHealthConsent());
+    expect(healthConsented()).toBe(false);  // taken back
   });
 
   it('lets nothing with those words leave the browser until there is consent', async () => {
@@ -112,13 +114,21 @@ describe('a store that holds such words', () => {
     // Given on another device: this one has it after the merge, whether or not the two ever agreed on a copy.
     expect(mergeStores(null, plain, agreed).health).toEqual(consent);
     expect(mergeStores(indexStore(plain), plain, agreed).health).toEqual(consent);
-    // Withdrawn here, still on the account: it stays withdrawn. Withdrawn there, still here: withdrawn here too.
-    expect(mergeStores(indexStore(agreed), plain, agreed).health).toBeUndefined();
-    expect(mergeStores(indexStore(agreed), agreed, plain).health).toBeUndefined();
-    // An agreement saved before the consent existed says nothing about it: a consent on either side is kept.
-    const { health: _, ...older } = indexStore(plain);
-    expect(mergeStores(older, agreed, plain).health).toEqual(consent);
-    expect(mergeStores(older, plain, agreed).health).toEqual(consent);
+    expect(mergeStores(indexStore(plain), agreed, plain).health).toEqual(consent);
+    // Taken back later, on either side: the withdrawal holds, whatever the two last agreed on. An older consent on the
+    // other device does not bring it back.
+    const refused: Store = { ...emptyStore(), health: withdrawnHealthConsent(new Date('2026-11-17T13:00:00Z')) };
+    for (const base of [null, indexStore(plain), indexStore(agreed)]) {
+      expect(mergeStores(base, refused, agreed).health).toEqual(refused.health);
+      expect(mergeStores(base, agreed, refused).health).toEqual(refused.health);
+    }
+    expect(consentInForce(refused.health)).toBe(false);
+    expect(owesHealthAnswer({ ...storeWith(), health: refused.health })).toBe(true);
+    // Given again after that: the newer consent holds.
+    const again: Store = { ...emptyStore(), health: newHealthConsent(new Date('2026-11-17T14:00:00Z')) };
+    expect(mergeStores(indexStore(refused), refused, again).health).toEqual(again.health);
+    expect(laterHealth(undefined, undefined)).toBeUndefined();
+    expect(decodeStore(JSON.stringify(refused))!.health).toEqual(refused.health);  // the refusal is kept through storage too
   });
 
   it('is not saved to the account until the person has answered, whatever started the save', async () => {

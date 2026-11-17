@@ -1,7 +1,7 @@
 import { emptyStore, type CustomTaste, type HistoryEntry, type Preset, type Profile, type Store } from './domain';
 import type { Category } from './data';
 import type { Account } from './account';
-import { owesHealthAnswer } from './sensitive';
+import { laterHealth, owesHealthAnswer } from './sensitive';
 
 // Account sync without losing data (2026-11-16). The account holds one copy of the Store with a version number that
 // moves on every save. A browser remembers which version it last agreed with and a small index of that copy (`base`,
@@ -34,7 +34,7 @@ const stored = (store: Store): Store => ({ ...store, profiles: Object.fromEntrie
 export const storeMark = (store: Store) => mark(stored(store));
 
 type ProfileIndex = { selected: string[]; tags: string[]; disliked: string[]; reasons: Record<string, string>; custom: Record<string, string> };
-export type StoreIndex = { /** absent in an agreement saved before 2026-11-17 */ health?: string; name: string; appearance: string; tasteTypes: Record<string, string>; favorites: string[]; profiles: Record<Category, ProfileIndex>; history: Record<string, string>; presets: Record<string, string> };
+export type StoreIndex = { name: string; appearance: string; tasteTypes: Record<string, string>; favorites: string[]; profiles: Record<Category, ProfileIndex>; history: Record<string, string>; presets: Record<string, string> };
 /** `mark` is the whole store's fingerprint at that version: a store with another mark has changes the account lacks.
  * `version` is null for a server that keeps no versions (an API revision from before 2026-11-16): it cannot refuse a
  * stale save, so there every save is preceded by a read and a merge instead of being sent on trust. */
@@ -43,7 +43,7 @@ export type SyncMeta = { userId: string; version: number | null; base: StoreInde
 const marks = <T extends { id: string }>(list: T[] | undefined) => Object.fromEntries((list || []).map(x => [x.id, mark(x)]));
 export function indexStore(store: Store): StoreIndex {
   return {
-    health: mark(store.health ?? null), name: store.name, appearance: mark(store.appearance ?? null),
+    name: store.name, appearance: mark(store.appearance ?? null),
     tasteTypes: Object.fromEntries(CATEGORIES.map(c => [c, mark(store.tasteTypes?.[c] ?? null)])),
     favorites: [...store.favorites],
     profiles: Object.fromEntries(CATEGORIES.map(c => { const p = store.profiles[c]; return [c, { selected: [...p.selected], tags: [...p.tags], disliked: [...p.disliked], reasons: { ...(p.reasons || {}) }, custom: marks(p.custom) }]; })) as StoreIndex['profiles'],
@@ -55,7 +55,7 @@ export const metaFor = (userId: string, version: number | null, store: Store): S
 const texts = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === 'string');
 const textMap = (v: unknown): v is Record<string, string> => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every(x => typeof x === 'string');
 function validIndex(v: any): v is StoreIndex {
-  return !!v && (v.health === undefined || typeof v.health === 'string') && typeof v.name === 'string' && typeof v.appearance === 'string' && textMap(v.tasteTypes) && texts(v.favorites) && textMap(v.history) && textMap(v.presets)
+  return !!v && typeof v.name === 'string' && typeof v.appearance === 'string' && textMap(v.tasteTypes) && texts(v.favorites) && textMap(v.history) && textMap(v.presets)
     && CATEGORIES.every(c => { const p = v.profiles?.[c]; return !!p && LISTS.every(k => texts(p[k])) && textMap(p.reasons) && textMap(p.custom); });
 }
 /** The agreement as it was saved next to the store (src/storage.ts), or null when there is none or it is malformed. */
@@ -126,9 +126,9 @@ export function mergeStores(base: StoreIndex | null, local: Store, remote: Store
   const presets = capPresets(mergeById<Preset>(b?.presets, local.presets || [], remote.presets || [], mine => mine));
   const tasteTypes = Object.fromEntries(CATEGORIES.map(c => [c, single(b?.tasteTypes[c], local.tasteTypes?.[c], remote.tasteTypes?.[c])]).filter(([, v]) => v !== undefined));
   const appearance = single(b?.appearance, local.appearance, remote.appearance);
-  // The consent about health words: given on one device, it holds on the others; withdrawn on one, it is withdrawn.
-  // An agreement saved before the consent existed was made when neither side could have one.
-  const health = single(b ? b.health ?? mark(null) : undefined, local.health, remote.health);
+  // The consent about health words (src/sensitive.ts), and its withdrawal: each is dated, and the later one holds on
+  // both sides. It does not go by what the two last agreed on: a withdrawal must not lose to an older consent.
+  const health = laterHealth(local.health, remote.health);
   // A browser that never named itself takes the account's name on first contact.
   const name = !b && local.name === emptyStore().name ? remote.name : local.name === remote.name || !b || local.name !== b.name ? local.name : remote.name;
   const merged: Store = {

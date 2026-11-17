@@ -60,10 +60,10 @@ import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
 import { Legal } from './components/Legal';
-import { ADULT_KEY, CONTACT_EMAIL, LEGAL_VERSION, adultConfirmed, confirmAdult } from './legal';
+import { ADULT_KEY, CONTACT_EMAIL, adultConfirmed, confirmAdult } from './legal';
 import { AgeGate } from './components/AgeGate';
 import { HealthConsent } from './components/HealthConsent';
-import { healthConsented, healthTerms, newHealthConsent, noteHealthConsent, storeHealthTerms, withoutHealthProfile, withoutHealthTexts } from './sensitive';
+import { consentInForce, healthConsented, healthTerms, newHealthConsent, noteHealthConsent, storeHealthTerms, withdrawnHealthConsent, withoutHealthProfile, withoutHealthTexts } from './sensitive';
 import { previewsOn, weatherMode } from './features';
 
 type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | 'changePassword' | null;
@@ -151,15 +151,16 @@ export default function App() {
   /** Without the consent (never given, or withdrawn) the texts with health words go: from the store, from the sentence on
    * screen and from the taste being edited. What was recommended, chosen and rated stays. */
   function dropHealthTexts() {
-    noteHealthConsent(null);
+    const refusal = withdrawnHealthConsent();  // dated, so it holds against an older consent on another device
+    noteHealthConsent(refusal);
     requestCounter.current++; setBusy(false); setParsing(false);
-    setStore(s => { const { health: _, ...rest } = withoutHealthTexts(s); return rest; });
+    setStore(s => ({ ...withoutHealthTexts(s), health: refusal }));
     if (healthTerms(session.raw).length) setSession(current => changeText(current, ''));
     setDraftProfile(withoutHealthProfile);
   }
   // A store that holds such words without the consent: records from before this was asked, a backup, an account's copy.
   // The person is asked as soon as it is seen, and account sync waits for the answer.
-  const healthOwed = useMemo(() => store.health?.version === LEGAL_VERSION ? [] : storeHealthTerms(store), [store]);
+  const healthOwed = useMemo(() => consentInForce(store.health) ? [] : storeHealthTerms(store), [store]);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
@@ -374,6 +375,7 @@ export default function App() {
   }
   function choose(result: Recommendation) {
     if (!active || !session.id || !session.roundId || selectionLock.current === session.id) return;
+    if (!healthConsented() && healthTerms(session.raw).length) { withHealth([session.raw], () => choose(result)); return; }
     selectionLock.current = session.id;
     const current = session;
     setStore(s=>{ const history=recordRound(s.history,current,current.snapshot || results); return {...s,history:history.map(h=>h.id === current.id ? selectResult(h,result,current.roundId!) : h)}; });
@@ -893,7 +895,7 @@ export default function App() {
       {settingsTab === 'sound' && <SoundSettings />}
       {settingsTab === 'data' && <>
         <DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/>
-        {store.health && <div className="notice health-consent" role="status"><Info size={18} /><div><strong>건강 관련 입력에 동의했어요</strong>
+        {store.health && consentInForce(store.health) && <div className="notice health-consent" role="status"><Info size={18} /><div><strong>건강 관련 입력에 동의했어요</strong>
           <p>{new Date(store.health.at).toLocaleDateString('ko-KR')}에 동의했어요. 철회하면 건강과 관련된 표현이 든 문장과 메모를 지워요. 추천 결과, 선택, 평가는 그대로 남아요.</p>
           {revoking ? <div className="card-actions"><button data-safe-focus className="button secondary" onClick={() => setRevoking(false)}>취소</button><button className="button secondary danger" onClick={() => { dropHealthTexts(); setRevoking(false); notify('동의를 철회하고 건강 관련 표현이 든 글을 지웠어요.'); }}>철회하고 지우기</button></div>
             : <button className="button secondary" onClick={() => setRevoking(true)}>동의 철회</button>}</div></div>}

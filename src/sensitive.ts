@@ -7,7 +7,8 @@
 // nothing with such words is sent to the server without it.
 //
 // - The consent is part of the store (`Store.health`: the policy version and the time), so it travels with the data it
-//   covers: to the account, to another device, into a backup.
+//   covers: to the account, to another device, into a backup. Saying no, or withdrawing, is kept the same way with
+//   its own time, and between two devices the later of the two holds (src/sync.ts).
 // - The screens ask before they save or send (App.tsx `withHealth`).
 // - A store that has such words and no consent (kept from before this existed, restored from a backup, written by a
 //   path that did not ask) is put to the person as it is found: agree, or have those texts removed
@@ -21,7 +22,8 @@
 import { emptyStore, type Profile, type Store } from './domain';
 import { LEGAL_VERSION } from './legal';
 
-export type HealthConsent = { version: string; at: string };
+/** `withdrawn`: the answer was no, or the consent was taken back, at `at`. */
+export type HealthConsent = { version: string; at: string; withdrawn?: true };
 
 const HEALTH = new RegExp([
   '알레르기|알러지|불내증|아토피|천식|두드러기|비염',
@@ -42,14 +44,23 @@ export function healthTerms(...texts: (string | null | undefined)[]): string[] {
 
 // ---- the consent ----
 
-export const validHealthConsent = (v: unknown): v is HealthConsent => !!v && typeof (v as HealthConsent).version === 'string' && typeof (v as HealthConsent).at === 'string';
+export const validHealthConsent = (v: unknown): v is HealthConsent => !!v && typeof (v as HealthConsent).version === 'string' && typeof (v as HealthConsent).at === 'string'
+  && ((v as HealthConsent).withdrawn === undefined || (v as HealthConsent).withdrawn === true);
+/** Given, not taken back, and under the policy in force: a new version of the policy asks again. */
+export const consentInForce = (consent: HealthConsent | null | undefined): boolean => validHealthConsent(consent) && !consent.withdrawn && consent.version === LEGAL_VERSION;
+/** Of two devices' records, the one made later. */
+export function laterHealth(a: HealthConsent | undefined, b: HealthConsent | undefined): HealthConsent | undefined {
+  if (!validHealthConsent(a)) return validHealthConsent(b) ? b : undefined;
+  if (!validHealthConsent(b)) return a;
+  return Date.parse(b.at) > Date.parse(a.at) ? b : a;
+}
 /** The consent in force for the store on screen. App.tsx keeps it up to date (`noteHealthConsent(store.health)`); the
  * requests below read it, so they need no store handed to them. */
 let current: HealthConsent | null = null;
 export function noteHealthConsent(consent: HealthConsent | null | undefined): void { current = validHealthConsent(consent) ? consent : null; }
-/** Given, and under the policy in force: a new version of the policy asks again. */
-export function healthConsented(): boolean { return current?.version === LEGAL_VERSION; }
+export function healthConsented(): boolean { return consentInForce(current); }
 export const newHealthConsent = (now = new Date()): HealthConsent => ({ version: LEGAL_VERSION, at: now.toISOString() });
+export const withdrawnHealthConsent = (now = new Date()): HealthConsent => ({ version: LEGAL_VERSION, at: now.toISOString(), withdrawn: true });
 
 // ---- what a store holds ----
 
@@ -65,7 +76,7 @@ export function storeTexts(store: Store): (string | undefined)[] {
 }
 export const storeHealthTerms = (store: Store): string[] => healthTerms(...storeTexts(store));
 /** The store holds such words and no consent under the policy in force: it is not uploaded, and the person is asked. */
-export const owesHealthAnswer = (store: Store): boolean => store.health?.version !== LEGAL_VERSION && storeHealthTerms(store).length > 0;
+export const owesHealthAnswer = (store: Store): boolean => !consentInForce(store.health) && storeHealthTerms(store).length > 0;
 
 /** The profile without what was written about health: such reasons, and typed-in favourites named that way. */
 export function withoutHealthProfile(profile: Profile): Profile {
