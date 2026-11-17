@@ -3,9 +3,12 @@ import { CONTACT_EMAIL, LEGAL_VERSION, OPERATOR, PREVIOUS_VERSIONS, legalTitle, 
 import { fullPlayOn, previewsOn, weatherMode, youtubeOn } from '../features';
 import { apiEnabled } from '../api/client';
 
-/** An address written in a document is a link (YouTube's policies want theirs and Google's to be followable). */
+/** An address written in a document is a link (YouTube's policies want theirs and Google's to be followable), and
+ * `**…**` is shown in bold: what the terms must make plain (약관의 규제에 관한 법률 제3조). */
 export function linked(text: string) {
-  return text.split(/(https:\/\/[^\s)]*[^\s).,])/).map((part, n) => n % 2 ? <a key={n} href={part} target="_blank" rel="noopener noreferrer">{part}</a> : part);
+  const links = (part: string, key: string) => part.split(/(https:\/\/[^\s)]*[^\s).,])/).map((piece, n) =>
+    n % 2 ? <a key={`${key}-${n}`} href={piece} target="_blank" rel="noopener noreferrer">{piece}</a> : piece);
+  return text.split(/\*\*(.+?)\*\*/).map((part, n) => n % 2 ? <strong key={n}>{links(part, `b${n}`)}</strong> : links(part, `t${n}`));
 }
 
 /** The terms of service or the privacy policy, as a page of its own (#/terms, #/privacy): linked from the sign-up form,

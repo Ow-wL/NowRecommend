@@ -20,9 +20,11 @@
 // preference, "위염이라 매운 거 못 먹어요" is health. It is a list, so it misses what it does not name (the policy says
 // so); a word too many costs one question, once.
 import { emptyStore, type Profile, type Store } from './domain';
-/** The version of what the health consent covers (the policy's 민감정보(건강) paragraph and HealthConsent.tsx). It moves only
- * when that changes, not with every version of the documents: a consent stays in force across versions that leave it
- * alone. 2026-11-17 is when it was first asked. */
+/** The version of what the health consent covers. It moves only when that changes, not with every version of the
+ * documents: a consent stays in force across versions that leave it alone. Raise it (to the date of the new documents)
+ * when any of these change: the policy's 민감정보(건강) paragraph, HealthConsent.tsx, or, for what was written about health,
+ * the purposes, where it is sent (the Gemini line of 처리 위탁과 국외 이전), or how long it is kept (2. 보관 기간).
+ * 2026-11-17 is when it was first asked. */
 export const HEALTH_CONSENT_VERSION = '2026-11-17';
 
 /** `withdrawn`: the answer was no, or the consent was taken back, at `at`. */
@@ -49,7 +51,7 @@ export function healthTerms(...texts: (string | null | undefined)[]): string[] {
 
 export const validHealthConsent = (v: unknown): v is HealthConsent => !!v && typeof (v as HealthConsent).version === 'string' && typeof (v as HealthConsent).at === 'string' && Number.isFinite(Date.parse((v as HealthConsent).at))
   && ((v as HealthConsent).withdrawn === undefined || (v as HealthConsent).withdrawn === true);
-/** Given, not taken back, and under the policy in force: a new version of the policy asks again. */
+/** Given, not taken back, and to what the consent covers now (HEALTH_CONSENT_VERSION): when that moves, it is asked again. */
 export const consentInForce = (consent: HealthConsent | null | undefined): boolean => validHealthConsent(consent) && !consent.withdrawn && consent.version === HEALTH_CONSENT_VERSION;
 /** Of two devices' records, the one made later. */
 export function laterHealth(a: HealthConsent | undefined, b: HealthConsent | undefined): HealthConsent | undefined {

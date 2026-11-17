@@ -426,6 +426,20 @@ def test_a_failed_mail_is_logged_by_kind_and_never_with_the_address(world, caplo
     assert "SMTPAuthenticationError 535" in caplog.text and "bad key" not in caplog.text
 
 
+def test_a_mail_that_did_not_leave_does_not_use_up_the_accounts_mails(world):
+    client, _, outbox, _, _, app = world
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
+                                                              reset_daily_per_address=0, reset_daily_per_email=1, reset_daily_total=1)
+    outbox.fails = True
+    for _ in range(3):  # the mail server is down: nothing leaves, and nothing is used up
+        assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    outbox.fails = False
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert len(outbox.sent) == 1  # the one that left; the account's one mail of the day was still there for it
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert len(outbox.sent) == 1  # and now it is used up
+
+
 # ---- wrong passwords, counted by the hour (2026-11-17) ----
 
 def limited(app, per_hour: int, anywhere: int = 0, **more) -> None:

@@ -381,7 +381,8 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
     if not mine.take():
         log.warning("reset mail not sent: today's mails for this account are used up")
         return RESET_SENT
-    if not Allowance(session, "reset:total", settings.reset_daily_total, False).take():
+    everyone = Allowance(session, "reset:total", settings.reset_daily_total, False)
+    if not everyone.take():
         mine.give_back()  # no mail leaves, so this account's own three are not used up by it
         log.error("reset mail not sent: today's mails for the whole service are used up (RESET_DAILY_TOTAL)")
         return RESET_SENT
@@ -391,6 +392,10 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
         mailer.send(user.email, *reset_mail(user.name, link, settings.reset_token_minutes))
     except Exception as error:  # noqa: BLE001 - the form's answer must not depend on whether this address has an account
         log.error("reset mail could not be sent: %s", mail_failure(error))
+        # Nothing reached the inbox: the account's mails and the service's are given back, so trying again later works.
+        # The address's count stays (it is what stops one place from asking without end).
+        mine.give_back()
+        everyone.give_back()
     return RESET_SENT
 
 

@@ -47,8 +47,9 @@ export function youtubeAddress(videoId: string | null | undefined): string | und
 // YouTube's API policies want the person to have agreed to the policy that covers the player before using it
 // (Developer Policies III.A.2): asked once in this browser, for the policy in force, before the first search.
 const YOUTUBE_KEY = 'nowrecommend-youtube-terms-v1';
-/** The version of what that agreement covers (the YouTube lines of the terms and the policy). It moves only when they
- * change, not with every version of the documents. */
+/** The version of what that agreement covers: the YouTube lines of the terms and the policy, and the question itself
+ * (FullPlay.tsx YouTubePanel). Raise it (to the date of the new documents) when they change; it does not move with
+ * every version of the documents. */
 export const YOUTUBE_TERMS_VERSION = '2026-11-17';
 export function youtubeAgreed(version: string): boolean { try { return localStorage.getItem(YOUTUBE_KEY) === version; } catch { return false; } }
 export function agreeYoutube(version: string): void { try { localStorage.setItem(YOUTUBE_KEY, version); } catch { /* asked again next time */ } }

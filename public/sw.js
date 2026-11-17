@@ -6,6 +6,7 @@
 const PREFIX = 'nowrecommend-shell-';
 const VERSION = PREFIX + '__BUILD__';
 const PAGE = new URL('./index.html', self.registration.scope).href;
+const SCOPE = new URL(self.registration.scope).pathname;
 
 // The new release is fetched whole before this worker takes over: the page, and the script and stylesheet it names. Only
 // then are the older caches dropped (activate), so going offline right after an update still finds everything. If the
@@ -29,6 +30,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
   if (request.mode === 'navigate') {
+    // Only the app's own page is kept for offline use. Another page under the same address (an archived version of the
+    // documents, public/legal/) goes to the network as usual and is never stored in its place.
+    if (url.pathname !== SCOPE && url.pathname !== SCOPE + 'index.html') return;
     event.respondWith(fetch(request).then(response => {
       if (response.ok) { const copy = response.clone(); caches.open(VERSION).then(cache => cache.put(PAGE, copy)); }
       return response;

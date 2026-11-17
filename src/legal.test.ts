@@ -138,3 +138,14 @@ describe('versions of the documents', () => {
     expect(consentInForce({ version: HEALTH_CONSENT_VERSION, at: '2026-11-17T12:00:00.000Z' })).toBe(true);
   });
 });
+
+describe('what the terms must make plain', () => {
+  it('marks the clauses that matter most, and only whole sentences', () => {
+    const marked = termsSections(info).flatMap(section => section.blocks.flat()).flatMap(block => [...block.matchAll(/\*\*(.+?)\*\*/g)].map(m => m[1]));
+    for (const clause of ['외부 AI 서비스(Google Gemini)로 보내 만듭니다', '알레르기 안전을 보장하지 않습니다', '이용을 제한하거나 계정을 삭제할 수 있습니다',
+      '30일 전부터 서비스 화면에 알립니다', '정확하다거나 특정한 목적에 맞는다고 보증하지 않습니다', '저장소를 지우면 함께 사라집니다'])
+      expect(marked.some(text => text.includes(clause)), clause).toBe(true);
+    for (const text of marked) expect(text).toMatch(/[.,]$/);
+    expect(text(privacySections(info))).not.toContain('**');
+  });
+});
