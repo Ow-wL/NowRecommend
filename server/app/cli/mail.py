@@ -44,7 +44,7 @@ def main() -> None:
         if args.action == "check":
             mailer.check()
         else:
-            mailer.send(normalize_email(args.address), *trial_mail())
+            mailer.send(normalize_email(args.address), *trial_mail(settings.public_app_url))
     except Exception as error:  # noqa: BLE001 - whatever went wrong is reported by kind, never with its text
         kind = failure(error)
         hint = HINTS.get(kind.split()[0])

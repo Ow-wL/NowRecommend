@@ -10,7 +10,7 @@ import pytest
 from app import mail
 from app.cli import mail as cli
 from app.config import Settings
-from app.mail import SmtpMailer, failure, trial_mail
+from app.mail import SmtpMailer, failure, reset_mail, trial_mail
 
 
 class Server:
@@ -147,3 +147,33 @@ def test_the_trial_mail_goes_to_the_address_given_and_a_refusal_is_explained_wit
     code, said = run(monkeypatch, capsys, ON, "send")
     assert code == 2 and "needs the address" in said  # argparse usage error, nothing was connected
     assert len(server.made) == 3
+
+
+# ---- the look of a mail (2026-11-17) ----
+
+def test_a_mail_is_one_page_that_loads_nothing_and_carries_its_styles_on_its_elements():
+    """A mail client drops stylesheets and scripts, and anything loaded from outside tells its host that the mail was
+    opened. So: no image, no font, no stylesheet, no script, and the only addresses in it are the link and the site."""
+    import re
+
+    link = "https://nowrec.kr/#/reset/abc.def"
+    for html in (reset_mail("주형", link, 30)[2], trial_mail("https://nowrec.kr/")[2]):
+        assert html.startswith("<!doctype html>") and 'lang="ko"' in html and html.rstrip().endswith("</html>")
+        for outside in ("<img", "<link", "<script", "<style", "@import", "url(", "src="):
+            assert outside not in html
+        assert set(re.findall(r'https?://[^"<\s]+', html)) <= {link, "https://nowrec.kr/"}
+        assert "지금 추천" in html and "#F2F2F7" in html and "border-radius:28px" in html  # the site's page, card and name
+
+
+def test_the_reset_mail_gives_the_link_twice_and_says_how_long_it_lasts():
+    subject, text, html = reset_mail("주형", "https://nowrec.kr/#/reset/abc.def", 30)
+    assert html.count('href="https://nowrec.kr/#/reset/abc.def"') == 2  # the button, and the address written out under it
+    for line in ("새 비밀번호 정하기", "30분 동안 유효", "한 번만", "요청하신 적이 없다면", "답장은 받지 못해요"):
+        assert line in html
+    assert 'href="https://nowrec.kr/"' in html  # the footer names the site the link opens
+    assert "https://nowrec.kr/#/reset/abc.def" in text and "30분" in text  # the plain part says the same without the page
+
+
+def test_a_mail_without_a_site_address_still_reads_whole():
+    assert "nowrec.kr" not in trial_mail()[2] and "메일이 잘 도착했어요" in trial_mail()[2]
+    assert "<a " not in trial_mail("not an address")[2]
