@@ -143,6 +143,8 @@ export default function App() {
     const terms = healthConsented() ? [] : healthTerms(...texts);
     if (terms.length) setHealthAsk({ terms, proceed }); else proceed();
   }
+  /** What a session writes into the history as its sentence: what was typed, or the name of the preset it runs on (src/history.ts). */
+  const sentenceOf = (s: Session) => [s.raw, presetLabel(s)];
   function agreeHealth() {
     const consent = newHealthConsent();
     noteHealthConsent(consent);  // what proceeds right now sends before the next render
@@ -155,12 +157,15 @@ export default function App() {
     noteHealthConsent(refusal);
     requestCounter.current++; setBusy(false); setParsing(false);
     setStore(s => ({ ...withoutHealthTexts(s), health: refusal }));
-    if (healthTerms(session.raw).length) setSession(current => changeText(current, ''));
+    if (healthTerms(...sentenceOf(session)).length) { setSession(newSession(session.category)); setActive(false); }  // the sentence, or the preset's name, would be recorded again
+    setHistoryPreview(null);  // an open record is a copy from before: saving from it would bring the texts back
     setDraftProfile(withoutHealthProfile);
   }
   // A store that holds such words without the consent: records from before this was asked, a backup, an account's copy.
   // The person is asked as soon as it is seen, and account sync waits for the answer.
   const healthOwed = useMemo(() => consentInForce(store.health) ? [] : storeHealthTerms(store), [store]);
+  // The consent was taken back on another device while a record stood open here: the open copy still has the texts.
+  useEffect(() => { if (!consentInForce(store.health)) setHistoryPreview(open => open && healthTerms(open.raw, open.review?.note, ...open.rounds.map(r => r.raw)).length ? null : open); }, [store.health]);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
@@ -375,7 +380,7 @@ export default function App() {
   }
   function choose(result: Recommendation) {
     if (!active || !session.id || !session.roundId || selectionLock.current === session.id) return;
-    if (!healthConsented() && healthTerms(session.raw).length) { withHealth([session.raw], () => choose(result)); return; }
+    if (!healthConsented() && healthTerms(...sentenceOf(session)).length) { withHealth(sentenceOf(session), () => choose(result)); return; }
     selectionLock.current = session.id;
     const current = session;
     setStore(s=>{ const history=recordRound(s.history,current,current.snapshot || results); return {...s,history:history.map(h=>h.id === current.id ? selectResult(h,result,current.roundId!) : h)}; });
@@ -391,7 +396,7 @@ export default function App() {
   function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
     // A sentence restored from before the consent was asked, or kept after it was withdrawn: asked here, whatever
     // button led to it (again, restore, feedback, the local fallback), before anything is requested or recorded.
-    if (!healthConsented() && healthTerms(base.raw).length) { withHealth([base.raw], () => withBatch(base, profile, done, local)); return; }
+    if (!healthConsented() && healthTerms(...sentenceOf(base)).length) { withHealth(sentenceOf(base), () => withBatch(base, profile, done, local)); return; }
     // Past choices steer this ranking only; `base` is what the request keeps.
     const past = signalsFrom(store.history, base.category, base.id), ranked = rankingSession(base, past), rankedProfile = rankingProfile(profile, past, base.category, base.conditions.tags);
     if (!apiEnabled() || local) { done({ ...applyBatch(base, recommend({ ...ranked, currentIds: undefined, snapshot: undefined }, rankedProfile)), source: local ? 'local' : undefined, quality: undefined }); return; }
@@ -486,7 +491,7 @@ export default function App() {
   }
   function recommendSaved(c:Category,ids:string[]) { start(c,'',true);setSession({...newSession(c),editor:createEditor('',c),candidateScope:'favorites',candidateIds:[...ids]}); }
   function replaceOne(id:string) {
-    if (!healthConsented() && healthTerms(session.raw).length) { withHealth([session.raw], () => replaceOne(id)); return; }
+    if (!healthConsented() && healthTerms(...sentenceOf(session)).length) { withHealth(sentenceOf(session), () => replaceOne(id)); return; }
     const done=(next:Session|null)=>{if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.');};
     const past = signalsFrom(store.history, session.category, session.id), ranked = rankingSession(session, past), profile = rankingProfile(store.profiles[session.category], past, session.category, session.conditions.tags);
     if(!apiEnabled()){done(canReplace(session,results,id) ? applyReplacement(session,results,id,recommend(replacementRequest(ranked,results),profile)) : null);return;}

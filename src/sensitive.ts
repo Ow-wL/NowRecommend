@@ -44,7 +44,7 @@ export function healthTerms(...texts: (string | null | undefined)[]): string[] {
 
 // ---- the consent ----
 
-export const validHealthConsent = (v: unknown): v is HealthConsent => !!v && typeof (v as HealthConsent).version === 'string' && typeof (v as HealthConsent).at === 'string'
+export const validHealthConsent = (v: unknown): v is HealthConsent => !!v && typeof (v as HealthConsent).version === 'string' && typeof (v as HealthConsent).at === 'string' && Number.isFinite(Date.parse((v as HealthConsent).at))
   && ((v as HealthConsent).withdrawn === undefined || (v as HealthConsent).withdrawn === true);
 /** Given, not taken back, and under the policy in force: a new version of the policy asks again. */
 export const consentInForce = (consent: HealthConsent | null | undefined): boolean => validHealthConsent(consent) && !consent.withdrawn && consent.version === LEGAL_VERSION;
@@ -52,7 +52,8 @@ export const consentInForce = (consent: HealthConsent | null | undefined): boole
 export function laterHealth(a: HealthConsent | undefined, b: HealthConsent | undefined): HealthConsent | undefined {
   if (!validHealthConsent(a)) return validHealthConsent(b) ? b : undefined;
   if (!validHealthConsent(b)) return a;
-  return Date.parse(b.at) > Date.parse(a.at) ? b : a;
+  const ta = Date.parse(a.at), tb = Date.parse(b.at);
+  return tb > ta || tb === ta && !!b.withdrawn ? b : a;  // at the same instant, the withdrawal
 }
 /** The consent in force for the store on screen. App.tsx keeps it up to date (`noteHealthConsent(store.health)`); the
  * requests below read it, so they need no store handed to them. */

@@ -128,6 +128,12 @@ describe('a store that holds such words', () => {
     const again: Store = { ...emptyStore(), health: newHealthConsent(new Date('2026-11-17T14:00:00Z')) };
     expect(mergeStores(indexStore(refused), refused, again).health).toEqual(again.health);
     expect(laterHealth(undefined, undefined)).toBeUndefined();
+    // Dated the same: the withdrawal, whichever side it is on. A date that cannot be read is no record at all.
+    const same = { version: consent.version, at: consent.at, withdrawn: true as const };
+    expect(laterHealth(consent, same)).toEqual(same);
+    expect(laterHealth(same, consent)).toEqual(same);
+    expect(laterHealth({ version: consent.version, at: 'someday' }, same)).toEqual(same);
+    expect(consentInForce({ version: consent.version, at: 'someday' })).toBe(false);
     expect(decodeStore(JSON.stringify(refused))!.health).toEqual(refused.health);  // the refusal is kept through storage too
   });
 
