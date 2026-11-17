@@ -40,6 +40,8 @@ NOT_THE_SONG = ["cover", "karaoke", "reaction", "instrumental", "inst", "mr", "1
                 "remix", "sped up", "slowed", "8d", "teaser", "preview", "dance practice", "choreography", "mashup", "medley",
                 "커버", "노래방", "리액션", "1시간", "반복", "교차편집", "직캠", "강좌", "악보", "리믹스", "티저", "미리듣기", "안무", "메들리"]
 HANGUL = re.compile(r"[가-힣]")
+# Words that contain a left-out word without being one.
+LOOKALIKES = {"커버": ["디스커버", "리커버", "커버리지"], "반복": [], "안무": []}
 OFFICIAL = re.compile(r"(?<![a-z])(m/?v|official|audio)(?![a-z])|뮤직\s*비디오", re.IGNORECASE)
 PERFORMANCE = re.compile(r"(?<![a-z])(live|concert|stage|performance|show)(?![a-z])|라이브|콘서트|무대|공연|교차", re.IGNORECASE)
 LYRICS = re.compile(r"(?<![a-z])lyrics?(?![a-z])|가사", re.IGNORECASE)
@@ -107,7 +109,12 @@ def _says(word: str, text: str) -> bool:
     """A Korean word where a word begins, spaced any way and with anything after it ("커버곡", "1시간반복", "교차 편집", but
     not the "커버" in "디스커버리"); a Latin one as a word of its own ("cover" is not in "Discover")."""
     if HANGUL.search(word):
-        return re.search(rf"(?<![0-9a-z가-힣]){_spelled(word)}", text.casefold()) is not None
+        # Korean compounds put the word anywhere ("여자커버", "1시간반복"): anywhere, but not inside the few words that only
+        # contain it ("디스커버리").
+        found = text.casefold()
+        for whole in LOOKALIKES.get(word, []):
+            found = found.replace(whole, " ")
+        return re.search(_spelled(word), found) is not None
     return _bounded(word, text)
 
 
