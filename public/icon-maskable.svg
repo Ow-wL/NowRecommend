@@ -1,6 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#F2F2F7"/>
-  <circle cx="208" cy="256" r="92" fill="#D4411A"/>
-  <circle cx="312" cy="256" r="92" fill="#2B46D6" fill-opacity="0.92"/>
-  <circle cx="260" cy="256" r="36" fill="#FFFFFF"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7A98F"/><stop offset=".5" stop-color="#F8D78F"/><stop offset="1" stop-color="#93BDEE"/></linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#6E2A12" flood-opacity=".2"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(.74) translate(-255 -270)">
+    <g filter="url(#sh)" fill="#FFFFFF">
+      <circle cx="214" cy="336" r="92"/>
+      <rect x="272" y="112" width="34" height="232" rx="17"/>
+      <path d="M289 112 C306 160 384 168 388 252 C362 214 330 204 306 202 L306 129 Z"/>
+    </g>
+    <circle cx="214" cy="336" r="54" fill="none" stroke="#F4A78F" stroke-opacity=".7" stroke-width="10"/>
+  </g>
 </svg>
