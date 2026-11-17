@@ -254,11 +254,11 @@ def test_parse_counts_only_sentences_the_model_read(api, db_session):
     assert bucket == []
     # Settled by the rules: the model is not asked and nothing is counted.
     assert client.post("/api/parse", json={"category": "music", "text": "차분한 노래"}).json()["ai"] == "not_needed"
-    assert reader.calls == 0 and db_session.scalars(select(UsageDaily.count)).all() == []
+    assert reader.calls == 0 and db_session.scalars(select(UsageDaily.count).where(UsageDaily.bucket != "sweep:day")).all() == []
     # Words the rules do not know go to the model, twice, and then the allowance (2) is spent: rules only.
     for words in ("몽글몽글한 느낌의 노래", "아련아련한 분위기 노래"):
         client.post("/api/parse", json={"category": "music", "text": words})
-    assert reader.calls == 2 and db_session.scalars(select(UsageDaily.count)).all() == [2]
+    assert reader.calls == 2 and db_session.scalars(select(UsageDaily.count).where(UsageDaily.bucket != "sweep:day")).all() == [2]
     after = client.post("/api/parse", json={"category": "music", "text": "포근포근한 감성의 노래"}).json()
     assert reader.calls == 2 and after["ai"] == "failed"
     # That refusal is this caller's alone: it is not kept, so a member sending the same sentence still gets the model.
@@ -276,7 +276,7 @@ def test_an_answer_that_needs_no_model_costs_the_caller_nothing(api, db_session)
     for _ in range(4):  # more than the guest allowance of 2: every card is pinned, so the model is never asked
         meta = client.post("/api/recommend", json={**MUSIC, "pinnedIds": pinned}).json()["meta"]
         assert "limit" not in meta
-    assert model.calls == 0 and db_session.scalars(select(UsageDaily.count)).all() == []
+    assert model.calls == 0 and db_session.scalars(select(UsageDaily.count).where(UsageDaily.bucket != "sweep:day")).all() == []
 
 
 @needs_db
