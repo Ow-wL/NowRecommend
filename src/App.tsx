@@ -62,6 +62,8 @@ import { AuthPanel } from './components/AuthPanel';
 import { Legal } from './components/Legal';
 import { ADULT_KEY, CONTACT_EMAIL, adultConfirmed, confirmAdult } from './legal';
 import { AgeGate } from './components/AgeGate';
+import { HealthConsent } from './components/HealthConsent';
+import { consentInForce, healthConsented, healthTerms, newHealthConsent, noteHealthConsent, storeHealthTerms, withdrawnHealthConsent, withoutHealthProfile, withoutHealthTexts } from './sensitive';
 import { fullPlayOn, previewsOn, weatherMode } from './features';
 
 type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | 'changePassword' | null;
@@ -133,6 +135,38 @@ export default function App() {
   // The AI is for people of age (shared/legal.json): asked once per browser, wherever the app is opened, before anything else.
   // The documents themselves stay readable without answering. Without a server there is no AI and nothing to ask.
   const [adult, setAdult] = useState(() => !apiEnabled() || adultConfirmed());
+  // Words about health are asked about before they are kept or sent (src/sensitive.ts). `proceed` is what was about to
+  // happen; saying no leaves the words in their field, unsaved and unsent. The consent is kept in the store.
+  noteHealthConsent(store.health);
+  const [healthAsk, setHealthAsk] = useState<{ terms: string[]; proceed: () => void } | null>(null), [revoking, setRevoking] = useState(false);
+  function withHealth(texts: (string | null | undefined)[], proceed: () => void) {
+    const terms = healthConsented() ? [] : healthTerms(...texts);
+    if (terms.length) setHealthAsk({ terms, proceed }); else proceed();
+  }
+  /** What a session writes into the history as its sentence: what was typed, or the name of the preset it runs on (src/history.ts). */
+  const sentenceOf = (s: Session) => [s.raw, presetLabel(s)];
+  function agreeHealth() {
+    const consent = newHealthConsent();
+    noteHealthConsent(consent);  // what proceeds right now sends before the next render
+    setStore(s => ({ ...s, health: consent }));
+  }
+  /** Without the consent (never given, or withdrawn) the texts with health words go: from the store, from the sentence on
+   * screen and from the taste being edited. What was recommended, chosen and rated stays. */
+  function dropHealthTexts() {
+    const refusal = withdrawnHealthConsent();  // dated, so it holds against an older consent on another device
+    noteHealthConsent(refusal);
+    requestCounter.current++; setBusy(false); setParsing(false);
+    setStore(s => ({ ...withoutHealthTexts(s), health: refusal }));
+    // The sentence on screen (or the preset's name) would be recorded again: that request is over, and its results with it.
+    if (healthTerms(...sentenceOf(session)).length) { setSession(newSession(session.category)); setActive(false); navigate('home'); }
+    setHistoryPreview(null);  // an open record is a copy from before: saving from it would bring the texts back
+    setDraftProfile(withoutHealthProfile);
+  }
+  // A store that holds such words without the consent: records from before this was asked, a backup, an account's copy.
+  // The person is asked as soon as it is seen, and account sync waits for the answer.
+  const healthOwed = useMemo(() => consentInForce(store.health) ? [] : storeHealthTerms(store), [store]);
+  // The consent was taken back on another device while a record stood open here: the open copy still has the texts.
+  useEffect(() => { if (!consentInForce(store.health)) setHistoryPreview(open => open && healthTerms(open.raw, open.review?.note, ...open.rounds.map(r => r.raw)).length ? null : open); }, [store.health]);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
@@ -293,7 +327,7 @@ export default function App() {
   useEffect(()=>{ const frame=requestAnimationFrame(()=>{window.scrollTo({top:0,behavior:'instant'});const title=document.querySelector<HTMLElement>('main h1');title?.setAttribute('tabindex','-1');title?.focus({preventScroll:true});});return ()=>cancelAnimationFrame(frame);},[page,step]);
 
   const notify = (message: string, undo?: () => void) => {setToastPaused(false);setToast({ message: storageWarning ? '화면에 반영했지만 브라우저에는 저장하지 못했어요.' : message, undo });};
-  const sync = useAccountSync({ account, store, setStore, savedAgreement: loaded.sync, paused: storageBlocked, notify,
+  const sync = useAccountSync({ account, store, setStore, savedAgreement: loaded.sync, paused: storageBlocked || healthOwed.length > 0, notify,
     onExpired: () => { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); } });
   const syncState = sync.state;
   // The buttons pressed here disappear with the toast, so a keyboard user continues from the page instead of the top of the document.
@@ -324,6 +358,9 @@ export default function App() {
   function editTaste(next: Category) { setShowAllChoices(false); setSelectedOnly(false); setTasteFilter(''); setTasteDecade(0); setCategory(next); setDraftProfile(store.profiles[next]); setEditingProfile(true); setQuery(''); navigate('onboard'); }
   function addTaste() { setSelectedOnly(false); setTasteFilter(''); setTasteDecade(0); setDraftProfile(store.profiles[category]); setEditingProfile(false); setShowAllChoices(false); setPage('onboard'); }
   function saveProfile() {
+    withHealth([...Object.values(draftProfile.reasons || {}), ...(draftProfile.custom || []).flatMap(c => [c.name, c.reason])], saveProfileNow);
+  }
+  function saveProfileNow() {
     setStore(s => ({ ...s, profiles: { ...s.profiles, [category]: draftProfile } }));
     if (editingProfile) navigate('taste'); else setPage('recommend');
     notify(editingProfile ? '내 취향을 저장했어요. 다음 추천부터 반영해요.' : '내 취향을 저장했어요. 이제 지금의 상황을 알려주세요.');
@@ -344,6 +381,7 @@ export default function App() {
   }
   function choose(result: Recommendation) {
     if (!active || !session.id || !session.roundId || selectionLock.current === session.id) return;
+    if (!healthConsented() && healthTerms(...sentenceOf(session)).length) { withHealth(sentenceOf(session), () => choose(result)); return; }
     selectionLock.current = session.id;
     const current = session;
     setStore(s=>{ const history=recordRound(s.history,current,current.snapshot || results); return {...s,history:history.map(h=>h.id === current.id ? selectResult(h,result,current.roundId!) : h)}; });
@@ -357,6 +395,9 @@ export default function App() {
   // Offline (no VITE_API_BASE_URL) or an explicit fallback computes locally and synchronously, exactly as before.
   // With the API server, the request is async: stale answers are dropped via requestCounter and failures offer a retry.
   function withBatch(base: Session, profile: Profile, done: (next: Session) => void, local = false) {
+    // A sentence restored from before the consent was asked, or kept after it was withdrawn: asked here, whatever
+    // button led to it (again, restore, feedback, the local fallback), before anything is requested or recorded.
+    if (!healthConsented() && healthTerms(...sentenceOf(base)).length) { withHealth(sentenceOf(base), () => withBatch(base, profile, done, local)); return; }
     // Past choices steer this ranking only; `base` is what the request keeps.
     const past = signalsFrom(store.history, base.category, base.id), ranked = rankingSession(base, past), rankedProfile = rankingProfile(profile, past, base.category, base.conditions.tags);
     if (!apiEnabled() || local) { done({ ...applyBatch(base, recommend({ ...ranked, currentIds: undefined, snapshot: undefined }, rankedProfile)), source: local ? 'local' : undefined, quality: undefined }); return; }
@@ -385,6 +426,9 @@ export default function App() {
   // then recommends with the merged conditions. A conflict the AI introduced stops on the compose screen instead.
   function submit() {
     if (conflicts.length) return;
+    withHealth([session.raw], submitNow);
+  }
+  function submitNow() {
     const raw = session.raw, parsed = changeText(session, raw);
     setSession(parsed);
     const known = parsed.editor?.ai?.raw === raw && parsed.editor.ai.source !== 'local';
@@ -435,9 +479,12 @@ export default function App() {
     return { signals: { food: signalsFrom(store.history, 'food'), music: signalsFrom(store.history, 'music') }, profiles: store.profiles };
   }
   function choosePair(pair: Pair, request: PairRequest) {
-    const made = recordPair(store.history, request, pair, store.profiles, items);
-    setStore(s => ({ ...s, history: made.history }));
-    notify('추천 기록에 남겼어요.', () => setStore(s => ({ ...s, history: s.history.filter(h => !made.ids.includes(h.id)) })));
+    // A pair shown again after a reload keeps its sentence (Pairing.tsx): asked before it is recorded.
+    withHealth([request.raw, request.label], () => {
+      const made = recordPair(store.history, request, pair, store.profiles, items);
+      setStore(s => ({ ...s, history: made.history }));
+      notify('추천 기록에 남겼어요.', () => setStore(s => ({ ...s, history: s.history.filter(h => !made.ids.includes(h.id)) })));
+    });
   }
   function chooseQuickCondition(preset: Preset) {
     const writing = active && session.category === preset.category && (session.raw.trim() || session.conditions.tags.length || session.conditions.excluded.length);
@@ -445,6 +492,7 @@ export default function App() {
   }
   function recommendSaved(c:Category,ids:string[]) { start(c,'',true);setSession({...newSession(c),editor:createEditor('',c),candidateScope:'favorites',candidateIds:[...ids]}); }
   function replaceOne(id:string) {
+    if (!healthConsented() && healthTerms(...sentenceOf(session)).length) { withHealth(sentenceOf(session), () => replaceOne(id)); return; }
     const done=(next:Session|null)=>{if(!next){notify('교체할 새로운 후보가 없어요. 조건을 바꾸거나 새 요청을 시작해주세요.');return;}setSession(next);record(next);notify('다른 후보로 한 장만 교체했어요.');};
     const past = signalsFrom(store.history, session.category, session.id), ranked = rankingSession(session, past), profile = rankingProfile(store.profiles[session.category], past, session.category, session.conditions.tags);
     if(!apiEnabled()){done(canReplace(session,results,id) ? applyReplacement(session,results,id,recommend(replacementRequest(ranked,results),profile)) : null);return;}
@@ -460,7 +508,7 @@ export default function App() {
     if(!replaceStore(next))return '브라우저에 저장하지 못했어요. 기존 데이터는 유지돼요.';
     setStore(next);setStorageBlocked(false);setStorageWarning(false);setSession(newSession());setActive(false);setCompletedId('');setDraftProfile(next.profiles.food);setEditingProfile(false);selectionLock.current='';setDialog(null);navigate('home');notify('백업 데이터를 가져왔어요.');return null;
   }
-  const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} now={momentPreset(c, slot, weather)} onPreview={chooseQuickCondition} onRename={(id,name)=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');}} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
+  const presetList=(c:Category)=><Presets category={c} presets={store.presets || []} now={momentPreset(c, slot, weather)} onPreview={chooseQuickCondition} onRename={(id,name)=>withHealth([name],()=>{setStore(s=>({...s,presets:(s.presets || []).map(p=>p.id===id ? {...p,name} : p)}));notify('프리셋 이름을 변경했어요.');})} onDelete={id=>{const deleted=store.presets?.find(p=>p.id===id);setStore(s=>({...s,presets:(s.presets || []).filter(p=>p.id!==id)}));notify('프리셋을 삭제했어요.',()=>{if(deleted)setStore(s=>({...s,presets:[...(s.presets || []),deleted]}));});}}/>;
 
   const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '로그인', complete: '선택 완료', type: '취향 유형 테스트', terms: '이용약관', privacy: '개인정보 처리방침', admin: '오류 신고 관리', lab: 'AI 실험실', pair: '같이 추천' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
@@ -748,7 +796,7 @@ export default function App() {
           <p className="completion-context">당시 상황: {completed.raw}</p>
           <div className="mini-tags">{completed.conditions.tags.map(t=><span key={t}>{t}</span>)}{completed.conditions.excluded.map(t=><span key={t}>{t} 제외</span>)}</div>
           {!store.profiles[chosen.category].selected.includes(chosen.id) && <button className="text-button like-chosen" onClick={() => likeItem(chosen)}><ThumbsUp size={15} />내 취향에 추가하고 다음 추천에 반영</button>}
-          <ReviewForm key={completed.id} entry={completed} title="지금 느낌은 어때요?" intro="만족과 아쉬움은 다음 추천에 반영돼요. 메모는 기록용이에요. 나중에 추천 기록에서도 고칠 수 있어요." persisted={!storageWarning} onSave={(rating, note) => { setStore(s => ({ ...s, history: s.history.map(h => h.id === completed.id ? reviewSelection(h, rating, note) : h) })); notify('느낌을 기록했어요.'); }} />
+          <ReviewForm key={completed.id} entry={completed} title="지금 느낌은 어때요?" intro="만족과 아쉬움은 다음 추천에 반영돼요. 메모는 기록용이에요. 나중에 추천 기록에서도 고칠 수 있어요." persisted={!storageWarning} guard={withHealth} onSave={(rating, note) => { setStore(s => ({ ...s, history: s.history.map(h => h.id === completed.id ? reviewSelection(h, rating, note) : h) })); notify('느낌을 기록했어요.'); }} />
           <div className="card-actions"><button className="button secondary" onClick={()=>navigate('history')}>추천 기록 보기</button><div className="button-row"><button className="button secondary" onClick={() => share({ title: '오늘의 선택', items: [chosen], conditions: conditionLabels(completed.conditions) })}><Share2 size={16} />공유</button><button className="button secondary" onClick={()=>setHistoryPreview(completed)}>선택 변경</button><button className="button secondary" onClick={()=>start(completed.category,'',true)}>다른 상황으로 추천받기</button></div></div>
         </section>
         </div>
@@ -759,9 +807,9 @@ export default function App() {
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
         onRecommend={(c, result) => { const base = { ...newSession(c), ...requestForType(c, result.code, undefined, result.counts) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
-      {page === 'lab' && labAllowed && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
+      {page === 'lab' && labAllowed && <Lab guard={withHealth} onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
-      {page === 'pair' && <Pairing items={items} {...pairingInput()} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
+      {page === 'pair' && <Pairing guard={withHealth} items={items} {...pairingInput()} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
 
       {page === 'history' && <>
         <div className="page-heading with-action"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1><button className="button secondary compact" onClick={() => setManualOpen(true)}><PenLine size={15} />직접 기록</button></div>
@@ -829,16 +877,16 @@ export default function App() {
     <nav className="tabbar" aria-label="하단 메뉴">{allNav.filter(n => n.page !== 'history').map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
     {toast && !reportItem && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); dismissToast(); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={dismissToast}><X size={15} /></button></div>}
     {feedbackItem && <Modal title="어떤 이유로 바꾸고 싶으세요?" onClose={() => setFeedbackItem(null)}><p className="modal-description"><b>{feedbackItem.name}</b>에 대한 의견을 어디까지 반영할지 골라주세요.</p><button className="feedback-option" onClick={() => applyFeedback('session')}><span className="small-icon food"><Clock3 size={21} /></span><span><b>이번 요청에서 제외</b><small>이번 요청에서만 빼고 다른 항목을 추천해요.<br />새로운 상황으로 시작하면 다시 만날 수 있어요.</small></span><ChevronRight size={19} /></button><button className="feedback-option" onClick={() => applyFeedback('long')}><span className="small-icon music"><SlidersHorizontal size={21} /></span><span><b>원래 내 취향이 아님</b><small>이 항목을 장기 비선호에 저장해요.<br />다음 요청에서도 제외하며, 내 취향에서 해제할 수 있어요.</small></span><ChevronRight size={19} /></button><button className="button secondary full-width" onClick={() => setFeedbackItem(null)}>취소</button></Modal>}
-    {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} persisted={!storageWarning} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} onReview={(rating,note)=>{const next=reviewSelection(historyPreview,rating,note);setStore(s=>({...s,history:s.history.map(h=>h.id===next.id?next:h)}));setHistoryPreview(next);}}/><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
+    {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} persisted={!storageWarning} guard={withHealth} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} onReview={(rating,note)=>{const next=reviewSelection(historyPreview,rating,note);setStore(s=>({...s,history:s.history.map(h=>h.id===next.id?next:h)}));setHistoryPreview(next);}}/><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
     {presetPreview && <Modal title="조건을 바꿀까요?" onClose={()=>setPresetPreview(null)}><p className="modal-description">작성 중인 조건을 ‘{presetPreview.name}’으로 바꿀까요?</p><ConditionsSummary conditions={presetPreview.conditions}/><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={()=>setPresetPreview(null)}>취소</button><button className="button primary" onClick={()=>applyQuickCondition(presetPreview)}>이 조건 적용</button></div></Modal>}
-    {reportItem && <ReportDialog item={reportItem} token={account?.token} onClose={() => setReportItem(null)} onSent={() => { setReportedIds(ids => [...ids, reportItem.id]); setReportItem(null); notify('신고를 보냈어요. 확인 후 고칠게요.'); }} />}
+    {reportItem && <ReportDialog item={reportItem} token={account?.token} guard={withHealth} onClose={() => setReportItem(null)} onSent={() => { setReportedIds(ids => [...ids, reportItem.id]); setReportItem(null); notify('신고를 보냈어요. 확인 후 고칠게요.'); }} />}
     {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons} conditions={session.conditions} onReport={apiEnabled() ? () => { const it = detail.item; setDetail(null); setReportItem(it); } : undefined}/></Modal>}
-    {manualOpen && <Modal title="직접 기록" onClose={() => setManualOpen(false)}><ManualRecord items={items} category={filter === 'all' ? 'food' : filter} onSave={entry => { setStore(s => ({ ...s, history: addManual(s.history, entry) })); setManualOpen(false); notify(`${entry.selected!.result.item.name}을(를) 기록했어요.`); }} /></Modal>}
+    {manualOpen && <Modal title="직접 기록" onClose={() => setManualOpen(false)}><ManualRecord items={items} category={filter === 'all' ? 'food' : filter} guard={withHealth} onSave={entry => { setStore(s => ({ ...s, history: addManual(s.history, entry) })); setManualOpen(false); notify(`${entry.selected!.result.item.name}을(를) 기록했어요.`); }} /></Modal>}
     {playlistOpen && <Modal title="이번 추천 플레이리스트" onClose={() => setPlaylistOpen(false)}><Playlist results={results}
       onCopy={() => navigator.clipboard.writeText(`${shareText({ title: requestName, items: results.map(r => r.item) })}\n${appAddress()}`).then(() => notify('곡 목록을 복사했어요.'), () => notify('이 환경에서는 복사할 수 없어요.'))}
       onShare={() => void share({ title: requestName, items: results.map(r => r.item), conditions: conditionLabels(session.conditions) })} /></Modal>}
     {compareOpen && <Modal title="후보 비교" onClose={()=>setCompareOpen(false)}><Comparison results={results.filter(r=>session.compareIds?.includes(r.item.id))} conditions={session.conditions} onChoose={r=>{setCompareOpen(false);choose(r);}}/></Modal>}
-    {savePresetOpen && <Modal title="내 조건 저장" onClose={()=>setSavePresetOpen(false)}><ConditionsSummary conditions={session.conditions}/><form onSubmit={e=>{e.preventDefault();if(!presetName.trim())return;const preset:Preset={id:crypto.randomUUID(),category:session.category,name:presetName.trim(),conditions:structuredClone(session.conditions)};setStore(s=>({...s,presets:[...(s.presets || []),preset]}));setSavePresetOpen(false);notify('조건 프리셋을 저장했어요.');}}><label className="field-title" htmlFor="preset-name">프리셋 이름</label><input id="preset-name" value={presetName} required maxLength={30} onChange={e=>setPresetName(e.target.value)}/><button className="button primary">프리셋 저장</button></form></Modal>}
+    {savePresetOpen && <Modal title="내 조건 저장" onClose={()=>setSavePresetOpen(false)}><ConditionsSummary conditions={session.conditions}/><form onSubmit={e=>{e.preventDefault();if(!presetName.trim())return;withHealth([presetName],()=>{const preset:Preset={id:crypto.randomUUID(),category:session.category,name:presetName.trim(),conditions:structuredClone(session.conditions)};setStore(s=>({...s,presets:[...(s.presets || []),preset]}));setSavePresetOpen(false);notify('조건 프리셋을 저장했어요.');});}}><label className="field-title" htmlFor="preset-name">프리셋 이름</label><input id="preset-name" value={presetName} required maxLength={30} onChange={e=>setPresetName(e.target.value)}/><button className="button primary">프리셋 저장</button></form></Modal>}
     {dialog === 'about' && <Modal neutral title="지금 추천 이용 안내" onClose={() => setDialog(null)}><p className="modal-description">평소 취향과 지금 상황을 함께 보고 메뉴와 음악을 골라드려요.</p><div className="about-list"><p><Check size={17} /> {apiEnabled() ? `메뉴와 곡은 주로 AI가 직접 골라요. 등록된 메뉴 ${items.filter(i=>i.category==='food').length}개와 곡 ${items.filter(i=>i.category==='music').length}곡은 취향을 등록할 때와, AI를 쓸 수 없을 때의 추천에 써요.` : `음식 ${items.filter(i=>i.category==='food').length}개와 음악 ${items.filter(i=>i.category==='music').length}곡의 예시 데이터로 추천해요.`}</p><p><Check size={17} /> 가격·예산·배달 가능 여부는 다루지 않아요. 취향·상황·제외 조건으로 골라요.</p><p><Check size={17} /> 문장에서 조건을 찾아요. {apiEnabled() ? '규칙이 놓친 표현은 AI가 함께 읽어요.' : '알려진 표현만 읽으니 놓친 조건은 직접 골라주세요.'}</p><p><Check size={17} /> 취향·즐겨찾기·최근 50개 기록은 이 브라우저에 저장해요.</p><p><Check size={17} /> {apiEnabled() ? '로그인하면 취향·기록이 계정에 저장되어 다른 기기에서도 이어 써요. ' : ''}{fullPlayOn ? '주문은 하지 않아요. ' : '주문이나 전곡 재생은 하지 않아요. '}{previewsOn ? '미리듣기가 있는 곡은 30초까지 들을 수 있고, ' : ''}{fullPlayOn ? '전곡은 곡 상세의 Apple Music 플레이어(구독 계정 로그인)나 각 음악 서비스에서 들어요. ' : ''}지도·레시피·음악 서비스 검색으로 연결해요.</p><p><Check size={17} /> AI가 고른 메뉴와 곡은 실제와 다를 수 있어요. 알레르기가 있다면 주문 전에 꼭 확인해주세요.</p></div><p className="legal-links about-links"><button className="text-button" onClick={() => { setDialog(null); navigate('terms'); }}>이용약관</button><button className="text-button" onClick={() => { setDialog(null); navigate('privacy'); }}>개인정보 처리방침</button></p>{/* A tool for looking at the failure screens, in development only: it has no place in what people use. */}{import.meta.env.DEV && <div className="demo-tools"><h4>실패 화면도 살펴볼까요?</h4><p>다음 추천 요청 한 번에 오류 안내를 표시해요. 재시도와 수동 진행을 확인할 수 있어요.</p><button className="button secondary full-width" onClick={() => { setFailNext(true); setDialog(null); notify('다음 추천 요청에서 실패 안내를 체험할 수 있어요.'); }}>다음 추천 실패 체험하기</button></div>}</Modal>}
     {dialog === 'account' && <Modal neutral title="설정" onClose={() => setDialog(null)}>
       <div className="filter-tabs settings-tabs" role="group" aria-label="설정 구역">{([['profile', '프로필'], ['screen', '화면'], ['sound', '소리'], ['data', '데이터 관리']] as const).map(([id, name]) => <button key={id} aria-pressed={settingsTab === id} className={settingsTab === id ? 'active' : ''} onClick={() => setSettingsTab(id)}>{name}</button>)}</div>
@@ -846,16 +894,22 @@ export default function App() {
         {account ? <div className="account-card"><span className="top-avatar signed-in" aria-hidden="true"><b>{account.user.name.slice(0, 1)}</b></span><div className="list-copy"><b>{account.user.name}</b><small>{account.user.email}</small></div><span className={`sync-state ${syncState}`} role="status" tabIndex={-1}>{syncState === 'saving' ? <><span className="spinner" />저장 중</> : syncState === 'failed' ? <><CloudOff size={15} />저장 실패</> : <><Cloud size={15} />{syncState === 'saved' ? '계정에 저장됨' : '동기화 켜짐'}</>}</span>{syncState === 'failed' && <button className="text-button" onClick={e => { e.currentTarget.parentElement?.querySelector<HTMLElement>('.sync-state')?.focus(); sync.retry(); }}>다시 저장</button>}</div>
           : <p className="modal-description">{apiEnabled() ? '지금은 취향과 기록이 이 브라우저에만 저장돼요. 로그인하면 다른 기기에서도 이어 쓸 수 있어요.' : '취향과 기록은 이 브라우저에만 저장돼요.'}</p>}
         {!account && apiEnabled() && <button className="button primary full-width" onClick={() => { setDialog(null); navigate('login'); }}><LogIn size={17} />로그인 · 회원가입</button>}
-        <form onSubmit={e => { e.preventDefault(); setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
+        <form onSubmit={e => { e.preventDefault(); withHealth([nameDraft], () => { setStore(s => ({ ...s, name: nameDraft.trim() || '취향 탐험가' })); setDialog(null); notify('이름을 변경했어요.'); }); }}><label className="field-title" htmlFor="account-name">이름</label><input id="account-name" value={nameDraft} maxLength={16} required onChange={e => setNameDraft(e.target.value)} /><button className="button secondary full-width">이름 변경</button></form>
         {account && <div className="account-links"><button onClick={signOut}><LogOut size={17} /> 로그아웃 <small>(이 브라우저의 데이터는 남아요)</small></button><button onClick={signOutAndClear}><LogOut size={17} /> 로그아웃하고 이 브라우저에서 지우기 <small>(계정에는 남아요)</small></button><button onClick={signOutEverywhere}><LogOut size={17} /> 모든 기기에서 로그아웃 <small>(잃어버린 기기가 있을 때)</small></button><button onClick={() => { setDeletePassword(''); setNewPassword(''); setDeleteError(''); setDialog('changePassword'); }}><KeyRound size={17} /> 비밀번호 변경</button><button className="danger" onClick={() => { setDeletePassword(''); setDeleteError(''); setDialog('deleteAccount'); }}><Trash2 size={17} /> 계정과 계정 데이터 삭제</button></div>}
       </>}
       {settingsTab === 'screen' && <AppearanceSettings value={store.appearance} onChange={appearance=>setStore(s=>({...s,appearance}))}/>}
       {settingsTab === 'sound' && <SoundSettings />}
       {settingsTab === 'data' && <>
         <DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/>
+        {store.health && consentInForce(store.health) && <div className="notice health-consent" role="status"><Info size={18} /><div><strong>건강 관련 입력에 동의했어요</strong>
+          <p>{new Date(store.health.at).toLocaleDateString('ko-KR')}에 동의했어요. 철회하면 건강과 관련된 표현이 든 문장과 메모를 지워요. 추천 결과, 선택, 평가는 그대로 남아요.</p>
+          {revoking ? <div className="card-actions"><button data-safe-focus className="button secondary" onClick={() => setRevoking(false)}>취소</button><button className="button secondary danger" onClick={() => { dropHealthTexts(); setRevoking(false); notify('동의를 철회하고 건강 관련 표현이 든 글을 지웠어요.'); }}>철회하고 지우기</button></div>
+            : <button className="button secondary" onClick={() => setRevoking(true)}>동의 철회</button>}</div></div>}
         <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
       </>}
     </Modal>}
+    {healthAsk ? <HealthConsent terms={healthAsk.terms} onDecline={() => setHealthAsk(null)} onAgree={() => { const { proceed } = healthAsk; agreeHealth(); setHealthAsk(null); proceed(); }} />
+      : healthOwed.length > 0 && adult && !['terms', 'privacy', 'login'].includes(page) && <HealthConsent existing terms={healthOwed} onAgree={agreeHealth} onDecline={() => { dropHealthTexts(); notify('건강 관련 표현이 든 글을 지웠어요.'); }} />}
     {!adult && page !== 'terms' && page !== 'privacy' && <AgeGate onConfirm={() => { confirmAdult(); setAdult(true); }} />}
     {dialog === 'changePassword' && account && <Modal neutral title="비밀번호 변경" onClose={() => setDialog(null)}><p className="modal-description">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃돼요. 이 브라우저는 그대로 로그인되어 있어요.</p><form onSubmit={e => { e.preventDefault(); void submitPasswordChange(); }}><label className="field-title" htmlFor="current-password">현재 비밀번호</label><input id="current-password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><label className="field-title" htmlFor="new-password">새 비밀번호 <small>8자 이상</small></label><input id="new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button primary" disabled={deletePassword.length < 8 || newPassword.length < 8}>비밀번호 변경</button></div></form></Modal>}
     {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}

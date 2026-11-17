@@ -36,7 +36,8 @@ export type Review = { rating?:'good'|'neutral'|'poor';note:string;date:string;i
 export type HistoryEntry = { years?: YearRange; id: string; date: string; category: Category; raw: string; conditions: Conditions; resultIds: string[]; rounds: Round[]; selected?: Selection; review?:Review;legacy?: boolean; trimmedRounds?: number };
 export type Preset = { id: string; category: Category; name: string; conditions: Conditions };
 export type Appearance={mode:'dark'|'light'|'system';accent?:string};
-export type Store = { tasteTypes?: Partial<Record<Category, import('./tasteType').TasteTypeResult>>; version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[]; presets?: Preset[];appearance?:Appearance };
+/** `health`: the consent to keep and use what was written about health (src/sensitive.ts): given under which policy, and when. */
+export type Store = { health?: import('./sensitive').HealthConsent; tasteTypes?: Partial<Record<Category, import('./tasteType').TasteTypeResult>>; version: 2; name: string; profiles: Record<Category, Profile>; favorites: string[]; history: HistoryEntry[]; presets?: Preset[];appearance?:Appearance };
 export const emptyProfile = (): Profile => ({ selected: [], tags: [], disliked: [] });
 export const emptyStore = (): Store => ({ version: 2, name: '취향 탐험가', profiles: { food: emptyProfile(), music: emptyProfile() }, favorites: [], history: [] });
 export const emptyConditions = (): Conditions => ({ tags: [], excluded: [] });

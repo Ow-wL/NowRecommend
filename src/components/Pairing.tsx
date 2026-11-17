@@ -29,7 +29,9 @@ function keep(round: Round | null) {
   } catch { /* Only costs the return trip. */ }
 }
 
-export function Pairing({ items, profiles, signals, moment, onChoose, onHome, notify }: {
+export function Pairing({ items, profiles, signals, moment, onChoose, onHome, notify, guard = (_, proceed) => proceed() }: {
+  /** Asks first when the sentence has words about health (src/sensitive.ts): a chosen pair is kept in the history with it. */
+  guard?: (texts: (string | null | undefined)[], proceed: () => void) => void;
   items: Item[]; profiles: Record<Category, Profile>; signals: Record<Category, Signals>; moment: Record<Category, Preset>;
   onChoose: (pair: Pair, request: PairRequest) => void; onHome: () => void; notify: (message: string) => void;
 }) {
@@ -69,7 +71,7 @@ export function Pairing({ items, profiles, signals, moment, onChoose, onHome, no
         <span>{raw.length}/300</span>
       </div>
     </section>
-    <button className="button primary pair-submit" onClick={() => ask(pairRequest(raw, moment))}>같이 추천받기 <ArrowRight size={17} /></button>
+    <button className="button primary pair-submit" onClick={() => guard([raw], () => ask(pairRequest(raw, moment)))}>같이 추천받기 <ArrowRight size={17} /></button>
   </div>;
 
   return <div className="pair-page">

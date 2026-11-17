@@ -1,3 +1,4 @@
+import { consentInForce, storeHealthTerms } from './sensitive';
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { keepLocalCopy, readAccount, type Account } from './account';
 import type { Store } from './domain';
@@ -5,6 +6,9 @@ import { ApiError } from './api/client';
 import { fetchMe, fetchRemoteStore, pushRemoteStore } from './api/auth';
 import { writeStore } from './storage';
 import { AccountDataError, indexStore, mergeStores, parseSyncMeta, planLogin, storeMark, syncStore, type SyncApi, type SyncMeta } from './sync';
+
+/** A save that was stopped because the consent about health words is no longer in force. */
+class HealthHold extends Error {}
 
 export type SyncState = 'idle' | 'saving' | 'saved' | 'failed';
 const SAVE_DELAY = 1500;       // after the last change
@@ -44,8 +48,11 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
         const agreed = known();
         if (mode === 'push' && agreed?.userId === who.user.id && agreed.mark === storeMark(snapshot)) { setState(s => s === 'saving' ? 'saved' : s); continue; }
         setState('saving');
-        const api: SyncApi = { fetch: () => fetchRemoteStore(who.token), push: (next, version) => pushRemoteStore(who.token, next, version) };
-        let result: { store: Store; meta: SyncMeta; replaced: boolean }, foreign = false;
+        // The consent about health words may be taken back while a sync is on its way: what is about to be saved is
+        // checked against the store as it is now, not as it was when the sync started (src/sensitive.ts).
+        const api: SyncApi = { fetch: () => fetchRemoteStore(who.token), push: (next, version) => !consentInForce(latest.current.store.health) && storeHealthTerms(next).length
+          ? Promise.reject(new HealthHold()) : pushRemoteStore(who.token, next, version) };
+        let result: { store: Store; meta: SyncMeta; replaced: boolean; held?: true }, foreign = false;
         try {
           if (agreed && agreed.userId !== who.user.id) {
             // The data here is another account's (left by a session that ended oddly): it is set aside and replaced,
@@ -55,6 +62,7 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
           } else result = await syncStore(snapshot, agreed, who.user.id, api, mode);
         } catch (error) {
           if (!still()) continue;  // signed out or switched meanwhile: this failure is nobody's here
+          if (error instanceof HealthHold) { setState('idle'); return false; }  // nothing was saved; the changed store is saved by its own sync
           if (error instanceof ApiError && error.status === 401) { latest.current.onExpired(); return false; }
           setState('failed');
           if (!failureTold.current) {
@@ -66,7 +74,7 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
         if (!still()) continue;  // the answer belongs to an account that is no longer signed in here: not remembered
         checkedAt.current = Date.now();
         failureTold.current = false;
-        setState('saved');
+        setState(result.held ? 'idle' : 'saved');  // held: waiting for the answer about health words, nothing was saved
         const seen = latest.current.store;
         if (foreign) {
           // Whatever was changed while the request was out was changed in the other account's data: it goes aside with

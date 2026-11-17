@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowRight, Info, KeyRound, LogIn, Mail, UserPlus } from 'lucide-react';
 import { authErrorMessage, confirmReset, login, requestReset, signup, type AuthSession } from '../api/auth';
 import { LEGAL_VERSION, MIN_AGE } from '../legal';
+import { healthTerms } from '../sensitive';
 
 type Mode = 'login' | 'signup' | 'forgot';
 
@@ -24,6 +25,7 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!ready) return;
+    if (mode === 'signup' && !resetToken && healthTerms(name).length) { setError('이름에는 건강과 관련된 표현을 쓸 수 없어요. 다른 이름을 적어주세요.'); return; }
     setBusy(true); setError('');
     try {
       if (resetToken) {

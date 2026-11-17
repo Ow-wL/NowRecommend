@@ -7,7 +7,7 @@ import { ItemArt } from './ItemArt';
 import { ratingLabel } from './ReviewForm';
 
 /** Something eaten or listened to without a recommendation, recorded by hand: a catalog item, a feeling and a note. */
-export function ManualRecord({ items, category: initial, onSave }: { items: Item[]; category: Category; onSave: (entry: HistoryEntry) => void }) {
+export function ManualRecord({ items, category: initial, onSave, guard = (_, proceed) => proceed() }: { items: Item[]; category: Category; onSave: (entry: HistoryEntry) => void; /** Asks first when the note has words about health (src/sensitive.ts). */ guard?: (texts: (string | null | undefined)[], proceed: () => void) => void }) {
   const [category, setCategory] = useState<Category>(initial);
   const [query, setQuery] = useState(''), [pickedId, setPickedId] = useState('');
   const [rating, setRating] = useState<Review['rating']>(), [note, setNote] = useState('');
@@ -27,6 +27,6 @@ export function ManualRecord({ items, category: initial, onSave }: { items: Item
       <div className="chips">{(Object.keys(ratingLabel) as (keyof typeof ratingLabel)[]).map(k => <label key={k} className={`chip ${rating === k ? 'selected' : ''}`}><input type="radio" name="manual-rating" className="sr-only" checked={rating === k} onChange={() => setRating(k)} />{ratingLabel[k]}</label>)}</div>
       <textarea rows={2} maxLength={200} value={note} onChange={e => setNote(e.target.value)} placeholder="메모 (선택, 200자)" aria-label="메모" />
     </fieldset>
-    <div className="modal-actions"><button type="button" className="button primary" disabled={!picked} onClick={() => picked && onSave(manualEntry(picked, { rating, note }))}>기록하기</button></div>
+    <div className="modal-actions"><button type="button" className="button primary" disabled={!picked} onClick={() => picked && guard([note], () => onSave(manualEntry(picked, { rating, note })))}>기록하기</button></div>
   </div>;
 }
