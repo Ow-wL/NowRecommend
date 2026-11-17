@@ -42,7 +42,7 @@ NOT_THE_SONG = ["cover", "karaoke", "reaction", "instrumental", "inst", "mr", "1
                 "미리 듣기", "안무", "메들리"]
 HANGUL = re.compile(r"[가-힣]")
 # Words that contain a left-out word without being one.
-LOOKALIKES = {"커버": ["디스커버", "리커버", "커버리지"], "반복": [], "안무": []}
+LOOKALIKES = {"커버": ["디스커버", "커버리지"], "반복": [], "안무": []}  # not "리커버": it would take the "리 커버" of "우리 커버"
 OFFICIAL = re.compile(r"(?<![a-z])(m/?v|official|audio)(?![a-z])|뮤직\s*비디오", re.IGNORECASE)
 PERFORMANCE = re.compile(r"(?<![a-z])(live|concert|stage|performance|show)(?![a-z])|라이브|콘서트|무대|공연|교차", re.IGNORECASE)
 LYRICS = re.compile(r"(?<![a-z])lyrics?(?![a-z])|가사", re.IGNORECASE)

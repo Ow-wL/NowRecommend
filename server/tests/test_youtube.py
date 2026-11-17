@@ -76,6 +76,7 @@ def test_a_fan_channel_is_not_taken_for_the_artist_and_tricks_around_the_word_li
     assert candidates("밤편지", "아이유", [hit("womancover1", "아이유 밤편지 (여자커버)", "누군가")]) == []
     assert candidates("밤편지", "아이유", [hit("anmu0000001", "아이유 밤편지 - 그동안 무엇을 했나", "IU - Topic")]) == ["anmu0000001"]  # not "안무"
     assert candidates("디스커버리", "누군가", [hit("discovery02", "누군가 - 디스 커버리", "누군가")]) == ["discovery02"]
+    assert candidates("밤편지", "아이유", [hit("ourcover001", "아이유 밤편지 우리 커버", "누군가")]) == []
     assert candidates("Meet Me in St. Louis", "누군가", [hit("stlouis0001", "누군가 - Meet Me in St. Louis", "누군가")]) == ["stlouis0001"]
 
 
