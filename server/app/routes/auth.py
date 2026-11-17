@@ -224,10 +224,15 @@ def login_attempt(email: str, http: Request, session: Session, settings: Setting
       mailed reset link still gets in, and sessions that are signed in go on).
 
     Counted for the address typed whether or not it has an account, so a refusal does not tell which are registered. Both
-    the account and the caller are kept as keyed hashes, like a guest's (budget.py)."""
+    the account and the caller are kept as keyed hashes, like a guest's (budget.py).
+
+    The two counts have different names ("at", "all"), and the first hashes the email and the address one inside the
+    other. The typed email is anything with an @ and a dot in it, "lee@example.com|198.51.100.7" included: were both
+    counts named alike and the pair joined with a mark, that made-up email's count from everywhere would be the very row
+    of lee's count at that address, and anyone could use it up from anywhere."""
     secret, address = settings.auth_secret, client_address(http, settings.trust_proxy)
-    return PasswordAttempt(session, [(f"login:{guest_key(f'{email}|{address}', secret)}", settings.login_fails_per_hour),
-                                     (f"login:{guest_key(email, secret)}", settings.login_fails_per_hour_any)])
+    return PasswordAttempt(session, [(f"login:at:{guest_key(address, guest_key(email, secret))}", settings.login_fails_per_hour),
+                                     (f"login:all:{guest_key(email, secret)}", settings.login_fails_per_hour_any)])
 
 
 def password_attempt(user: User, session: Session, settings: Settings) -> PasswordAttempt:

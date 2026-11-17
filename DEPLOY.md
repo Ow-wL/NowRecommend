@@ -4,7 +4,7 @@
 
 - 사이트: <https://nowrec.kr/> (2026-11-17부터. 이전 주소 <https://ow-wl.github.io/NowRecommend/>와 `www.nowrec.kr`은 이 주소로 넘어옵니다)
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- **운영 중(2026-11-17 출시 준비 묶음 배포 뒤)**: API 이미지 `api:33b9b29`, 리비전 `nowrecommend-api-00019-x4t`(트래픽 100%), DB 마이그레이션 `0010`, Pages는 `main` `33b9b29`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:33b9b29`. 자세한 것은 §4-3. 아래 줄부터는 그 이전 기록입니다.
+- **운영 중(2026-11-17 오후, 재설정 메일을 켠 뒤)**: API 이미지 `api:934d3ce`, 리비전 `nowrecommend-api-00021-l5f`(트래픽 100%), DB 마이그레이션 `0010`, Pages는 `main` `934d3ce`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:934d3ce`. 재설정 메일은 Resend로 켜져 있습니다(`mail.configured: true`). 자세한 것은 §4-3과 §4-4. 아래 줄부터는 그 이전 기록입니다.
 - 이전 운영 상태(2026-11-09 화면 전환·추가 기능 배포 뒤): 가격 제거 **2단계(열 삭제)까지 완료**, 계정 기능 **켜짐**, 음식·음악 모두 **AI 엔진**.
   - API: 이미지 `api:c6fb47e`, 리비전 `nowrecommend-api-00016-ztd`(트래픽 100%, 환경 변수 `SONG_STORE_DEADLINE_MS=2500`). AI 음악 곡을 Apple 스토어에서 확인해 등록된 곡을 먼저 보내고, 메뉴 이름과 검수 재료로 필수 제외를 확인합니다. 시드 작업은 `api:7a5e7cb`(비건·채식 메뉴 15개 추가, 카탈로그 음식 81개·음악 226곡)이고, 관리자 작업은 `api:1fab577` 그대로입니다.
   - Pages: `ef56b39`의 화면(디자인 v9, 같이 추천, 사진 없는 홈, 지난 선택·평가 반영, 취향 유형 16문항과 친구 궁합 링크, 양고기 제외, 설정의 미리듣기 볼륨). 문서만 바꾼 뒤 커밋이 있으면 화면은 같습니다. API 재배포(`d3a7de6`)는 서버만 바뀌어 화면은 같습니다.
@@ -492,21 +492,31 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
   4. Pages는 되돌리는 커밋을 작업 브랜치에 올려 `frontend` 검사를 통과시킨 뒤 `main`으로 올립니다(강제 푸시는 막혀 있습니다).
 - 데이터가 망가진 경우에만 백업 복원을 씁니다(§4-2의 연습 절차).
 
-## 4-4. 재설정 메일 켜기 (준비 2026-11-17, 미실행)
+## 4-4. 재설정 메일 켜기 (2026-11-17 실행)
 
-비밀번호 재설정 메일은 SMTP 값 다섯 개가 들어가면 켜집니다(`server/app/mail.py`). 발송 서비스는 Resend로 정했습니다(처리방침에 업체·국가·보관 기간 기재, `src/legal.ts`). 지금 운영은 값이 없어 `/api/health`의 `mail.configured`가 `false`이고 재설정 요청은 503입니다.
+비밀번호 재설정 메일은 SMTP 값 다섯 개가 들어가면 켜집니다(`server/app/mail.py`). 발송 서비스는 Resend로 정했습니다(처리방침에 업체·국가·보관 기간 기재, `src/legal.ts`). 2026-11-17에 아래 순서대로 켰고, 지금 운영은 `/api/health`의 `mail.configured`가 `true`입니다.
+
+**실행 결과(2026-11-17)**:
+
+- 운영자가 Resend 가입, 도메인 추가(Tokyo), 가비아 DNS 네 개, API 키 등록(`smtp-password` 버전 1)을 했습니다. DNS는 구글·클라우드플레어 DNS에서 `rsend` → `rsend-apne1.forge.rmta.net`, `send` → `send.forge.rmta.net`로 조회됐습니다.
+- 배포 전 검토에서 로그인 실패 한도의 결함이 하나 나와 `4a926ba`에서 고친 뒤(주소별·전체 한도가 같은 칸을 쓰던 것) 이미지 `api:934d3ce`를 냈습니다. 리비전 `00020-4jb`로 배포하고 작업 네 개의 이미지를 바꿨습니다. 마이그레이션은 없었습니다.
+- `main`을 `934d3ce`로 올려 처리방침에 Resend가 나간 것을 확인한 다음 메일을 시험했습니다.
+- 관리자 작업의 `check`는 바로 통과했지만 `send`는 `SMTPDataError 550`이었습니다. Resend의 답은 "The nowrec.kr domain is not verified"였습니다. **DNS가 조회되고 키로 로그인이 되어도, Resend 화면에서 도메인이 Verified가 되기 전에는 발송이 거절됩니다.** Verified가 된 뒤 `send: ok`.
+- 서비스에 SMTP 값을 넣어 리비전 `00021-l5f`가 됐습니다. 가입되지 않은 주소의 재설정 요청이 202로 답하는 것까지 확인했습니다.
+- 되돌리기: 메일만 끄려면 아래 "끄기". 코드까지 되돌리려면 `00019-x4t`(`api:33b9b29`, 메일 값 없음)로 트래픽을 옮깁니다. DB는 `0010` 그대로라 옮기기만 하면 됩니다.
+- 운영자가 직접 볼 것: 시험 메일이 받은편지함에 왔는지(스팸함 포함), 사이트에서 본인 계정으로 재설정이 끝까지 되는지(아래 6번).
 
 **운영자가 먼저 할 일**(가입과 DNS는 운영자만 할 수 있습니다):
 
 1. resend.com 가입 → Domains → Add Domain에 `nowrec.kr`, 리전 Tokyo(`ap-northeast-1`).
-2. Resend 화면이 보여 주는 DNS 레코드를 가비아 DNS 관리에 그대로 넣습니다. 보통 세 개이고 **값은 화면의 것을 그대로** 씁니다(아래는 형태만).
+2. Resend 화면이 보여 주는 DNS 레코드를 가비아 DNS 관리에 그대로 넣습니다. 2026-11-17에 Resend가 보여 준 것은 아래 네 개입니다(값은 계정마다 다르니 **화면의 값을 눌러 전체를 복사**합니다. 화면에는 가운데가 `[…]`로 줄여 보입니다).
 
    | 종류 | 호스트 | 값 | 비고 |
    |---|---|---|---|
-   | MX | `send` | `feedback-smtp.ap-northeast-1.amazonses.com` | 우선순위 10. 반송 메일을 받는 주소 |
-   | TXT | `send` | `v=spf1 include:amazonses.com ~all` | SPF |
-   | TXT | `resend._domainkey` | `p=…`로 시작하는 긴 값 | DKIM. 계정마다 다릅니다 |
-   | TXT | `_dmarc` | `v=DMARC1; p=none;` | 선택. 넣으면 받는 쪽 신뢰가 올라갑니다 |
+   | TXT | `resend._domainkey` | `p=…`로 시작하는 긴 값 | DKIM. 따옴표 없이 |
+   | CNAME | `rsend` | `rsend-ap….mta.net.` | 발송 설정(SPF). 가비아는 값 끝에 마침표 |
+   | CNAME | `send` | `send.for….mta.net.` | 발송 설정(SPF·반송 주소). 가비아는 값 끝에 마침표 |
+   | TXT | `_dmarc` | `v=DMARC1; p=none;` | 권장. 넣으면 받는 쪽 신뢰가 올라갑니다 |
 
    - 가비아의 호스트 칸에는 `send`처럼 앞부분만 적습니다(`send.nowrec.kr`로 적으면 `send.nowrec.kr.nowrec.kr`이 됩니다).
    - 2026-11-17 조회로 `nowrec.kr`에는 TXT·MX·DMARC 레코드가 하나도 없어, 겹치는 것이 없습니다. A 레코드 4개와 `www` CNAME(GitHub Pages)은 건드리지 않습니다.
@@ -515,7 +525,7 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
 
 **그다음 순서**(명령은 PowerShell 기준. `MAIL_FROM`에 쉼표가 없어도 한글·공백·꺾쇠가 있으므로 구분자를 `##`로 바꿔 넘깁니다):
 
-1. **비밀 값 읽기 권한**:
+1. **비밀 값 읽기 권한**(2026-11-17 실행: 값 없는 `smtp-password`를 만들고 권한을 줬습니다. 값은 운영자가 콘솔에서 "새 버전"으로 넣습니다):
    ```
    gcloud secrets add-iam-policy-binding smtp-password --project harness-recommend --member serviceAccount:nowrecommend-api@harness-recommend.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor
    ```

@@ -498,6 +498,20 @@ def test_guesses_spread_over_many_addresses_stop_the_account_and_a_mailed_link_s
     assert client.post("/api/auth/login", json={"email": "lee@example.com", "password": "password2"}, headers=at("198.51.100.7")).status_code == 200
 
 
+def test_an_email_made_to_look_like_another_accounts_counter_does_not_stop_its_owner(world):
+    """The two counts are kept under different names. Under one name, the count of everything typed for the made-up
+    address "lee@example.com|198.51.100.7" was the same row as lee's own count at 198.51.100.7, so anyone who knew the
+    owner's address could stop them from anywhere, without an account."""
+    client, _, _, _, _, app = world
+    limited(app, 3, anywhere=50)
+    owner, elsewhere = at("198.51.100.7"), at("203.0.113.9")
+    made_up = {"email": "lee@example.com|198.51.100.7", "password": "wrong-password"}
+    assert [client.post("/api/auth/login", json=made_up, headers=elsewhere).status_code for _ in range(4)] == [401, 401, 401, 429]
+    assert client.post("/api/auth/login", json=RIGHT, headers=owner).status_code == 200
+    names = [bucket.split(":")[1] for bucket, count in counts(app).items() if bucket.startswith("login:") and count]
+    assert sorted(names) == ["all", "at"]  # what the made-up address used: its own two counts, and nothing of lee's
+
+
 def test_an_address_without_an_account_is_stopped_and_checked_the_same_way(world, monkeypatch):
     """Otherwise the refusal, or how long the answer takes, would tell which addresses are registered."""
     from app.routes import auth as routes
