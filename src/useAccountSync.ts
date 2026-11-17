@@ -1,4 +1,4 @@
-import { consentInForce, storeHealthTerms } from './sensitive';
+import { consentInForce, owesHealthAnswer, storeHealthTerms } from './sensitive';
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { keepLocalCopy, readAccount, type Account } from './account';
 import type { Store } from './domain';
@@ -39,9 +39,11 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
   const run = useCallback(async (start: 'push' | 'pull'): Promise<boolean> => {
     if (running.current) { queued.current = start === 'pull' || queued.current === 'pull' ? 'pull' : 'push'; return false; }
     running.current = true;
+    let held = false;
     try {
       for (let mode: 'push' | 'pull' | null = start; mode; mode = queued.current) {
         queued.current = null;
+        held = false;
         const { account: who, store: snapshot, paused: stopped } = latest.current;
         if (!who || stopped) return false;
         const still = () => latest.current.account?.token === who.token;
@@ -62,7 +64,15 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
           } else result = await syncStore(snapshot, agreed, who.user.id, api, mode);
         } catch (error) {
           if (!still()) continue;  // signed out or switched meanwhile: this failure is nobody's here
-          if (error instanceof HealthHold) { setState('idle'); return false; }  // nothing was saved; the changed store is saved by its own sync
+          if (error instanceof HealthHold) {
+            // Nothing was saved: the consent was taken back while this sync was out. The store as it is now (the texts
+            // removed) still has to reach the account: a save asked for meanwhile runs next, and if none was, one is
+            // asked for here, so the account does not keep the old texts for want of another change.
+            setState('idle'); held = true;
+            const now = latest.current.store;
+            if (!queued.current && !owesHealthAnswer(now) && storeMark(now) !== storeMark(snapshot)) queued.current = 'push';
+            continue;
+          }
           if (error instanceof ApiError && error.status === 401) { latest.current.onExpired(); return false; }
           setState('failed');
           if (!failureTold.current) {
@@ -95,7 +105,7 @@ export function useAccountSync({ account, store, setStore, savedAgreement, pause
         queued.current = null;
         break;
       }
-      return true;
+      return !held;
     } finally { running.current = false; }
   }, [setStore]);
 

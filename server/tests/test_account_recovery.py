@@ -430,14 +430,31 @@ def test_a_mail_that_did_not_leave_does_not_use_up_the_accounts_mails(world):
     client, _, outbox, _, _, app = world
     app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
                                                               reset_daily_per_address=0, reset_daily_per_email=1, reset_daily_total=1)
-    outbox.fails = True
-    for _ in range(3):  # the mail server is down: nothing leaves, and nothing is used up
+    import smtplib
+
+    class Down:
+        def send(self, to, subject, text, html=None):
+            raise smtplib.SMTPConnectError(421, b"try later")
+
+    app.dependency_overrides[get_mailer] = lambda: Down()
+    for _ in range(3):  # the mail server cannot be reached: nothing leaves, and nothing is used up
         assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
-    outbox.fails = False
+    app.dependency_overrides[get_mailer] = lambda: outbox
     assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
     assert len(outbox.sent) == 1  # the one that left; the account's one mail of the day was still there for it
     assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
     assert len(outbox.sent) == 1  # and now it is used up
+
+
+def test_a_failure_that_may_have_come_after_the_mail_left_still_counts(world):
+    client, _, outbox, _, _, app = world
+    app.dependency_overrides[get_settings] = lambda: Settings(public_app_url=APP_URL, signup_daily_per_address=0, auth_secret="test-secret",
+                                                              reset_daily_per_address=0, reset_daily_per_email=1, reset_daily_total=0)
+    outbox.fails = True  # an OSError: it could have happened while closing, after the mail was taken
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    outbox.fails = False
+    assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}).status_code == 202
+    assert outbox.sent == []  # the day's one mail was counted
 
 
 # ---- wrong passwords, counted by the hour (2026-11-17) ----

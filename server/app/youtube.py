@@ -38,7 +38,8 @@ VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 # not count against it.
 NOT_THE_SONG = ["cover", "karaoke", "reaction", "instrumental", "inst", "mr", "1 hour", "loop", "fancam", "fan cam", "tutorial", "sheet music",
                 "remix", "sped up", "slowed", "8d", "teaser", "preview", "dance practice", "choreography", "mashup", "medley",
-                "커버", "노래방", "리액션", "1시간", "반복", "교차편집", "직캠", "강좌", "악보", "리믹스", "티저", "미리듣기", "안무", "메들리"]
+                "커버", "노래방", "리액션", "1시간", "반복", "교차편집", "교차 편집", "직캠", "강좌", "악보", "리믹스", "티저", "미리듣기",
+                "미리 듣기", "안무", "메들리"]
 HANGUL = re.compile(r"[가-힣]")
 # Words that contain a left-out word without being one.
 LOOKALIKES = {"커버": ["디스커버", "리커버", "커버리지"], "반복": [], "안무": []}
@@ -111,10 +112,11 @@ def _says(word: str, text: str) -> bool:
     if HANGUL.search(word):
         # Korean compounds put the word anywhere ("여자커버", "1시간반복"): anywhere, but not inside the few words that only
         # contain it ("디스커버리").
+        # As written: "안무" is not in "그동안 무엇"; the spaced forms that do occur are in the list.
         found = text.casefold()
         for whole in LOOKALIKES.get(word, []):
-            found = found.replace(whole, " ")
-        return re.search(_spelled(word), found) is not None
+            found = re.sub(_spelled(whole), " ", found)  # "디스커버리" and "디스 커버리" alike
+        return word.casefold() in found
     return _bounded(word, text)
 
 

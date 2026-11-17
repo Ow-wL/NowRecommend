@@ -5,6 +5,8 @@ Tokens are stateless (app/auth.py). Without AUTH_SECRET every route here answers
 deployment that has not set the secret yet is no worse than before accounts existed.
 """
 import hmac
+import smtplib
+import socket
 import json
 import logging
 import uuid
@@ -392,11 +394,19 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
         mailer.send(user.email, *reset_mail(user.name, link, settings.reset_token_minutes))
     except Exception as error:  # noqa: BLE001 - the form's answer must not depend on whether this address has an account
         log.error("reset mail could not be sent: %s", mail_failure(error))
-        # Nothing reached the inbox: the account's mails and the service's are given back, so trying again later works.
-        # The address's count stays (it is what stops one place from asking without end).
-        mine.give_back()
-        everyone.give_back()
+        # A failure that surely sent nothing (the server could not be reached or signed in to, or refused the sender, the
+        # recipient or the message) gives back the account's mails and the service's, so trying again later works. Other
+        # failures may come after the mail was taken, and count. The address's count always stays: it is what stops one
+        # place from asking without end.
+        if isinstance(error, NOT_SENT):
+            mine.give_back()
+            everyone.give_back()
     return RESET_SENT
+
+
+# Failures before the mail server took the message (smtplib raises these from connect, login, MAIL, RCPT and DATA).
+NOT_SENT = (smtplib.SMTPConnectError, smtplib.SMTPAuthenticationError, smtplib.SMTPSenderRefused, smtplib.SMTPRecipientsRefused,
+            smtplib.SMTPDataError, ConnectionRefusedError, socket.gaierror)
 
 
 @router.post("/api/auth/reset/confirm")
