@@ -499,14 +499,14 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
 **운영자가 먼저 할 일**(가입과 DNS는 운영자만 할 수 있습니다):
 
 1. resend.com 가입 → Domains → Add Domain에 `nowrec.kr`, 리전 Tokyo(`ap-northeast-1`).
-2. Resend 화면이 보여 주는 DNS 레코드를 가비아 DNS 관리에 그대로 넣습니다. 보통 세 개이고 **값은 화면의 것을 그대로** 씁니다(아래는 형태만).
+2. Resend 화면이 보여 주는 DNS 레코드를 가비아 DNS 관리에 그대로 넣습니다. 2026-11-17에 Resend가 보여 준 것은 아래 네 개입니다(값은 계정마다 다르니 **화면의 값을 눌러 전체를 복사**합니다. 화면에는 가운데가 `[…]`로 줄여 보입니다).
 
    | 종류 | 호스트 | 값 | 비고 |
    |---|---|---|---|
-   | MX | `send` | `feedback-smtp.ap-northeast-1.amazonses.com` | 우선순위 10. 반송 메일을 받는 주소 |
-   | TXT | `send` | `v=spf1 include:amazonses.com ~all` | SPF |
-   | TXT | `resend._domainkey` | `p=…`로 시작하는 긴 값 | DKIM. 계정마다 다릅니다 |
-   | TXT | `_dmarc` | `v=DMARC1; p=none;` | 선택. 넣으면 받는 쪽 신뢰가 올라갑니다 |
+   | TXT | `resend._domainkey` | `p=…`로 시작하는 긴 값 | DKIM. 따옴표 없이 |
+   | CNAME | `rsend` | `rsend-ap….mta.net.` | 발송 설정(SPF). 가비아는 값 끝에 마침표 |
+   | CNAME | `send` | `send.for….mta.net.` | 발송 설정(SPF·반송 주소). 가비아는 값 끝에 마침표 |
+   | TXT | `_dmarc` | `v=DMARC1; p=none;` | 권장. 넣으면 받는 쪽 신뢰가 올라갑니다 |
 
    - 가비아의 호스트 칸에는 `send`처럼 앞부분만 적습니다(`send.nowrec.kr`로 적으면 `send.nowrec.kr.nowrec.kr`이 됩니다).
    - 2026-11-17 조회로 `nowrec.kr`에는 TXT·MX·DMARC 레코드가 하나도 없어, 겹치는 것이 없습니다. A 레코드 4개와 `www` CNAME(GitHub Pages)은 건드리지 않습니다.
@@ -515,7 +515,7 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
 
 **그다음 순서**(명령은 PowerShell 기준. `MAIL_FROM`에 쉼표가 없어도 한글·공백·꺾쇠가 있으므로 구분자를 `##`로 바꿔 넘깁니다):
 
-1. **비밀 값 읽기 권한**:
+1. **비밀 값 읽기 권한**(2026-11-17 실행: 값 없는 `smtp-password`를 만들고 권한을 줬습니다. 값은 운영자가 콘솔에서 "새 버전"으로 넣습니다):
    ```
    gcloud secrets add-iam-policy-binding smtp-password --project harness-recommend --member serviceAccount:nowrecommend-api@harness-recommend.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor
    ```
