@@ -13,6 +13,7 @@ out. A second, cheap call (1 unit) reads each candidate's status: one that canno
 for kids (whose viewers may not be tracked, III.E.4.j), or is not shown in Korea is not offered. Which channel is "the
 artist's" is a guess from its name, used only to choose; the page never calls a video official. Finding nothing is an answer too: the details then keep the search link.
 """
+import html
 import logging
 import re
 import threading
@@ -23,7 +24,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from .cli.media import TITLE_ALIASES, artist_matches, norm
+from .cli.media import ALIASES, TITLE_ALIASES, norm
 
 log = logging.getLogger(__name__)
 
@@ -31,10 +32,42 @@ API = "https://www.googleapis.com/youtube/v3"
 FOUND_TTL = 7 * 24 * 3600  # a found video is checked again after a week (it may be taken down or blocked)
 MISSING_TTL = 24 * 3600    # nothing found: asked again the next day
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
-# What a video title says when it is not the song as released.
-NOT_THE_SONG = re.compile(r"cover|커버|karaoke|노래방|reaction|리액션|instrumental|\binst\b|\bmr\b|1\s*시간|1\s*hour|\bloop\b|반복|교차\s*편집|"
-                          r"직캠|fancam|fan\s*cam|tutorial|강좌|악보|sheet\s*music|remix|리믹스|sped\s*up|slowed|8d\b|teaser|티저|preview|미리\s*듣기",
-                          re.IGNORECASE)
+# What a video title says when it is not the song as released. A word the song's own title has ("Remix", "Teaser") does
+# not count against it.
+NOT_THE_SONG = ["cover", "커버", "karaoke", "노래방", "reaction", "리액션", "instrumental", "inst", "mr", "1시간", "1 hour", "loop", "반복",
+                "교차편집", "직캠", "fancam", "tutorial", "강좌", "악보", "sheet music", "remix", "리믹스", "sped up", "slowed", "8d", "teaser",
+                "티저", "preview", "미리듣기", "dance practice", "choreography", "안무", "mashup", "medley", "메들리"]
+OFFICIAL = re.compile(r"(?<![a-z])(m/?v|official|audio)(?![a-z])|뮤직\s*비디오", re.IGNORECASE)
+PERFORMANCE = re.compile(r"(?<![a-z])(live|concert|stage|performance|show)(?![a-z])|라이브|콘서트|무대|공연|교차", re.IGNORECASE)
+LYRICS = re.compile(r"(?<![a-z])lyrics?(?![a-z])|가사", re.IGNORECASE)
+
+
+def _bounded(word: str, text: str) -> bool:
+    """`word` in `text` standing on its own: not inside a longer word of letters (Latin or Hangul) or digits."""
+    return re.search(rf"(?<![0-9a-z가-힣]){re.escape(word.casefold())}(?![0-9a-z가-힣])", text.casefold()) is not None
+
+
+def _names(text: str, name: str) -> bool:
+    """Whether `text` names `name`: as a word of its own when it is short ("IU" is not in "Premium", "봄날" not in
+    "봄날의 기억"), else anywhere once spaces and marks are taken out."""
+    plain = norm(name)
+    return bool(plain) and (_bounded(name.strip(), text) or (len(plain) > 3 and plain in norm(text)))
+
+
+# Groups whose videos name them in Latin letters, in addition to the store's list (cli/media.py ALIASES). Only here: the
+# store check keeps its own list.
+MORE_ALIASES = {
+    "방탄소년단": ["BTS"], "블랙핑크": ["BLACKPINK"], "트와이스": ["TWICE"], "세븐틴": ["SEVENTEEN"], "뉴진스": ["NewJeans"], "레드벨벳": ["Red Velvet"],
+    "엑소": ["EXO"], "빅뱅": ["BIGBANG"], "아이브": ["IVE"], "르세라핌": ["LE SSERAFIM"], "에스파": ["aespa"], "스트레이 키즈": ["Stray Kids"],
+    "투모로우바이투게더": ["TXT", "TOMORROW X TOGETHER"], "샤이니": ["SHINee"], "있지": ["ITZY"], "데이식스": ["DAY6"], "투어스": ["TWS"],
+    "엔시티 드림": ["NCT DREAM"], "엔시티 127": ["NCT 127"], "제니": ["JENNIE"], "리사": ["LISA"], "지드래곤": ["G-DRAGON"], "아이들": ["i-dle", "(G)I-DLE"],
+    "케이윌": ["K.Will"], "십센치": ["10CM"], "엔플라잉": ["N.Flying"], "보아": ["BoA"], "에이핑크": ["Apink"], "원더걸스": ["Wonder Girls"],
+}
+
+
+def _artist(artist: str, text: str) -> bool:
+    return any(_names(text, name) for name in [artist, *ALIASES.get(artist, []), *MORE_ALIASES.get(artist, [])])
+
 
 Getter = Callable[[str, dict, float], dict]
 
@@ -55,25 +88,34 @@ _client = httpx.Client(headers={"User-Agent": "nowrecommend-api/0.1"})
 
 def _core(title: str) -> str:
     """The title without what stands in brackets ("Dynamite (Day Ver.)" → "Dynamite")."""
-    return norm(re.sub(r"\s*[\(\[].*?[\)\]]", "", title)) or norm(title)
+    return re.sub(r"\s*[\(\[].*?[\)\]]", "", title).strip() or title
+
+
+def _not_the_song(title: str, name: str) -> bool:
+    return any(_bounded(word, name) and not _bounded(word, title) for word in NOT_THE_SONG)
 
 
 def candidates(title: str, artist: str, items: list[dict]) -> list[str]:
-    """The search results that are this song, best first, by id. Pure: the search's `items` in, ids out."""
-    want, also = _core(title), norm(TITLE_ALIASES.get(title, ""))  # "에잇" is "eight" on most uploads
+    """The search results that are this song, best first, by id. Pure: the search's `items` in, ids out.
+
+    Kept: a video whose title names the song's title (or its usual English one) and whose channel or title names the
+    artist. Ranked: the artist's "- Topic" channel, then the artist's own channel, a title naming the artist, an official
+    video; a live stage or a lyrics upload after those. Left out: covers, karaoke, dance practice, loops and the like."""
+    titles = [t for t in {_core(title), TITLE_ALIASES.get(title, "")} if t]
     scored: list[tuple[int, int, str]] = []
     for order, item in enumerate(items):
         video_id = (item.get("id") or {}).get("videoId", "")
         snippet = item.get("snippet") or {}
-        name, channel = snippet.get("title", ""), snippet.get("channelTitle", "")
+        name, channel = html.unescape(snippet.get("title", "")), html.unescape(snippet.get("channelTitle", ""))  # the API sends "&#39;"
         if not VIDEO_ID.match(video_id) or snippet.get("liveBroadcastContent", "none") != "none":
             continue
-        if not want or not (want in norm(name) or (also and also in norm(name))) or NOT_THE_SONG.search(name):
+        if not any(_names(name, t) for t in titles) or _not_the_song(title, name):
             continue
-        by_channel, by_title = artist_matches(artist, channel), artist_matches(artist, name)
+        by_channel, by_title = _artist(artist, channel), _artist(artist, name)
         if not (by_channel or by_title):
             continue  # a song of the same name by someone else
         score = (4 if by_channel and channel.endswith(" - Topic") else 3 if by_channel else 0) + (1 if by_title else 0)
+        score += (2 if OFFICIAL.search(name) else 0) - (2 if PERFORMANCE.search(name) else 0) - (1 if LYRICS.search(name) else 0)
         scored.append((-score, order, video_id))
     return [video_id for _, _, video_id in sorted(scored)]
 
@@ -81,7 +123,9 @@ def candidates(title: str, artist: str, items: list[dict]) -> list[str]:
 def playable(video: dict, region: str = "KR") -> bool:
     """A video the player may show here: embeddable, not age-restricted, not blocked in the region."""
     status, details = video.get("status") or {}, video.get("contentDetails") or {}
-    if status.get("embeddable") is not True or status.get("privacyStatus") not in (None, "public", "unlisted") or status.get("madeForKids") is True:
+    # Made for kids must be known to be false: the API sends it with a key (seen 2026-11-18), and a video whose status
+    # does not say is not offered rather than assumed.
+    if status.get("embeddable") is not True or status.get("privacyStatus") not in ("public", "unlisted") or status.get("madeForKids") is not False:
         return False
     if (details.get("contentRating") or {}).get("ytRating") == "ytAgeRestricted":
         return False
@@ -96,21 +140,52 @@ class _Kept:
 
 
 class YouTubeFinder:
-    """One per process: the key, and the answers it already gave (found and not found) until they are due again."""
+    """One per process: the key, and the answers it already gave (found and not found) until they are due again. An
+    answer past its time is dropped, not only ignored: the API's data is not kept longer than the policy allows. Two
+    requests for the same song at once make one search; the second waits for the first's answer."""
 
     def __init__(self, key: str, get: Getter = _get, timeout_s: float = 4.0, cache_size: int = 2000, now: Callable[[], float] = time.monotonic):
         self.key, self.get, self.timeout_s, self.cache_size, self.now = key, get, timeout_s, cache_size, now
         self.kept: OrderedDict[tuple[str, str], _Kept] = OrderedDict()
+        self.asking: dict[tuple[str, str], threading.Event] = {}
         self.lock = threading.Lock()
+
+    def _sweep(self) -> None:
+        """Drops every answer past its time. Called under the lock; the cache holds at most `cache_size` entries."""
+        now = self.now()
+        for song in [song for song, kept in self.kept.items() if kept.until <= now]:
+            del self.kept[song]
 
     def known(self, title: str, artist: str) -> tuple[bool, str | None]:
         """(True, answer) when this song was asked about recently; the answer may be None (no video)."""
         with self.lock:
+            self._sweep()
             kept = self.kept.get((title, artist))
-            if kept is None or kept.until <= self.now():
-                return False, None
-            self.kept.move_to_end((title, artist))
-            return True, kept.video_id
+            return (True, kept.video_id) if kept else (False, None)
+
+    def lookup(self, title: str, artist: str, charge: Callable[[], None]) -> str | None:
+        """The answer from memory, or a search. `charge` is called once before a search is made (it counts the search, and
+        may raise to refuse it); a request that finds another already asking waits for that one instead of searching."""
+        song = (title, artist)
+        with self.lock:
+            self._sweep()
+            if song in self.kept:
+                return self.kept[song].video_id
+            waiting = self.asking.get(song)
+            if waiting is None:
+                self.asking[song] = threading.Event()
+        if waiting is not None:
+            waiting.wait(self.timeout_s * 2 + 1)
+            seen, answer = self.known(title, artist)
+            if not seen:
+                raise YouTubeUnavailable("the search asked at the same time did not answer")
+            return answer
+        try:
+            charge()
+            return self.find(title, artist)
+        finally:
+            with self.lock:
+                self.asking.pop(song).set()
 
     def find(self, title: str, artist: str) -> str | None:
         """The id of a video of this song that can be played here, or None. Raises YouTubeUnavailable when the API cannot
@@ -125,11 +200,11 @@ class YouTubeFinder:
                 usable = {v.get("id") for v in details.get("items") or [] if playable(v)}
                 video_id = next((i for i in ids if i in usable), None)
         except (httpx.HTTPError, ValueError) as error:
-            # The key never goes to the log: httpx names the address it asked, and the address carries the key.
+            # The key never goes to the log: it travels in a header, and only the kind of failure is kept.
             raise YouTubeUnavailable(type(error).__name__ + (f" {error.response.status_code}" if isinstance(error, httpx.HTTPStatusError) else "")) from None
         with self.lock:
+            self._sweep()
             self.kept[(title, artist)] = _Kept(video_id, self.now() + (FOUND_TTL if video_id else MISSING_TTL))
-            self.kept.move_to_end((title, artist))
             while len(self.kept) > self.cache_size:
                 self.kept.popitem(last=False)
         return video_id

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Copy, Headphones, Play } from 'lucide-react';
 import type { Item } from '../data';
-import { closeFullPlay, embedAddress, musicApps, openFullPlay, playerStorefront, rememberMusicApp, songWords, useFullPlayOpen, useMusicApp, youtubeAddress, type MusicApp } from '../fullPlay';
+import { agreeYoutube, closeFullPlay, embedAddress, musicApps, openFullPlay, playerStorefront, rememberMusicApp, songWords, useFullPlayOpen, useMusicApp, youtubeAddress, youtubeAgreed, type MusicApp } from '../fullPlay';
+import { LEGAL_VERSION } from '../legal';
 import { stopPreview } from '../preview';
 import { fetchYouTube } from '../api/youtube';
 import { ApiError } from '../api/client';
@@ -56,23 +57,30 @@ type Found = { state: 'wait' } | { state: 'found'; address: string } | { state: 
  * frame is YouTube's own embed, in its privacy-enhanced mode (no cookie until the video plays). */
 export function YouTubePanel({ item }: { item: Pick<Item, 'id' | 'name' | 'subtitle'> }) {
   const open = useFullPlayOpen(item, 'youtube');
-  const [found, setFound] = useState<Found>({ state: 'wait' });
+  const [found, setFound] = useState<Found>({ state: 'wait' }), [agreed, setAgreed] = useState(() => youtubeAgreed(LEGAL_VERSION));
   useEffect(() => {
-    if (!open) { setFound({ state: 'wait' }); return; }
+    if (!open || !agreed) { setFound({ state: 'wait' }); return; }
     const controller = new AbortController();
     fetchYouTube(item.id, { signal: controller.signal })
       .then(answer => { const address = youtubeAddress(answer.videoId); setFound(address ? { state: 'found', address } : { state: 'none' }); })
       .catch(error => { if (!controller.signal.aborted) setFound({ state: 'failed', message: error instanceof ApiError && error.kind === 'http' && error.message && !/^HTTP \d+$/.test(error.message) ? error.message : 'YouTube 플레이어를 열지 못했어요. 아래 ‘YouTube에서 찾기’로 열어 주세요.' }); });
     return () => controller.abort();
-  }, [open, item.id]);
+  }, [open, agreed, item.id]);
   useEffect(() => () => closeFullPlay(item.id), [item.id]);
   if (!open) return null;
+  const terms = <><a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube 이용약관</a>, <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google 개인정보처리방침</a></>;
+  if (!agreed) return <section id={youtubeId(item)} className="full-play youtube" aria-label={`${item.name} YouTube 플레이어`}>
+    <div className="youtube-ask" role="group" aria-labelledby={`${youtubeId(item)}-ask`}>
+      <p id={`${youtubeId(item)}-ask`}><b>YouTube 플레이어를 처음 쓰기 전에 확인해 주세요.</b> 이 기능은 YouTube API 서비스로 영상을 찾고 YouTube의 플레이어로 재생해요. 쓰면 {terms}과 이 서비스의 <a href="#/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>(YouTube 항목)에 동의하는 것으로 봐요. 플레이어를 열면 접속 정보가 YouTube(Google)로 가요.</p>
+      <div className="card-actions"><button type="button" className="button secondary compact" onClick={() => closeFullPlay(item.id)}>취소</button><button type="button" className="button primary compact" onClick={() => { agreeYoutube(LEGAL_VERSION); setAgreed(true); }}>동의하고 열기</button></div>
+    </div>
+  </section>;
   return <section id={youtubeId(item)} className="full-play youtube" aria-label={`${item.name} YouTube 플레이어`}>
     {found.state === 'found'
       ? <div className="youtube-frame"><iframe title={`${item.name} YouTube 플레이어`} src={found.address} allow="encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /></div>
       : found.state === 'wait' ? <div className="full-play-wait" role="status"><span className="spinner" />영상을 찾는 중이에요</div>
       : <div className="full-play-wait" role="status">{found.state === 'none' ? '이 곡을 여기서 재생할 수 있는 영상을 찾지 못했어요.' : found.message} <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer">YouTube에서 찾기 (새 탭)</a></div>}
-    <p className="small muted">YouTube에서 찾은 영상을 재생해요. 다른 버전이거나 공식 영상이 아닐 수 있어요. 이 플레이어는 YouTube의 서비스라 <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube 이용약관</a>이 적용되고, 플레이어를 열면 YouTube(Google)가 접속 정보를 처리해요(<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google 개인정보처리방침</a>).</p>
+    <p className="small muted">YouTube에서 찾은 영상을 재생해요. 다른 버전이거나 공식 영상이 아닐 수 있어요. 이 플레이어에는 {terms}이 적용돼요.</p>
   </section>;
 }
 

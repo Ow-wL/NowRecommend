@@ -1,5 +1,8 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { items } from '../../src/data';
+import { readFileSync } from 'node:fs';
+
+const legalVersion = (JSON.parse(readFileSync(new URL('../../shared/legal.json', import.meta.url), 'utf8')) as { version: string }).version;
 
 // YouTube's player inside a song's details (src/fullPlay.ts, server/app/youtube.py): the server finds the video when the
 // player is opened; YouTube's own player plays it. The server and YouTube are stood in for; nothing leaves the machine.
@@ -32,7 +35,19 @@ test('a song opens in YouTube\'s player inside the page, only when asked, with t
   expect(asked).toEqual([]);  // nothing goes to the server or to YouTube before the button
   expect(played).toEqual([]);
 
+  // The first time, the terms that cover the player are put first; nothing is asked of the server until they are agreed to.
   await open.click();
+  const ask = dialog.locator('.youtube-ask');
+  await expect(ask).toContainText('YouTube 플레이어를 처음 쓰기 전에 확인해 주세요');
+  await expect(ask.getByRole('link', { name: 'YouTube 이용약관' })).toHaveAttribute('href', 'https://www.youtube.com/t/terms');
+  await expect(ask.getByRole('link', { name: 'Google 개인정보처리방침' })).toHaveAttribute('href', 'https://policies.google.com/privacy');
+  await expect(ask.getByRole('link', { name: '개인정보 처리방침' })).toHaveAttribute('href', '#/privacy');
+  expect(asked).toEqual([]);
+  await ask.getByRole('button', { name: '취소' }).click();  // saying no closes it, and nothing was asked
+  await expect(dialog.locator('.full-play.youtube')).toHaveCount(0);
+  expect(asked).toEqual([]);
+  await open.click();
+  await dialog.locator('.youtube-ask').getByRole('button', { name: '동의하고 열기' }).click();
   const frame = dialog.locator('iframe');
   await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/abcdefghijk?rel=0&playsinline=1');
   await expect(frame).toHaveAttribute('title', `${song.name} YouTube 플레이어`);
@@ -62,8 +77,10 @@ test('a song opens in YouTube\'s player inside the page, only when asked, with t
 
 test('a song with no video that plays here, or a server that cannot look, keeps the search link', async ({ page }) => {
   let reply: (route: Route) => Promise<void> = route => fulfill(route, { videoId: null });
+  await page.addInitScript(version => localStorage.setItem('nowrecommend-youtube-terms-v1', version), legalVersion);  // agreed before: not asked again
   const { dialog } = await openSong(page, route => reply(route));
   await dialog.getByRole('button', { name: 'YouTube로 듣기' }).click();
+  await expect(dialog.locator('.youtube-ask')).toHaveCount(0);
   const panel = dialog.locator('.full-play.youtube');
   await expect(panel).toContainText('재생할 수 있는 영상을 찾지 못했어요');
   await expect(panel.getByRole('link', { name: 'YouTube에서 찾기 (새 탭)' })).toHaveAttribute('href', /youtube\.com\/results/);
@@ -75,6 +92,11 @@ test('a song with no video that plays here, or a server that cannot look, keeps 
   await expect(panel).toContainText('오늘은 YouTube 플레이어를 더 열 수 없어요');
 
   reply = route => route.abort();
+  await dialog.getByRole('button', { name: 'YouTube 플레이어 닫기' }).click();
+  await dialog.getByRole('button', { name: 'YouTube로 듣기' }).click();
+  await expect(panel).toContainText('YouTube 플레이어를 열지 못했어요');
+
+  reply = route => fulfill(route, { videoId: 12345678901 });  // not a video id (a number): not put in a frame
   await dialog.getByRole('button', { name: 'YouTube 플레이어 닫기' }).click();
   await dialog.getByRole('button', { name: 'YouTube로 듣기' }).click();
   await expect(panel).toContainText('YouTube 플레이어를 열지 못했어요');

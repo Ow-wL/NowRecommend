@@ -44,6 +44,12 @@ export function youtubeAddress(videoId: string | null | undefined): string | und
   return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId) ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&playsinline=1` : undefined;
 }
 
+// YouTube's API policies want the person to have agreed to the policy that covers the player before using it
+// (Developer Policies III.A.2): asked once in this browser, for the policy in force, before the first search.
+const YOUTUBE_KEY = 'nowrecommend-youtube-terms-v1';
+export function youtubeAgreed(version: string): boolean { try { return localStorage.getItem(YOUTUBE_KEY) === version; } catch { return false; } }
+export function agreeYoutube(version: string): void { try { localStorage.setItem(YOUTUBE_KEY, version); } catch { /* asked again next time */ } }
+
 // One player for the whole app, like the previews: opening another song's, or the other player, closes this one.
 export type Player = 'apple' | 'youtube';
 let openId = '', openPlayer: Player = 'apple';

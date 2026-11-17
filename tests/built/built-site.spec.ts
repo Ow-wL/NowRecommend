@@ -112,7 +112,7 @@ test('the security policy lets Apple Music\'s player into a frame, and no other 
   await page.route('https://embed.music.apple.com/**', route => { asked.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><p>Apple Music player</p>' }); });
   await page.route('https://frames.example/**', route => { asked.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'text/html', body: '<p>not allowed</p>' }); });
   await page.goto('/#/favorites');
-  expect(await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')).toContain('frame-src https://embed.music.apple.com;');
+  expect(await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')).toContain('frame-src https://embed.music.apple.com https://www.youtube-nocookie.com;');  // Apple's and YouTube's players only
   await page.getByRole('button', { name: 'River Flows in You 상세 보기' }).click();
   await page.getByRole('button', { name: 'Apple Music 플레이어 열기' }).click();
   const frame = page.getByRole('dialog').locator('iframe');

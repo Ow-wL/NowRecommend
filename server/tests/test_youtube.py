@@ -19,10 +19,10 @@ def hit(video_id: str, title: str, channel: str, live: str = "none") -> dict:
     return {"id": {"kind": "youtube#video", "videoId": video_id}, "snippet": {"title": title, "channelTitle": channel, "liveBroadcastContent": live}}
 
 
-def status(video_id: str, embeddable=True, age=False, blocked=(), allowed=None, privacy="public") -> dict:
+def status(video_id: str, embeddable=True, age=False, blocked=(), allowed=None, privacy="public", kids=False) -> dict:
     details = {**({"contentRating": {"ytRating": "ytAgeRestricted"}} if age else {}),
                **({"regionRestriction": {**({"blocked": list(blocked)} if blocked else {}), **({"allowed": allowed} if allowed is not None else {})}} if blocked or allowed is not None else {})}
-    return {"id": video_id, "status": {"embeddable": embeddable, "privacyStatus": privacy}, "contentDetails": details}
+    return {"id": video_id, "status": {"embeddable": embeddable, "privacyStatus": privacy, **({} if kids is None else {"madeForKids": kids})}, "contentDetails": details}
 
 
 NIGHT = [
@@ -40,11 +40,36 @@ NIGHT = [
 def test_the_song_as_released_comes_first_and_what_is_not_it_is_left_out():
     # The artist's "- Topic" channel, then a video whose title names the artist. Not: a cover, the same title by someone
     # else, a live broadcast, an hour-long loop, a malformed id, a video that does not carry the title.
-    assert candidates("밤편지", "아이유", NIGHT) == ["topicchan01", "mvofficial1"]
+    assert candidates("밤편지", "아이유", NIGHT) == ["topicchan01", "mvofficial1"]  # the live clip names only "Through the Night"
     # A title known under its English name on most uploads ("에잇" is "eight").
     assert candidates("에잇", "아이유", [hit("eightmv0001", "[MV] IU(아이유) _ eight(Prod.&Feat. SUGA of BTS)", "1theK (원더케이)")]) == ["eightmv0001"]
     assert candidates("밤편지", "아이유", []) == []
-    assert candidates("Dynamite", "방탄소년단", [hit("dynamitemv1", "BTS (방탄소년단) 'Dynamite' Official MV", "HYBE LABELS")]) == ["dynamitemv1"]
+
+
+def test_real_search_results_of_2026_11_18_are_ranked_as_a_listener_would():
+    """Titles as the API sent them for "아이유 밤편지" and "방탄소년단 Dynamite" (entities and all)."""
+    night = [hit("EjMTw4xLcBI", "아이유(IU) - 밤편지 [가사/Lyrics]", "누군가"), hit("BzYnNdJhZQw", "[MV] IU(아이유) _ Through the Night(밤편지)", "1theK (원더케이)"),
+             hit("2ltiSmgb-Sc", "아이유 - 밤편지 [유희열의 스케치북/You Heeyeol&#39;s Sketchbook] | KBS 200918 방송", "KBS Kpop"),
+             hit("6744glqD6lk", "Through the Night (밤편지)", "IU - Topic"), hit("D67jNiKLWC8", "[TJ노래방] 밤편지 - IU / TJ Karaoke", "TJ노래방 공식 유튜브채널"),
+             hit("DFzPmaNb7fk", "[IU] Through the Night(밤편지) Concert Live Clip (@ 2017 Tour 팔레트)", "이지금 [IU Official]")]
+    picked = candidates("밤편지", "아이유", night)
+    assert picked[:2] == ["6744glqD6lk", "BzYnNdJhZQw"] and "D67jNiKLWC8" not in picked and picked.index("DFzPmaNb7fk") < picked.index("EjMTw4xLcBI")
+    dynamite = [hit("gdZLi9oWNZg", "BTS (방탄소년단) &#39;Dynamite&#39; Official MV", "HYBE LABELS"),
+                hit("e81ad5MpfQ0", "BTS (방탄소년단) &#39;Dynamite&#39; @ America&#39;s Got Talent 2020", "BANGTANTV"),
+                hit("CN4fffh7gmk", "[CHOREOGRAPHY] BTS (방탄소년단) &#39;Dynamite&#39; Dance Practice", "BANGTANTV"),
+                hit("KhZ5DCd7m6s", "BTS Dynamite Lyrics (Color Coded Lyrics)", "Jaeguchi")]
+    assert candidates("Dynamite", "방탄소년단", dynamite)[0] == "gdZLi9oWNZg" and "CN4fffh7gmk" not in candidates("Dynamite", "방탄소년단", dynamite)
+
+
+def test_short_names_and_titles_count_only_as_words_of_their_own():
+    assert candidates("밤편지", "아이유", [hit("premium0001", "Premium 밤편지 모음", "Premium Music")]) == []  # "IU" is not in "Premium"
+    assert candidates("봄날", "방탄소년단", [hit("springday01", "봄날의 기억 - BTS", "누군가")]) == []  # not "봄날"
+    assert candidates("봄날", "방탄소년단", [hit("springday02", "BTS (방탄소년단) '봄날 (Spring Day)' Official MV", "HYBE LABELS")]) == ["springday02"]
+    # A word of the song's own title does not count against it.
+    assert candidates("Butter (Remix)", "방탄소년단", [hit("butterremix", "BTS 'Butter (Hotter Remix)' Official Audio", "BTS - Topic")]) == ["butterremix"]
+    assert candidates("Butter", "방탄소년단", [hit("butterremi2", "BTS 'Butter (Hotter Remix)' Official Audio", "BTS - Topic")]) == []
+    assert candidates("Butter", "방탄소년단", [hit("butterofmv1", "BTS (방탄소년단) 'Butter' Official MV", "HYBE LABELS")]) == ["butterofmv1"]  # by "BTS" too
+    assert candidates("Discover", "누군가", [hit("discover001", "누군가 - Discover", "누군가 - Topic")]) == ["discover001"]  # "cover" inside a word
 
 
 def test_a_video_is_offered_only_where_it_can_be_played():
@@ -55,7 +80,8 @@ def test_a_video_is_offered_only_where_it_can_be_played():
     assert not playable(status("a" * 11, allowed=["US", "JP"]))
     assert playable(status("a" * 11, allowed=["KR", "US"]))
     assert not playable(status("a" * 11, privacy="private"))
-    assert not playable({**status("a" * 11), "status": {"embeddable": True, "madeForKids": True}})
+    assert not playable(status("a" * 11, kids=True))
+    assert not playable(status("a" * 11, kids=None))  # not said: not offered
 
 
 class FakeApi:
@@ -100,6 +126,52 @@ def test_the_finder_searches_once_checks_the_candidates_and_remembers_the_answer
     assert finder.known("밤편지", "아이유") == (True, None)
     clock.t += MISSING_TTL + 1
     assert finder.known("밤편지", "아이유") == (False, None)
+
+
+def test_an_answer_past_its_time_is_dropped_not_only_ignored():
+    api, clock = FakeApi(), Clock()
+    finder = YouTubeFinder("the-key", get=api, now=clock)
+    finder.find("밤편지", "아이유")
+    clock.t += FOUND_TTL + 1
+    finder.known("다른 곡", "누군가")  # any later look at the memory
+    assert ("밤편지", "아이유") not in finder.kept
+
+
+def test_two_requests_for_one_song_at_once_make_one_search():
+    import threading
+
+    gate = threading.Event()
+
+    class SlowApi(FakeApi):
+        def __call__(self, path, params, timeout):
+            if path == "search":
+                gate.wait(2)
+            return super().__call__(path, params, timeout)
+
+    api, charged, answers = SlowApi(), [], []
+    finder = YouTubeFinder("the-key", get=api)
+    ask = lambda: answers.append(finder.lookup("밤편지", "아이유", lambda: charged.append(1)))  # noqa: E731
+    first, second = threading.Thread(target=ask), threading.Thread(target=ask)
+    first.start()
+    while not finder.asking:
+        pass
+    second.start()
+    gate.set()
+    first.join(3); second.join(3)
+    assert answers == ["topicchan01", "topicchan01"] and charged == [1] and [c[0] for c in api.calls] == ["search", "videos"]
+
+
+def test_a_refused_charge_searches_nothing_and_lets_the_next_request_ask():
+    api = FakeApi()
+    finder = YouTubeFinder("the-key", get=api)
+
+    def refuse():
+        raise RuntimeError("over the limit")
+
+    with pytest.raises(RuntimeError):
+        finder.lookup("밤편지", "아이유", refuse)
+    assert api.calls == [] and finder.asking == {}
+    assert finder.lookup("밤편지", "아이유", lambda: None) == "topicchan01"
 
 
 def test_a_failed_search_is_not_remembered_and_never_shows_the_key():
@@ -173,4 +245,8 @@ def test_without_the_key_or_when_the_api_fails_the_player_says_so(world):
     failed = client.get("/api/youtube/m01")
     assert failed.status_code == 503 and "YouTube에서 찾기" in failed.json()["detail"]
     app.dependency_overrides[youtube_finder] = lambda: None
+    assert client.get("/api/youtube/m01").status_code == 503
+    # YOUTUBE_DAILY_LIMIT=0 turns the player off rather than lifting the limit.
+    app.dependency_overrides[youtube_finder] = lambda: YouTubeFinder("the-key", get=FakeApi())
+    app.dependency_overrides[get_settings] = lambda: Settings(auth_secret="test-secret", youtube_api_key="the-key", youtube_daily_limit=0, rate_limit_per_minute=0)
     assert client.get("/api/youtube/m01").status_code == 503

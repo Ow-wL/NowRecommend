@@ -20,6 +20,7 @@ from ..youtube import YouTubeFinder, YouTubeUnavailable, youtube_finder
 log = logging.getLogger(__name__)
 router = APIRouter()
 OFF = "지금은 YouTube 플레이어를 쓸 수 없어요. 아래 'YouTube에서 찾기'로 열어 주세요."
+BUSY = "오늘은 YouTube 플레이어를 더 열 수 없어요. 'YouTube에서 찾기'로 열어 주세요."
 
 
 def find_song(item_id: str, session: Session = Depends(get_session)) -> tuple[str, str] | None:
@@ -33,25 +34,26 @@ def find_song(item_id: str, session: Session = Depends(get_session)) -> tuple[st
 @router.get("/api/youtube/{item_id}")
 def video(request: Request, song: tuple[str, str] | None = Depends(find_song), session: Session = Depends(get_session),
           settings: Settings = Depends(get_settings), finder: YouTubeFinder | None = Depends(youtube_finder)):
-    if finder is None:
+    if finder is None or settings.youtube_daily_limit <= 0:  # no key, or YOUTUBE_DAILY_LIMIT=0: the player is off
         raise HTTPException(503, OFF)
     if song is None:
         raise HTTPException(404, "곡을 찾지 못했어요.")
     title, artist = song
-    seen, video_id = finder.known(title, artist)
-    if not seen:
+
+    def charge() -> None:
+        """Counts a new search against the caller's day and the service's, or refuses it."""
         mine = Allowance(session, f"yt:g:{guest_key(client_address(request, settings.trust_proxy), settings.auth_secret)}", settings.youtube_daily_per_address, False)
         everyone = Allowance(session, "yt:all", settings.youtube_daily_limit, False)
         if not mine.take():
-            raise HTTPException(429, "오늘은 YouTube 플레이어를 더 열 수 없어요. 'YouTube에서 찾기'로 열어 주세요.")
+            raise HTTPException(429, BUSY)
         if not everyone.take():
             mine.give_back()
             log.warning("youtube: the service's daily searches (YOUTUBE_DAILY_LIMIT) are used up")
-            raise HTTPException(429, "오늘은 YouTube 플레이어를 더 열 수 없어요. 'YouTube에서 찾기'로 열어 주세요.")
-        try:
-            video_id = finder.find(title, artist)
-        except YouTubeUnavailable as error:
-            # Counted all the same: the API may have counted the search before it failed.
-            log.warning("youtube: search failed: %s", error)
-            raise HTTPException(503, OFF) from None
-    return {"videoId": video_id}
+            raise HTTPException(429, BUSY)
+
+    try:
+        # Counted all the same when the search fails: the API may have counted it before failing.
+        return {"videoId": finder.lookup(title, artist, charge)}
+    except YouTubeUnavailable as error:
+        log.warning("youtube: search failed: %s", error)
+        raise HTTPException(503, OFF) from None

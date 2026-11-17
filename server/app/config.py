@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     # one address at most `youtube_daily_per_address`. A song asked again within a week answers from memory, uncounted.
     youtube_api_key: str | None = None
     youtube_daily_limit: int = Field(50, ge=0)
-    youtube_daily_per_address: int = Field(20, ge=0)
+    youtube_daily_per_address: int = Field(10, ge=0)  # 0: no limit per address (the day's limit still holds; 0 there turns the player off)
     parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)

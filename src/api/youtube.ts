@@ -5,7 +5,7 @@ import { apiJson, API_BASE_URL } from './client';
 export type YouTubeAnswer = { videoId: string | null };
 export const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 const validAnswer = (v: unknown): v is YouTubeAnswer =>
-  !!v && typeof v === 'object' && 'videoId' in v && ((v as YouTubeAnswer).videoId === null || VIDEO_ID.test(String((v as YouTubeAnswer).videoId)));
+  !!v && typeof v === 'object' && 'videoId' in v && ((v as YouTubeAnswer).videoId === null || typeof (v as YouTubeAnswer).videoId === 'string' && VIDEO_ID.test((v as YouTubeAnswer).videoId!));
 
 export function fetchYouTube(itemId: string, options: { base?: string; fetchImpl?: typeof fetch; signal?: AbortSignal } = {}) {
   const { base = API_BASE_URL, fetchImpl, signal } = options;
