@@ -4,7 +4,7 @@
 
 - 사이트: <https://nowrec.kr/> (2026-11-17부터. 이전 주소 <https://ow-wl.github.io/NowRecommend/>와 `www.nowrec.kr`은 이 주소로 넘어옵니다)
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- **운영 중(2026-11-17 오후, 재설정 메일을 켠 뒤)**: API 이미지 `api:934d3ce`, 리비전 `nowrecommend-api-00021-l5f`(트래픽 100%), DB 마이그레이션 `0010`, Pages는 `main` `934d3ce`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:934d3ce`. 재설정 메일은 Resend로 켜져 있습니다(`mail.configured: true`). 자세한 것은 §4-3과 §4-4. 아래 줄부터는 그 이전 기록입니다.
+- **운영 중(2026-11-17 오후, 재설정 메일을 켠 뒤)**: API 이미지 `api:934d3ce`, 리비전 `nowrecommend-api-00022-22t`(트래픽 100%, `AI_DAILY_LIMIT=1000`을 넣은 리비전), DB 마이그레이션 `0010`, Pages는 `main` `934d3ce`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:934d3ce`. 재설정 메일은 Resend로 켜져 있습니다(`mail.configured: true`). 자세한 것은 §4-3과 §4-4. 아래 줄부터는 그 이전 기록입니다.
 - 이전 운영 상태(2026-11-09 화면 전환·추가 기능 배포 뒤): 가격 제거 **2단계(열 삭제)까지 완료**, 계정 기능 **켜짐**, 음식·음악 모두 **AI 엔진**.
   - API: 이미지 `api:c6fb47e`, 리비전 `nowrecommend-api-00016-ztd`(트래픽 100%, 환경 변수 `SONG_STORE_DEADLINE_MS=2500`). AI 음악 곡을 Apple 스토어에서 확인해 등록된 곡을 먼저 보내고, 메뉴 이름과 검수 재료로 필수 제외를 확인합니다. 시드 작업은 `api:7a5e7cb`(비건·채식 메뉴 15개 추가, 카탈로그 음식 81개·음악 226곡)이고, 관리자 작업은 `api:1fab577` 그대로입니다.
   - Pages: `ef56b39`의 화면(디자인 v9, 같이 추천, 사진 없는 홈, 지난 선택·평가 반영, 취향 유형 16문항과 친구 궁합 링크, 양고기 제외, 설정의 미리듣기 볼륨). 문서만 바꾼 뒤 커밋이 있으면 화면은 같습니다. API 재배포(`d3a7de6`)는 서버만 바뀌어 화면은 같습니다.
