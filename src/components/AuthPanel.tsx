@@ -71,7 +71,7 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
           <div className="consent-row"><label><input type="checkbox" required checked={agreed.terms} onChange={e => setAgreed(a => ({ ...a, terms: e.target.checked }))} /><span>이용약관에 동의해요 <small>(필수)</small></span></label><a href="#/terms" target="_blank" rel="noopener" aria-label="이용약관 보기 (새 탭)">보기</a></div>
           <div className="consent-row"><label><input type="checkbox" required checked={agreed.privacy} onChange={e => setAgreed(a => ({ ...a, privacy: e.target.checked }))} /><span>개인정보 수집·이용에 동의해요 <small>(필수)</small></span></label><a href="#/privacy" target="_blank" rel="noopener" aria-label="개인정보 처리방침 보기 (새 탭)">보기</a></div>
           <div className="consent-row"><label><input type="checkbox" required checked={agreed.adult} onChange={e => setAgreed(a => ({ ...a, adult: e.target.checked }))} /><span>만 {MIN_AGE}세 이상이에요 <small>(필수)</small></span></label></div>
-          <p className="small muted">수집 항목: 이메일, 이름, 비밀번호. 로그인과 기기 간 동기화에 쓰고 계정을 삭제할 때까지 보관해요. 동의하지 않아도 로그인 없이 쓸 수 있어요.</p>
+          <p className="small muted">수집 항목: 이메일, 이름, 비밀번호(암호화해 저장), 동의한 일시와 약관 버전. 로그인과 계정 식별, 비밀번호 재설정 안내에 쓰고 계정을 삭제할 때까지 보관해요. 동의하지 않아도 로그인 없이 쓸 수 있어요.</p>
         </fieldset>}
         {error && <div className="error-box" role="alert">{error}</div>}
         <button className="button primary full-width" disabled={!ready}>{busy ? <span className="spinner" /> : mode === 'signup' ? <UserPlus size={17} /> : mode === 'forgot' ? <Mail size={17} /> : <LogIn size={17} />}{busy ? (mode === 'signup' ? '가입하는 중' : mode === 'forgot' ? '보내는 중' : '로그인하는 중') : mode === 'signup' ? '가입하고 시작하기' : mode === 'forgot' ? '재설정 메일 받기' : '로그인'}</button>
