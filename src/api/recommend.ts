@@ -4,6 +4,7 @@ import { knownCatalogItems } from '../catalog';
 import { validRecommendation } from '../sessionStorage';
 import { apiJson, API_BASE_URL } from './client';
 import { sessionHeaders } from '../account';
+import { sendable, sendableNotes } from '../sensitive';
 
 export type Engine = 'ai' | 'catalog';
 export type RecommendMeta = { mode: 'rag' | 'retrieval_only'; eligibleCount: number; newCount: number; catalogVersion: string; requestId: string;
@@ -33,13 +34,15 @@ function tasteNotes(profile: Profile) {
   const notes = [...profile.selected.flatMap(id => { const reason = profile.reasons?.[id]?.trim(), item = knownCatalogItems().find(i => i.id === id); return reason && item ? [named(item.name, reason)] : []; }),
     ...(profile.custom || []).map(c => named(c.name, c.reason)), ...(profile.ratedNotes || []).map(n => n.slice(0, 120))].slice(0, 40);
   const customNames = (profile.custom || []).map(c => c.name.slice(0, 120)).slice(0, 30);
-  return { ...(notes.length ? { notes } : {}), ...(customNames.length ? { customNames } : {}) };
+  // Without the consent, what was written about health stays in the browser (src/sensitive.ts).
+  const sent = sendableNotes(notes), names = sendableNotes(customNames);
+  return { ...(sent.length ? { notes: sent } : {}), ...(names.length ? { customNames: names } : {}) };
 }
 
 /** Request body for POST /api/recommend (server/app/schemas.py). Only what ranking needs leaves the browser. */
 export function recommendBody(session: Session, profile: Profile, count?: number, engine?: Engine) {
   return {
-    category: session.category, raw: session.raw, conditions: cleanConditions(session.conditions),
+    category: session.category, raw: sendable(session.raw), conditions: cleanConditions(session.conditions),
     profile: { selected: profile.selected, tags: profile.tags, disliked: profile.disliked, ...tasteNotes(profile) },
     excludedIds: session.excludedIds, seenIds: session.seenIds || [], pinnedIds: session.pinnedIds || [],
     candidateIds: session.candidateScope === 'favorites' ? session.candidateIds || [] : null,
@@ -57,6 +60,8 @@ export function qualityOf(meta: RecommendMeta): NonNullable<Session['quality']> 
 export function fetchRecommendations(session: Session, profile: Profile, options: { count?: number; engine?: Engine; base?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {
   // Longer than the server's 10s rerank deadline plus the query embedding, so a slow model degrades to retrieval_only first.
   const { count, engine, base = API_BASE_URL, fetchImpl, timeoutMs = 15000 } = options;
-  return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', headers: sessionHeaders(), body: recommendBody(session, profile, count, engine) })
+  let body: ReturnType<typeof recommendBody>;
+  try { body = recommendBody(session, profile, count, engine); } catch (error) { return Promise.reject(error); }  // HealthConsentNeeded: nothing is sent
+  return apiJson('/api/recommend', validRemoteBatch, { base, fetchImpl, timeoutMs, method: 'POST', headers: sessionHeaders(), body })
     .then(batch => ({ ...batch, results: batch.results.map(r => ({ ...r, item: normalizeItem(r.item) })) }));
 }

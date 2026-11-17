@@ -6,13 +6,15 @@ import { Modal } from './Modal';
 
 const NOTE_LIMIT = 300;
 // The toast does not show over a dialog, so a failure is told here. "기타" needs a word, or there is nothing to act on.
-export function ReportDialog({ item, token, onClose, onSent }: { item: Item; token?: string; onClose: () => void; onSent: () => void }) {
+export function ReportDialog({ item, token, onClose, onSent, guard = (_, proceed) => proceed() }: { item: Item; token?: string; onClose: () => void; onSent: () => void; /** Asks first when the note has words about health (src/sensitive.ts). */ guard?: (texts: (string | null | undefined)[], proceed: () => void) => void }) {
   const [kind, setKind] = useState<ReportKind>('wrong_image'), [note, setNote] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const ready = !busy && (kind !== 'other' || !!note.trim());
-  async function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!ready) return;
+    if (ready) guard([note], send);
+  }
+  async function send() {
     setBusy(true); setError('');
     try { await sendReport({ itemId: item.id, kind, note: note.trim() }, token); onSent(); }
     catch (err) { setBusy(false); setError(err instanceof ApiError && err.status === 429 ? '신고가 너무 많아요. 잠시 후 다시 보내주세요.' : '신고를 보내지 못했어요. 잠시 후 다시 시도해주세요.'); }
