@@ -4,7 +4,7 @@
 
 - 사이트: <https://nowrec.kr/> (2026-11-17부터. 이전 주소 <https://ow-wl.github.io/NowRecommend/>와 `www.nowrec.kr`은 이 주소로 넘어옵니다)
 - API: <https://nowrecommend-api-183982128363.asia-northeast3.run.app> (`/api/health`로 상태 확인)
-- **운영 중(2026-11-17 출시 준비 묶음 배포 뒤)**: API 이미지 `api:33b9b29`, 리비전 `nowrecommend-api-00019-x4t`(트래픽 100%), DB 마이그레이션 `0010`, Pages는 `main` `33b9b29`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:33b9b29`. 자세한 것은 §4-3. 아래 줄부터는 그 이전 기록입니다.
+- **운영 중(2026-11-17 오후, 재설정 메일을 켠 뒤)**: API 이미지 `api:934d3ce`, 리비전 `nowrecommend-api-00021-l5f`(트래픽 100%), DB 마이그레이션 `0010`, Pages는 `main` `934d3ce`의 화면. 작업 네 개(`nowrecommend-seed`·`-migrate-plan`·`-contract`·`-admin`)도 `api:934d3ce`. 재설정 메일은 Resend로 켜져 있습니다(`mail.configured: true`). 자세한 것은 §4-3과 §4-4. 아래 줄부터는 그 이전 기록입니다.
 - 이전 운영 상태(2026-11-09 화면 전환·추가 기능 배포 뒤): 가격 제거 **2단계(열 삭제)까지 완료**, 계정 기능 **켜짐**, 음식·음악 모두 **AI 엔진**.
   - API: 이미지 `api:c6fb47e`, 리비전 `nowrecommend-api-00016-ztd`(트래픽 100%, 환경 변수 `SONG_STORE_DEADLINE_MS=2500`). AI 음악 곡을 Apple 스토어에서 확인해 등록된 곡을 먼저 보내고, 메뉴 이름과 검수 재료로 필수 제외를 확인합니다. 시드 작업은 `api:7a5e7cb`(비건·채식 메뉴 15개 추가, 카탈로그 음식 81개·음악 226곡)이고, 관리자 작업은 `api:1fab577` 그대로입니다.
   - Pages: `ef56b39`의 화면(디자인 v9, 같이 추천, 사진 없는 홈, 지난 선택·평가 반영, 취향 유형 16문항과 친구 궁합 링크, 양고기 제외, 설정의 미리듣기 볼륨). 문서만 바꾼 뒤 커밋이 있으면 화면은 같습니다. API 재배포(`d3a7de6`)는 서버만 바뀌어 화면은 같습니다.
@@ -492,9 +492,19 @@ Cloud Monitoring에 아래를 만들었습니다. 모두 프로젝트 `harness-r
   4. Pages는 되돌리는 커밋을 작업 브랜치에 올려 `frontend` 검사를 통과시킨 뒤 `main`으로 올립니다(강제 푸시는 막혀 있습니다).
 - 데이터가 망가진 경우에만 백업 복원을 씁니다(§4-2의 연습 절차).
 
-## 4-4. 재설정 메일 켜기 (준비 2026-11-17, 미실행)
+## 4-4. 재설정 메일 켜기 (2026-11-17 실행)
 
-비밀번호 재설정 메일은 SMTP 값 다섯 개가 들어가면 켜집니다(`server/app/mail.py`). 발송 서비스는 Resend로 정했습니다(처리방침에 업체·국가·보관 기간 기재, `src/legal.ts`). 지금 운영은 값이 없어 `/api/health`의 `mail.configured`가 `false`이고 재설정 요청은 503입니다.
+비밀번호 재설정 메일은 SMTP 값 다섯 개가 들어가면 켜집니다(`server/app/mail.py`). 발송 서비스는 Resend로 정했습니다(처리방침에 업체·국가·보관 기간 기재, `src/legal.ts`). 2026-11-17에 아래 순서대로 켰고, 지금 운영은 `/api/health`의 `mail.configured`가 `true`입니다.
+
+**실행 결과(2026-11-17)**:
+
+- 운영자가 Resend 가입, 도메인 추가(Tokyo), 가비아 DNS 네 개, API 키 등록(`smtp-password` 버전 1)을 했습니다. DNS는 구글·클라우드플레어 DNS에서 `rsend` → `rsend-apne1.forge.rmta.net`, `send` → `send.forge.rmta.net`로 조회됐습니다.
+- 배포 전 검토에서 로그인 실패 한도의 결함이 하나 나와 `4a926ba`에서 고친 뒤(주소별·전체 한도가 같은 칸을 쓰던 것) 이미지 `api:934d3ce`를 냈습니다. 리비전 `00020-4jb`로 배포하고 작업 네 개의 이미지를 바꿨습니다. 마이그레이션은 없었습니다.
+- `main`을 `934d3ce`로 올려 처리방침에 Resend가 나간 것을 확인한 다음 메일을 시험했습니다.
+- 관리자 작업의 `check`는 바로 통과했지만 `send`는 `SMTPDataError 550`이었습니다. Resend의 답은 "The nowrec.kr domain is not verified"였습니다. **DNS가 조회되고 키로 로그인이 되어도, Resend 화면에서 도메인이 Verified가 되기 전에는 발송이 거절됩니다.** Verified가 된 뒤 `send: ok`.
+- 서비스에 SMTP 값을 넣어 리비전 `00021-l5f`가 됐습니다. 가입되지 않은 주소의 재설정 요청이 202로 답하는 것까지 확인했습니다.
+- 되돌리기: 메일만 끄려면 아래 "끄기". 코드까지 되돌리려면 `00019-x4t`(`api:33b9b29`, 메일 값 없음)로 트래픽을 옮깁니다. DB는 `0010` 그대로라 옮기기만 하면 됩니다.
+- 운영자가 직접 볼 것: 시험 메일이 받은편지함에 왔는지(스팸함 포함), 사이트에서 본인 계정으로 재설정이 끝까지 되는지(아래 6번).
 
 **운영자가 먼저 할 일**(가입과 DNS는 운영자만 할 수 있습니다):
 
