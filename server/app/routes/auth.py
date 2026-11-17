@@ -13,7 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -23,7 +23,7 @@ from ..config import Settings, get_settings
 from ..db import get_session
 from ..legal import get_legal
 from ..mail import Mailer, failure as mail_failure, get_mailer, reset_mail
-from ..models import User
+from ..models import UsageDaily, User
 from ..ratelimit import client_address
 
 log = logging.getLogger(__name__)
@@ -306,6 +306,10 @@ def delete_account(request: DeleteRequest, user: User = Depends(current_user), s
     if not verify_password(request.password, user.password_hash):
         raise HTTPException(401, "비밀번호가 맞지 않아요.")
     attempt.give_back()
+    # The counters kept under the account's id (its AI requests of the day, its wrong current passwords) go with it, not
+    # seven days later: they are the only other rows that name the account. Counters kept under a keyed hash of an
+    # address or an email stay for their seven days, as the policy says (src/legal.ts).
+    session.execute(delete(UsageDaily).where(or_(UsageDaily.bucket == f"ai:u:{user.id}", UsageDaily.bucket.startswith(f"pw:{user.id}:"))))
     session.delete(user)
     session.commit()
     return Response(status_code=204)

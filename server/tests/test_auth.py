@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
 from app.db import get_session
 from app.main import create_app
-from app.models import User
+from app.models import UsageDaily, User
 from app.routes.auth import get_signer
 from tests.conftest import needs_db
 
@@ -43,6 +43,7 @@ def test_tokens_expire_and_fail_closed():
 def client():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     User.__table__.create(engine)
+    UsageDaily.__table__.create(engine)  # deleting an account clears the counters kept under its id
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():

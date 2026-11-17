@@ -512,6 +512,24 @@ def test_an_email_made_to_look_like_another_accounts_counter_does_not_stop_its_o
     assert sorted(names) == ["all", "at"]  # what the made-up address used: its own two counts, and nothing of lee's
 
 
+def test_deleting_the_account_takes_the_counters_kept_under_its_id(world):
+    """What is counted under the account's id is the account's: it is gone with it, not a week later. Counters under a
+    hash of an address stay (they name nobody)."""
+    from app.budget import take, today
+
+    client, auth, _, _, _, app = world
+    limited(app, 5)
+    me = client.get("/api/auth/me", headers=auth).json()["user"]["id"]
+    assert client.post("/api/auth/delete", headers=auth, json={"password": "wrong-password"}).status_code == 401
+    with next(app.dependency_overrides[get_session]()) as session:
+        take(session, f"ai:u:{me}", 100, today())
+        take(session, "ai:g:someone-else", 100, today())
+    assert sum(1 for bucket in counts(app) if me in bucket) == 2  # the wrong password just now, and the AI requests of the day
+    assert client.post("/api/auth/delete", headers=auth, json={"password": "password1"}).status_code == 204
+    left = counts(app)
+    assert not [bucket for bucket in left if me in bucket] and left["ai:g:someone-else"] == 1
+
+
 def test_an_address_without_an_account_is_stopped_and_checked_the_same_way(world, monkeypatch):
     """Otherwise the refusal, or how long the answer takes, would tell which addresses are registered."""
     from app.routes import auth as routes
