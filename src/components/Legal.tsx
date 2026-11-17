@@ -5,7 +5,7 @@ import { apiEnabled } from '../api/client';
 
 /** An address written in a document is a link (YouTube's policies want theirs and Google's to be followable). */
 export function linked(text: string) {
-  return text.split(/(https:\/\/[^\s)]+)/).map((part, n) => n % 2 ? <a key={n} href={part} target="_blank" rel="noopener noreferrer">{part}</a> : part);
+  return text.split(/(https:\/\/[^\s)]*[^\s).,])/).map((part, n) => n % 2 ? <a key={n} href={part} target="_blank" rel="noopener noreferrer">{part}</a> : part);
 }
 
 /** The terms of service or the privacy policy, as a page of its own (#/terms, #/privacy): linked from the sign-up form,

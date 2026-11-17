@@ -61,6 +61,16 @@ def test_real_search_results_of_2026_11_18_are_ranked_as_a_listener_would():
     assert candidates("Dynamite", "방탄소년단", dynamite)[0] == "gdZLi9oWNZg" and "CN4fffh7gmk" not in candidates("Dynamite", "방탄소년단", dynamite)
 
 
+def test_a_fan_channel_is_not_taken_for_the_artist_and_tricks_around_the_word_list_do_not_pass():
+    ranked = candidates("밤편지", "아이유", [hit("fanaudio001", "아이유 밤편지 Official Audio", "아이유 팬 채널"),
+                                            hit("1themv00001", "[MV] IU(아이유) _ Through the Night(밤편지)", "1theK (원더케이)"),
+                                            hit("ownchanne01", "[IU] 밤편지 MV", "이지금 [IU Official]")])
+    assert ranked[0] == "ownchanne01"  # the artist's own channel; a fan channel saying "Official" gains no more than the label's MV
+    for trick in ["아이유 밤편지 1시간반복", "아이유 밤편지 커버곡", "아이유 밤편지 교차 편집", "IU 밤편지 fan cam"]:
+        assert candidates("밤편지", "아이유", [hit("trickvideo1", trick, "누군가")]) == [], trick
+    assert candidates("눈의 꽃", "박효신", [hit("snowflower1", "박효신 - 눈의꽃 MV", "박효신")]) == ["snowflower1"]  # the same words, spaced otherwise
+
+
 def test_short_names_and_titles_count_only_as_words_of_their_own():
     assert candidates("밤편지", "아이유", [hit("premium0001", "Premium 밤편지 모음", "Premium Music")]) == []  # "IU" is not in "Premium"
     assert candidates("봄날", "방탄소년단", [hit("springday01", "봄날의 기억 - BTS", "누군가")]) == []  # not "봄날"
@@ -135,6 +145,19 @@ def test_an_answer_past_its_time_is_dropped_not_only_ignored():
     clock.t += FOUND_TTL + 1
     finder.known("다른 곡", "누군가")  # any later look at the memory
     assert ("밤편지", "아이유") not in finder.kept
+
+
+def test_the_memory_is_swept_on_a_clock_even_when_nobody_asks():
+    import time as clock_time
+
+    clock = Clock()
+    finder = YouTubeFinder("the-key", get=FakeApi(), now=clock, sweep_every_s=0.05)
+    finder.find("밤편지", "아이유")
+    clock.t += FOUND_TTL + 1
+    deadline = clock_time.monotonic() + 2
+    while finder.kept and clock_time.monotonic() < deadline:
+        clock_time.sleep(0.02)
+    assert not finder.kept
 
 
 def test_two_requests_for_one_song_at_once_make_one_search():

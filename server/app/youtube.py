@@ -34,17 +34,20 @@ MISSING_TTL = 24 * 3600    # nothing found: asked again the next day
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 # What a video title says when it is not the song as released. A word the song's own title has ("Remix", "Teaser") does
 # not count against it.
-NOT_THE_SONG = ["cover", "커버", "karaoke", "노래방", "reaction", "리액션", "instrumental", "inst", "mr", "1시간", "1 hour", "loop", "반복",
-                "교차편집", "직캠", "fancam", "tutorial", "강좌", "악보", "sheet music", "remix", "리믹스", "sped up", "slowed", "8d", "teaser",
-                "티저", "preview", "미리듣기", "dance practice", "choreography", "안무", "mashup", "medley", "메들리"]
+NOT_THE_SONG = ["cover", "karaoke", "reaction", "instrumental", "inst", "mr", "1 hour", "loop", "fancam", "fan cam", "tutorial", "sheet music",
+                "remix", "sped up", "slowed", "8d", "teaser", "preview", "dance practice", "choreography", "mashup", "medley",
+                "커버", "노래방", "리액션", "1시간", "반복", "교차편집", "직캠", "강좌", "악보", "리믹스", "티저", "미리듣기", "안무", "메들리"]
+HANGUL = re.compile(r"[가-힣]")
 OFFICIAL = re.compile(r"(?<![a-z])(m/?v|official|audio)(?![a-z])|뮤직\s*비디오", re.IGNORECASE)
 PERFORMANCE = re.compile(r"(?<![a-z])(live|concert|stage|performance|show)(?![a-z])|라이브|콘서트|무대|공연|교차", re.IGNORECASE)
 LYRICS = re.compile(r"(?<![a-z])lyrics?(?![a-z])|가사", re.IGNORECASE)
 
 
 def _bounded(word: str, text: str) -> bool:
-    """`word` in `text` standing on its own: not inside a longer word of letters (Latin or Hangul) or digits."""
-    return re.search(rf"(?<![0-9a-z가-힣]){re.escape(word.casefold())}(?![0-9a-z가-힣])", text.casefold()) is not None
+    """`word` in `text` standing on its own: not inside a longer word of letters (Latin or Hangul) or digits. Spaces inside
+    the word may be there or not ("눈의 꽃" is in "눈의꽃 MV")."""
+    letters = [re.escape(c) for c in word.casefold() if not c.isspace()]
+    return bool(letters) and re.search(rf"(?<![0-9a-z가-힣]){r'\s*'.join(letters)}(?![0-9a-z가-힣])", text.casefold()) is not None
 
 
 def _names(text: str, name: str) -> bool:
@@ -91,8 +94,20 @@ def _core(title: str) -> str:
     return re.sub(r"\s*[\(\[].*?[\)\]]", "", title).strip() or title
 
 
+def _says(word: str, text: str) -> bool:
+    """A Korean word anywhere, spaces or not ("1시간반복", "교차 편집"); a Latin one as a word of its own ("Discover")."""
+    return norm(word) in norm(text) if HANGUL.search(word) else _bounded(word, text)
+
+
 def _not_the_song(title: str, name: str) -> bool:
-    return any(_bounded(word, name) and not _bounded(word, title) for word in NOT_THE_SONG)
+    return any(_says(word, name) and not _says(word, title) for word in NOT_THE_SONG)
+
+
+def _artists_channel(artist: str, channel: str) -> bool:
+    """The artist's own channel: named just so ("BTS", "아이유"), or the name with "Official" ("이지금 [IU Official]"). A
+    channel that only mentions the name ("아이유 팬 채널") is not taken for the artist's."""
+    names = [artist, *ALIASES.get(artist, []), *MORE_ALIASES.get(artist, [])]
+    return any(norm(channel) == norm(n) for n in names if norm(n)) or (_artist(artist, channel) and _bounded("official", channel))
 
 
 def candidates(title: str, artist: str, items: list[dict]) -> list[str]:
@@ -111,11 +126,12 @@ def candidates(title: str, artist: str, items: list[dict]) -> list[str]:
             continue
         if not any(_names(name, t) for t in titles) or _not_the_song(title, name):
             continue
-        by_channel, by_title = _artist(artist, channel), _artist(artist, name)
-        if not (by_channel or by_title):
+        named, by_title = _artist(artist, channel), _artist(artist, name)
+        if not (named or by_title):
             continue  # a song of the same name by someone else
-        score = (4 if by_channel and channel.endswith(" - Topic") else 3 if by_channel else 0) + (1 if by_title else 0)
-        score += (2 if OFFICIAL.search(name) else 0) - (2 if PERFORMANCE.search(name) else 0) - (1 if LYRICS.search(name) else 0)
+        topic = named and channel.endswith(" - Topic")  # YouTube's own channel of the artist's releases
+        score = (4 if topic else 3 if _artists_channel(artist, channel) else 0) + (1 if by_title else 0)
+        score += (1 if OFFICIAL.search(name) else 0) - (2 if PERFORMANCE.search(name) else 0) - (1 if LYRICS.search(name) else 0)
         scored.append((-score, order, video_id))
     return [video_id for _, _, video_id in sorted(scored)]
 
@@ -144,11 +160,22 @@ class YouTubeFinder:
     answer past its time is dropped, not only ignored: the API's data is not kept longer than the policy allows. Two
     requests for the same song at once make one search; the second waits for the first's answer."""
 
-    def __init__(self, key: str, get: Getter = _get, timeout_s: float = 4.0, cache_size: int = 2000, now: Callable[[], float] = time.monotonic):
+    def __init__(self, key: str, get: Getter = _get, timeout_s: float = 4.0, cache_size: int = 2000, now: Callable[[], float] = time.monotonic,
+                 sweep_every_s: float | None = None):
         self.key, self.get, self.timeout_s, self.cache_size, self.now = key, get, timeout_s, cache_size, now
         self.kept: OrderedDict[tuple[str, str], _Kept] = OrderedDict()
         self.asking: dict[tuple[str, str], threading.Event] = {}
         self.lock = threading.Lock()
+        if sweep_every_s:
+            # Answers are dropped on time even when nobody asks for a video for a long while (the policy's limit is on
+            # keeping, not on using). A daemon thread: it ends with the process.
+            def sweeper() -> None:
+                while True:
+                    time.sleep(sweep_every_s)
+                    with self.lock:
+                        self._sweep()
+
+            threading.Thread(target=sweeper, name="youtube-sweep", daemon=True).start()
 
     def _sweep(self) -> None:
         """Drops every answer past its time. Called under the lock; the cache holds at most `cache_size` entries."""
@@ -224,5 +251,5 @@ def youtube_finder() -> YouTubeFinder | None:
     global _finder
     with _finder_lock:
         if _finder is None or _finder.key != key:
-            _finder = YouTubeFinder(key)
+            _finder = YouTubeFinder(key, sweep_every_s=600)
         return _finder
