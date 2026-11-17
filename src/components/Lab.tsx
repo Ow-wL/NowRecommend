@@ -33,7 +33,7 @@ function readTabState(category: Category): TabState | null {
 const freshSession = (c: Category): Session => ({ ...newSession(c), editor: createEditor('', c) });
 const splitLiked = (text: string) => [...new Set(text.split(/[,\n]/).map(s => s.trim()).filter(Boolean))].slice(0, 10).map(s => s.slice(0, 60));
 
-export function Lab({ onTasteType, category, profile, items, onCategory, onEditTaste, onHome }: { onTasteType: () => void; category: Category; profile: Profile; items: Item[]; onCategory: (c: Category) => void; onEditTaste: () => void; onHome: () => void }) {
+export function Lab({ onTasteType, category, profile, items, onCategory, onEditTaste, onHome, guard = (_, proceed) => proceed() }: { /** Asks first when what was typed has words about health (src/sensitive.ts). */ guard?: (texts: (string | null | undefined)[], proceed: () => void) => void; onTasteType: () => void; category: Category; profile: Profile; items: Item[]; onCategory: (c: Category) => void; onEditTaste: () => void; onHome: () => void }) {
   const [initial] = useState(() => readTabState(category));
   const [session, setSession] = useState<Session>(initial?.session || freshSession(category));
   const [likedText, setLikedText] = useState(initial?.likedText || '');
@@ -82,6 +82,9 @@ export function Lab({ onTasteType, category, profile, items, onCategory, onEditT
 
   function run(again: boolean) {
     if (!online || working || conflicts.length) return;
+    guard([session.raw, likedText], () => runNow(again));
+  }
+  function runNow(again: boolean) {
     const t = ++token.current;
     const likedExtra = splitLiked(likedText);
     const seen = again ? [...new Set([...poolSeen, ...poolIds])] : [];

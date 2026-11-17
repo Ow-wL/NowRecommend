@@ -1,28 +1,35 @@
 // Health in what a person types (2026-11-17). Words about a person's health are "sensitive information" in the privacy
 // law (개인정보 보호법 제23조): they are handled only with a consent of their own, asked apart from every other one.
 // The service does not ask about health, but its text fields take any words, and "땅콩 알레르기" is a sentence it is
-// built to understand. So before such words are stored or leave the browser the person is asked once (HealthConsent),
-// and until they agree nothing with those words goes to the server:
+// built to understand.
 //
-// - the screens ask before they save or send (App.tsx `withHealth`);
-// - the two requests that carry typed words refuse or drop them here, whatever screen they came from (`sendable`,
-//   `sendableNotes`): a sentence kept from before this existed, one restored from a backup or from another device.
+// The rule: the store (what is kept, and what an account syncs) holds such words only together with the consent, and
+// nothing with such words is sent to the server without it.
+//
+// - The consent is part of the store (`Store.health`: the policy version and the time), so it travels with the data it
+//   covers: to the account, to another device, into a backup.
+// - The screens ask before they save or send (App.tsx `withHealth`).
+// - A store that has such words and no consent (kept from before this existed, restored from a backup, written by a
+//   path that did not ask) is put to the person as it is found: agree, or have those texts removed
+//   (`withoutHealthTexts`). Until they answer, account sync is paused.
+// - The two requests that carry typed words refuse or drop them here, whatever screen they came from (`sendable`,
+//   `sendableNotes`).
 //
 // The list is words that say something about a body or an illness, not about taste: "매운 거 못 먹어요" is a
-// preference, "위염이라 매운 거 못 먹어요" is health. A word too many costs one question; a word too few sends what
-// should have been asked about.
+// preference, "위염이라 매운 거 못 먹어요" is health. It is a list, so it misses what it does not name (the policy says
+// so); a word too many costs one question, once.
+import type { Profile, Store } from './domain';
 import { LEGAL_VERSION } from './legal';
 
-/** Where this browser remembers the consent: which policy it was given under, and when. */
-export const HEALTH_KEY = 'nowrecommend-health-consent-v1';
 export type HealthConsent = { version: string; at: string };
 
 const HEALTH = new RegExp([
-  '알레르기|알러지|불내증|아토피|천식|두드러기',
+  '알레르기|알러지|불내증|아토피|천식|두드러기|비염',
   '당뇨|혈당|혈압|고지혈|콜레스테롤|통풍|빈혈',
-  '임신|임산부|수유\\s*중',
-  '항암|암\\s*환자|투병|투석|수술|입원|퇴원|복용|처방|약\\s*(?:을\\s*)?먹|환자|질환|질병|지병|진단',
-  '위염|식도염|장염|과민성|크론|셀리악',
+  '임신|임산부|입덧|수유\\s*중|생리통|생리\\s*중',
+  '항암|암\\s*환자|투병|투석|수술|입원|퇴원|복용|처방\\s*받|처방\\s*약|처방전|약\\s*(?:을\\s*)?먹|환자|질환|질병|지병|진단\\s*(?:을\\s*)?받|진단서|확진',
+  '위염|식도염|역류성|장염|과민성|크론|셀리악|배탈|설사|변비|체했|체해서',
+  '감기|몸살|독감|두통|치통|아파서|아픈데|아파요|속이\\s*안\\s*좋|몸이\\s*안\\s*좋',
   '우울증|공황|불면증|거식증|폭식증|섭식\\s*장애',
 ].join('|'), 'g');
 
@@ -33,16 +40,50 @@ export function healthTerms(...texts: (string | null | undefined)[]): string[] {
   return found;
 }
 
-export function healthConsent(): HealthConsent | null {
-  try {
-    const saved = JSON.parse(localStorage.getItem(HEALTH_KEY) || 'null') as Partial<HealthConsent> | null;
-    return saved && typeof saved.version === 'string' && typeof saved.at === 'string' ? { version: saved.version, at: saved.at } : null;
-  } catch { return null; }
-}
+// ---- the consent ----
+
+export const validHealthConsent = (v: unknown): v is HealthConsent => !!v && typeof (v as HealthConsent).version === 'string' && typeof (v as HealthConsent).at === 'string';
+/** The consent in force for the store on screen. App.tsx keeps it up to date (`noteHealthConsent(store.health)`); the
+ * requests below read it, so they need no store handed to them. */
+let current: HealthConsent | null = null;
+export function noteHealthConsent(consent: HealthConsent | null | undefined): void { current = validHealthConsent(consent) ? consent : null; }
 /** Given, and under the policy in force: a new version of the policy asks again. */
-export function healthConsented(): boolean { return healthConsent()?.version === LEGAL_VERSION; }
-export function giveHealthConsent(now = new Date()): void { try { localStorage.setItem(HEALTH_KEY, JSON.stringify({ version: LEGAL_VERSION, at: now.toISOString() })); } catch { /* asked again next time */ } }
-export function withdrawHealthConsent(): void { try { localStorage.removeItem(HEALTH_KEY); } catch { /* nothing was kept */ } }
+export function healthConsented(): boolean { return current?.version === LEGAL_VERSION; }
+export const newHealthConsent = (now = new Date()): HealthConsent => ({ version: LEGAL_VERSION, at: now.toISOString() });
+
+// ---- what a store holds ----
+
+/** History entries made without a sentence carry this as theirs (src/history.ts); a removed sentence becomes one. */
+const NO_SENTENCE = '직접 선택한 조건';
+const REMOVED_PRESET = '내 조건';
+const about = (text: string | undefined) => healthTerms(text).length > 0;
+
+const profileTexts = (profile: Profile): (string | undefined)[] => [...Object.values(profile.reasons || {}), ...(profile.custom || []).flatMap(c => [c.name, c.reason])];
+/** Every text a person typed that the store keeps. */
+export function storeTexts(store: Store): (string | undefined)[] {
+  return [...Object.values(store.profiles).flatMap(profileTexts), ...store.history.flatMap(h => [h.raw, h.review?.note, ...h.rounds.map(r => r.raw)]), ...(store.presets || []).map(p => p.name)];
+}
+export const storeHealthTerms = (store: Store): string[] => healthTerms(...storeTexts(store));
+
+/** The profile without what was written about health: such reasons, and typed-in favourites named that way. */
+export function withoutHealthProfile(profile: Profile): Profile {
+  const reasons = Object.fromEntries(Object.entries(profile.reasons || {}).filter(([, reason]) => !about(reason)));
+  const custom = (profile.custom || []).filter(c => !about(c.name)).map(c => about(c.reason) ? (({ reason: _, ...rest }) => rest)(c) : c);
+  const { reasons: _r, custom: _c, ...rest } = profile;
+  return { ...rest, ...(Object.keys(reasons).length ? { reasons } : {}), ...(custom.length ? { custom } : {}) };
+}
+/** The store without the texts that have health words in them. What was recommended, chosen and rated stays; a sentence
+ * becomes "no sentence", a note is emptied, a preset keeps its conditions under a plain name. */
+export function withoutHealthTexts(store: Store): Store {
+  return { ...store,
+    profiles: Object.fromEntries(Object.entries(store.profiles).map(([category, profile]) => [category, withoutHealthProfile(profile)])) as Store['profiles'],
+    history: store.history.map(h => ({ ...h, raw: about(h.raw) ? NO_SENTENCE : h.raw, rounds: h.rounds.map(r => about(r.raw) ? { ...r, raw: NO_SENTENCE } : r),
+      ...(h.review && about(h.review.note) ? { review: { ...h.review, note: '' } } : {}) })),
+    ...(store.presets ? { presets: store.presets.map(p => about(p.name) ? { ...p, name: REMOVED_PRESET } : p) } : {}),
+  };
+}
+
+// ---- what may leave the browser ----
 
 /** A typed sentence was about to be sent with health words in it and no consent. The screens ask first, so reaching this
  * means a path that did not: it is stopped, not sent. */
@@ -57,5 +98,5 @@ export function sendable(text: string): string {
 }
 /** The notes that may leave the browser: without consent, the ones with health words stay behind. */
 export function sendableNotes(notes: string[]): string[] {
-  return healthConsented() ? notes : notes.filter(note => !healthTerms(note).length);
+  return healthConsented() ? notes : notes.filter(note => !about(note));
 }

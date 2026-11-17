@@ -28,6 +28,7 @@ function decode(text: string): { store: Store; sync: unknown } | null {
     if (![1,2].includes(v?.version) || typeof v.name !== 'string' || v.name.length > 100 || !['food','music'].every(c => ['selected','tags','disliked'].every(k => strings(v.profiles?.[c]?.[k]))) || !strings(v.favorites) || !Array.isArray(v.history) || v.history.length > 50 || !v.history.every((h:any) => validHistory(h,v.version))) return null;
     if (v.presets !== undefined && (!Array.isArray(v.presets) || v.presets.length > 40 || !v.presets.every(validPreset) || new Set(v.presets.map((p:any)=>p.id)).size !== v.presets.length || ['food','music'].some(c=>v.presets.filter((p:any)=>p.category===c).length > 20))) return null;
     if(v.appearance!==undefined && !validAppearance(v.appearance))return null;
+    if(v.health!==undefined && !(v.health && typeof v.health.version==='string' && typeof v.health.at==='string'))delete v.health;  // a consent that cannot be read is no consent
     return { sync, store: withoutBudget(v.version === 2 ? v : { ...v, version:2, history:v.history.map((h:any)=>({id:h.id,date:h.date,category:h.category,raw:h.raw,conditions:h.conditions,resultIds:h.resultIds,rounds:[],legacy:true})) }) };
   } catch { return null; }
 }

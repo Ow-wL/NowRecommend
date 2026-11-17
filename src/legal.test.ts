@@ -96,7 +96,7 @@ describe('what the documents promise about this browser', () => {
   it('"clear this browser\u2019s data" removes the store, its set-aside copies and the caches, and nothing of another site', () => {
     const local = area({ 'nowrecommend-prototype-v1': '{}', 'nowrecommend-prototype-v1-before-login': '{}', 'nowrecommend-prototype-v1-before-import': '{}',
       'nowrecommend-known-items-v1': '{}', 'nowrecommend-song-check-v4': '{}', 'nowrecommend-preview-v1': '{}', 'nowrecommend-lab-v2': '{}',
-      'nowrecommend-auth-v1': '{"token":"t"}', [ADULT_KEY]: LEGAL_VERSION, 'nowrecommend-health-consent-v1': '{}', 'someone-elses-key': 'kept' });
+      'nowrecommend-auth-v1': '{"token":"t"}', [ADULT_KEY]: LEGAL_VERSION, 'someone-elses-key': 'kept' });
     const session = area({ 'nowrecommend-session-v1': '{}', 'nowrecommend-weather-v1': '{}', 'other-tab-state': 'kept' });
     vi.stubGlobal('localStorage', local); vi.stubGlobal('sessionStorage', session);
     expect(clearBrowserData(['nowrecommend-auth-v1', ADULT_KEY])).toBe(true);

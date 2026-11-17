@@ -60,10 +60,10 @@ import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
 import { AuthPanel } from './components/AuthPanel';
 import { Legal } from './components/Legal';
-import { ADULT_KEY, CONTACT_EMAIL, adultConfirmed, confirmAdult } from './legal';
+import { ADULT_KEY, CONTACT_EMAIL, LEGAL_VERSION, adultConfirmed, confirmAdult } from './legal';
 import { AgeGate } from './components/AgeGate';
 import { HealthConsent } from './components/HealthConsent';
-import { giveHealthConsent, healthConsent, healthConsented, healthTerms, withdrawHealthConsent } from './sensitive';
+import { healthConsented, healthTerms, newHealthConsent, noteHealthConsent, storeHealthTerms, withoutHealthProfile, withoutHealthTexts } from './sensitive';
 import { previewsOn, weatherMode } from './features';
 
 type Dialog = 'about' | 'account' | 'reset' | 'deleteHistory' | 'resetTaste' | 'deleteAccount' | 'changePassword' | null;
@@ -135,18 +135,30 @@ export default function App() {
   // The AI is for people of age (shared/legal.json): asked once per browser, wherever the app is opened, before anything else.
   // The documents themselves stay readable without answering. Without a server there is no AI and nothing to ask.
   const [adult, setAdult] = useState(() => !apiEnabled() || adultConfirmed());
-  // Words about health are asked about once, before they are kept or sent (src/sensitive.ts). `proceed` is what was
-  // about to happen; saying no leaves the words in their field, unsaved and unsent.
-  const [healthAsk, setHealthAsk] = useState<{ terms: string[]; proceed: () => void } | null>(null);
+  // Words about health are asked about before they are kept or sent (src/sensitive.ts). `proceed` is what was about to
+  // happen; saying no leaves the words in their field, unsaved and unsent. The consent is kept in the store.
+  noteHealthConsent(store.health);
+  const [healthAsk, setHealthAsk] = useState<{ terms: string[]; proceed: () => void } | null>(null), [revoking, setRevoking] = useState(false);
   function withHealth(texts: (string | null | undefined)[], proceed: () => void) {
     const terms = healthConsented() ? [] : healthTerms(...texts);
     if (terms.length) setHealthAsk({ terms, proceed }); else proceed();
   }
-  function revokeHealth() {
-    withdrawHealthConsent();
-    if (healthTerms(session.raw).length) setSession(current => changeText(current, ''));  // the sentence on screen was typed under the consent
-    notify('건강 관련 입력 동의를 철회했어요.');
+  function agreeHealth() {
+    const consent = newHealthConsent();
+    noteHealthConsent(consent);  // what proceeds right now sends before the next render
+    setStore(s => ({ ...s, health: consent }));
   }
+  /** Without the consent (never given, or withdrawn) the texts with health words go: from the store, from the sentence on
+   * screen and from the taste being edited. What was recommended, chosen and rated stays. */
+  function dropHealthTexts() {
+    noteHealthConsent(null);
+    setStore(s => { const { health: _, ...rest } = withoutHealthTexts(s); return rest; });
+    if (healthTerms(session.raw).length) setSession(current => changeText(current, ''));
+    setDraftProfile(withoutHealthProfile);
+  }
+  // A store that holds such words without the consent: records from before this was asked, a backup, an account's copy.
+  // The person is asked as soon as it is seen, and account sync waits for the answer.
+  const healthOwed = useMemo(() => store.health?.version === LEGAL_VERSION ? [] : storeHealthTerms(store), [store]);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
@@ -307,7 +319,7 @@ export default function App() {
   useEffect(()=>{ const frame=requestAnimationFrame(()=>{window.scrollTo({top:0,behavior:'instant'});const title=document.querySelector<HTMLElement>('main h1');title?.setAttribute('tabindex','-1');title?.focus({preventScroll:true});});return ()=>cancelAnimationFrame(frame);},[page,step]);
 
   const notify = (message: string, undo?: () => void) => {setToastPaused(false);setToast({ message: storageWarning ? '화면에 반영했지만 브라우저에는 저장하지 못했어요.' : message, undo });};
-  const sync = useAccountSync({ account, store, setStore, savedAgreement: loaded.sync, paused: storageBlocked, notify,
+  const sync = useAccountSync({ account, store, setStore, savedAgreement: loaded.sync, paused: storageBlocked || healthOwed.length > 0, notify,
     onExpired: () => { setAccount(null); writeAccount(null); notify('로그인이 만료되어 로그아웃했어요. 데이터는 이 브라우저에 남아 있어요.'); } });
   const syncState = sync.state;
   // The buttons pressed here disappear with the toast, so a keyboard user continues from the page instead of the top of the document.
@@ -779,9 +791,9 @@ export default function App() {
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
         onRecommend={(c, result) => { const base = { ...newSession(c), ...requestForType(c, result.code, undefined, result.counts) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
-      {page === 'lab' && labAllowed && <Lab onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
+      {page === 'lab' && labAllowed && <Lab guard={withHealth} onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
-      {page === 'pair' && <Pairing items={items} {...pairingInput()} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
+      {page === 'pair' && <Pairing guard={withHealth} items={items} {...pairingInput()} moment={{ food: momentPreset('food', slot, weather), music: momentPreset('music', slot, weather) }} onChoose={choosePair} onHome={() => navigate('home')} notify={notify} />}
 
       {page === 'history' && <>
         <div className="page-heading with-action"><h1>추천 기록 {store.history.length > 0 && <span className="count">{store.history.length}</span>}</h1><button className="button secondary compact" onClick={() => setManualOpen(true)}><PenLine size={15} />직접 기록</button></div>
@@ -873,11 +885,15 @@ export default function App() {
       {settingsTab === 'sound' && <SoundSettings />}
       {settingsTab === 'data' && <>
         <DataManagement store={store} damagedRaw={storageBlocked?loaded.raw:undefined} onImport={importStore} onReset={scope=>{setStore(s=>({...s,[scope]:scope==='profiles'?emptyStore().profiles:[]}));if(scope==='profiles'){setActive(false);setSession(newSession(category));setDraftProfile(emptyStore().profiles[category]);}notify('선택한 데이터를 초기화했어요.');}}/>
-        {healthConsent() && <div className="notice health-consent" role="status"><Info size={18} /><div><strong>건강 관련 입력에 동의했어요</strong><p>{new Date(healthConsent()!.at).toLocaleDateString('ko-KR')}에 동의했어요. 철회하면 건강과 관련된 표현이 든 글은 다시 동의하기 전까지 저장하거나 보내지 않아요. 이미 남긴 기록은 추천 기록과 내 취향에서 지울 수 있어요.</p><button className="button secondary" onClick={revokeHealth}>동의 철회</button></div></div>}
+        {store.health && <div className="notice health-consent" role="status"><Info size={18} /><div><strong>건강 관련 입력에 동의했어요</strong>
+          <p>{new Date(store.health.at).toLocaleDateString('ko-KR')}에 동의했어요. 철회하면 건강과 관련된 표현이 든 문장과 메모를 지워요. 추천 결과, 선택, 평가는 그대로 남아요.</p>
+          {revoking ? <div className="card-actions"><button data-safe-focus className="button secondary" onClick={() => setRevoking(false)}>취소</button><button className="button secondary danger" onClick={() => { dropHealthTexts(); setRevoking(false); notify('동의를 철회하고 건강 관련 표현이 든 글을 지웠어요.'); }}>철회하고 지우기</button></div>
+            : <button className="button secondary" onClick={() => setRevoking(true)}>동의 철회</button>}</div></div>}
         <div className="account-links"><button className="danger" onClick={() => setDialog('reset')}><Trash2 size={17} /> 이 브라우저의 데이터 모두 초기화</button></div>
       </>}
     </Modal>}
-    {healthAsk && <HealthConsent terms={healthAsk.terms} onDecline={() => setHealthAsk(null)} onAgree={() => { const { proceed } = healthAsk; giveHealthConsent(); setHealthAsk(null); proceed(); }} />}
+    {healthAsk ? <HealthConsent terms={healthAsk.terms} onDecline={() => setHealthAsk(null)} onAgree={() => { const { proceed } = healthAsk; agreeHealth(); setHealthAsk(null); proceed(); }} />
+      : healthOwed.length > 0 && adult && page !== 'terms' && page !== 'privacy' && <HealthConsent existing terms={healthOwed} onAgree={agreeHealth} onDecline={() => { dropHealthTexts(); notify('건강 관련 표현이 든 글을 지웠어요.'); }} />}
     {!adult && page !== 'terms' && page !== 'privacy' && <AgeGate onConfirm={() => { confirmAdult(); setAdult(true); }} />}
     {dialog === 'changePassword' && account && <Modal neutral title="비밀번호 변경" onClose={() => setDialog(null)}><p className="modal-description">비밀번호를 바꾸면 다른 기기에서는 모두 로그아웃돼요. 이 브라우저는 그대로 로그인되어 있어요.</p><form onSubmit={e => { e.preventDefault(); void submitPasswordChange(); }}><label className="field-title" htmlFor="current-password">현재 비밀번호</label><input id="current-password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /><label className="field-title" htmlFor="new-password">새 비밀번호 <small>8자 이상</small></label><input id="new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button primary" disabled={deletePassword.length < 8 || newPassword.length < 8}>비밀번호 변경</button></div></form></Modal>}
     {dialog === 'deleteAccount' && account && <Modal neutral title="계정을 삭제할까요?" onClose={() => setDialog(null)}><p className="modal-description">계정과 계정에 저장된 취향·즐겨찾기·기록을 서버에서 지워요. 이 브라우저의 데이터는 남아 있고, 되돌릴 수 없어요.</p><form onSubmit={async e => { e.preventDefault(); setDeleteError(''); try { await deleteAccount(account.token, deletePassword); sync.forget(); writeAccount(null); setAccount(null); setDialog(null); notify('계정을 삭제했어요. 이 브라우저의 데이터는 그대로예요.'); } catch (err) { setDeleteError(err instanceof ApiError && err.status === 401 ? '비밀번호가 맞지 않아요.' : '계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); } }}><label className="field-title" htmlFor="delete-password">비밀번호 확인</label><input id="delete-password" type="password" autoComplete="current-password" required minLength={8} value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />{deleteError && <div className="error-box" role="alert">{deleteError}</div>}<div className="modal-actions"><button type="button" data-safe-focus className="button secondary" onClick={() => setDialog(null)}>취소</button><button className="button danger-button" disabled={deletePassword.length < 8}>계정 삭제</button></div></form></Modal>}
