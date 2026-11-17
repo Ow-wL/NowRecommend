@@ -29,7 +29,9 @@ from .cli.media import ALIASES, TITLE_ALIASES, norm
 log = logging.getLogger(__name__)
 
 API = "https://www.googleapis.com/youtube/v3"
-FOUND_TTL = 7 * 24 * 3600  # a found video is checked again after a week (it may be taken down or blocked)
+# The policy (src/legal.ts) promises at most 7 days, and YouTube allows 30. An answer is used for 6 days and dropped by the
+# next sweep (every 10 minutes, and on every look at the memory): a day to spare for a sweep that runs late.
+FOUND_TTL = 6 * 24 * 3600  # a found video is checked again after that (it may be taken down or blocked)
 MISSING_TTL = 24 * 3600    # nothing found: asked again the next day
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 # What a video title says when it is not the song as released. A word the song's own title has ("Remix", "Teaser") does
@@ -43,11 +45,18 @@ PERFORMANCE = re.compile(r"(?<![a-z])(live|concert|stage|performance|show)(?![a-
 LYRICS = re.compile(r"(?<![a-z])lyrics?(?![a-z])|가사", re.IGNORECASE)
 
 
+def _spelled(word: str) -> str:
+    """A pattern for `word`: Korean may be spaced any way ("눈의 꽃", "눈의꽃"); Latin keeps its letters together, and its
+    spaces may be any run of spaces ("in St." is not "inst")."""
+    if HANGUL.search(word):
+        return r"\s*".join(re.escape(c) for c in word.casefold() if not c.isspace())
+    return r"\s+".join(re.escape(part) for part in word.casefold().split())
+
+
 def _bounded(word: str, text: str) -> bool:
-    """`word` in `text` standing on its own: not inside a longer word of letters (Latin or Hangul) or digits. Spaces inside
-    the word may be there or not ("눈의 꽃" is in "눈의꽃 MV")."""
-    letters = [re.escape(c) for c in word.casefold() if not c.isspace()]
-    return bool(letters) and re.search(rf"(?<![0-9a-z가-힣]){r'\s*'.join(letters)}(?![0-9a-z가-힣])", text.casefold()) is not None
+    """`word` in `text` standing on its own: not inside a longer word of letters (Latin or Hangul) or digits."""
+    pattern = _spelled(word)
+    return bool(pattern) and re.search(rf"(?<![0-9a-z가-힣]){pattern}(?![0-9a-z가-힣])", text.casefold()) is not None
 
 
 def _names(text: str, name: str) -> bool:
@@ -95,19 +104,29 @@ def _core(title: str) -> str:
 
 
 def _says(word: str, text: str) -> bool:
-    """A Korean word anywhere, spaces or not ("1시간반복", "교차 편집"); a Latin one as a word of its own ("Discover")."""
-    return norm(word) in norm(text) if HANGUL.search(word) else _bounded(word, text)
+    """A Korean word where a word begins, spaced any way and with anything after it ("커버곡", "1시간반복", "교차 편집", but
+    not the "커버" in "디스커버리"); a Latin one as a word of its own ("cover" is not in "Discover")."""
+    if HANGUL.search(word):
+        return re.search(rf"(?<![0-9a-z가-힣]){_spelled(word)}", text.casefold()) is not None
+    return _bounded(word, text)
 
 
 def _not_the_song(title: str, name: str) -> bool:
     return any(_says(word, name) and not _says(word, title) for word in NOT_THE_SONG)
 
 
+def _channel_names(channel: str) -> set[str]:
+    """What a channel calls itself: the whole name and each part in brackets, without "Official", "공식" or "- Topic"
+    ("이지금 [IU Official]" → "이지금 [IU]", "IU")."""
+    parts = [channel, *re.findall(r"[\[\(](.*?)[\]\)]", channel)]
+    return {norm(re.sub(r"(?i)\bofficial\b|공식|\s-\sTopic$", "", part)) for part in parts} - {""}
+
+
 def _artists_channel(artist: str, channel: str) -> bool:
-    """The artist's own channel: named just so ("BTS", "아이유"), or the name with "Official" ("이지금 [IU Official]"). A
-    channel that only mentions the name ("아이유 팬 채널") is not taken for the artist's."""
-    names = [artist, *ALIASES.get(artist, []), *MORE_ALIASES.get(artist, [])]
-    return any(norm(channel) == norm(n) for n in names if norm(n)) or (_artist(artist, channel) and _bounded("official", channel))
+    """The artist's own channel (or YouTube's "- Topic" one): its name, or a part of it in brackets, is the artist's name
+    and nothing more. A channel that only mentions the name ("아이유 팬 채널", "아이유 팬 Official") is not the artist's."""
+    names = {norm(n) for n in [artist, *ALIASES.get(artist, []), *MORE_ALIASES.get(artist, [])]} - {""}
+    return bool(names & _channel_names(channel))
 
 
 def candidates(title: str, artist: str, items: list[dict]) -> list[str]:
@@ -129,8 +148,9 @@ def candidates(title: str, artist: str, items: list[dict]) -> list[str]:
         named, by_title = _artist(artist, channel), _artist(artist, name)
         if not (named or by_title):
             continue  # a song of the same name by someone else
-        topic = named and channel.endswith(" - Topic")  # YouTube's own channel of the artist's releases
-        score = (4 if topic else 3 if _artists_channel(artist, channel) else 0) + (1 if by_title else 0)
+        own = _artists_channel(artist, channel)
+        topic = own and channel.endswith(" - Topic")  # YouTube's own channel of the artist's releases
+        score = (4 if topic else 3 if own else 0) + (1 if by_title else 0)
         score += (1 if OFFICIAL.search(name) else 0) - (2 if PERFORMANCE.search(name) else 0) - (1 if LYRICS.search(name) else 0)
         scored.append((-score, order, video_id))
     return [video_id for _, _, video_id in sorted(scored)]
@@ -172,8 +192,11 @@ class YouTubeFinder:
             def sweeper() -> None:
                 while True:
                     time.sleep(sweep_every_s)
-                    with self.lock:
-                        self._sweep()
+                    try:
+                        with self.lock:
+                            self._sweep()
+                    except Exception:  # noqa: BLE001 - one failed sweep must not end the sweeping
+                        log.exception("youtube: sweep failed")
 
             threading.Thread(target=sweeper, name="youtube-sweep", daemon=True).start()
 

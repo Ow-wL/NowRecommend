@@ -69,6 +69,11 @@ def test_a_fan_channel_is_not_taken_for_the_artist_and_tricks_around_the_word_li
     for trick in ["아이유 밤편지 1시간반복", "아이유 밤편지 커버곡", "아이유 밤편지 교차 편집", "IU 밤편지 fan cam"]:
         assert candidates("밤편지", "아이유", [hit("trickvideo1", trick, "누군가")]) == [], trick
     assert candidates("눈의 꽃", "박효신", [hit("snowflower1", "박효신 - 눈의꽃 MV", "박효신")]) == ["snowflower1"]  # the same words, spaced otherwise
+    # Names that only look like the artist's channel gain nothing; words that only contain a left-out word stay in.
+    for fan in ["아이유 팬 Official", "아이유 팬 - Topic"]:
+        assert candidates("밤편지", "아이유", [hit("fanchannel1", "아이유 밤편지", fan), hit("1themv00002", "[MV] IU(아이유) _ Through the Night(밤편지)", "1theK (원더케이)")])[0] == "1themv00002", fan
+    assert candidates("디스커버리", "누군가", [hit("discovery01", "누군가 - 디스커버리", "누군가")]) == ["discovery01"]
+    assert candidates("Meet Me in St. Louis", "누군가", [hit("stlouis0001", "누군가 - Meet Me in St. Louis", "누군가")]) == ["stlouis0001"]
 
 
 def test_short_names_and_titles_count_only_as_words_of_their_own():
