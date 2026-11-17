@@ -1,5 +1,5 @@
 import { test, expect, type Route } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { items } from '../../src/data';
 
 // The site as built (playwright.dist.config.ts): the security policy must let the app do everything it does, and the
@@ -100,4 +100,35 @@ test('a browser a few years old still gets the app, not the error page', async (
   await page.goto('/#/recommend/music');
   await expect(page.getByRole('button', { name: /추천받기$/ })).toBeVisible();
   expect(failures).toEqual([]);
+});
+
+test('every food photo the table names is shipped with its small copy, and none loads from Unsplash', async ({ page, request }) => {
+  const media = JSON.parse(readFileSync(new URL('../../src/media.json', import.meta.url), 'utf8')) as Record<string, { image: string; source: string; credit?: { author: string; page: string } }>;
+  const entries = Object.entries(media), saved = entries.filter(([, entry]) => !/^https:\/\//.test(entry.image));
+  expect(saved.length).toBeGreaterThan(60);
+  for (const [id, entry] of saved) {
+    expect(entry.image, id).toBe(`food/${id}.jpg`);
+    for (const path of [`/food/${id}.jpg`, `/food/tile/${id}.jpg`]) {  // the tile: `node scripts/make-tiles.cjs`
+      const answer = await request.get(path);
+      expect(answer.status(), path).toBe(200);
+      expect(answer.headers()['content-type'], path).toBe('image/jpeg');  // not the app's page, served for an address that is not there
+    }
+  }
+  // Nothing is saved that no entry shows.
+  const named = saved.map(([id]) => `${id}.jpg`).sort(), folder = new URL('../../public/food/', import.meta.url);
+  expect(readdirSync(folder).filter(name => name.endsWith('.jpg')).sort()).toEqual(named);
+  expect(readdirSync(new URL('tile/', folder)).sort()).toEqual(named);
+  // The Unsplash photos moved into the site and still say whose they are.
+  const unsplash = entries.filter(([, entry]) => entry.source === 'unsplash');
+  expect(unsplash).toHaveLength(38);
+  for (const [id, entry] of unsplash) {
+    expect(entry.image, id).toBe(`food/${id}.jpg`);
+    expect(entry.credit?.author, id).toBeTruthy();
+    expect(entry.credit?.page, id).toMatch(/^https:\/\/unsplash\.com\/photos\//);
+  }
+  // In the page, under its policy: the small copy is the small size, the photo the full one.
+  await page.goto('/');
+  const sizes = await page.evaluate(async () => Promise.all(['food/tile/f01.jpg', 'food/f01.jpg'].map(async path => {
+    const image = new Image(); image.src = new URL(path, document.baseURI).href; await image.decode(); return image.naturalWidth; })));
+  expect(sizes).toEqual([420, 960]);
 });

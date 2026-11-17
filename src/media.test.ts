@@ -26,10 +26,12 @@ describe('item media', () => {
     expect(mediaFor('f03')).toBeUndefined();
   });
 
-  it('asks a resizing host for a smaller tile and leaves other pictures alone', () => {
+  it('asks a resizing host for a smaller tile and takes the small copy of a photo saved with the site', () => {
     expect(tileImage('https://images.unsplash.com/a?w=960&h=960&fit=crop')).toBe('https://images.unsplash.com/a?w=420&h=420&fit=crop');
     expect(tileImage('https://is1.mzstatic.com/x/600x600bb.jpg')).toBe('https://is1.mzstatic.com/x/300x300bb.jpg');
-    expect(tileImage('/food/f02.jpg')).toBe('/food/f02.jpg');
+    expect(tileImage('/food/f02.jpg')).toBe('/food/tile/f02.jpg');
+    expect(tileImage('/NowRecommend/food/f-kimbap.jpg')).toBe('/NowRecommend/food/tile/f-kimbap.jpg');  // under a base path
+    expect(tileImage('https://upload.example.test/food/a.jpg')).toBe('https://upload.example.test/food/a.jpg');  // someone else's address is not ours to rewrite
   });
 
   it('finds a free-form song in the catalog regardless of case and spacing', () => {

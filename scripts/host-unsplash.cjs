@@ -7,7 +7,8 @@
 // apps on Unsplash's API, sends every visitor's address to one more company, and breaks if a photo is removed.
 // Each entry keeps its `source` and `credit`; only `image` changes, from the https address to `food/<id>.jpg`
 // (src/media.ts serves that from the site's base path). A photo that fails is left as it was and reported; running
-// again picks up only what is still remote. After --write: `npm test`, look at the cards, then commit.
+// again picks up only what is still remote. After --write: `node scripts/make-tiles.cjs` (the small copies the grids load),
+// `npm test`, look at the cards, then commit.
 const { readFileSync, writeFileSync, existsSync, mkdirSync } = require('node:fs');
 const { join } = require('node:path');
 
