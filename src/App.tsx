@@ -157,7 +157,8 @@ export default function App() {
     noteHealthConsent(refusal);
     requestCounter.current++; setBusy(false); setParsing(false);
     setStore(s => ({ ...withoutHealthTexts(s), health: refusal }));
-    if (healthTerms(...sentenceOf(session)).length) { setSession(newSession(session.category)); setActive(false); }  // the sentence, or the preset's name, would be recorded again
+    // The sentence on screen (or the preset's name) would be recorded again: that request is over, and its results with it.
+    if (healthTerms(...sentenceOf(session)).length) { setSession(newSession(session.category)); setActive(false); navigate('home'); }
     setHistoryPreview(null);  // an open record is a copy from before: saving from it would bring the texts back
     setDraftProfile(withoutHealthProfile);
   }
