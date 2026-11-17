@@ -1,5 +1,5 @@
 import { ArrowLeft, Info } from 'lucide-react';
-import { CONTACT_EMAIL, LEGAL_VERSION, OPERATOR, legalTitle, operatorKnown, privacySections, termsSections, type LegalKind } from '../legal';
+import { CONTACT_EMAIL, LEGAL_VERSION, OPERATOR, PREVIOUS_VERSIONS, legalTitle, operatorKnown, privacySections, termsSections, type LegalKind } from '../legal';
 import { fullPlayOn, previewsOn, weatherMode, youtubeOn } from '../features';
 import { apiEnabled } from '../api/client';
 
@@ -22,6 +22,7 @@ export function Legal({ kind, onBack, onOther }: { kind: LegalKind; onBack: () =
       <h2>{section.title}</h2>
       {section.blocks.map((block, n) => Array.isArray(block) ? <ul key={n}>{block.map(line => <li key={line}>{linked(line)}</li>)}</ul> : <p key={n}>{linked(block)}</p>)}
     </section>)}
+    {PREVIOUS_VERSIONS.length > 0 && <p className="legal-previous small muted">이전 판: {PREVIOUS_VERSIONS.map((version, n) => <span key={version}>{n > 0 && ', '}<a href={`${import.meta.env.BASE_URL ?? './'}legal/${version}/${kind}.html`} target="_blank" rel="noopener">{version}</a></span>)}</p>}
     <p className="legal-other"><button className="text-button" onClick={onOther}>{legalTitle[kind === 'terms' ? 'privacy' : 'terms']} 보기</button>{CONTACT_EMAIL && <a className="text-button" href={`mailto:${CONTACT_EMAIL}`}>문의하기</a>}</p>
   </article>;
 }

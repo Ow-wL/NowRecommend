@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Headphones, Play } from 'lucide-react';
 import type { Item } from '../data';
-import { agreeYoutube, closeFullPlay, embedAddress, musicApps, openFullPlay, playerStorefront, rememberMusicApp, songWords, useFullPlayOpen, useMusicApp, youtubeAddress, youtubeAgreed, type MusicApp } from '../fullPlay';
-import { LEGAL_VERSION } from '../legal';
+import { YOUTUBE_TERMS_VERSION, agreeYoutube, closeFullPlay, embedAddress, musicApps, openFullPlay, playerStorefront, rememberMusicApp, songWords, useFullPlayOpen, useMusicApp, youtubeAddress, youtubeAgreed, type MusicApp } from '../fullPlay';
 import { stopPreview } from '../preview';
 import { fetchYouTube } from '../api/youtube';
 import { ApiError } from '../api/client';
@@ -57,7 +56,7 @@ type Found = { state: 'wait' } | { state: 'found'; address: string } | { state: 
  * frame is YouTube's own embed, in its privacy-enhanced mode (no cookie until the video plays). */
 export function YouTubePanel({ item }: { item: Pick<Item, 'id' | 'name' | 'subtitle'> }) {
   const open = useFullPlayOpen(item, 'youtube');
-  const [found, setFound] = useState<Found>({ state: 'wait' }), [agreed, setAgreed] = useState(() => youtubeAgreed(LEGAL_VERSION));
+  const [found, setFound] = useState<Found>({ state: 'wait' }), [agreed, setAgreed] = useState(() => youtubeAgreed(YOUTUBE_TERMS_VERSION));
   // The question appears where the button was pressed, and the player after it: the keyboard goes along with each.
   const panel = useRef<HTMLElement>(null), askedFirst = useRef(false);
   useEffect(() => { if (open && (!agreed || askedFirst.current)) panel.current?.focus(); if (open && !agreed) askedFirst.current = true; }, [open, agreed]);
@@ -76,7 +75,7 @@ export function YouTubePanel({ item }: { item: Pick<Item, 'id' | 'name' | 'subti
   if (!agreed) return <section id={youtubeId(item)} ref={panel} tabIndex={-1} className="full-play youtube" aria-label={`${item.name} YouTube 플레이어`}>
     <div className="youtube-ask" role="group" aria-labelledby={`${youtubeId(item)}-ask`}>
       <p id={`${youtubeId(item)}-ask`}><b>YouTube 플레이어를 처음 쓰기 전에 확인해 주세요.</b> 이 기능은 YouTube API 서비스로 영상을 찾고 YouTube의 플레이어로 재생해요. 쓰면 {terms}과 이 서비스의 <a href="#/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>(YouTube 항목)에 동의하는 것으로 봐요. 플레이어를 열면 접속 정보가 YouTube(Google)로 가요.</p>
-      <div className="card-actions"><button type="button" className="button secondary compact" onClick={cancel}>취소</button><button type="button" className="button primary compact" onClick={() => { agreeYoutube(LEGAL_VERSION); setAgreed(true); }}>동의하고 열기</button></div>
+      <div className="card-actions"><button type="button" className="button secondary compact" onClick={cancel}>취소</button><button type="button" className="button primary compact" onClick={() => { agreeYoutube(YOUTUBE_TERMS_VERSION); setAgreed(true); }}>동의하고 열기</button></div>
     </div>
   </section>;
   return <section id={youtubeId(item)} ref={panel} tabIndex={-1} className="full-play youtube" aria-label={`${item.name} YouTube 플레이어`}>

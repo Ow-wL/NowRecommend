@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import shared from '../shared/legal.json' with { type: 'json' };
 import { clearBrowserData } from './storage';
-import { ADULT_KEY, LEGAL_VERSION, MIN_AGE, adultConfirmed, confirmAdult, operatorKnown, privacySections, termsSections } from './legal';
+import { ADULT_KEY, LEGAL_VERSION, MIN_AGE, PREVIOUS_VERSIONS, adultConfirmed, confirmAdult, operatorKnown, privacySections, termsSections } from './legal';
+import { HEALTH_CONSENT_VERSION, consentInForce } from './sensitive';
+import { YOUTUBE_TERMS_VERSION } from './fullPlay';
 import { previewsOnOf, weatherModeOf } from './features';
 import { weatherUrl } from './weather';
 
@@ -111,5 +113,28 @@ describe('what the documents promise about this browser', () => {
     expect(adultConfirmed()).toBe(true);
     local.setItem(ADULT_KEY, '2020-01-01');  // an answer to older documents: asked again
     expect(adultConfirmed()).toBe(false);
+  });
+});
+
+// The kept versions as files (public/legal/<version>/), read by the bundler: no file, no entry.
+const kept = import.meta.glob<string>('../public/legal/*/*.html', { query: '?raw', import: 'default', eager: true });
+
+describe('versions of the documents', () => {
+  it('keeps every earlier version as it was shown, older than the one in force', () => {
+    expect(PREVIOUS_VERSIONS.length).toBeGreaterThan(0);
+    for (const version of PREVIOUS_VERSIONS) {
+      expect(version < LEGAL_VERSION).toBe(true);
+      for (const kind of ['terms', 'privacy']) {
+        const page = kept[`../public/legal/${version}/${kind}.html`];
+        expect(page, `public/legal/${version}/${kind}.html`).toBeDefined();
+        expect(page).toContain(`시행일 ${version}`);
+        expect(page).toContain('지난 판');
+      }
+    }
+    expect(text(privacySections(info))).toContain(`${LEGAL_VERSION}: 지금의 판`);
+  });
+  it('does not ask the health consent or the YouTube agreement again for a version that leaves them alone', () => {
+    expect(HEALTH_CONSENT_VERSION <= LEGAL_VERSION && YOUTUBE_TERMS_VERSION <= LEGAL_VERSION).toBe(true);
+    expect(consentInForce({ version: HEALTH_CONSENT_VERSION, at: '2026-11-17T12:00:00.000Z' })).toBe(true);
   });
 });

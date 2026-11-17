@@ -7,6 +7,9 @@ import shared from '../shared/legal.json' with { type: 'json' };
 
 /** The version in force. Shared with the server (shared/legal.json), which accepts a sign-up only for this version. */
 export const LEGAL_VERSION: string = shared.version;
+/** Earlier versions, newest first, each kept as shown on the site in public/legal/<version>/ (scripts/legal-snapshot.cjs,
+ * run on the live site before a new version is deployed). */
+export const PREVIOUS_VERSIONS: string[] = ['2026-11-17'];
 /** The AI provider's terms allow its API only in services for people of 18 and over, so that is the service's age. */
 export const MIN_AGE: number = shared.minAge;
 /** Where this browser remembers that the person said they are of age (asked once, before the AI is used). */
@@ -177,6 +180,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     { title: '11. 방침의 변경', blocks: [
       '이 방침을 바꿀 때는 시행 7일 전(이용자에게 중요한 변경은 30일 전)부터 서비스 화면에 알립니다. 수집하는 항목이나 이용 목적을 바꾸지 않고 설명을 보완하는 경우에는 바꾼 날 아래 이력에 적습니다.',
       [
+        '2026-11-18: 지금의 판. 2026-11-17 판에 그날과 다음 날 보탠 내용(아래)을 하나의 판으로 정리했습니다. 수집하는 항목과 이용 목적은 2026-11-17 판의 마지막 내용과 같습니다. 이전 판은 이 문서 아래의 링크에서 볼 수 있습니다.',
         '2026-11-17: 처음 시행.',
         '2026-11-17 보완: 메일 발송 업체(Resend), 파기 방법, 브라우저 저장을 막는 방법, 한도 기록을 지우는 시점을 적었습니다.',
         '2026-11-17 보완: 건강과 관련된 표현을 적었을 때 따로 동의를 받는 절차를 넣고 민감정보 항목을 적었습니다.',
@@ -184,7 +188,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
         ...(info.youtube ? ['2026-11-18 보완: 곡 상세의 YouTube 플레이어와 YouTube API 서비스 사용, 플레이어가 처리하는 정보를 적었습니다.'] : []),
         '2026-11-17 보완: 처리 근거, 제3자 제공 여부, 처리 위탁과 국외 이전(이전 항목·국가·시기와 방법·보유 기간·거부 방법), 권리 행사 기한, 관리 접근 기록, 구제 기관을 법이 정한 기재사항에 맞춰 다시 정리했습니다. 수집하는 항목과 이용 목적은 바뀌지 않았습니다.',
       ],
-      `이전 내용이 필요하면 ${where(info)} 로 요청해 주세요.`,
+      `그 밖에 이전 내용이 필요하면 ${where(info)} 로 요청해 주세요.`,
     ] },
   ];
 }

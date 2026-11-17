@@ -1,5 +1,9 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { items } from '../../src/data';
+import { readFileSync } from 'node:fs';
+
+// The version in force (shared/legal.json): what the form names on a sign-up.
+const legal = JSON.parse(readFileSync(new URL('../../shared/legal.json', import.meta.url), 'utf8')) as { version: string };
 
 // Accounts (2026-11-02): sign-up uploads this browser's store, login downloads the account's copy, changes sync back.
 // Since 2026-11-16 the account's copy has a version: a save names the version it was built on, and a refused save is
@@ -79,7 +83,7 @@ test('signing up keeps this browser’s data, names it after the account and sta
   await page.getByRole('button', { name: '가입하고 시작하기' }).click();
   await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
   await expect(page.getByText('주형님, 가입을 환영해요.', { exact: false })).toBeVisible();
-  expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형', termsVersion: '2026-11-17', agreeTerms: true, agreePrivacy: true, adult: true });
+  expect(calls.signup[0]).toEqual({ email: 'Lee@example.com', password: 'password1', name: '주형', termsVersion: legal.version, agreeTerms: true, agreePrivacy: true, adult: true });
   // The store was uploaded with the token; its content is still the local data, now carrying the account name.
   await expect.poll(() => calls.puts.length).toBeGreaterThan(0);
   expect(calls.auth[0]).toBe('Bearer tok-1');
@@ -443,7 +447,7 @@ test('sign-up waits for the three agreements; nothing is ticked beforehand and t
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(page.getByText('가입을 환영해요', { exact: false })).toBeVisible();
-  expect(calls.signup[0]).toMatchObject({ termsVersion: '2026-11-17', agreeTerms: true, agreePrivacy: true, adult: true });
+  expect(calls.signup[0]).toMatchObject({ termsVersion: legal.version, agreeTerms: true, agreePrivacy: true, adult: true });
 });
 
 test('the terms and the privacy policy are one tap from the home screen and readable without an account', async ({ page }) => {

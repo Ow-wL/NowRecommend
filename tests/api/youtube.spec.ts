@@ -1,8 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { items } from '../../src/data';
-import { readFileSync } from 'node:fs';
 
-const legalVersion = (JSON.parse(readFileSync(new URL('../../shared/legal.json', import.meta.url), 'utf8')) as { version: string }).version;
 
 // YouTube's player inside a song's details (src/fullPlay.ts, server/app/youtube.py): the server finds the video when the
 // player is opened; YouTube's own player plays it. The server and YouTube are stood in for; nothing leaves the machine.
@@ -77,7 +75,7 @@ test('a song opens in YouTube\'s player inside the page, only when asked, with t
 
 test('a song with no video that plays here, or a server that cannot look, keeps the search link', async ({ page }) => {
   let reply: (route: Route) => Promise<void> = route => fulfill(route, { videoId: null });
-  await page.addInitScript(version => localStorage.setItem('nowrecommend-youtube-terms-v1', version), legalVersion);  // agreed before: not asked again
+  await page.addInitScript(() => localStorage.setItem('nowrecommend-youtube-terms-v1', '2026-11-17'));  // agreed before (src/fullPlay.ts YOUTUBE_TERMS_VERSION): not asked again
   const { dialog } = await openSong(page, route => reply(route));
   await dialog.getByRole('button', { name: 'YouTube로 듣기' }).click();
   await expect(dialog.locator('.youtube-ask')).toHaveCount(0);
