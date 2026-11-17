@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7A98F"/><stop offset=".5" stop-color="#F8D78F"/><stop offset="1" stop-color="#93BDEE"/></linearGradient>
-    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#6E2A12" flood-opacity=".2"/></filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6A4D"/><stop offset=".5" stop-color="#FF9A3D"/><stop offset="1" stop-color="#3F8CF2"/></linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#5A1C08" flood-opacity=".38"/></filter>
   </defs>
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
   <g filter="url(#sh)" fill="#FFFFFF">
@@ -9,5 +9,5 @@
     <rect x="272" y="112" width="34" height="232" rx="17"/>
     <path d="M289 112 C306 160 384 168 388 252 C362 214 330 204 306 202 L306 129 Z"/>
   </g>
-  <circle cx="214" cy="336" r="54" fill="none" stroke="#F4A78F" stroke-opacity=".7" stroke-width="10"/>
+  <circle cx="214" cy="336" r="54" fill="none" stroke="#FF6A4D" stroke-width="12"/>
 </svg>
