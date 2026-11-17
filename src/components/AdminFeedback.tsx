@@ -9,9 +9,10 @@ const KIND_LABEL = Object.fromEntries(feedbackKinds) as Record<FeedbackEntry['ki
 export function AdminFeedback({ token }: { token?: string }) {
   const [items, setItems] = useState<FeedbackEntry[]>([]), [more, setMore] = useState(false);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [news, setNews] = useState('');
+  const [denied, setDenied] = useState(false);  // not an admin: the error reports above already say so
   const asked = useRef(0);
-  const load = useCallback(async (before?: string) => {
-    if (!token) { setError('관리자 계정으로 로그인해야 볼 수 있어요.'); return; }
+  const load = useCallback(async (before?: FeedbackEntry) => {
+    if (!token) { setDenied(true); return; }
     const mine = ++asked.current;
     setBusy(true);
     try {
@@ -19,7 +20,8 @@ export function AdminFeedback({ token }: { token?: string }) {
       if (mine !== asked.current) return;
       setItems(list => before ? [...list, ...page.feedback] : page.feedback); setMore(page.more); setError('');
     } catch (err) {
-      if (mine === asked.current) setError(err instanceof ApiError && (err.status === 401 || err.status === 403) ? '관리자 계정으로 로그인해야 볼 수 있어요.' : '의견을 불러오지 못했어요.');
+      if (mine !== asked.current) return;
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) setDenied(true); else setError('의견을 불러오지 못했어요.');
     } finally { if (mine === asked.current) setBusy(false); }
   }, [token]);
   useEffect(() => { void load(); }, [load]);
@@ -30,6 +32,7 @@ export function AdminFeedback({ token }: { token?: string }) {
     catch { setNews('의견을 지우지 못했어요. 다시 시도해주세요.'); }
     finally { setBusy(false); }
   }
+  if (denied) return null;
   return <section className="flow-body neutral-scope admin-feedback" aria-labelledby="admin-feedback-title">
     <div className="report-toolbar">
       <h2 id="admin-feedback-title">받은 의견</h2>
@@ -46,7 +49,7 @@ export function AdminFeedback({ token }: { token?: string }) {
           <div className="report-actions"><button className="button secondary compact" disabled={busy} onClick={() => void remove(item)}><Trash2 size={15} />지우기</button></div>
         </div>
       </li>)}</ul>
-      {more && <button className="button secondary" disabled={busy} onClick={() => void load(items[items.length - 1]?.createdAt)}>더 보기</button>}
+      {more && <button className="button secondary" disabled={busy} onClick={() => void load(items[items.length - 1])}>더 보기</button>}
     </>}
   </section>;
 }

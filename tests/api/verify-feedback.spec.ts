@@ -58,6 +58,11 @@ test('a sign-up waits for the mailed link, the link confirms with one press, and
   await expect(page.getByText('이메일이 확인됐어요.')).toBeVisible();
   expect(calls.verify).toEqual([{ token: TOKEN }]);
   await expect(page.getByLabel('이메일')).toHaveValue('lee@example.com');
+  await page.evaluate(token => { window.location.hash = `#/verify/${token}`; }, `${TOKEN}-second`);  // another link, same page
+  await expect(page.getByRole('button', { name: '이메일 확인하기' })).toBeVisible();
+  await page.getByRole('button', { name: '이메일 확인하기' }).click();
+  await expect(page.getByText('이메일이 확인됐어요.')).toBeVisible();
+  expect(calls.verify).toEqual([{ token: TOKEN }, { token: `${TOKEN}-second` }]);
   await page.getByLabel('비밀번호').fill('password1');
   await page.getByRole('button', { name: '로그인', exact: true }).last().click();
   await expect(page.getByRole('status').filter({ hasText: '주형님' })).toBeVisible();

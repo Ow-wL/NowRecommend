@@ -25,8 +25,9 @@ type Options = { base?: string; fetchImpl?: typeof fetch };
 export function sendFeedback(feedback: { kind: FeedbackKind; message: string; contact: string; page: string; appVersion: string }, { base = API_BASE_URL, fetchImpl }: Options = {}) {
   return apiJson('/api/feedback', validCreated, { base, fetchImpl, method: 'POST', body: feedback, timeoutMs: 15000 });
 }
-export function fetchFeedback(token: string, before?: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
-  return apiJson(`/api/admin/feedback${before ? `?before=${encodeURIComponent(before)}` : ''}`, validList, { base, fetchImpl, headers: authHeaders(token) });
+/** `after`: the last entry already shown; the page that follows it. */
+export function fetchFeedback(token: string, after?: FeedbackEntry, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson(`/api/admin/feedback${after ? `?before=${encodeURIComponent(after.createdAt)}&beforeId=${encodeURIComponent(after.id)}` : ''}`, validList, { base, fetchImpl, headers: authHeaders(token) });
 }
 export function deleteFeedback(token: string, id: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
   return apiJson(`/api/admin/feedback/${encodeURIComponent(id)}`, nothing, { base, fetchImpl, method: 'DELETE', headers: authHeaders(token) });

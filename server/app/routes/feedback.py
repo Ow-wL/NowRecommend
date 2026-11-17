@@ -11,7 +11,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, StringConstraints, field_validator
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from ..auth import normalize_email, valid_email
@@ -69,11 +69,13 @@ def send_feedback(request: FeedbackRequest, http: Request, session: Session = De
 
 
 @router.get("/api/admin/feedback")
-def list_feedback(before: datetime | None = None, _: User = Depends(require_admin), session: Session = Depends(get_session)):
-    """Newest first, PAGE_SIZE at a time; `before` is the createdAt of the last one already shown."""
+def list_feedback(before: datetime | None = None, beforeId: uuid.UUID | None = None, _: User = Depends(require_admin),
+                  session: Session = Depends(get_session)):
+    """Newest first, PAGE_SIZE at a time; `before` and `beforeId` are the createdAt and id of the last one already shown
+    (both: two sent in the same instant are told apart by the id, so neither is skipped)."""
     query = select(Feedback).order_by(Feedback.created_at.desc(), Feedback.id.desc()).limit(PAGE_SIZE + 1)
     if before is not None:
-        query = query.where(Feedback.created_at < before)
+        query = query.where(or_(Feedback.created_at < before, and_(Feedback.created_at == before, Feedback.id < beforeId)) if beforeId else Feedback.created_at < before)
     items = session.scalars(query).all()
     return {"feedback": [public_feedback(item) for item in items[:PAGE_SIZE]], "more": len(items) > PAGE_SIZE}
 

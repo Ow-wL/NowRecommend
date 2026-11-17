@@ -228,3 +228,35 @@ def test_feedback_is_counted_per_place_and_for_the_service(world):
     app.dependency_overrides[get_settings] = lambda: settings(feedback_daily_per_address=2, feedback_daily_total=3)
     one = {"kind": "other", "message": "하나"}
     assert [client.post("/api/feedback", json=one).status_code for _ in range(3)] == [201, 201, 429]
+    app.dependency_overrides[get_settings] = lambda: settings(feedback_daily_per_address=0, feedback_daily_total=3)
+    assert [client.post("/api/feedback", json=one).status_code for _ in range(2)] == [201, 429]  # the service's three: two before, one now
+
+
+def test_admin_pages_through_feedback_sent_in_the_same_instant_without_skipping(world):
+    client, _, app, make, signer = world
+    same = datetime(2026, 11, 20, 12, 0, tzinfo=timezone.utc)
+    with make() as s:
+        for n in range(53):
+            s.add(Feedback(kind="idea", message=f"의견 {n}", created_at=same))
+        s.add(User(email="admin@example.com", name="관리자", password_hash="x", is_admin=True, email_verified_at=same))
+        s.commit()
+        admin = s.scalar(select(User))
+    auth = {"Authorization": f"Bearer {signer.issue(str(admin.id))}"}
+    first = client.get("/api/admin/feedback", headers=auth).json()
+    last = first["feedback"][-1]
+    rest = client.get("/api/admin/feedback", headers=auth, params={"before": last["createdAt"], "beforeId": last["id"]}).json()
+    assert first["more"] is True and rest["more"] is False
+    assert len({f["id"] for f in first["feedback"] + rest["feedback"]}) == 53
+
+
+def test_the_daily_removal_keeps_admins_and_accounts_holding_data(world):
+    client, outbox, app, make, _ = world
+    for email in ("a@example.com", "b@example.com", "c@example.com"):
+        client.post("/api/auth/signup", json={**SIGNUP, "email": email})
+    with make() as s:
+        s.execute(update(User).values(created_at=datetime.now(timezone.utc) - timedelta(days=30)))
+        s.execute(update(User).where(User.email == "a@example.com").values(is_admin=True))
+        s.execute(update(User).where(User.email == "b@example.com").values(store={"version": 2}))
+        s.commit()
+        assert sweep(s, settings()) == (1, 0)
+        assert sorted(u.email for u in s.scalars(select(User))) == ["a@example.com", "b@example.com"]
