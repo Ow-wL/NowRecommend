@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.db import get_session
 from app.mail import SmtpMailer, get_mailer, reset_mail
 from app.main import create_app
-from app.models import UsageDaily, User
+from app.models import Feedback, UsageDaily, User
 from app.routes.auth import get_signer
 
 SIGNUP = {"email": "lee@example.com", "password": "password1", "name": "주형"}
@@ -48,6 +48,7 @@ def world():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     User.__table__.create(engine)
     UsageDaily.__table__.create(engine)
+    Feedback.__table__.create(engine)
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():
@@ -477,7 +478,8 @@ def counts(app) -> dict[str, int]:
     from sqlalchemy import select
 
     with next(app.dependency_overrides[get_session]()) as session:
-        return {bucket: count for bucket, count in session.execute(select(UsageDaily.bucket, UsageDaily.count))}
+        # Not the once-a-day mark of the daily removal (budget.forget_old): it is no one's count.
+        return {bucket: count for bucket, count in session.execute(select(UsageDaily.bucket, UsageDaily.count)) if bucket != "sweep:day"}
 
 
 def test_wrong_passwords_from_one_place_stop_that_place_for_the_hour_and_not_the_owner(world, monkeypatch):

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ArrowRight, Info, KeyRound, LogIn, Mail, UserPlus } from 'lucide-react';
-import { authErrorMessage, confirmReset, login, requestReset, signup, type AuthSession } from '../api/auth';
+import { ArrowRight, BadgeCheck, Info, KeyRound, LogIn, Mail, UserPlus } from 'lucide-react';
+import { authErrorMessage, confirmEmail, confirmReset, login, pendingSignup, requestReset, signup, type AuthSession, type SignupPending } from '../api/auth';
 import { LEGAL_VERSION, MIN_AGE } from '../legal';
 import { healthTerms } from '../sensitive';
 
@@ -8,19 +8,33 @@ type Mode = 'login' | 'signup' | 'forgot';
 
 /** Email + password sign-in and sign-up (server mode), and the way back in for a forgotten password: `forgot` asks for
  * the mail, and a link from that mail brings `resetToken`, which shows the new-password form instead of everything else.
- * `onSuccess` receives the server session; `onGuest` continues without an account. */
-export function AuthPanel({ online, initialMode = 'login', initialName = '', resetToken, onResetDone, onSuccess, onGuest }: {
+ * `onSuccess` receives the server session; `onGuest` continues without an account.
+ * Since 2026-11-18 a sign-up may answer without a session: the address is confirmed first, by the link of a mail
+ * (`verifyToken` brings it back here: one button confirms, then the person logs in). */
+export function AuthPanel({ online, initialMode = 'login', initialName = '', resetToken, onResetDone, verifyToken, onVerifyDone, onSuccess, onGuest }: {
   online: boolean; initialMode?: Mode; initialName?: string; resetToken?: string; /** `again`: the link did not work and a new mail is wanted */ onResetDone?: (again?: boolean) => void;
+  verifyToken?: string; onVerifyDone?: () => void;
   onSuccess: (session: AuthSession, mode: 'login' | 'signup') => Promise<void> | void; onGuest: () => void;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [name, setName] = useState(initialName);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [mailed, setMailed] = useState('');
+  const [pending, setPending] = useState<SignupPending | null>(null);  // signed up; the confirmation mail is on its way
+  const [confirmed, setConfirmed] = useState('');  // the address the link just confirmed: the login form starts from it
   // Sign-up: the terms, the privacy policy and the age, each agreed to on its own. Nothing is ticked beforehand.
   const [agreed, setAgreed] = useState({ terms: false, privacy: false, adult: false });
   const allAgreed = agreed.terms && agreed.privacy && agreed.adult;
   const ready = online && !busy && (resetToken ? password.length >= 8 : !!email.trim() && (mode === 'forgot' || password.length >= 8 && (mode === 'login' || !!name.trim() && allAgreed)));
-  const go = (next: Mode) => { setMode(next); setError(''); setMailed(''); };
+  const go = (next: Mode) => { setMode(next); setError(''); setMailed(''); setPending(null); };
+
+  async function confirm() {
+    if (!verifyToken || busy) return;
+    setBusy(true); setError('');
+    try {
+      const done = await confirmEmail(verifyToken);
+      setEmail(done.email); setConfirmed(done.email); setMode('login'); onVerifyDone?.();
+    } catch (err) { setError(authErrorMessage(err, 'verify')); } finally { setBusy(false); }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,8 +51,9 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
         await requestReset(email.trim());
         setMailed(email.trim());
       } else {
-        const session = mode === 'signup' ? await signup(email.trim(), password, name.trim(), { termsVersion: LEGAL_VERSION, agreeTerms: agreed.terms, agreePrivacy: agreed.privacy, adult: agreed.adult }) : await login(email.trim(), password);
-        await onSuccess(session, mode);
+        const answer = mode === 'signup' ? await signup(email.trim(), password, name.trim(), { termsVersion: LEGAL_VERSION, agreeTerms: agreed.terms, agreePrivacy: agreed.privacy, adult: agreed.adult }) : await login(email.trim(), password);
+        if (pendingSignup(answer)) { setPending(answer); setPassword(''); return; }
+        await onSuccess(answer, mode);
       }
     } catch (err) {
       setError(authErrorMessage(err, resetToken ? 'reset' : mode));
@@ -56,7 +71,22 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
     <button className="text-button auth-guest" onClick={() => onResetDone?.(true)}>메일 다시 받기 <ArrowRight size={15} /></button>
   </div>;
 
+  if (verifyToken && !confirmed) return <div className="auth-panel">
+    <div className="notice" role="status"><BadgeCheck size={18} /><div><strong>이메일 확인을 마무리해요.</strong><p>아래 버튼을 누르면 가입이 끝나요. 그다음 가입할 때 정한 비밀번호로 로그인해주세요.</p></div></div>
+    {error && <div className="error-box" role="alert">{error}</div>}
+    <button className="button primary full-width" disabled={!online || busy} onClick={confirm}>{busy ? <span className="spinner" /> : <BadgeCheck size={17} />}{busy ? '확인하는 중' : '이메일 확인하기'}</button>
+    <button className="text-button auth-guest" onClick={() => onVerifyDone?.()}>로그인 화면으로 <ArrowRight size={15} /></button>
+  </div>;
+
+  if (pending) return <div className="auth-panel">
+    <div className="notice" role="status"><Mail size={18} /><div>{pending.verify === 'sent'
+      ? <><strong>메일함을 확인해주세요.</strong><p>{pending.email} 주소로 확인 메일을 보냈어요. 24시간 안에 메일의 버튼을 누르면 가입이 끝나고, 그다음 로그인할 수 있어요. 메일이 안 보이면 스팸함도 확인해주세요.</p></>
+      : <><strong>가입은 됐지만 확인 메일을 보내지 못했어요.</strong><p>잠시 후 로그인을 시도하면 확인 메일을 다시 보내 드려요. 7일 안에 확인하지 않은 가입은 지워져요.</p></>}</div></div>
+    <button className="button secondary full-width" onClick={() => { setEmail(pending.email); go('login'); }}><LogIn size={17} />로그인 화면으로</button>
+  </div>;
+
   return <div className="auth-panel">
+    {confirmed && mode === 'login' && <div className="notice" role="status"><BadgeCheck size={18} /><div><strong>이메일이 확인됐어요.</strong><p>가입할 때 정한 비밀번호로 로그인해주세요.</p></div></div>}
     {mode !== 'forgot' && <div className="filter-tabs auth-tabs" role="group" aria-label="로그인 또는 회원가입">
       {(['login', 'signup'] as const).map(m => <button key={m} aria-pressed={mode === m} className={mode === m ? 'active' : ''} onClick={() => go(m)}>{m === 'login' ? '로그인' : '회원가입'}</button>)}
     </div>}
@@ -73,7 +103,7 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
           <div className="consent-row"><label><input type="checkbox" required checked={agreed.terms} onChange={e => setAgreed(a => ({ ...a, terms: e.target.checked }))} /><span>이용약관에 동의해요 <small>(필수)</small></span></label><a href="#/terms" target="_blank" rel="noopener" aria-label="이용약관 보기 (새 탭)">보기</a></div>
           <div className="consent-row"><label><input type="checkbox" required checked={agreed.privacy} onChange={e => setAgreed(a => ({ ...a, privacy: e.target.checked }))} /><span>개인정보 수집·이용에 동의해요 <small>(필수)</small></span></label><a href="#/privacy" target="_blank" rel="noopener" aria-label="개인정보 처리방침 보기 (새 탭)">보기</a></div>
           <div className="consent-row"><label><input type="checkbox" required checked={agreed.adult} onChange={e => setAgreed(a => ({ ...a, adult: e.target.checked }))} /><span>만 {MIN_AGE}세 이상이에요 <small>(필수)</small></span></label></div>
-          <p className="small muted">수집 항목: 이메일, 이름, 비밀번호(암호화해 저장), 동의한 일시와 약관 버전. 로그인과 계정 식별, 비밀번호 재설정 안내에 쓰고 계정을 삭제할 때까지 보관해요. 동의하지 않아도 로그인 없이 쓸 수 있어요.</p>
+          <p className="small muted">수집 항목: 이메일, 이름, 비밀번호(암호화해 저장), 동의한 일시와 약관 버전, 이메일 확인 일시. 로그인과 계정 식별, 가입 확인·비밀번호 재설정 안내에 쓰고 계정을 삭제할 때까지 보관해요(확인하지 않은 가입은 7일 뒤 삭제). 동의하지 않아도 로그인 없이 쓸 수 있어요.</p>
         </fieldset>}
         {error && <div className="error-box" role="alert">{error}</div>}
         <button className="button primary full-width" disabled={!ready}>{busy ? <span className="spinner" /> : mode === 'signup' ? <UserPlus size={17} /> : mode === 'forgot' ? <Mail size={17} /> : <LogIn size={17} />}{busy ? (mode === 'signup' ? '가입하는 중' : mode === 'forgot' ? '보내는 중' : '로그인하는 중') : mode === 'signup' ? '가입하고 시작하기' : mode === 'forgot' ? '재설정 메일 받기' : '로그인'}</button>

@@ -21,6 +21,7 @@ from dataclasses import dataclass
 # times, lowers it for itself (tests/conftest.py).
 PBKDF2_ITERATIONS = 600_000
 RESET = "reset"  # the purpose of a password reset token (TokenSigner)
+VERIFY = "verify"  # the purpose of an address confirmation token (2026-11-18)
 SALT_BYTES = 16
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -104,6 +105,19 @@ class TokenSigner:
         if data is None or data.get("use") != "reset" or not isinstance(data.get("pw"), str):
             return None
         return data["sub"], data["pw"]
+
+    def issue_verify(self, user_id: str, email: str, password_hash: str, ttl_seconds: int = 24 * 3600) -> str:
+        """A link that confirms `email` for the account. It names the address and the password it was issued for, so it
+        dies when either changes (a sign-up made again over an unconfirmed one sets a new password)."""
+        return self._token({"sub": user_id, "use": VERIFY, "em": self.fingerprint(f"email|{email}"), "pw": self.fingerprint(password_hash),
+                            "exp": int(self.now()) + ttl_seconds}, VERIFY)
+
+    def verify_claims(self, token: str) -> tuple[str, str, str] | None:
+        """(account id, email fingerprint, password fingerprint) of a valid confirmation token."""
+        data = self._claims(token, VERIFY)
+        if data is None or data.get("use") != VERIFY or not isinstance(data.get("em"), str) or not isinstance(data.get("pw"), str):
+            return None
+        return data["sub"], data["em"], data["pw"]
 
     def fingerprint(self, password_hash: str) -> str:
         """Tells whether a password hash is still the one a reset token was issued for, without putting the hash in the token."""

@@ -1,6 +1,10 @@
 """Accounts (2026-11-02): sign up, log in, and the synced browser store that follows the account. Since 2026-11-17 also
 changing the password, resetting a forgotten one by mail, and signing an account out everywhere.
 
+Since 2026-11-18 (EMAIL_VERIFICATION on), a new account confirms its address by mail before it signs in, and an
+account never confirmed (those made before) does not sign in or keep a session until it is: the right password at the
+login form mails it a confirmation link. A reset link, which also proves the inbox, confirms it too.
+
 Tokens are stateless (app/auth.py). Without AUTH_SECRET every route here answers 503 and the app stays guest-only, so a
 deployment that has not set the secret yet is no worse than before accounts existed.
 """
@@ -15,7 +19,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -24,9 +28,10 @@ from ..budget import KST, Allowance, give_back, guest_key, signup_day, take
 from ..config import Settings, get_settings
 from ..db import get_session
 from ..legal import get_legal
-from ..mail import Mailer, failure as mail_failure, get_mailer, reset_mail
+from ..mail import Mailer, failure as mail_failure, get_mailer, reset_mail, verify_mail
 from ..models import UsageDaily, User
 from ..ratelimit import client_address
+from ..retention import stale_signup
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -95,6 +100,10 @@ class ResetRequest(BaseModel):
         return value
 
 
+class VerifyConfirm(BaseModel):
+    token: Annotated[str, StringConstraints(min_length=20, max_length=600)]
+
+
 class ResetConfirm(BaseModel):
     token: Annotated[str, StringConstraints(min_length=20, max_length=600)]
     password: Password
@@ -113,28 +122,32 @@ def require_signer(signer: TokenSigner | None = Depends(get_signer)) -> TokenSig
 
 
 def current_user(authorization: Annotated[str | None, Header()] = None, signer: TokenSigner = Depends(require_signer),
-                 session: Session = Depends(get_session)) -> User:
-    user = _token_user(authorization, signer, session)
+                 session: Session = Depends(get_session), settings: Settings = Depends(get_settings)) -> User:
+    user = _token_user(authorization, signer, session, settings)
     if user is None:
         raise HTTPException(401, "로그인이 필요해요.", headers={"WWW-Authenticate": "Bearer"})
     return user
 
 
-def _token_user(authorization: str | None, signer: TokenSigner | None, session: Session) -> User | None:
+def _token_user(authorization: str | None, signer: TokenSigner | None, session: Session, settings: Settings) -> User | None:
     """The account a bearer token belongs to, if the account still accepts it: the token's version must be the account's
-    current one, so a changed password or "sign out everywhere" ends every token issued before."""
+    current one, so a changed password or "sign out everywhere" ends every token issued before. With EMAIL_VERIFICATION
+    on, an account whose address was never confirmed accepts none: the browser is signed out (401) and the login form
+    mails the link."""
     scheme, _, token = (authorization or "").partition(" ")
     claims = signer.session(token) if signer and scheme.lower() == "bearer" and token else None
     if not claims or not _is_uuid(claims[0]):
         return None
     user = session.get(User, uuid.UUID(claims[0]))
-    return user if user is not None and user.token_version == claims[1] else None
+    if user is None or user.token_version != claims[1]:
+        return None
+    return None if settings.email_verification and user.email_verified_at is None else user
 
 
 def optional_user_id(authorization: Annotated[str | None, Header()] = None, signer: TokenSigner | None = Depends(get_signer),
-                     session: Session = Depends(get_session)) -> uuid.UUID | None:
+                     session: Session = Depends(get_session), settings: Settings = Depends(get_settings)) -> uuid.UUID | None:
     """Who is calling, if signed in. A stale or bad token only makes it a guest's request."""
-    known = _token_user(authorization, signer, session)
+    known = _token_user(authorization, signer, session, settings)
     return known.id if known else None
 
 
@@ -160,23 +173,38 @@ def _session_answer(signer: TokenSigner, user: User, version: int | None = None)
 
 
 @router.post("/api/auth/signup", status_code=201)
-def signup(request: SignupRequest, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
-           day: Allowance = Depends(signup_day), settings: Settings = Depends(get_settings)):
+def signup(request: SignupRequest, http: Request, response: Response, session: Session = Depends(get_session),
+           signer: TokenSigner = Depends(require_signer), day: Allowance = Depends(signup_day), settings: Settings = Depends(get_settings),
+           mailer: Mailer | None = Depends(get_mailer)):
+    """Makes the account. With EMAIL_VERIFICATION on it does not sign in: it mails a confirmation link and answers 202
+    {"verify": "sent" | "failed"}; the account signs in once the link was opened. Off, it signs in at once (201)."""
     agreed = request.agreeTerms and request.agreePrivacy and request.adult and request.termsVersion == get_legal().version
     if settings.signup_consent_required and not agreed:
         if request.agreeTerms and request.agreePrivacy and request.adult and request.termsVersion:  # agreed, but to documents that are not the current ones
             raise HTTPException(409, "약관이 바뀌었어요. 페이지를 새로 고친 뒤 다시 가입해주세요.")
         raise HTTPException(422, "이용약관과 개인정보 수집·이용에 동의하고, 이용 가능한 나이인지 확인해주세요.")
+    if settings.email_verification and mailer is None:
+        raise HTTPException(503, "이 서버에는 메일 발송이 설정되지 않아 가입을 받을 수 없어요.")
     taken = HTTPException(409, "이미 가입된 이메일이에요. 로그인해주세요.")
-    if session.scalar(select(User).where(User.email == request.email)) is not None:
+    now = datetime.now(timezone.utc)
+    known = session.scalar(select(User).where(User.email == request.email))
+    if known is not None and session.execute(delete(User).where(User.id == known.id, *stale_signup(settings, now)),
+                                         execution_options={"synchronize_session": False}).rowcount:
+        session.commit()  # a sign-up never confirmed and past its days: the address is free again
+        known = None
+    if known is not None:
+        if settings.email_verification and known.email_verified_at is None and known.last_login_at is None:
+            # Not overwritten: whoever is waiting for this account's link would otherwise confirm an account someone else
+            # set the password of. The inbox's owner takes it over with a reset link, which sets their own password.
+            raise HTTPException(409, "이미 가입 신청된 이메일이에요. 메일함의 확인 메일을 열거나, 비밀번호를 모르면 비밀번호 재설정을 이용해주세요.")
         raise taken
     # An account raises the daily AI allowance, so accounts cannot be made without end from one place. Counted before the
     # account is made (one statement that checks and counts), so sign-ups arriving together cannot pass the limit; a
     # mistyped form or an address already registered was turned away above and uses nothing up.
     if not day.take():
         raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
-    now = datetime.now(timezone.utc)
-    user = User(email=request.email, name=request.name, password_hash=hash_password(request.password), last_login_at=now,
+    confirm = settings.email_verification
+    user = User(email=request.email, name=request.name, password_hash=hash_password(request.password), last_login_at=None if confirm else now,
                 terms_version=request.termsVersion if agreed else None, terms_agreed_at=now if agreed else None)
     session.add(user)
     try:
@@ -186,7 +214,40 @@ def signup(request: SignupRequest, session: Session = Depends(get_session), sign
         day.give_back()  # no account was made: like the "already registered" answer above, it uses nothing up
         raise taken from None
     session.refresh(user)
+    if confirm:
+        response.status_code = 202
+        return {"verify": "sent" if _send_verify(user, http, session, signer, mailer, settings) else "failed", "email": user.email}
     return _session_answer(signer, user)
+
+
+def _send_verify(user: User, http: Request, session: Session, signer: TokenSigner, mailer: Mailer | None, settings: Settings) -> bool:
+    """Mails `user` a confirmation link, within the day's counts: per calling address, per inbox (kept under the address
+    itself, so deleting and making the account again starts nothing anew) and for the whole service. True if it left."""
+    if mailer is None:
+        return False
+    secret = settings.auth_secret
+    place = Allowance(session, f"verify:{guest_key(client_address(http, settings.trust_proxy), secret)}", settings.verify_daily_per_address, False)
+    if not place.take():
+        return False
+    inbox = Allowance(session, f"verify:e:{guest_key(user.email, secret)}", settings.verify_daily_per_email, False)
+    if not inbox.take():
+        return False
+    everyone = Allowance(session, "verify:total", settings.verify_daily_total, False)
+    if not everyone.take():
+        inbox.give_back()
+        log.error("confirmation mail not sent: today's mails for the whole service are used up (VERIFY_DAILY_TOTAL)")
+        return False
+    token = signer.issue_verify(str(user.id), user.email, user.password_hash, settings.verify_link_hours * 3600)
+    link = f"{settings.public_app_url.rstrip('/')}/#/verify/{token}"
+    try:
+        mailer.send(user.email, *verify_mail(user.name, link, settings.verify_link_hours))
+        return True
+    except Exception as error:  # noqa: BLE001 - the account is made; the person asks again by logging in
+        log.error("confirmation mail could not be sent: %s", mail_failure(error))
+        if isinstance(error, NOT_SENT):
+            inbox.give_back()
+            everyone.give_back()
+        return False
 
 
 def _hour() -> datetime:
@@ -246,7 +307,7 @@ def password_attempt(user: User, session: Session, settings: Settings) -> Passwo
 
 @router.post("/api/auth/login")
 def login(request: Credentials, http: Request, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer),
-          settings: Settings = Depends(get_settings)):
+          settings: Settings = Depends(get_settings), mailer: Mailer | None = Depends(get_mailer)):
     attempt = login_attempt(request.email, http, session, settings)
     user = session.scalar(select(User).where(User.email == request.email))
     # One message for both cases, so the form does not reveal which emails have accounts. An address without an account is
@@ -255,6 +316,14 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
     refused = HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
     if not verify_password(request.password, checked or absent_hash()) or user is None:
         raise refused
+    if settings.email_verification and user.email_verified_at is None:
+        # The right password, so this tells only the account's owner (or whoever has the password) that it waits for a
+        # confirmation. A link is mailed again, for a new sign-up only within its keeping days (after them it is removed).
+        attempt.give_back()
+        fresh = user.last_login_at is not None or _aware(user.created_at) > datetime.now(timezone.utc) - timedelta(days=settings.unverified_keep_days)
+        sent = fresh and _send_verify(user, http, session, signer, mailer, settings)
+        raise HTTPException(403, "이메일 확인이 아직이에요. " + ("확인 메일을 보냈어요. 메일의 버튼을 누른 뒤 다시 로그인해주세요." if sent else
+                                                       "지금은 확인 메일을 더 보낼 수 없어요. 받은 메일을 찾아보거나 내일 다시 시도해주세요."))
     # One UPDATE, and only if the stored hash is still the one just checked: a password changed or reset between the
     # check and here leaves this login with nothing (it proved the old password), and the token is issued for the
     # version this UPDATE saw, not for whatever a later read would show. A hash made with fewer rounds than are used now
@@ -409,6 +478,34 @@ NOT_SENT = (smtplib.SMTPConnectError, smtplib.SMTPAuthenticationError, smtplib.S
             smtplib.SMTPDataError, ConnectionRefusedError, socket.gaierror)
 
 
+@router.post("/api/auth/verify")
+def confirm_email(request: VerifyConfirm, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer)):
+    """Confirms the address from the mailed link, on the person's own click in the page (a mail scanner that fetches the
+    link does nothing). It does not sign in: the person logs in with their password next, so a leaked link is not a
+    session. The link holds only while the account has the address and the password it was mailed for; opened again
+    after it worked, it says the address is confirmed."""
+    claims = signer.verify_claims(request.token)
+    user = session.get(User, uuid.UUID(claims[0])) if claims and _is_uuid(claims[0]) else None
+    spent = HTTPException(400, "링크가 만료됐거나 더 이상 쓸 수 없어요. 로그인하면 확인 메일을 다시 보내 드려요.")
+    if user is None or not hmac.compare_digest(signer.fingerprint(f"email|{user.email}"), claims[1]):
+        raise spent
+    checked = user.password_hash
+    if not hmac.compare_digest(signer.fingerprint(checked), claims[2]):
+        raise spent
+    # One UPDATE, only while still unconfirmed and still on the password the link names.
+    session.execute(update(User).where(User.id == user.id, User.password_hash == checked, User.email_verified_at.is_(None))
+                    .values(email_verified_at=datetime.now(timezone.utc)))
+    session.commit()
+    session.refresh(user)
+    if user.email_verified_at is None:  # the password changed in between
+        raise spent
+    return {"verified": True, "email": user.email}
+
+
+def _aware(value: datetime) -> datetime:
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
 @router.post("/api/auth/reset/confirm")
 def confirm_reset(request: ResetConfirm, session: Session = Depends(get_session), signer: TokenSigner = Depends(require_signer)):
     """Sets the new password from a mailed link. The link works once: it names the password it was issued for, and that
@@ -419,7 +516,10 @@ def confirm_reset(request: ResetConfirm, session: Session = Depends(get_session)
     spent = HTTPException(400, "링크가 만료됐거나 이미 사용됐어요. 비밀번호 재설정을 다시 요청해주세요.")
     if user is None or not hmac.compare_digest(signer.fingerprint(checked), claims[1]):
         raise spent
-    version = _replace_password(user, session, checked, request.password, last_login_at=datetime.now(timezone.utc))
+    # The link reached the inbox, so the address is confirmed too (kept as it was if it already was).
+    now = datetime.now(timezone.utc)
+    version = _replace_password(user, session, checked, request.password, last_login_at=now,
+                                email_verified_at=func.coalesce(User.email_verified_at, now))
     if version is None:  # the same link, used a moment earlier by another request
         raise spent
     return _session_answer(signer, user, version)

@@ -9,8 +9,10 @@ export function routeFor(view: View): string {
 }
 /** The token of a password reset link (`#/reset/<token>`, mailed by the server), or '' for any other address. */
 export const resetTokenIn = (hash: string): string => hash.match(/^#\/reset\/([A-Za-z0-9_.-]{20,600})$/)?.[1] ?? '';
+/** The token of an address confirmation link from the sign-up mail (#/verify/<token>, 2026-11-18). */
+export const verifyTokenIn = (hash: string): string => hash.match(/^#\/verify\/([A-Za-z0-9_.-]{20,600})$/)?.[1] ?? '';
 export function parseRoute(hash: string): View {
-  if (hash.startsWith('#/reset/')) return { ...defaultView, page: 'login' };  // the login page shows the new-password form
+  if (hash.startsWith('#/reset/') || hash.startsWith('#/verify/')) return { ...defaultView, page: 'login' };  // the login page shows the new-password form, or the confirmation
   const match = hash.match(/^#\/(recommend|onboard)\/(food|music)(?:\/(input|confirm|results))?$/);
   if (match) return { page: match[1] as Page, category: match[2] as Category, step: match[3] === 'results' ? 'results' : 'input' };
   const page = hash.slice(2);

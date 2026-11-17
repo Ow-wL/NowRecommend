@@ -20,11 +20,22 @@ export const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}
 
 /** `consent`: the version of the terms and privacy policy the person agreed to on the form, and that they said they are of age. */
 export type SignupConsent = { termsVersion: string; agreeTerms: boolean; agreePrivacy: boolean; adult: boolean };
+/** What sign-up answers when the address must be confirmed first (2026-11-18): no session; a mail with a link was sent
+ * (`sent`), or could not be (`failed`: logging in later mails it again). */
+export type SignupPending = { verify: 'sent' | 'failed'; email: string };
+const validPending = (v: any): v is SignupPending => !!v && (v.verify === 'sent' || v.verify === 'failed') && typeof v.email === 'string';
+const validSignup = (v: any): v is AuthSession | SignupPending => validSession(v) || validPending(v);
+export const pendingSignup = (answer: AuthSession | SignupPending): answer is SignupPending => 'verify' in answer;
 export function signup(email: string, password: string, name: string, consent: SignupConsent, { base = API_BASE_URL, fetchImpl }: Options = {}) {
-  return apiJson('/api/auth/signup', validSession, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password, name: name.trim(), ...consent }, timeoutMs: 15000 });
+  return apiJson('/api/auth/signup', validSignup, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password, name: name.trim(), ...consent }, timeoutMs: 20000 });
+}
+/** Confirms the address from the sign-up mail's link. It does not sign in: the person logs in next. */
+export function confirmEmail(token: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson('/api/auth/verify', (v: any): v is { verified: true; email: string } => !!v && v.verified === true && typeof v.email === 'string',
+    { base, fetchImpl, method: 'POST', body: { token }, timeoutMs: 15000 });
 }
 export function login(email: string, password: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
-  return apiJson('/api/auth/login', validSession, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password }, timeoutMs: 15000 });
+  return apiJson('/api/auth/login', validSession, { base, fetchImpl, method: 'POST', body: { email: email.trim(), password }, timeoutMs: 20000 });
 }
 export function fetchMe(token: string, { base = API_BASE_URL, fetchImpl }: Options = {}) {
   return apiJson('/api/auth/me', validMe, { base, fetchImpl, headers: authHeaders(token) });
@@ -68,18 +79,25 @@ export function confirmReset(token: string, password: string, { base = API_BASE_
 }
 
 /** What the form should say for a failed sign-up, login or password reset. */
-export function authErrorMessage(error: unknown, mode: 'login' | 'signup' | 'forgot' | 'reset'): string {
+export function authErrorMessage(error: unknown, mode: 'login' | 'signup' | 'forgot' | 'reset' | 'verify'): string {
   if (error instanceof AccountDataError) return error.message;
   if (!(error instanceof ApiError)) return '요청을 보내지 못했어요. 잠시 후 다시 시도해주세요.';
   if (error.kind === 'offline') return '서버에 연결하지 못했어요. 네트워크를 확인해주세요.';
   if (error.kind === 'timeout') return '서버 응답이 늦어요. 잠시 후 다시 시도해주세요.';
-  if (error.status === 503) return mode === 'forgot' ? '지금은 메일로 비밀번호를 다시 정할 수 없어요. 잠시 후 다시 시도해주세요.' : '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
+  if (error.status === 503) {
+    if (mode === 'forgot') return '지금은 메일로 비밀번호를 다시 정할 수 없어요. 잠시 후 다시 시도해주세요.';
+    if (mode === 'signup' && error.message.includes('메일')) return '지금은 가입 확인 메일을 보낼 수 없어 가입을 받지 못해요. 잠시 후 다시 시도해주세요.';
+    return '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
+  }
   // The server's own sentence: it tells a busy minute from an account whose password was got wrong too often (and what to do then).
   if (error.status === 429) return error.message || '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';
   if (mode === 'reset') return error.status === 400 ? '링크가 만료됐거나 이미 사용됐어요. 메일을 다시 받아주세요.' : error.status === 422 ? '비밀번호는 8자 이상이어야 해요.' : error.message || '비밀번호를 바꾸지 못했어요.';
   if (mode === 'forgot') return error.status === 422 ? '이메일 형식을 확인해주세요.' : error.message || '요청을 처리하지 못했어요.';
+  if (mode === 'verify') return error.status === 400 || error.status === 422 ? '링크가 만료됐거나 더 이상 쓸 수 없어요. 로그인하면 확인 메일을 다시 보내 드려요.' : error.message || '이메일을 확인하지 못했어요.';
+  // The right password for an account whose address is not confirmed yet: the server says whether it mailed the link again.
+  if (error.status === 403 && mode === 'login') return error.message || '이메일 확인이 아직이에요. 메일함을 확인해주세요.';
   if (error.status === 401) return '이메일 또는 비밀번호가 맞지 않아요.';
-  if (error.status === 409) return error.message.includes('약관') ? error.message : '이미 가입된 이메일이에요. 로그인해주세요.';  // the documents changed since the form was opened
+  if (error.status === 409) return error.message.includes('약관') || error.message.includes('가입 신청') ? error.message : '이미 가입된 이메일이에요. 로그인해주세요.';  // the documents changed since the form was opened
   if (error.status === 422) return mode === 'signup' ? '이메일 형식, 8자 이상의 비밀번호, 16자 이내의 이름과 약관 동의를 확인해주세요.' : '이메일 형식과 비밀번호를 확인해주세요.';
   return error.message || '요청을 처리하지 못했어요.';
 }

@@ -82,13 +82,27 @@ class Settings(BaseSettings):
     # Where the app is served: the reset link in the mail opens <PUBLIC_APP_URL>#/reset/<token>.
     public_app_url: str = "https://ow-wl.github.io/NowRecommend/"
     reset_token_minutes: int = 30
+    # Sign-up confirms the address by mail before the account signs in (routes/auth.py, 2026-11-18). Off by default so
+    # local runs and tests need no mail server; production sets EMAIL_VERIFICATION=true. Confirmation mails: per address
+    # and per account like the reset mails, and at most `verify_daily_total` a day for the whole service. With the reset
+    # mails' total (50) that stays under the mail service's free 100 a day.
+    email_verification: bool = False
+    verify_link_hours: int = 24
+    verify_daily_per_address: int = 10
+    verify_daily_per_email: int = 3
+    verify_daily_total: int = 40
+    # An account never confirmed (and never signed in, holding nothing) is removed this many days after it was made, plus
+    # the life of a link, so a link mailed on the last day still finds it (retention.py).
+    unverified_keep_days: int = 7
+    feedback_daily_per_address: int = 10
+    feedback_daily_total: int = 200
     # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
     reset_daily_per_address: int = 10
     reset_daily_per_email: int = 3
     # Reset mails of the whole service per day (0 = off). The mail service's free plan sends 100 a day (2026-11-17): past
     # this the form still answers the same and no mail leaves, so one day's flood cannot use the plan up or get the
     # sender's domain marked as a spammer.
-    reset_daily_total: int = 80
+    reset_daily_total: int = 50
     # Wrong passwords per hour (0 = off; routes/auth.py login_attempt). For one account from one address: someone guessing
     # is stopped for the hour, and the owner at another address is not. A signed-in session trying the current password
     # (change, delete) has the same number, counted apart.

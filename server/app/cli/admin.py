@@ -1,9 +1,12 @@
-"""Who may read error reports: python -m app.cli.admin grant|revoke|list [email]
+"""Who may read error reports and feedback: python -m app.cli.admin grant|revoke|list [email]
+An account's address, marked confirmed by the operator: python -m app.cli.admin verify email
 
-The account must exist already. There is no route that grants this and no list of addresses in the settings: sign-up does not
-verify email, so whoever registered an address first would otherwise become an admin.
+The account must exist already. There is no route that grants this and no list of addresses in the settings: whoever
+registered an address first would otherwise become an admin. `verify` is for the operator's own accounts when the
+confirmation mail cannot reach them (EMAIL_VERIFICATION, routes/auth.py); a reset link confirms an address as well.
 """
 import argparse
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -14,7 +17,7 @@ from ..models import User
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("action", choices=["grant", "revoke", "list"])
+    parser.add_argument("action", choices=["grant", "revoke", "list", "verify"])
     parser.add_argument("email", nargs="?")
     args = parser.parse_args()
     with get_sessionmaker()() as session:
@@ -26,7 +29,10 @@ def main() -> None:
         user = session.scalar(select(User).where(User.email == normalize_email(args.email)))
         if user is None:
             raise SystemExit("no account with that email; sign up first")
-        user.is_admin = args.action == "grant"
+        if args.action == "verify":
+            user.email_verified_at = user.email_verified_at or datetime.now(timezone.utc)
+        else:
+            user.is_admin = args.action == "grant"
         session.commit()
         print(f"{args.action}: done")
 

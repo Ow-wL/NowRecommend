@@ -30,7 +30,9 @@ describe('terms and privacy policy', () => {
     for (const receiver of ['Google LLC', 'Google Cloud', 'Apple', 'Open-Meteo', 'Resend']) expect(policy).toContain(receiver);
     // The mail provider: who it is, where the mail is kept and for how long, and that nothing is sent unless a reset is asked for.
     const mail = privacySections(info).flatMap(section => section.blocks).flat().find(line => line.startsWith('Resend'))!;
-    for (const part of ['Plus Five Five, Inc., 미국', '이메일 주소', '재설정 링크', '30일', '요청하지 않으면 전송되지 않습니다']) expect(mail).toContain(part);
+    for (const part of ['Plus Five Five, Inc., 미국', '이메일 주소', '확인·재설정 링크', '가입할 때', '30일']) expect(mail).toContain(part);
+    // 2026-11-25: sign-up confirms the address by mail; feedback is kept a year and is not tied to the account.
+    for (const line of ['이메일을 확인한 일시', '이메일을 확인하지 않은 가입 신청: 7일', '의견: 받은 날부터 1년', '계정과 연결하지 않으며', '보낸 의견의 삭제']) expect(policy).toContain(line);
     expect(text(privacySections({ ...info, weather: false }))).not.toContain('Open-Meteo');
     // What a person can do themselves, and what is never collected.
     for (const line of ['계정을 삭제', '백업', '결제 정보', '쿠키']) expect(policy).toContain(line);

@@ -40,6 +40,8 @@ import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
 import { AdminReports } from './components/AdminReports';
 import { ReportDialog } from './components/ReportDialog';
+import { FeedbackDialog } from './components/FeedbackDialog';
+import { AdminFeedback } from './components/AdminFeedback';
 import { TasteReasons } from './components/TasteReasons';
 import { TasteType } from './components/TasteType';
 import { requestForType } from './tasteType';
@@ -50,7 +52,7 @@ import { recordRound, selectResult,reviewSelection, addManual, MANUAL_RAW } from
 import { HistoryDetails } from './components/HistoryDetails';
 import { Modal } from './components/Modal';
 import { RecommendationCard } from './components/RecommendationCard';
-import { navigationDirection, parseRoute, resetTokenIn, routeFor, viewReducer, type Page, type Step, type View } from './navigation';
+import { navigationDirection, parseRoute, resetTokenIn, routeFor, verifyTokenIn, viewReducer, type Page, type Step, type View } from './navigation';
 import { newSession, readTab, writeTab } from './sessionStorage';
 import { isAiPick, rememberItems, resolveItem } from './knownItems';
 import { keepLocalCopy, readAccount, writeAccount, type Account } from './account';
@@ -120,15 +122,19 @@ export default function App() {
   // A password reset link from the mail (#/reset/<token>): read once here and on later address changes; the router then
   // moves the address to #/login, so the token does not stay in the address bar or the history.
   // The address is replaced in place (not navigated away from), so the link does not stay in the browser's history either.
-  const takeResetToken = () => { const token = resetTokenIn(window.location.hash); if (token) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/login`); return token; };
+  const takeLink = (read: (hash: string) => string) => () => { const token = read(window.location.hash); if (token) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/login`); return token; };
+  const takeResetToken = takeLink(resetTokenIn);
+  // The same for the sign-up mail's confirmation link (#/verify/<token>, 2026-11-18): the login page shows its button.
+  const takeVerifyToken = takeLink(verifyTokenIn);
   const [resetToken, setResetToken] = useState(takeResetToken);
+  const [verifyToken, setVerifyToken] = useState(takeVerifyToken);
   const [mailAgain, setMailAgain] = useState(false);  // the link did not work: the login form opens on "send the mail again"
   // Leaving the login page drops the link: it is not kept in memory for a later visit. Only the move away counts: a
   // link that arrives while the app is still starting on another screen must not be wiped by this running first (or,
   // in development, twice).
   const onLoginPage = useRef(page === 'login');
-  useEffect(() => { if (onLoginPage.current && page !== 'login') { setResetToken(''); setMailAgain(false); } onLoginPage.current = page === 'login'; }, [page]);
-  useEffect(() => { const onLink = () => { const token = takeResetToken(); if (token) { setResetToken(token); dispatchView({ page: 'login' }); } }; window.addEventListener('hashchange', onLink); onLink(); /* the address may have changed between the first render and here */ return () => window.removeEventListener('hashchange', onLink); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (onLoginPage.current && page !== 'login') { setResetToken(''); setVerifyToken(''); setMailAgain(false); } onLoginPage.current = page === 'login'; }, [page]);
+  useEffect(() => { const onLink = () => { const token = takeResetToken(), confirming = takeVerifyToken(); if (token) { setResetToken(token); dispatchView({ page: 'login' }); } if (confirming) { setVerifyToken(confirming); dispatchView({ page: 'login' }); } }; window.addEventListener('hashchange', onLink); onLink(); /* the address may have changed between the first render and here */ return () => window.removeEventListener('hashchange', onLink); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const [tasteDecade, setTasteDecade] = useState(0);
   // The hour (and, only on request, the weather) shapes the first quick condition on the home screen.
   const [weather, setWeather] = useState<Weather | null>(() => weatherMode === 'off' ? null : readWeather());  // switched off: a weather kept from before is not used either
@@ -172,6 +178,7 @@ export default function App() {
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
   const voice = useVoiceInput(text => setSession(s => changeText(s, (s.raw.trim() ? `${s.raw.trimEnd()} ` : '') + text)), message => notify(message));
   const [reportItem, setReportItem] = useState<Item | null>(null), [reportedIds, setReportedIds] = useState<string[]>([]);
+  const [opinionOpen, setOpinionOpen] = useState(false);  // 의견 보내기 (2026-11-18)
   const [songChecks, setSongChecks] = useState<Record<string, SongStatus>>({});
   const [feedbackItem, setFeedbackItem] = useState<Item | null>(null);
   const [historyPreview, setHistoryPreview] = useState<HistoryEntry | null>(null);
@@ -802,7 +809,7 @@ export default function App() {
         </div>
       </div>; })()}
 
-      {page === 'admin' && <AdminReports token={account?.token} onBack={() => navigate('taste')} />}
+      {page === 'admin' && <><AdminReports token={account?.token} onBack={() => navigate('taste')} /><AdminFeedback token={account?.token} /></>}
       {(page === 'terms' || page === 'privacy') && <Legal kind={page} onBack={() => navigate('home')} onOther={() => navigate(page === 'terms' ? 'privacy' : 'terms')} />}
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
@@ -857,7 +864,8 @@ export default function App() {
         <div className="my-links">
           <button className="list-row" onClick={() => navigate('history')}><span className="list-copy"><b>추천 기록</b><small>지난 추천과 선택 {store.history.length}개</small></span><ChevronRight size={18} /></button>
           <button className="list-row" onClick={() => { setNameDraft(store.name); setDialog('account'); }}><span className="list-copy"><b>프로필·화면 설정</b><small>이름, 테마, 미리듣기 소리, 데이터 백업</small></span><ChevronRight size={18} /></button>
-          {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>오류 신고 관리</b><small>사용자가 보낸 사진·정보 오류 확인</small></span><ChevronRight size={18} /></button>}
+          {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>오류 신고·의견 관리</b><small>사용자가 보낸 사진·정보 오류와 의견 확인</small></span><ChevronRight size={18} /></button>}
+          <button className="list-row" onClick={() => setOpinionOpen(true)}><span className="list-copy"><b>의견 보내기</b><small>불편한 점, 바라는 기능, 좋았던 점</small></span><ChevronRight size={18} /></button>
           <button className="list-row" onClick={() => navigate('type')}><span className="list-copy"><b>취향 유형 테스트</b><small>음식·음악 취향을 네 글자로, 공유 카드까지</small></span><ChevronRight size={18} /></button>
           {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}
           {labAllowed && <button className="list-row" onClick={() => navigate('lab')}><span className="list-copy"><b>AI 실험실</b><small>후보 비교와 취향 유형 테스트</small></span><ChevronRight size={18} /></button>}
@@ -865,20 +873,21 @@ export default function App() {
       </>}
       {page === 'login' && <div className="login-panel">
         <div className="login-body">
-        <h1>{resetToken ? '새 비밀번호 정하기' : account ? `${account.user.name}님, 로그인되어 있어요.` : '로그인'}</h1>
-        <p>{resetToken ? '메일로 받은 링크예요. 새 비밀번호를 정하면 바로 로그인돼요.' : account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 저장해 다른 기기에서도 이어 쓸 수 있어요.'}</p>
-        {account && !resetToken ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={() => { signOut(); document.getElementById('main-content')?.focus({ preventScroll: true }); }}><LogOut size={16} />로그아웃</button></div>
-          : <AuthPanel key={resetToken ? 'reset' : mailAgain ? 'again' : 'auth'} online={apiEnabled()} initialMode={mailAgain ? 'forgot' : 'login'} initialName={store.name === '취향 탐험가' ? '' : store.name} resetToken={resetToken || undefined} onResetDone={again => { setResetToken(''); setMailAgain(!!again); }} onSuccess={signIn} onGuest={() => navigate('home')} />}
+        <h1>{resetToken ? '새 비밀번호 정하기' : verifyToken ? '이메일 확인' : account ? `${account.user.name}님, 로그인되어 있어요.` : '로그인'}</h1>
+        <p>{resetToken ? '메일로 받은 링크예요. 새 비밀번호를 정하면 바로 로그인돼요.' : verifyToken ? '가입 확인 메일로 받은 링크예요.' : account ? '계정의 취향·즐겨찾기·기록이 이 브라우저와 동기화돼요.' : '취향과 기록을 저장해 다른 기기에서도 이어 쓸 수 있어요.'}</p>
+        {account && !resetToken && !verifyToken ? <div className="card-actions"><button className="button primary" onClick={() => navigate('home')}>홈으로 <ArrowRight size={16} /></button><button className="button secondary" onClick={() => { signOut(); document.getElementById('main-content')?.focus({ preventScroll: true }); }}><LogOut size={16} />로그아웃</button></div>
+          : <AuthPanel key={resetToken ? 'reset' : mailAgain ? 'again' : 'auth'} online={apiEnabled()} initialMode={mailAgain ? 'forgot' : 'login'} initialName={store.name === '취향 탐험가' ? '' : store.name} resetToken={resetToken || undefined} onResetDone={again => { setResetToken(''); setMailAgain(!!again); }} verifyToken={verifyToken || undefined} onVerifyDone={() => setVerifyToken('')} onSuccess={signIn} onGuest={() => navigate('home')} />}
         </div>
         <div className="login-wall" aria-hidden="true">{showcase('food', 3).flatMap((f, n) => [f, showcase('music', 3)[n]]).filter(Boolean).map(i => <ItemArt key={i.id} item={i} size="tile" />)}</div>
       </div>}
       </div>
     </main>
     <nav className="tabbar" aria-label="하단 메뉴">{allNav.filter(n => n.page !== 'history').map(n => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`tab ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}><n.icon size={21} /><span aria-hidden="true">{shortLabel[n.label]}</span>{n.page === 'favorites' && store.favorites.length > 0 && <span className="tab-count" aria-hidden="true">{store.favorites.length}</span>}</button>)}</nav>
-    {toast && !reportItem && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); dismissToast(); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={dismissToast}><X size={15} /></button></div>}
+    {toast && !reportItem && !opinionOpen && !dialog && !feedbackItem && !historyPreview && !detail && !presetPreview && !savePresetOpen && !compareOpen && <div className="toast" role="status" onMouseEnter={()=>setToastPaused(true)} onMouseLeave={()=>setToastPaused(false)} onFocus={()=>setToastPaused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setToastPaused(false);}}><CheckCheck size={18} /><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo?.(); dismissToast(); }}>되돌리기</button>}<button className="icon-button" aria-label="알림 닫기" onClick={dismissToast}><X size={15} /></button></div>}
     {feedbackItem && <Modal title="어떤 이유로 바꾸고 싶으세요?" onClose={() => setFeedbackItem(null)}><p className="modal-description"><b>{feedbackItem.name}</b>에 대한 의견을 어디까지 반영할지 골라주세요.</p><button className="feedback-option" onClick={() => applyFeedback('session')}><span className="small-icon food"><Clock3 size={21} /></span><span><b>이번 요청에서 제외</b><small>이번 요청에서만 빼고 다른 항목을 추천해요.<br />새로운 상황으로 시작하면 다시 만날 수 있어요.</small></span><ChevronRight size={19} /></button><button className="feedback-option" onClick={() => applyFeedback('long')}><span className="small-icon music"><SlidersHorizontal size={21} /></span><span><b>원래 내 취향이 아님</b><small>이 항목을 장기 비선호에 저장해요.<br />다음 요청에서도 제외하며, 내 취향에서 해제할 수 있어요.</small></span><ChevronRight size={19} /></button><button className="button secondary full-width" onClick={() => setFeedbackItem(null)}>취소</button></Modal>}
     {historyPreview && <Modal title="그때의 추천" onClose={() => setHistoryPreview(null)}><HistoryDetails entry={historyPreview} persisted={!storageWarning} guard={withHealth} onSelect={(result,roundId)=>reviseSelection(historyPreview,result,roundId)} onCancel={()=>reviseSelection(historyPreview)} onReview={(rating,note)=>{const next=reviewSelection(historyPreview,rating,note);setStore(s=>({...s,history:s.history.map(h=>h.id===next.id?next:h)}));setHistoryPreview(next);}}/><button className="button primary full-width" onClick={() => reuse(historyPreview)}>같은 조건으로 다시 추천 <ArrowRight size={16} /></button></Modal>}
     {presetPreview && <Modal title="조건을 바꿀까요?" onClose={()=>setPresetPreview(null)}><p className="modal-description">작성 중인 조건을 ‘{presetPreview.name}’으로 바꿀까요?</p><ConditionsSummary conditions={presetPreview.conditions}/><div className="modal-actions"><button data-safe-focus className="button secondary" onClick={()=>setPresetPreview(null)}>취소</button><button className="button primary" onClick={()=>applyQuickCondition(presetPreview)}>이 조건 적용</button></div></Modal>}
+    {opinionOpen && <FeedbackDialog onClose={() => setOpinionOpen(false)} onSent={() => { setOpinionOpen(false); notify('의견을 보냈어요. 고마워요!'); }} />}
     {reportItem && <ReportDialog item={reportItem} token={account?.token} guard={withHealth} onClose={() => setReportItem(null)} onSent={() => { setReportedIds(ids => [...ids, reportItem.id]); setReportItem(null); notify('신고를 보냈어요. 확인 후 고칠게요.'); }} />}
     {detail && <Modal title={detail.item.name} onClose={()=>setDetail(null)}><ItemDetails item={detail.item} reasons={detail.reasons} conditions={session.conditions} onReport={apiEnabled() ? () => { const it = detail.item; setDetail(null); setReportItem(it); } : undefined}/></Modal>}
     {manualOpen && <Modal title="직접 기록" onClose={() => setManualOpen(false)}><ManualRecord items={items} category={filter === 'all' ? 'food' : filter} guard={withHealth} onSave={entry => { setStore(s => ({ ...s, history: addManual(s.history, entry) })); setManualOpen(false); notify(`${entry.selected!.result.item.name}을(를) 기록했어요.`); }} /></Modal>}

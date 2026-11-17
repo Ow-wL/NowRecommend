@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readAccount, sessionHeaders, writeAccount } from './account';
-import { authErrorMessage, fetchRemoteStore, pushRemoteStore, signup } from './api/auth';
+import { authErrorMessage, confirmEmail, fetchRemoteStore, pendingSignup, pushRemoteStore, signup } from './api/auth';
 import { ApiError } from './api/client';
 import { emptyStore } from './domain';
 
@@ -31,9 +31,21 @@ describe('auth API', () => {
     let seen: any;
     const fetchImpl = (async (url: string, init: RequestInit) => { seen = [url, init]; return new Response(JSON.stringify({ token: 't', user: account.user, hasStore: false }), { status: 201 }); }) as typeof fetch;
     const session = await signup(' a@b.co ', 'password1', '주형', { termsVersion: '2026-11-17', agreeTerms: true, agreePrivacy: true, adult: true }, { base: 'http://api.test', fetchImpl });
-    expect(session.user.name).toBe('주형');
+    expect(!pendingSignup(session) && session.user.name).toBe('주형');
     expect(seen[0]).toBe('http://api.test/api/auth/signup');
     expect(JSON.parse(seen[1].body)).toEqual({ email: 'a@b.co', password: 'password1', name: '주형', termsVersion: '2026-11-17', agreeTerms: true, agreePrivacy: true, adult: true });  // what was agreed to goes with it
+  });
+  it('tells a sign-up that waits for its address to be confirmed from one that signed in, and confirms with the link', async () => {
+    const pending = await signup('a@b.co', 'password1', '주형', { termsVersion: '2026-11-18', agreeTerms: true, agreePrivacy: true, adult: true }, { base: 'http://api.test', fetchImpl: json({ verify: 'sent', email: 'a@b.co' }, 202) as typeof fetch });
+    expect(pendingSignup(pending) && pending.verify).toBe('sent');
+    await expect(signup('a@b.co', 'password1', '주형', { termsVersion: '2026-11-18', agreeTerms: true, agreePrivacy: true, adult: true }, { base: 'http://api.test', fetchImpl: json({ verify: 'maybe', email: 'a@b.co' }, 202) as typeof fetch })).rejects.toThrow();
+    let seen: any;
+    const fetchImpl = (async (url: string, init: RequestInit) => { seen = [url, init]; return new Response(JSON.stringify({ verified: true, email: 'a@b.co' })); }) as typeof fetch;
+    expect(await confirmEmail('tok', { base: 'http://api.test', fetchImpl })).toEqual({ verified: true, email: 'a@b.co' });
+    expect(seen[0]).toBe('http://api.test/api/auth/verify');
+    expect(JSON.parse(seen[1].body)).toEqual({ token: 'tok' });
+    expect(authErrorMessage(new ApiError('http', '이메일 확인이 아직이에요. 확인 메일을 보냈어요.', 403), 'login')).toBe('이메일 확인이 아직이에요. 확인 메일을 보냈어요.');
+    expect(authErrorMessage(new ApiError('http', 'x', 400), 'verify')).toContain('로그인하면 확인 메일을 다시');
   });
   it('reads the synced store with the bearer token and tells an unreadable blob from none', async () => {
     let headers: any;

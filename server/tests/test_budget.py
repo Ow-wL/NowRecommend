@@ -17,7 +17,7 @@ from app.llm.client import CooldownModel
 from app.budget import AllowanceSpent, BudgetedEmbedder, BudgetSpent, Gate
 from app.llm.provider import BudgetedModel
 from app.main import create_app
-from app.models import UsageDaily, User
+from app.models import Feedback, UsageDaily, User
 from app.parsing.service import ParseService
 from app.ratelimit import RateLimitMiddleware
 from app.routes.auth import get_signer
@@ -34,6 +34,7 @@ SIGNER = TokenSigner("test-secret", ttl_seconds=3600)
 def counters():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     UsageDaily.__table__.create(engine)
+    Feedback.__table__.create(engine)
     User.__table__.create(engine)
     with sessionmaker(engine, expire_on_commit=False)() as session:
         yield session

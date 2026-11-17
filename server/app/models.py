@@ -100,6 +100,9 @@ class User(Base):
     # NULL for accounts made before 2026-11-17.
     terms_version: Mapped[str | None] = mapped_column(Text)
     terms_agreed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When the address was shown to be this person's: the link of the confirmation mail was opened, or a reset link was
+    # used (2026-11-18). NULL: not confirmed, and with EMAIL_VERIFICATION on, the account does not sign in.
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class UsageDaily(Base):
@@ -131,3 +134,21 @@ class Report(Base):
     status: Mapped[str] = mapped_column(Text, server_default="open")
     user_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Feedback(Base):
+    """What someone told the service from its "의견 보내기" (routes/feedback.py, 2026-11-18). Kept a year (retention.py).
+    Not tied to an account: the only way back to the person is the address they chose to write, if any."""
+    __tablename__ = "feedback"
+    __table_args__ = (
+        CheckConstraint("kind IN ('praise','problem','idea','other')", name="feedback_kind"),
+        Index("feedback_created", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    kind: Mapped[str] = mapped_column(Text)
+    message: Mapped[str] = mapped_column(Text)
+    contact: Mapped[str | None] = mapped_column(Text)  # an address to answer to, only if the person gave one
+    page: Mapped[str] = mapped_column(Text, server_default="")
+    app_version: Mapped[str] = mapped_column(Text, server_default="")

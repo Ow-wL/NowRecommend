@@ -85,8 +85,20 @@ def used(session: Session, bucket: str, day: date | None = None) -> int:
 
 
 def forget_old(session: Session, day: date | None = None) -> None:
-    session.execute(delete(UsageDaily).where(UsageDaily.day <= (day or today()) - timedelta(days=KEEP_DAYS)))
+    day = day or today()
+    session.execute(delete(UsageDaily).where(UsageDaily.day <= day - timedelta(days=KEEP_DAYS)))
     session.commit()
+    # Once a day (the first counter of the day to count this mark runs it): what else is kept for a set time (retention.py).
+    if session.execute(_TAKE, {"day": day, "bucket": "sweep:day", "limit": 1}).scalar() == 1:
+        session.commit()
+        from .retention import sweep  # here: retention imports the models, which do not need this module
+        try:
+            sweep(session, get_settings())
+        except Exception:  # noqa: BLE001 - the request that happened to come first is not failed for it; tomorrow tries again
+            session.rollback()
+            log.exception("daily removal failed")
+    else:
+        session.commit()
 
 
 def take_total() -> bool:

@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.config import Settings, get_settings
 from app.db import get_session
 from app.main import create_app
-from app.models import UsageDaily
+from app.models import Feedback, UsageDaily, User
 from app.routes.youtube import find_song
 from app.youtube import FOUND_TTL, MISSING_TTL, YouTubeFinder, YouTubeUnavailable, candidates, playable, youtube_finder
 
@@ -222,6 +222,8 @@ def test_a_failed_search_is_not_remembered_and_never_shows_the_key():
 def world():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     UsageDaily.__table__.create(engine)
+    User.__table__.create(engine)  # the daily removal (retention.py) runs with the first count of a day
+    Feedback.__table__.create(engine)
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():

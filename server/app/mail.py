@@ -105,6 +105,31 @@ def reset_mail(name: str, link: str, minutes: int) -> tuple[str, str, str]:
     return subject, text, html
 
 
+def verify_mail(name: str, link: str, hours: int) -> tuple[str, str, str]:
+    """Subject, plain text and HTML of the mail that confirms a new account's address (2026-11-18)."""
+    subject = "[지금 추천] 이메일 주소를 확인해주세요"
+    text = (f"{name}님, 지금 추천에 가입해 주셔서 고마워요.\n\n아래 주소를 열면 이메일 확인이 끝나고 바로 로그인돼요.\n\n{link}\n\n"
+            f"이 주소는 {hours}시간 동안 쓸 수 있어요.\n가입하신 적이 없다면 이 메일은 무시하셔도 돼요. 확인되지 않은 가입은 7일 뒤 지워져요.\n\n"
+            f"보내기 전용 주소라 답장은 받지 못해요.\n")
+    href = _escape(link)
+    body = (
+        f'<p style="margin:0 0 6px;font-size:17px;font-weight:700;color:{_INK}">{_escape(name)}님, 반가워요.</p>'
+        f'<p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:{_TEXT}">지금 추천에 가입해 주셔서 고마워요. 아래 버튼을 누르면 이메일 확인이 끝나고 바로 로그인돼요.</p>'
+        f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>'
+        f'<td bgcolor="{_INK}" style="background:{_INK};border-radius:999px">'
+        f'<a href="{href}" style="display:inline-block;padding:15px 30px;font-size:16px;font-weight:700;color:#FFFFFF;text-decoration:none;border-radius:999px">이메일 확인하기 &rarr;</a>'
+        f'</td></tr></table>'
+        f'<p style="margin:0 0 22px;line-height:1">'
+        f'{_chip(f"{hours}시간 동안 유효", "#FFF6DF", "#6B4A00")}{_chip("한 번만 쓸 수 있어요", "#EDF4FD", "#2F5F9E")}</p>'
+        f'<div style="margin:0 0 22px;padding:14px 16px;border-radius:16px;background:#FFF1EA;font-size:14px;line-height:1.6;color:#6E2A12">'
+        f'가입하신 적이 없다면 이 메일은 무시하셔도 돼요. 확인되지 않은 가입은 7일 뒤 지워져요.</div>'
+        f'<p style="margin:0;font-size:12px;line-height:1.6;color:{_MUTED}">버튼이 열리지 않으면 아래 주소를 브라우저 주소창에 붙여 넣어 주세요.<br>'
+        f'<a href="{href}" style="color:#2F5F9E;word-break:break-all">{href}</a></p>')
+    html = _page(subject, "버튼 하나로 가입이 끝나요.", "이메일만 확인하면 끝나요", "가입을 마무리해요", body,
+                 "이 주소로 지금 추천 가입을 신청해서 보내 드린 확인 메일이에요.", _site(link))
+    return subject, text, html
+
+
 def trial_mail(site: str | None = None) -> tuple[str, str, str]:
     """Subject, plain text and HTML of the mail an operator sends to see that sending works (python -m app.cli.mail)."""
     subject = "[지금 추천] 메일 발송 확인"
