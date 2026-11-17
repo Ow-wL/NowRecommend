@@ -52,7 +52,7 @@ describe('terms and privacy policy', () => {
     // What the browser reaches by itself is told apart from what is entrusted.
     expect(sections.find(section => section.title.includes('브라우저가 직접 연결하는'))!.blocks.find(Array.isArray)!.some(line => line.startsWith('Apple Inc.'))).toBe(true);
     // Rights: how, and by when; who to complain to; no children; the history of the policy itself.
-    for (const line of ['10일 안에', '동의 철회', '위임장', '경찰청', '만 14세 미만 아동의 개인정보는 처리하지 않습니다', '2026-11-17: 처음 시행.', '민감한 정보', '운영자 한 사람만 접근']) expect(policy).toContain(line);
+    for (const line of ['10일 안에', '동의 철회', '위임장', '경찰청', '만 14세 미만 아동의 개인정보는 처리하지 않습니다', '2026-11-17: 처음 시행.', '민감한 정보', '운영자 한 사람만 접근', '요청을 받은 날부터 10일 안에', '취향 유형 검사의 결과', '저장해 둔 조건 묶음']) expect(policy).toContain(line);
   });
   it('keeps the terms within what a standard-terms contract may say', () => {
     const terms = text(termsSections(info));

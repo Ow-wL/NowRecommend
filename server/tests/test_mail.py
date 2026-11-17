@@ -177,3 +177,6 @@ def test_the_reset_mail_gives_the_link_twice_and_says_how_long_it_lasts():
 def test_a_mail_without_a_site_address_still_reads_whole():
     assert "nowrec.kr" not in trial_mail()[2] and "메일이 잘 도착했어요" in trial_mail()[2]
     assert "<a " not in trial_mail("not an address")[2]
+    # Only the host names the site: what stands before an @ in an address is not shown as if it were the site.
+    assert 'href="https://nowrec.kr/"' in trial_mail("https://someone@nowrec.kr/")[2] and "someone" not in trial_mail("https://someone@nowrec.kr/")[2]
+    assert "답장은 받지 못해요" in trial_mail()[1] and "답장은 받지 못해요" in reset_mail("주형", "https://nowrec.kr/#/reset/a", 30)[1]

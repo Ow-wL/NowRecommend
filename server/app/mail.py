@@ -84,7 +84,7 @@ def reset_mail(name: str, link: str, minutes: int) -> tuple[str, str, str]:
     """Subject, plain text and HTML of the password reset mail. The link is the only thing to act on."""
     subject = "[지금 추천] 비밀번호 재설정 안내"
     text = (f"{name}님, 안녕하세요.\n\n지금 추천 계정의 비밀번호 재설정을 요청하셨어요. 아래 주소를 열어 새 비밀번호를 정해주세요.\n\n{link}\n\n"
-            f"이 주소는 {minutes}분 동안, 한 번만 쓸 수 있어요.\n요청하신 적이 없다면 이 메일은 무시하셔도 돼요. 비밀번호는 바뀌지 않아요.\n")
+            f"이 주소는 {minutes}분 동안, 한 번만 쓸 수 있어요.\n요청하신 적이 없다면 이 메일은 무시하셔도 돼요. 비밀번호는 바뀌지 않아요.\n\n보내기 전용 주소라 답장은 받지 못해요.\n")
     href = _escape(link)
     body = (
         f'<p style="margin:0 0 6px;font-size:17px;font-weight:700;color:{_INK}">{_escape(name)}님, 안녕하세요.</p>'
@@ -108,7 +108,7 @@ def reset_mail(name: str, link: str, minutes: int) -> tuple[str, str, str]:
 def trial_mail(site: str | None = None) -> tuple[str, str, str]:
     """Subject, plain text and HTML of the mail an operator sends to see that sending works (python -m app.cli.mail)."""
     subject = "[지금 추천] 메일 발송 확인"
-    text = "지금 추천의 메일 발송 설정을 확인하려고 운영자가 보낸 시험 메일이에요.\n이 메일이 보이면 발송이 정상이에요. 따로 하실 일은 없어요.\n"
+    text = "지금 추천의 메일 발송 설정을 확인하려고 운영자가 보낸 시험 메일이에요.\n이 메일이 보이면 발송이 정상이에요. 따로 하실 일은 없어요.\n\n보내기 전용 주소라 답장은 받지 못해요.\n"
     body = (f'<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:{_TEXT}">지금 추천의 메일 발송 설정을 확인하려고 운영자가 보낸 시험 메일이에요.</p>'
             f'<p style="margin:0;line-height:1">{_chip("발송 정상", "#EDF4FD", "#2F5F9E")}{_chip("따로 하실 일은 없어요", "#FFF6DF", "#6B4A00")}</p>')
     html = _page(subject, "이 메일이 보이면 발송이 정상이에요.", "메일이 잘 도착했어요", "발송 설정 확인", body,
@@ -140,9 +140,14 @@ def _disc(colour: str) -> str:
 def _site(link: str | None) -> tuple[str, str] | None:
     """The site's address and its bare name, from a link into it (the reset link, PUBLIC_APP_URL)."""
     parts = urlsplit(link or "")
-    if parts.scheme not in ("http", "https") or not parts.netloc:
+    try:
+        host, port = parts.hostname, parts.port
+    except ValueError:  # a port that is not a number
         return None
-    return f"{parts.scheme}://{parts.netloc}{parts.path or '/'}", parts.netloc
+    if parts.scheme not in ("http", "https") or not host:
+        return None
+    name = host + (f":{port}" if port else "")  # the host alone: "user@" in an address is not part of the site's name
+    return f"{parts.scheme}://{name}{parts.path or '/'}", name
 
 
 def _page(title: str, preheader: str, heading: str, kicker: str, body: str, why: str, site: tuple[str, str] | None) -> str:
