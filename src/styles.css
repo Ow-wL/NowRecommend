@@ -722,6 +722,11 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .full-play iframe { display: block; width: 100%; max-width: 660px; height: 175px; margin: 0 auto; border: 0; border-radius: 12px; overflow: hidden; background: transparent; }
 .full-play-wait { display: flex; align-items: center; justify-content: center; gap: 8px; height: 175px; font-size: 14px; color: var(--text-muted); }
 .full-play p { margin: 0; }
+/* YouTube's player keeps the video's 16:9 at any width (YouTube asks for at least 200 × 200). */
+.youtube-frame { width: 100%; max-width: 660px; margin: 0 auto; aspect-ratio: 16 / 9; min-height: 200px; }
+.full-play .youtube-frame iframe { width: 100%; height: 100%; max-width: none; }
+.full-play.youtube .full-play-wait { flex-wrap: wrap; text-align: center; height: auto; min-height: 120px; padding: 12px; }
+.full-play-wait a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .music-apps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .music-apps details { flex: 1 1 100%; }
 .music-apps summary { cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--text-secondary); }

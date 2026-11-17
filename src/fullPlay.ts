@@ -36,16 +36,25 @@ export async function playerStorefront(link: string, fetcher: typeof fetch = fet
   return inKorea.get(id) ? 'kr' : own;
 }
 
-// One player for the whole app, like the previews: opening another song's closes this one.
-let openId = '';
+/** YouTube's player (2026-11-18): the video the server found for the song (server/app/youtube.py), in YouTube's
+ * privacy-enhanced mode (youtube-nocookie.com: the viewing does not personalise YouTube or its ads). It plays the whole
+ * song to anyone. Not autoplayed: the person presses play in YouTube's own player, which also keeps what the player
+ * collects before that to what it collects on loading (Developer Policies III.E.4.i). */
+export function youtubeAddress(videoId: string | null | undefined): string | undefined {
+  return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId) ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&playsinline=1` : undefined;
+}
+
+// One player for the whole app, like the previews: opening another song's, or the other player, closes this one.
+export type Player = 'apple' | 'youtube';
+let openId = '', openPlayer: Player = 'apple';
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach(listener => listener());
-export function openFullPlay(id: string) { openId = id; emit(); }
+export function openFullPlay(id: string, player: Player = 'apple') { openId = id; openPlayer = player; emit(); }
 export function closeFullPlay(id?: string) { if (!openId || (id && id !== openId)) return; openId = ''; emit(); }
-export function useFullPlayOpen(item: Pick<Item, 'id'>): boolean {
+export function useFullPlayOpen(item: Pick<Item, 'id'>, player: Player = 'apple'): boolean {
   const [, tick] = useState(0);
   useEffect(() => { const listener = () => tick(n => n + 1); listeners.add(listener); return () => { listeners.delete(listener); }; }, []);
-  return openId === item.id;
+  return openId === item.id && openPlayer === player;
 }
 
 // Other music apps: their search pages, opened in a new tab. Search pages, not integrations (see media.ts): none of these

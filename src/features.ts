@@ -32,3 +32,10 @@ export function fullPlayOnOf(env: Env = (import.meta.env ?? {}) as Env): boolean
   return previewsOnOf(env) && text(env.VITE_APPLE_EMBED).toLowerCase() !== 'off';
 }
 export const fullPlayOn = fullPlayOnOf();
+
+/** YouTube's player inside the song details (src/fullPlay.ts, server/app/youtube.py): opened only when asked for, with the
+ * video the server finds. VITE_YOUTUBE_EMBED=off removes the button (the server needs YOUTUBE_API_KEY besides). */
+export function youtubeOnOf(env: Env = (import.meta.env ?? {}) as Env): boolean {
+  return text(env.VITE_YOUTUBE_EMBED).toLowerCase() !== 'off';
+}
+export const youtubeOn = youtubeOnOf();

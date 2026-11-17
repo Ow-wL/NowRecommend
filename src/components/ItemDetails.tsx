@@ -1,5 +1,6 @@
-import { fullPlayOn, previewsOn } from '../features';
-import { FullPlayButton, FullPlayPanel, MusicApps } from './FullPlay';
+import { fullPlayOn, previewsOn, youtubeOn } from '../features';
+import { apiEnabled } from '../api/client';
+import { FullPlayButton, FullPlayPanel, MusicApps, YouTubeButton, YouTubePanel } from './FullPlay';
 import { AlertTriangle, Check, CircleDashed } from 'lucide-react';
 import { CATALOG_META, type Item } from '../data';
 import { useCatalog } from '../catalog';
@@ -13,12 +14,15 @@ export function ItemDetails({item,reasons,conditions,onReport}: {item:Item;reaso
   const catalog=useCatalog();
   const own = mediaFor(item.id), media = mediaOf(item), song = item.category === 'music' ? songLink(item.id) : undefined, overseas = item.category === 'music' ? overseasLink(item.id) : undefined;
   const checks = reasons && conditions ? conditionChecks(item,conditions) : [];
+  // YouTube's player needs the server (it finds the video): offered for every song when the service runs with one.
+  const youtube = item.category === 'music' && youtubeOn && apiEnabled();
   return <div className="item-details">
     <div className="details-head"><ItemArt item={item} size="tile" />
-      {item.category === 'music' ? <div className="listen-links">{song && fullPlayOn && <FullPlayButton item={item} link={song} />}{song && <a className={`button ${fullPlayOn ? 'secondary' : 'primary'} compact`} href={song} target="_blank" rel="noopener noreferrer">Apple Music에서 듣기 (새 탭)</a>}<a className="button secondary compact" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer">YouTube에서 찾기 (새 탭)</a>{overseas && <><a className="button secondary compact" href={overseas} target="_blank" rel="noopener noreferrer">Apple Music 해외 스토어에서 보기 (새 탭)</a><p className="small muted">한국 계정에서 들을 수 있는지는 확인하지 못했어요.</p></>}</div>
+      {item.category === 'music' ? <div className="listen-links">{song && fullPlayOn && <FullPlayButton item={item} link={song} />}{youtube && <YouTubeButton item={item} primary={!(song && fullPlayOn)} />}{song && <a className={`button ${fullPlayOn ? 'secondary' : 'primary'} compact`} href={song} target="_blank" rel="noopener noreferrer">Apple Music에서 듣기 (새 탭)</a>}<a className="button secondary compact" href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer">YouTube에서 찾기 (새 탭)</a>{overseas && <><a className="button secondary compact" href={overseas} target="_blank" rel="noopener noreferrer">Apple Music 해외 스토어에서 보기 (새 탭)</a><p className="small muted">한국 계정에서 들을 수 있는지는 확인하지 못했어요.</p></>}</div>
         : <div className="listen-links"><a className="button secondary compact" href={mapSearch(item)} target="_blank" rel="noopener noreferrer">네이버 지도에서 찾기 (새 탭)</a><a className="button secondary compact" href={recipeSearch(item)} target="_blank" rel="noopener noreferrer">만개의레시피에서 찾기 (새 탭)</a></div>}
     </div>
     {item.category === 'music' && song && fullPlayOn && <FullPlayPanel item={item} link={song} />}
+    {youtube && <YouTubePanel item={item} />}
     {item.category === 'music' && <MusicApps item={item} />}
     {media?.guestUnconfirmed && <p className="song-note">요청한 참여자는 확인하지 못했어요</p>}
     {reasons && <section className="details-why"><h3>{item.category === 'music' && isAiPick(item.id) && !own?.link ? 'AI가 제안한 이유' : '추천 이유'}</h3>

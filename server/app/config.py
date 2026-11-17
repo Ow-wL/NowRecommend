@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     song_store_check: bool = True
     song_store_per_minute: int = Field(18, ge=0)
     song_store_deadline_ms: int = Field(1500, ge=100)
+    # A song's YouTube video for the player in its details (youtube.py, 2026-11-18). Without the key the player is not offered.
+    # The API allows 100 searches a day, reset at midnight Pacific time (16:00 or 17:00 in Korea). The service counts its own
+    # day in KST, and one Pacific day spans two of those, so half of 100 keeps it under: at most `youtube_daily_limit` a day,
+    # one address at most `youtube_daily_per_address`. A song asked again within a week answers from memory, uncounted.
+    youtube_api_key: str | None = None
+    youtube_daily_limit: int = Field(50, ge=0)
+    youtube_daily_per_address: int = Field(20, ge=0)
     parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)

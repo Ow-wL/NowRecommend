@@ -1,11 +1,12 @@
 import { ArrowLeft, Info } from 'lucide-react';
 import { CONTACT_EMAIL, LEGAL_VERSION, OPERATOR, legalTitle, operatorKnown, privacySections, termsSections, type LegalKind } from '../legal';
-import { fullPlayOn, previewsOn, weatherMode } from '../features';
+import { fullPlayOn, previewsOn, weatherMode, youtubeOn } from '../features';
+import { apiEnabled } from '../api/client';
 
 /** The terms of service or the privacy policy, as a page of its own (#/terms, #/privacy): linked from the sign-up form,
  * the home screen and the settings, and readable without an account. */
 export function Legal({ kind, onBack, onOther }: { kind: LegalKind; onBack: () => void; onOther: () => void }) {
-  const info = { operator: OPERATOR, contact: CONTACT_EMAIL, weather: weatherMode !== 'off', previews: previewsOn, player: fullPlayOn };
+  const info = { operator: OPERATOR, contact: CONTACT_EMAIL, weather: weatherMode !== 'off', previews: previewsOn, player: fullPlayOn, youtube: youtubeOn && apiEnabled() };
   const sections = kind === 'terms' ? termsSections(info) : privacySections(info);
   return <article className="legal-page">
     <button className="text-button legal-back" onClick={onBack}><ArrowLeft size={15} /> 돌아가기</button>

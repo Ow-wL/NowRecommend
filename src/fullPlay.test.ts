@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { embedAddress, musicApps, playerStorefront, songWords } from './fullPlay';
-import { fullPlayOnOf } from './features';
+import { embedAddress, musicApps, playerStorefront, songWords, youtubeAddress } from './fullPlay';
+import { fullPlayOnOf, youtubeOnOf } from './features';
 import { privacySections, termsSections, type LegalInfo } from './legal';
 
 const page = (store: string, id = '1436677761') => `https://music.apple.com/${store}/song/river-flows-in-you/${id}`;
@@ -85,5 +85,28 @@ describe('what the documents say about the player', () => {
     expect(text(privacySections(info(false)))).not.toContain('Apple Music 플레이어');
     expect(text(termsSections(info(false)))).toContain('전곡 재생을 하지 않습니다');
     expect(text(privacySections({ operator: '', contact: '', weather: false, previews: false }))).not.toContain('Apple Music 플레이어');
+  });
+});
+
+describe("YouTube's player inside the page", () => {
+  it('puts only a video id the server gave into the privacy-enhanced player, without autoplay', () => {
+    expect(youtubeAddress('abcdefghijk')).toBe('https://www.youtube-nocookie.com/embed/abcdefghijk?rel=0&playsinline=1');
+    expect(youtubeAddress('a_b-c1234XY')).toBe('https://www.youtube-nocookie.com/embed/a_b-c1234XY?rel=0&playsinline=1');
+    for (const other of [null, undefined, '', 'short', 'abcdefghijkl', '../evil/xx', 'abc?def=ghi', 'javascript:x']) expect(youtubeAddress(other)).toBeUndefined();
+  });
+  it('is on unless switched off', () => {
+    expect(youtubeOnOf({})).toBe(true);
+    expect(youtubeOnOf({ VITE_YOUTUBE_EMBED: ' Off ' })).toBe(false);
+    expect(youtubeOnOf({ VITE_APPLE_PREVIEWS: 'off' })).toBe(true);  // not Apple's
+  });
+  it('the documents carry what YouTube asks of a site that uses its API, and only while the player is offered', () => {
+    const on: LegalInfo = { operator: '운영자', contact: 'a@b.co', weather: true, previews: true, youtube: true };
+    const text = (sections: { title: string; blocks: (string | string[])[] }[]) => sections.flatMap(s => [s.title, ...s.blocks.flat()]).join(' / ');
+    const terms = text(termsSections(on)), policy = text(privacySections(on));
+    for (const line of ['YouTube 이용약관(https://www.youtube.com/t/terms)에 동의하는 것으로 보며', 'YouTube API 서비스']) expect(terms).toContain(line);
+    for (const line of ['YouTube API 서비스', 'https://policies.google.com/privacy', '최대 7일', '30일을 넘지 않음', '이용자의 정보는 보내지 않습니다', '쿠키', '광고', '버튼을 누르지 않으면', '2026-11-18 보완']) expect(policy).toContain(line);
+    const off = { ...on, youtube: false };
+    expect(text(termsSections(off))).not.toContain('YouTube 이용약관');
+    expect(text(privacySections(off))).not.toContain('YouTube API');
   });
 });

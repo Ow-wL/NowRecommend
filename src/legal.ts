@@ -24,7 +24,9 @@ export type LegalKind = 'terms' | 'privacy';
 export type LegalBlock = string | string[];
 export type LegalSection = { title: string; blocks: LegalBlock[] };
 /** `player`: Apple Music's embed player is offered in the song details (src/features.ts fullPlayOn). */
-export type LegalInfo = { operator: string; contact: string; weather: boolean; previews: boolean; player?: boolean };
+export type LegalInfo = { operator: string; contact: string; weather: boolean; previews: boolean; player?: boolean;
+  /** `youtube`: YouTube's player is offered in the song details (src/features.ts youtubeOn, with a server). */
+  youtube?: boolean };
 export const legalTitle: Record<LegalKind, string> = { terms: '이용약관', privacy: '개인정보 처리방침' };
 
 const who = (info: LegalInfo) => info.operator || '운영자';
@@ -38,6 +40,7 @@ export function termsSections(info: LegalInfo): LegalSection[] {
       info.player
         ? '서비스는 메뉴와 곡을 추천할 뿐, 음식의 주문·배달·결제나 음원의 판매·전송을 하지 않습니다. 곡의 30초 미리듣기는 Apple이 제공하는 것을 그대로 들려줍니다. 곡 상세에서 여는 Apple Music 플레이어는 Apple이 제공하는 화면이며, 전곡을 들을 수 있는지는 Apple Music 구독과 로그인, 그 곡의 제공 여부에 따릅니다. 음식점, 지도, 레시피, 음악 서비스로 가는 링크와 Apple Music 플레이어는 각 서비스의 약관을 따릅니다.'
         : '서비스는 메뉴와 곡을 추천할 뿐, 음식의 주문·배달·결제나 음원의 판매·전곡 재생을 하지 않습니다. 곡의 30초 미리듣기는 Apple이 제공하는 것을 그대로 들려줍니다. 음식점, 지도, 레시피, 음악 서비스로 가는 링크는 각 서비스의 약관을 따릅니다.',
+      ...(info.youtube ? ['곡 상세의 "YouTube로 듣기"는 YouTube API 서비스로 찾은 영상을 YouTube의 플레이어로 재생합니다. 이 기능을 이용하면 YouTube 이용약관(https://www.youtube.com/t/terms)에 동의하는 것으로 보며, 영상과 플레이어에는 YouTube 이용약관이 적용됩니다. 찾은 영상은 다른 버전이거나 공식 영상이 아닐 수 있습니다.'] : [])
     ] },
     { title: '2. 이용 대상과 계정', blocks: [
       `서비스는 만 ${MIN_AGE}세 이상만 이용할 수 있습니다.`,
@@ -100,6 +103,9 @@ export function privacySections(info: LegalInfo): LegalSection[] {
     // What Apple says its embedded player collects (apple.com/legal/privacy/data/ko/apple-music-web, read 2026-11-17).
     ...(info.player ? ['Apple Inc. (Apple Music 플레이어, 미국 등): 곡 상세에서 "Apple Music 플레이어 열기"를 누른 경우에만 Apple의 플레이어를 화면 안에 불러옵니다. 이때부터 Apple은 플레이어가 놓인 사이트의 주소, 브라우저와 기기 정보, 접속 주소(IP), 재생한 곡 같은 이용 내역을 하루 동안 유지되는 식별자와 함께 수집하고, 플레이어에서 Apple 계정으로 로그인하면 이용 내역이 그 계정과 연결됩니다. Apple은 자체 쿠키와 저장소를 쓰며 이 정보를 최대 2년 보관한다고 밝히고 있습니다(https://www.apple.com/legal/privacy/data/ko/apple-music-web/). 로그인은 Apple의 창에서 이뤄지고, 지금 추천은 Apple 계정의 아이디·비밀번호·로그인 정보나 구독 여부를 받지 않습니다. 지금 추천에서 로그아웃하거나 데이터를 지워도 Apple 쪽의 로그인과 기록은 그대로이므로, 필요하면 플레이어나 Apple의 설정에서 로그아웃해 주세요. 버튼을 누르지 않으면 플레이어를 불러오지 않습니다.'] : []),
     ...(info.weather ? ['Open-Meteo (OpenMeteo GmbH, 스위스. 서버는 유럽과 북미): "지금 날씨 반영"을 누른 경우에만, 약 1km 단위로 줄인 위치 좌표를 보내 현재 날씨를 받습니다. 좌표는 서비스의 서버에 저장하지 않습니다. Open-Meteo는 접속 주소와 좌표가 담긴 기록을 90일 뒤 지운다고 밝히고 있습니다. 누르지 않으면 전달되지 않습니다.'] : []),
+    // What YouTube's API policies ask a policy to say (Developer Policies III.A.2, read 2026-11-18): that YouTube API Services
+    // are used, a link to Google's privacy policy, what of the API's data is kept and how, and what the player collects.
+    ...(info.youtube ? ['YouTube (Google LLC, 미국 등): 곡 상세에서 "YouTube로 듣기"를 누른 경우에만, 서비스의 서버가 YouTube API 서비스로 그 곡의 제목과 가수 이름을 검색해 재생할 영상을 고르고, YouTube의 플레이어(개인정보 보호 강화 모드, youtube-nocookie.com)를 화면 안에 불러옵니다. 서버가 보내는 것은 곡 제목과 가수 이름뿐이며 이용자의 정보는 보내지 않습니다. 고른 영상의 번호는 같은 곡을 다시 검색하지 않도록 서버의 메모리에 최대 7일 두며(YouTube 정책상 30일을 넘지 않음), 데이터베이스에는 저장하지 않습니다. 플레이어를 불러오면 이용자의 브라우저가 YouTube에 직접 연결되어 접속 주소(IP), 브라우저와 기기 정보, 재생 기록이 YouTube(Google)로 전달되며, YouTube는 쿠키 등으로 기기에 정보를 저장하거나 읽을 수 있습니다. 서비스는 플레이어에 광고를 붙이지 않지만 YouTube가 영상에 광고를 보여줄 수 있습니다. 그 처리는 Google 개인정보처리방침(https://policies.google.com/privacy)을 따릅니다. 버튼을 누르지 않으면 검색하거나 플레이어를 불러오지 않습니다.'] : []),
     'GitHub, jsDelivr, Wikimedia: 화면, 글꼴, 일부 이미지를 전달합니다. 페이지와 이미지를 불러올 때 접속 주소(IP)가 전달됩니다.',
     '지도·레시피·동영상·음악 서비스로 가는 링크: 누르면 그 서비스가 열리며 메뉴나 곡의 이름이 검색어로 전달됩니다. 누르지 않으면 전달되지 않습니다.',
     '"말로 입력": 브라우저의 음성 인식 기능을 쓰며, 이때 음성이 브라우저 제공사의 음성 인식 서비스로 전송될 수 있습니다. 서비스는 인식된 글자만 받습니다. 쓰지 않으면 전송되지 않습니다.',
@@ -152,6 +158,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
       '서비스는 광고·추적용 쿠키를 쓰지 않습니다. 취향, 기록, 로그인 상태, 화면 설정, 연령을 확인한 사실과 건강 관련 입력에 동의한 사실을 브라우저 저장소에 보관하며, 이는 서비스 동작에 필요한 저장입니다.',
       '브라우저 설정에서 이 사이트의 데이터 저장을 막거나 저장된 데이터를 지울 수 있습니다. 그렇게 하면 이 브라우저에 취향, 기록, 로그인 상태가 남지 않습니다. 계정에 저장한 내용은 다시 로그인하면 불러옵니다.',
       ...(info.player ? ['곡 상세에서 Apple Music 플레이어를 열면, 그 플레이어는 Apple의 쿠키와 저장소를 따로 사용합니다. 이는 Apple이 관리하며 서비스의 "데이터 관리"로는 지워지지 않습니다.'] : []),
+      ...(info.youtube ? ['곡 상세에서 YouTube 플레이어를 열면, 그 플레이어는 YouTube(Google)의 쿠키와 저장소를 따로 사용할 수 있습니다. 이는 YouTube가 관리하며 서비스의 "데이터 관리"로는 지워지지 않습니다. 브라우저 설정에서 youtube-nocookie.com과 youtube.com의 데이터를 지우거나 막을 수 있습니다.'] : []),
     ] },
     { title: '8. 안전하게 지키기 위한 조치', blocks: [[
       '비밀번호는 복원할 수 없는 방식(PBKDF2)으로 변환해 저장합니다.',
@@ -174,6 +181,7 @@ export function privacySections(info: LegalInfo): LegalSection[] {
         '2026-11-17 보완: 메일 발송 업체(Resend), 파기 방법, 브라우저 저장을 막는 방법, 한도 기록을 지우는 시점을 적었습니다.',
         '2026-11-17 보완: 건강과 관련된 표현을 적었을 때 따로 동의를 받는 절차를 넣고 민감정보 항목을 적었습니다.',
         ...(info.player ? ['2026-11-17 보완: 곡 상세에서 여는 Apple Music 플레이어와, 플레이어를 열었을 때 Apple이 수집하는 정보를 적었습니다.'] : []),
+        ...(info.youtube ? ['2026-11-18 보완: 곡 상세의 YouTube 플레이어와 YouTube API 서비스 사용, 플레이어가 처리하는 정보를 적었습니다.'] : []),
         '2026-11-17 보완: 처리 근거, 제3자 제공 여부, 처리 위탁과 국외 이전(이전 항목·국가·시기와 방법·보유 기간·거부 방법), 권리 행사 기한, 관리 접근 기록, 구제 기관을 법이 정한 기재사항에 맞춰 다시 정리했습니다. 수집하는 항목과 이용 목적은 바뀌지 않았습니다.',
       ],
       `이전 내용이 필요하면 ${where(info)} 로 요청해 주세요.`,

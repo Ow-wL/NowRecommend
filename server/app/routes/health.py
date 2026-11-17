@@ -30,4 +30,5 @@ def health(response: Response, db: DatabaseStatus = Depends(database_status), se
         "llm": {"configured": bool(settings.gemini_api_key)},
         "auth": {"enabled": bool(settings.auth_secret)},
         "mail": {"configured": bool(settings.smtp_host and settings.mail_from)},
+        "youtube": {"configured": bool(settings.youtube_api_key)},
     }
