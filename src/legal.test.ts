@@ -32,6 +32,8 @@ describe('terms and privacy policy', () => {
     expect(text(privacySections({ ...info, weather: false }))).not.toContain('Open-Meteo');
     // What a person can do themselves, and what is never collected.
     for (const line of ['계정을 삭제', '백업', '결제 정보', '쿠키']) expect(policy).toContain(line);
+    // How it is destroyed, how the browser's storage is refused, and that a guest's requests leave more than an access log.
+    for (const line of ['파기 방법', '데이터 저장을 막거나', '추천 요청 내용의 통계 기록', '계정을 삭제할 때 함께 지웁니다']) expect(policy).toContain(line);
   });
   it('does not promise allergy safety', () => {
     expect(text(termsSections(info))).toContain('알레르기 안전을 보장하지 않습니다');
