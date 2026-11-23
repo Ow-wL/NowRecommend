@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { items, type Item } from '../../src/data';
-import { cardTool } from '../ui';
+import { cardTool, openCardMenu } from '../ui';
 
 // Same origin as VITE_API_BASE_URL of the "api" project's dev server (playwright.config.ts).
 const API = 'http://127.0.0.1:5999';
@@ -288,6 +288,21 @@ test('music years can be chosen, are sent, shown on the result and restored from
   await page.getByLabel('끝').fill('2000');
   await expect(page.getByRole('alert')).toContainText('시작 연도가 끝 연도보다 늦어요');
   await expect(page.getByRole('button', { name: /추천받기$/ })).toBeDisabled();
+});
+
+test('a song card asks for songs like it, and the request names the song', async ({ page }) => {
+  await seedProfile(page); await catalogRoute(page);
+  const sent: any[] = [];
+  const item = { id: 'ai-ipchun', category: 'music', name: '입춘', subtitle: '한로로', description: '', tags: [], ingredients: [], emoji: '', color: '' };
+  await page.route(`${API}/api/recommend`, route => { if (route.request().method() === 'POST') sent.push(route.request().postDataJSON()); return fulfill(route, { results: [{ item, tasteReason: 't', contextReason: 'c', aiPick: true, confidence: 'high' }], meta: { mode: 'rag', engine: 'ai', ai: 'used', eligibleCount: 1, newCount: 1, catalogVersion: 'db-test', requestId: 'r' } }); });
+  await page.goto('/#/recommend/music');
+  await page.getByRole('button', { name: /추천받기$/ }).click();
+  await expect(page.locator('.result-grid h3').first()).toHaveText('입춘');
+  await openCardMenu(page, '입춘');
+  await page.getByRole('button', { name: '입춘 비슷한 곡 추천받기' }).click();
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1].category).toBe('music');
+  expect(sent[1].raw).toBe('한로로의 입춘 같은 노래');
 });
 
 test('a card can be reported as a guest, and the admin page shows only what the server allows', async ({ page }) => {

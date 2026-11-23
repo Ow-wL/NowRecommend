@@ -218,3 +218,24 @@ def test_songs_the_store_lists_go_first_and_unlisted_ones_are_counted(catalog, m
         answer = client.post("/api/recommend", json={"category": "music", "count": 3}).json()
     assert [r["item"]["name"] for r in answer["results"]] == ["Spring Day", "다른 곡", "없는 곡"]  # short of spares, the unlisted one still fills
     assert "store_missing=1" in answer["meta"]["issues"]
+
+
+def test_the_song_a_request_is_like_is_not_recommended_back(catalog):
+    """'한로로의 입춘이랑 비슷한 노래' came back with 입춘 first (2026-11-24); its artist keeps one song at most."""
+    model = FakeModel({"reference": {"name": "입춘", "detail": "한로로", "sound": "인디 록 · 맑은 보컬"},
+                       "picks": [pick("입춘", "한로로"), pick("0+0", "한로로"), pick("사랑하게 될 거야", "한로로"), pick("다른 곡", "다른 밴드")]})
+    with client_for(catalog, model) as client:
+        answer = client.post("/api/recommend", json={"category": "music", "raw": "한로로의 입춘이랑 비슷한 노래", "count": 3}).json()
+    assert [r["item"]["name"] for r in answer["results"]] == ["0+0", "다른 곡"]
+    assert "reference=1" in answer["meta"]["issues"] and "reference_artist=1" in answer["meta"]["issues"]
+
+
+@needs_db
+def test_a_spare_replaces_a_pick_that_turns_out_already_seen(catalog):
+    seen = ai_item_id("music", "본 곡", "가수 가")
+    model = FakeModel({"picks": [pick("본 곡", "가수 가"), pick("새 곡", "가수 나"), pick("예비 곡", "가수 다")]})
+    with client_for(catalog, model) as client:
+        client.post("/api/recommend", json={"category": "music", "count": 1})  # stores "본 곡" as an item
+        answer = client.post("/api/recommend", json={"category": "music", "count": 2, "seenIds": [seen]}).json()
+    names = [r["item"]["name"] for r in answer["results"]]
+    assert names == ["새 곡", "예비 곡"]

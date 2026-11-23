@@ -11,6 +11,7 @@ from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass, field
 
 from ..dish_facts import name_attributes
+from ..song_store import MISSING
 from .client import JsonModel
 from .validate import clean_reason
 
@@ -40,7 +41,9 @@ SYSTEM = {
 - 고르기 전에 이번 상황에 필요한 소리를 먼저 정한다: 빠르기, 에너지, 악기, 목소리 유무, 감정. 그 소리에 실제로 맞는 곡을 고른다.
 - 제목이나 가사에 상황의 낱말(비, 밤, 잠, 여름, 출근 등)이 들어 있다는 이유만으로 고르지 않는다. 곡의 실제 분위기가 상황과 어긋나면 제목이 맞아도 쓰지 않는다.
 - sound에는 그 곡의 실제 소리를 20자 안팎으로 쓴다(예: "느린 템포 · 어쿠스틱 기타 · 담담한 보컬"). 잘 모르면 그 곡은 쓰지 않는다.
-- 많은 사람이 들어 봤을 곡과 덜 알려진 곡을 섞되, 확신이 낮은 덜 알려진 곡보다 확실한 곡을 먼저 쓴다.
+- 누구나 아는 히트곡만으로 채우지 않는다. 소리가 가까운 이웃 아티스트의 곡이나, 제목·아티스트·소리를 확실히 아는 앨범 수록곡도 후보에 넣고, 상황에 맞는 정도가 비슷하면 그런 곡을 1~2곡 넣는다. 덜 알려진 곡이라도 제목과 아티스트를 확실히 모르면 쓰지 않는다.
+- situation이 특정 곡과 비슷한 곡을 원하면("A의 B랑 비슷한", "B 같은 노래", "B 느낌") 그 곡이 기준곡이다. reference.name과 reference.detail에 기준곡의 곡명과 원곡 아티스트를 쓰고, reference.sound에 기준곡의 핵심 소리 2~3가지(장르·씬, 보컬 톤, 편성, 빠르기·에너지)를 쓴다. 아티스트만 말하면("검정치마 같은 노래") name은 비우고 detail에 그 아티스트를 쓴다. 기준이 없으면 셋 다 빈 문자열이다.
+- 기준이 있으면 reference.sound를 실제로 함께 가진 곡을 고른다. 같은 장르·씬이나 소리가 가까운 이웃 아티스트에서 찾고, 장르가 다른 유명 히트곡으로 채우지 않는다. 기준곡 자체는 추천하지 않고, 기준 아티스트의 다른 곡은 많아야 1곡이다. 사용자가 "보컬이 비슷한"처럼 기준을 말하면 그 특성을 먼저 맞춘다. contextReason에는 기준곡과 실제로 겹치는 소리 하나를 쓴다.
 - excluded 예: "보컬"이 있으면 가사·노래가 없는 연주곡만, "높은 에너지"가 있으면 격하고 빠른 곡은 뺀다.
 - confidence는 그 곡이 실제로 있고 제목·아티스트가 맞다는 확신이다. 확실하면 high, 조금 헷갈리면 medium, 자신 없으면 low. low인 곡은 되도록 다른 곡으로 바꾼다.
 - releaseYear는 그 곡이 처음 발매된 해다. 리마스터나 재발매 연도를 쓰지 않는다.
@@ -82,11 +85,14 @@ def response_schema(allowed_tags: list[str], ingredient_words: list[str] | None 
         fields["releaseYear"] = {"type": "integer"}
         fields["sound"] = {"type": "string"}
         required += ["releaseYear", "sound"]
-    return {
-        "type": "object",
-        "properties": {"picks": {"type": "array", "items": {"type": "object", "properties": fields, "required": required}}},
-        "required": ["picks"],
-    }
+    picks = {"type": "array", "items": {"type": "object", "properties": fields, "required": required}}
+    if ingredient_words:
+        return {"type": "object", "properties": {"picks": picks}, "required": ["picks"]}
+    # Music names the song a request is like before the picks (2026-11-24): the keys come back in this order, so the model
+    # says what the reference sounds like first, and the server can drop the reference itself ("입춘이랑 비슷한" returned 입춘).
+    reference = {"type": "object", "properties": {"name": {"type": "string"}, "detail": {"type": "string"}, "sound": {"type": "string"}},
+                 "required": ["name", "detail", "sound"]}
+    return {"type": "object", "properties": {"reference": reference, "picks": picks}, "required": ["reference", "picks"]}
 
 
 def pick_key(name: str, detail: str = "") -> str:
@@ -142,6 +148,8 @@ class FreeValidation:
     picks: list[FreePick]
     issues: Counter = field(default_factory=Counter)
     dropped_by_name: list[str] = field(default_factory=list)  # to read how often the name check is wrong
+    spares: list[FreePick] = field(default_factory=list)  # survived the checks but were cut to `count`, in order
+    reference: tuple[str, str] | None = None  # music: the song the request asked to be like, as the model named it
 
     def summary(self) -> str | None:
         return ",".join(f"{k}={v}" for k, v in sorted(self.issues.items())) or None
@@ -161,7 +169,8 @@ def clean_name(value: object) -> str | None:
 
 def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[str] | None = None, detail_required: bool = True,
                   excluded_values: list[str] | None = None, years: tuple[int | None, int | None] | None = None,
-                  dishes: Mapping[str, Collection[str]] | None = None, rank: Callable[[list[FreePick]], list[FreePick]] | None = None) -> FreeValidation:
+                  dishes: Mapping[str, Collection[str]] | None = None, rank: Callable[[list[FreePick]], list[FreePick]] | None = None,
+                  reference: tuple[str, str] | None = None) -> FreeValidation:
     """`blocked` are 'name - detail' labels (or bare names) that must not come back: avoided, disliked and liked items.
     A bare name in `blocked` blocks that name whatever its detail (so "Hype Boy" blocks it by any artist).
     Food picks may come without a detail (`detail_required=False`); music needs the artist.
@@ -169,7 +178,9 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
     in play so is one the model itself doubts. The model's list bends to the request (a margherita listing no dairy when dairy is excluded,
     2026-11-10), so the name is checked apart from it: against the table of plain facts, and against `dishes`, the reviewed tags and ingredients
     of a dish with exactly this name. `years`: a song outside the range, or with no year to check, is dropped.
-    `rank` reorders what survived before the cut to `count` (the store check puts listed songs first, so spares replace unlisted ones)."""
+    `rank` reorders what survived before the cut to `count` (the store check puts listed songs first, so spares replace unlisted ones).
+    `reference` (music): the (title, artist) a request asked to be like. A song with that title is dropped whoever sings it, and
+    the reference artist keeps one song at most. `spares` keeps what was cut, in order, for a caller that loses a pick later."""
     issues: Counter = Counter()
     dropped_by_name: list[str] = []
     known_dishes = {pick_key(n): set(v) for n, v in (dishes or {}).items()}
@@ -178,6 +189,7 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
     allowed = set(allowed_tags) if allowed_tags is not None else None
     picks: list[FreePick] = []
     seen: set[str] = set()
+    reference_artist_used = False
     for entry in raw:
         if not isinstance(entry, dict):
             issues["malformed"] += 1
@@ -196,6 +208,14 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         if key in blocked_pairs or pick_key(name) in blocked_names or pick_key(name) in blocked_pairs:
             issues["blocked"] += 1
             continue
+        if reference and reference[0] and pick_key(name) == pick_key(reference[0]):
+            issues["reference"] += 1
+            continue
+        if reference and reference[1] and pick_key(detail) == pick_key(reference[1]):
+            if reference_artist_used:
+                issues["reference_artist"] += 1
+                continue
+            reference_artist_used = True
         confidence = entry.get("confidence") if entry.get("confidence") in CONFIDENCE else "low"
         tags = [t for t in dict.fromkeys(entry.get("tags") or []) if isinstance(t, str) and (allowed is None or t in allowed)]
         if allowed is not None and len(tags) < len(entry.get("tags") or []):
@@ -217,23 +237,32 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         seen.add(pick_key(name))
         base = clean_name(entry.get("baseDish")) or ""
         picks.append(FreePick(name, detail, taste, context, confidence, tags[:6], ingredients, base, entry.get("broad") is True, year))
-    # One song per artist while there are others to show; a repeat only fills in when picks would run short.
-    if detail_required:
-        artists: set[str] = set()
-        first = [p for p in picks if not (pick_key(p.detail) in artists or artists.add(pick_key(p.detail)))]
-        picks = [*first, *[p for p in picks if p not in first]]
     if rank is not None and picks:
         picks = rank(picks)
+    # One song per artist while there are others to show; a repeat only fills in when picks would run short. Done after the
+    # store order (2026-11-24): before it, a listed second song by one artist went ahead of an unchecked song by another.
+    # A song the store does not list stays behind every song it lists or could not ask about.
+    if detail_required:
+        picks = [*_one_per_artist([p for p in picks if p.listed != MISSING]), *_one_per_artist([p for p in picks if p.listed == MISSING])]
+    spares = picks[count:]
     if len(picks) > count:
         issues["extra"] += len(picks) - count
         picks = picks[:count]
     if len(picks) < count:
         issues["short"] += count - len(picks)
-    return FreeValidation(picks, +issues, dropped_by_name)
+    return FreeValidation(picks, +issues, dropped_by_name, spares)
 
 
-def recommend_free(model: JsonModel, category: str, payload: dict) -> list:
-    """Raw picks from the model; validate_free decides what survives."""
+def _one_per_artist(picks: list[FreePick]) -> list[FreePick]:
+    artists: set[str] = set()
+    first = [p for p in picks if not (pick_key(p.detail) in artists or artists.add(pick_key(p.detail)))]
+    return [*first, *[p for p in picks if p not in first]]
+
+
+def recommend_free(model: JsonModel, category: str, payload: dict) -> tuple[list, tuple[str, str] | None]:
+    """Raw picks from the model and, for music, the reference song it read in the request; validate_free decides what survives."""
     answer = model.generate_json(SYSTEM[category], payload, response_schema(payload["allowedTags"], payload.get("ingredientWords")))
     picks = answer.get("picks")
-    return picks if isinstance(picks, list) else []
+    ref = answer.get("reference")
+    name, detail = (clean_name(ref.get("name")) or "", clean_name(ref.get("detail")) or "") if isinstance(ref, dict) else ("", "")
+    return (picks if isinstance(picks, list) else []), ((name, detail) if name or detail else None)

@@ -191,11 +191,18 @@ export default function App() {
   const slot = timeSlot();
   // The home sentence (2026-11-23): typed or tapped there, it starts a food request and asks at once.
   const [homeText, setHomeText] = useState('');
-  const homeAsk = useRef<string | null>(null);
+  // A sentence started from elsewhere (the home box, a song's "비슷한 곡") is sent as soon as its input screen is up.
+  const homeAsk = useRef<{ category: Category; raw: string } | null>(null);
   function askFromHome(text: string) {
     const raw = text.trim().slice(0, 300);
     if (!raw) return;
-    withHealth([raw], () => { homeAsk.current = raw; setHomeText(''); start('food', raw, true); });
+    withHealth([raw], () => { homeAsk.current = { category: 'food', raw }; setHomeText(''); start('food', raw, true); });
+  }
+  /** Songs like this one (2026-11-24): the server reads the song as the reference, leaves it out and matches its sound. */
+  function askSimilar(item: Item) {
+    const raw = `${item.subtitle}의 ${item.name} 같은 노래`.slice(0, 300);
+    homeAsk.current = { category: 'music', raw };
+    start('music', raw, true);
   }
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
   const voice = useVoiceInput(text => setSession(s => changeText(s, (s.raw.trim() ? `${s.raw.trimEnd()} ` : '') + text)), message => notify(message));
@@ -283,7 +290,7 @@ export default function App() {
   useEffect(() => { const failed = storageBlocked || !writeStore(store, sync.agreement()); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   // A sentence from the home screen: once the request page holds it, it is asked without another press (the health words were checked there).
   // Anything else on that page (another request taking over, the sentence changed) drops it: it is never sent later.
-  useEffect(() => { if (homeAsk.current === null || page !== 'recommend' || step !== 'input') return; const asked = homeAsk.current; homeAsk.current = null; if (session.category === 'food' && session.raw === asked) submitNow(); }, [page, step, session]);  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (homeAsk.current === null || page !== 'recommend' || step !== 'input') return; const asked = homeAsk.current; homeAsk.current = null; if (session.category === asked.category && session.raw === asked.raw) submitNow(); }, [page, step, session]);  // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
   // The account as the server has it now: being made an admin shows without logging in again. The server checks on every request anyway.
   useEffect(() => {
@@ -548,7 +555,7 @@ export default function App() {
   // Someone who has picked fewer than three times in this category sees the three steps (LearnLoop) on the results.
   const newToPicking = store.history.filter(h => h.selected && h.selected.roundId !== 'manual' && h.category === category).length < 3;
   const pushedBack = deferredNote(signals, session.raw);
-  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} past={!reasons ? undefined : signals.poor.some(i => i.id === item.id) ? '아쉬웠던 항목' : signals.recent.some(i => i.id === item.id) ? '최근 선택' : undefined} onReport={apiEnabled() && !!reasons ? () => setReportItem(item) : undefined} reported={reportedIds.includes(item.id)} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
+  const itemCard = (item: Item, reasons?: Recommendation) => <RecommendationCard key={item.id} past={!reasons ? undefined : signals.poor.some(i => i.id === item.id) ? '아쉬웠던 항목' : signals.recent.some(i => i.id === item.id) ? '최근 선택' : undefined} onReport={apiEnabled() && !!reasons ? () => setReportItem(item) : undefined} reported={reportedIds.includes(item.id)} onRefine={apiEnabled() && item.category === 'food' && reasons && (reasons.broad || !reasons.aiPick) ? () => refineMenu(item) : undefined} onSongStatus={reportSongCheck} item={item} saved={store.favorites.includes(item.id)} persisted={!storageWarning} reasons={reasons} confidence={reasons?.confidence} aiPick={reasons?.aiPick || (!!reasons && isAiPick(item.id))} checks={reasons ? conditionChecks(item, session.conditions) : undefined} familiar={!!reasons && store.profiles[item.category].selected.includes(item.id)} onLike={reasons && !store.profiles[item.category].selected.includes(item.id) ? () => likeItem(item) : undefined} onSimilar={apiEnabled() && reasons && item.category === 'music' && item.subtitle ? () => askSimilar(item) : undefined} onSave={() => favorite(item.id)} onDetails={()=>setDetail({item,reasons})} onExclude={() => setFeedbackItem(item)} onSelect={reasons ? () => choose(reasons) : undefined} pinned={session.pinnedIds?.includes(item.id)} compared={session.compareIds?.includes(item.id)} compareDisabled={(session.compareIds?.length || 0)>=3 && !session.compareIds?.includes(item.id)} onPin={reasons?()=>setSession(s=>({...s,pinnedIds:toggle(s.pinnedIds || [],item.id)})):undefined} onReplace={reasons?()=>replaceOne(item.id):undefined} onCompare={reasons?()=>setSession(s=>({...s,compareIds:toggle(s.compareIds || [],item.id)})):undefined}/>;
 
   // Navigation: top bar on wide screens, bottom tab bar on phones (DESIGN.md §2). Same accessible names in both.
   const allNav: { page: Page; label: string; icon: typeof House; category?: Category }[] = [...navItems, ...myItems];

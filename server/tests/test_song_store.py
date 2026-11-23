@@ -86,3 +86,12 @@ def test_listed_songs_go_first_and_spares_replace_unlisted_ones():
 def test_an_unlisted_song_still_fills_a_short_answer():
     result = validate_free([song("꽃길만 레이디", "적재"), song("Dynamite", "BTS")], 2, [], rank=SongStore(FakeStore({"BTS Dynamite": [hit(3, "Dynamite", "BTS")]})).rank)
     assert [(p.name, p.listed) for p in result.picks] == [("Dynamite", FOUND), ("꽃길만 레이디", MISSING)]
+
+
+def test_one_song_per_artist_is_decided_after_the_store_order():
+    """A listed second song by one artist used to go ahead of an unchecked song by another (2026-11-24)."""
+    fake = FakeStore({"가수 첫 곡": [hit(1, "첫 곡", "가수")], "가수 둘째 곡": [hit(2, "둘째 곡", "가수")]}, fail={"다른 가수 확인 못 한 곡"})
+    raw = [song("첫 곡", "가수"), song("둘째 곡", "가수"), song("확인 못 한 곡", "다른 가수")]
+    result = validate_free(raw, 2, [], rank=SongStore(fake).rank)
+    assert [p.name for p in result.picks] == ["첫 곡", "확인 못 한 곡"]
+    assert [p.name for p in result.spares] == ["둘째 곡"]

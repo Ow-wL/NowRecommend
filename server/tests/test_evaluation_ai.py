@@ -51,7 +51,9 @@ def judged(fit=2, **change):
 
 
 def test_case_set_covers_every_kind_in_both_categories():
-    assert len(BY_ID) == len(DATA["cases"]) == 62
+    assert len(BY_ID) == len(DATA["cases"]) == 75
+    similar = [c for c in DATA["cases"] if c["kind"] == "similar"]
+    assert len(similar) == 13 and all(c["category"] == "music" and c["seed"]["name"] and c["seed"]["artist"] for c in similar)
     for category in ("food", "music"):
         kinds = {c["kind"] for c in DATA["cases"] if c["category"] == category}
         assert {"situation", "exclusion", "conflict", "taste"} <= kinds

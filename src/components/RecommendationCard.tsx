@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Ban, Check, ChevronRight, CircleDashed, Columns2, ExternalLink, Flag, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, ThumbsUp } from 'lucide-react';
+import { AlertTriangle, Ban, Check, ChevronRight, CircleDashed, Columns2, ExternalLink, Flag, Heart, Info, MapPin, MoreHorizontal, Pin, Play, RefreshCw, Search, Sparkles, ThumbsUp } from 'lucide-react';
 import type { Item } from '../data';
 import { checkText, evidenceText, NO_TASTE_REASON, type ConditionCheck } from '../domain';
 import { mapSearch, mediaFor, mediaOf, overseasLink, songLink, youtubeSearch } from '../media';
@@ -11,7 +11,7 @@ const SONG_NEWS = { checking: '곡 정보를 확인하고 있어요', found: 'Ap
 
 // One clear action per card (DESIGN.md §3): music leads with listening, food with recording the choice; saving sits in
 // the header and the request tools live behind "더보기". Links are labelled for what they are: a song page or a search.
-export function RecommendationCard({ past, onReport, reported = false, onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
+export function RecommendationCard({ past, onReport, reported = false, onRefine, onSongStatus, item, saved, reasons, checks = [], familiar = false, onSave, onExclude, onSelect, onDetails, onPin, onReplace, onCompare, onLike, onSimilar, pinned=false, compared=false, compareDisabled=false, persisted = true, confidence, aiPick = false }: {
   /** Chosen lately or rated poorly, and still here because the list ran short: the badge says which. */
   past?: string;
   /** Flags a wrong picture or wrong facts; absent without a server to send it to. */
@@ -22,7 +22,7 @@ export function RecommendationCard({ past, onReport, reported = false, onRefine,
   onSongStatus?: (id: string, status: SongStatus) => void;
   item: Item; saved: boolean; reasons?: { tasteReason: string; contextReason: string; contrast?: string }; checks?: ConditionCheck[]; familiar?: boolean;
   onSave: () => void; onExclude: () => void; onSelect?: () => void; onDetails?: () => void; persisted?: boolean;
-  onPin?:()=>void;onReplace?:()=>void;onCompare?:()=>void;onLike?:()=>void;pinned?:boolean;compared?:boolean;compareDisabled?:boolean;
+  onPin?:()=>void;onReplace?:()=>void;onCompare?:()=>void;onLike?:()=>void;onSimilar?:()=>void;pinned?:boolean;compared?:boolean;compareDisabled?:boolean;
   /** AI engine picks: the model's own confidence that the item exists as named (shown as a badge). */
   confidence?: 'high' | 'medium' | 'low'; aiPick?: boolean;
 }) {
@@ -96,6 +96,7 @@ export function RecommendationCard({ past, onReport, reported = false, onRefine,
         {onDetails && <button aria-label={`${item.name} 추천 이유 보기`} onClick={onDetails}><Info size={17} />추천 이유 보기</button>}
         {song && <a href={youtubeSearch(item)} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} YouTube에서 찾기 (새 탭)`}><ExternalLink size={17} />YouTube에서 찾기</a>}
         {overseas && <a className="overseas-link" href={overseas} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} Apple Music 해외 스토어에서 보기, 한국 계정 이용 가능 여부 미확인 (새 탭)`}><ExternalLink size={17} /><span>Apple Music 해외 스토어에서 보기<small>한국 계정 이용 가능 여부 미확인</small></span></a>}
+        {onSimilar && <button aria-label={`${item.name} 비슷한 곡 추천받기`} onClick={onSimilar}><Sparkles size={17} />이 곡과 비슷한 곡</button>}
         {onLike && <button aria-label={`${item.name} 내 취향에 추가`} onClick={onLike}><ThumbsUp size={17} />내 취향에 추가</button>}
         {onPin && <button aria-label={`${item.name} 이번 요청 고정`} aria-pressed={pinned} onClick={onPin}><Pin size={17} />{pinned ? '고정 해제' : '이번 요청 고정'}</button>}
         {onReplace && <button aria-label={`${item.name} 한 장 교체`} disabled={pinned} onClick={onReplace}><RefreshCw size={17} />다른 후보로 교체</button>}

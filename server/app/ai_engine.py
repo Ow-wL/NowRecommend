@@ -64,9 +64,11 @@ def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], dis
                             profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],
                             base_dishes=list(dishes) if dishes else None, ingredient_words=vocab.excludableIngredients if food else None,
                             release_years={"from": years[0], "to": years[1]} if years else None)
-    validation = validate_free(recommend_free(model, category, payload), wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
+    raw, reference = recommend_free(model, category, payload)
+    validation = validate_free(raw, wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
                                detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years,
-                               dishes=dishes, rank=store.rank if store and not food else None)
+                               dishes=dishes, rank=store.rank if store and not food else None, reference=reference)
+    validation.reference = reference
     # Read in the request log: how often an unlisted or unchecked song still went out.
     validation.issues.update(f"store_{p.listed}" for p in validation.picks if p.listed in (MISSING, UNKNOWN))
     return validation
@@ -84,14 +86,20 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
     dishes = {r.name: {*r.tags, *r.ingredients} for r in reviewed_items(session) if r.category == "food"} if category == "food" else None
     validation = ask_picks(request, model, liked, disliked, avoid, wanted, dishes, song_store())
-    rows = persist_picks(session, category, validation.picks)
-    # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too.
+    # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too,
+    # and a spare takes its place (2026-11-24: before, the answer simply came back one short).
     blocked = {*request.seenIds, *request.excludedIds, *profile.disliked, *(r.id for r in pinned_rows)}
-    kept = [(r, p) for r, p in zip(rows, validation.picks, strict=True) if r.id not in blocked]
-    if len(kept) < len(rows):
-        validation.issues["blocked_id"] += len(rows) - len(kept)
     seen_ids: set[str] = set()
-    unique = [(r, p) for r, p in kept if not (r.id in seen_ids or seen_ids.add(r.id))]
+    unique: list[tuple[Item, FreePick]] = []
+    queue, spares = [*validation.picks], [*validation.spares]
+    while queue and len(unique) < wanted:
+        for row, pick in zip(persist_picks(session, category, queue), queue, strict=True):
+            if row.id in blocked or row.id in seen_ids:
+                validation.issues["blocked_id" if row.id in blocked else "duplicate_id"] += 1
+            elif len(unique) < wanted:
+                seen_ids.add(row.id)
+                unique.append((row, pick))
+        queue, spares = spares[:wanted - len(unique)], spares[wanted - len(unique):]
     return AiAnswer([*pinned_rows, *(r for r, _ in unique)], {r.id: p for r, p in unique}, validation)
 
 
