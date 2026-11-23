@@ -35,7 +35,11 @@ SYSTEM = {
 
 음악 규칙
 - 실제로 발매된 곡만 추천한다. 제목과 아티스트를 정확히 알고 있는 곡만 쓰고, 없는 곡이나 아티스트를 지어내지 않는다.
-- name은 곡명만, detail은 대표 아티스트 이름만 쓴다.
+- name은 곡명만, detail은 그 곡을 처음 발표한 원곡 아티스트 이름만 쓴다. 커버·리메이크한 가수나, 제목이 비슷한 다른 가수의 곡과 헷갈리면 그 곡은 쓰지 않는다.
+- 고르기 전에 이번 상황에 필요한 소리를 먼저 정한다: 빠르기, 에너지, 악기, 목소리 유무, 감정. 그 소리에 실제로 맞는 곡을 고른다.
+- 제목이나 가사에 상황의 낱말(비, 밤, 잠, 여름, 출근 등)이 들어 있다는 이유만으로 고르지 않는다. 곡의 실제 분위기가 상황과 어긋나면 제목이 맞아도 쓰지 않는다.
+- sound에는 그 곡의 실제 소리를 20자 안팎으로 쓴다(예: "느린 템포 · 어쿠스틱 기타 · 담담한 보컬"). 잘 모르면 그 곡은 쓰지 않는다.
+- 많은 사람이 들어 봤을 곡과 덜 알려진 곡을 섞되, 확신이 낮은 덜 알려진 곡보다 확실한 곡을 먼저 쓴다.
 - excluded 예: "보컬"이 있으면 가사·노래가 없는 연주곡만, "높은 에너지"가 있으면 격하고 빠른 곡은 뺀다.
 - confidence는 그 곡이 실제로 있고 제목·아티스트가 맞다는 확신이다. 확실하면 high, 조금 헷갈리면 medium, 자신 없으면 low. low인 곡은 되도록 다른 곡으로 바꾼다.
 - releaseYear는 그 곡이 처음 발매된 해다. 리마스터나 재발매 연도를 쓰지 않는다.
@@ -72,8 +76,11 @@ def response_schema(allowed_tags: list[str], ingredient_words: list[str] | None 
                    "ingredients": {"type": "array", "items": {"type": "string", "enum": ingredient_words}}}
         required += ["baseDish", "broad", "ingredients"]
     else:
+        # `sound` makes the model say what the song sounds like before it is kept (2026-11-23): picks chosen by a title
+        # that echoes the request ("비 오는 날의 수채화" for a rainy night) were the main miss in the human review.
         fields["releaseYear"] = {"type": "integer"}
-        required.append("releaseYear")
+        fields["sound"] = {"type": "string"}
+        required += ["releaseYear", "sound"]
     return {
         "type": "object",
         "properties": {"picks": {"type": "array", "items": {"type": "object", "properties": fields, "required": required}}},

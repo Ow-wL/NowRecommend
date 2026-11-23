@@ -56,7 +56,9 @@ def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], dis
     filtered = bool(conditions.excluded or request.years)
     food = category == "food"
     # The name check drops more dishes than the model expects: a vegan request lost five of six (2026-11-10).
-    asked = wanted + (6 if food and conditions.excluded else 3 if filtered else 2)
+    # Music asks for four spares (2026-11-23): songs Apple's store does not list under that title and artist go to the
+    # back, and with two spares an unlisted (often misattributed) song still went out about one request in seven.
+    asked = wanted + (6 if food and conditions.excluded else 3 if filtered and food else 4 if not food else 2)
     years = (request.years.start, request.years.end) if request.years and not food else None
     payload = build_payload(category, situation_text(request.raw, category), conditions.tags, conditions.excluded, liked, profile.tags,
                             profile.notes, disliked, [*avoid[-60:], *profile.customNames], asked, [*vocab.conditionTags, *vocab.extraTags],
