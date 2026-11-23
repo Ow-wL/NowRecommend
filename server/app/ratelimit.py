@@ -62,6 +62,8 @@ def per_subscriber(address: str) -> str:
         ip = ipaddress.ip_address(address)
     except ValueError:
         return address
+    if ip.version == 6 and ip.ipv4_mapped:  # an IPv4 caller written the IPv6 way ("::ffff:203.0.113.7") is that IPv4
+        return str(ip.ipv4_mapped)
     return str(ipaddress.ip_network(f"{ip}/64", strict=False)) if ip.version == 6 else address
 
 

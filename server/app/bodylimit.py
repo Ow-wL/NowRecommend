@@ -9,6 +9,8 @@ the failure surfaced as a 500 and an alert instead of a plain refusal.
 """
 from collections.abc import Awaitable, Callable, Mapping
 
+from fastapi import HTTPException
+
 Scope = dict
 Message = dict
 Receive = Callable[[], Awaitable[Message]]
@@ -17,15 +19,19 @@ Send = Callable[[Message], Awaitable[None]]
 DEFAULT_MAX = 256 * 1024  # a recommendation request with a long taste and history is well under this
 
 
-class _TooLarge(Exception):
-    pass
+class _TooLarge(HTTPException):
+    """Raised while the body arrives. Before FastAPI reads it, this middleware answers 413; once FastAPI is reading a
+    body it reports any error there as its own 400. Either way nothing past the cap is read."""
+    def __init__(self):
+        super().__init__(413, "요청이 너무 커요.")
 
 
-class _Nul(Exception):
-    pass
+class _Nul(HTTPException):
+    def __init__(self):
+        super().__init__(400, "보낼 수 없는 문자가 들어 있어요.")
 
 
-NUL = b"\u0000"
+NUL = b"\\u0000"  # the six bytes of the JSON escape
 
 
 class BodyLimitMiddleware:
@@ -53,7 +59,7 @@ class BodyLimitMiddleware:
                     raise _TooLarge
                 if NUL in tail + chunk:  # the tail catches one split across two chunks
                     raise _Nul
-                tail = chunk[-(len(NUL) - 1):] if chunk else tail
+                tail = (tail + chunk)[-(len(NUL) - 1):]  # however small the chunks
             return message
 
         async def watched(message: Message) -> None:

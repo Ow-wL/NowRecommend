@@ -63,3 +63,27 @@ def test_a_refused_field_is_named_but_what_was_sent_is_not_echoed():
     c = TestClient(create_app())
     answer = c.post("/api/feedback", json={"kind": "idea", "message": "x", "contact": "short-secret-ish"})
     assert answer.status_code == 422 and "short-secret-ish" not in answer.text and answer.json()["detail"][0]["loc"][-1] == "contact"
+
+
+def test_an_ipv4_written_the_ipv6_way_is_still_that_ipv4():
+    assert per_subscriber("::ffff:203.0.113.7") == "203.0.113.7"
+    assert per_subscriber("::ffff:198.51.100.9") != per_subscriber("::ffff:203.0.113.7")
+
+
+def test_a_nul_split_into_tiny_chunks_is_still_found():
+    c = client(default_max=10_000)
+    def tiny():
+        for piece in (b'{"a":"', b"\\", b"u", b"0", b"0", b"0", b"0", b'"}'):
+            yield piece
+    assert c.post("/echo", content=tiny()).status_code == 400
+
+
+def test_a_real_route_refuses_a_chunked_body_over_the_cap():
+    """Cut off at the cap either way; FastAPI reports an error raised while it reads a body as its own 400."""
+    from app.main import create_app
+    c = TestClient(create_app())
+    def chunks():
+        for _ in range(40):
+            yield b" " * 10_000  # 400 KB of a JSON body, no length given
+    assert c.post("/api/feedback", content=chunks(), headers={"content-type": "application/json"}).status_code in (400, 413)
+    assert c.post("/api/feedback", content=b" " * 300_000, headers={"content-type": "application/json"}).status_code == 413
