@@ -152,3 +152,13 @@ class Feedback(Base):
     contact: Mapped[str | None] = mapped_column(Text)  # an address to answer to, only if the person gave one
     page: Mapped[str] = mapped_column(Text, server_default="")
     app_version: Mapped[str] = mapped_column(Text, server_default="")
+
+
+class StatsDaily(Base):
+    """How many times a day something happened (stats.py, 2026-11-23): a feature used, a browser's first visit of the day.
+    Counts only; nothing names a person, a browser or an address."""
+    __tablename__ = "stats_daily"
+
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    name: Mapped[str] = mapped_column(Text, primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, server_default="0")

@@ -15,7 +15,7 @@ def client_with(status: DatabaseStatus) -> TestClient:
 
 
 def test_health_ok():
-    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0011")) as client:
+    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0012")) as client:
         response = client.get("/api/health")
     assert response.status_code == 200
     body = response.json()
@@ -44,12 +44,12 @@ def test_health_is_not_ok_on_a_database_that_was_never_migrated():
     with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision=None)) as client:
         response = client.get("/api/health")
     assert response.status_code == 503 and response.json()["database"]["revision"] is None
-    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0011")) as client:
-        assert client.get("/api/health").json()["database"]["revision"] == "0011"
+    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0012")) as client:
+        assert client.get("/api/health").json()["database"]["revision"] == "0012"
 
 
 def test_cors_allows_local_frontend_only():
-    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0011")) as client:
+    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0012")) as client:
         allowed = client.get("/api/health", headers={"Origin": "http://127.0.0.1:5173"})
         other = client.get("/api/health", headers={"Origin": "https://example.com"})
     assert allowed.headers.get("access-control-allow-origin") == "http://127.0.0.1:5173"

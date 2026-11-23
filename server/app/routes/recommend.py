@@ -15,6 +15,7 @@ from ..llm.client import JsonModel
 from ..llm.provider import shared_model
 from ..recommend import PipelineConfig, recommend
 from ..schemas import RecommendRequest
+from ..stats import count
 from .auth import optional_user_id
 
 router = APIRouter()
@@ -63,4 +64,5 @@ def recommend_route(request: RecommendRequest, http: Request, session: Session =
         answer["meta"]["engine"] = "catalog"
     if limit := gate.limit():
         answer["meta"]["limit"] = limit
+    count(session, f"recommend:{request.category}")  # for the admin dashboard (stats.py)
     return answer

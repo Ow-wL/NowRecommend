@@ -20,6 +20,7 @@ from ..config import Settings, get_settings
 from ..db import get_session
 from ..models import Feedback, User
 from ..ratelimit import client_address
+from ..stats import count
 from .auth import _iso
 from .reports import require_admin
 
@@ -65,6 +66,7 @@ def send_feedback(request: FeedbackRequest, http: Request, session: Session = De
     item = Feedback(kind=request.kind, message=request.message, contact=request.contact or None, page=request.page, app_version=request.appVersion)
     session.add(item)
     session.commit()
+    count(session, "feedback")
     return {"id": str(item.id)}
 
 

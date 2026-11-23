@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.db import get_session
 from app.mail import SmtpMailer, get_mailer, reset_mail
 from app.main import create_app
-from app.models import Feedback, UsageDaily, User
+from app.models import Feedback, StatsDaily, UsageDaily, User
 from app.routes.auth import get_signer
 
 SIGNUP = {"email": "lee@example.com", "password": "password1", "name": "주형"}
@@ -49,6 +49,7 @@ def world():
     User.__table__.create(engine)
     UsageDaily.__table__.create(engine)
     Feedback.__table__.create(engine)
+    StatsDaily.__table__.create(engine)  # the dashboard counts (stats.py)
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():

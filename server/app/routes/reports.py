@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from ..ai_items import is_ai_pick
 from ..db import get_session
 from ..models import Item, Report, User
+from ..stats import count
 from .auth import _iso, current_user, optional_user_id
 
 router = APIRouter()
@@ -71,6 +72,7 @@ def create_report(request: ReportRequest, session: Session = Depends(get_session
                     note=request.note, user_id=user_id)
     session.add(report)
     session.commit()
+    count(session, "report")
     return {"id": str(report.id)}
 
 

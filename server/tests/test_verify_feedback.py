@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.db import get_session
 from app.mail import get_mailer, verify_mail
 from app.main import create_app
-from app.models import Feedback, UsageDaily, User
+from app.models import Feedback, Report, StatsDaily, UsageDaily, User
 from app.retention import sweep
 from app.routes.auth import get_signer
 
@@ -43,7 +43,7 @@ def settings(**more):
 @pytest.fixture
 def world():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for table in (User, UsageDaily, Feedback):
+    for table in (User, UsageDaily, Feedback, StatsDaily, Report):
         table.__table__.create(engine)
     make = sessionmaker(engine, expire_on_commit=False)
 
@@ -260,3 +260,41 @@ def test_the_daily_removal_keeps_admins_and_accounts_holding_data(world):
         s.commit()
         assert sweep(s, settings()) == (1, 0)
         assert sorted(u.email for u in s.scalars(select(User))) == ["a@example.com", "b@example.com"]
+
+
+# ---- the admin dashboard's counts (2026-11-23) ----
+
+def test_the_server_counts_its_features_and_the_browser_only_its_own(world):
+    client, outbox, app, make, signer = world
+    client.post("/api/auth/signup", json=SIGNUP)
+    client.post("/api/auth/verify", json={"token": outbox.token()})
+    client.post("/api/auth/login", json=RIGHT)
+    client.post("/api/feedback", json={"kind": "idea", "message": "좋아요"})
+    for event in ("visit", "visit", "pair", "type:music"):
+        assert client.post("/api/stats", json={"event": event}).status_code == 204
+    for wrong in ("signup", "recommend:food", "anything"):  # what the server counts is not the browser's to report
+        assert client.post("/api/stats", json={"event": wrong}).status_code == 422
+    with make() as s:
+        s.add(User(email="admin@example.com", name="관리자", password_hash="x", is_admin=True, email_verified_at=datetime.now(timezone.utc)))
+        s.commit()
+        admin = s.scalar(select(User).where(User.email == "admin@example.com"))
+    auth = {"Authorization": f"Bearer {signer.issue(str(admin.id))}"}
+    board = client.get("/api/admin/stats", params={"days": 7}, headers=auth).json()
+    assert len(board["days"]) == 7 and board["days"][0]["day"] < board["days"][-1]["day"]
+    today = board["days"][-1]["counts"]
+    assert {k: today[k] for k in ("signup", "verify", "login", "feedback", "visit", "pair", "type:music", "recommend:food")} == \
+        {"signup": 1, "verify": 1, "login": 1, "feedback": 1, "visit": 2, "pair": 1, "type:music": 1, "recommend:food": 0}
+    assert board["totals"] == {"accounts": 2, "confirmedAccounts": 2, "feedback": 1, "openReports": 0}
+    assert client.get("/api/admin/stats", headers={"Authorization": f"Bearer {signer.issue(str(admin.id))}"}, params={"days": 0}).status_code == 422
+    with make() as s:
+        member = s.scalar(select(User).where(User.email == "lee@example.com"))
+    assert client.get("/api/admin/stats", headers={"Authorization": f"Bearer {signer.issue(str(member.id))}"}).status_code == 403
+
+
+def test_one_place_cannot_pump_the_counts(world):
+    client, _, app, make, signer = world
+    app.dependency_overrides[get_settings] = lambda: settings(stats_daily_per_address=2)
+    for _ in range(5):
+        assert client.post("/api/stats", json={"event": "visit"}).status_code == 204  # the same answer, counted or not
+    with make() as s:
+        assert s.scalar(select(StatsDaily.count).where(StatsDaily.name == "visit")) == 2

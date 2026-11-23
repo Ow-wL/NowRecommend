@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     feedback_daily_total: int = 200
     # Where the daily count of new feedback and error reports goes (digest.py, 2026-11-23). Empty: no mail.
     feedback_digest_to: str = ""
+    # What one place may add to the dashboard's counts in a day (POST /api/stats, routes/stats.py).
+    stats_daily_per_address: int = 50
     # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
     reset_daily_per_address: int = 10
     reset_daily_per_email: int = 3

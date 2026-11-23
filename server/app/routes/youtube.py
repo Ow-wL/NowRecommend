@@ -15,6 +15,7 @@ from ..config import Settings, get_settings
 from ..db import get_session
 from ..models import Item
 from ..ratelimit import client_address
+from ..stats import count
 from ..youtube import YouTubeFinder, YouTubeUnavailable, youtube_finder
 
 log = logging.getLogger(__name__)
@@ -53,7 +54,9 @@ def video(request: Request, song: tuple[str, str] | None = Depends(find_song), s
 
     try:
         # Counted all the same when the search fails: the API may have counted it before failing.
-        return {"videoId": finder.lookup(title, artist, charge)}
+        found = {"videoId": finder.lookup(title, artist, charge)}
+        count(session, "youtube")  # for the admin dashboard (stats.py)
+        return found
     except YouTubeUnavailable as error:
         log.warning("youtube: search failed: %s", error)
         raise HTTPException(503, OFF) from None

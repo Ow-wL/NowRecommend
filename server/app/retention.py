@@ -11,10 +11,11 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from .config import Settings
-from .models import Feedback, User
+from .models import Feedback, StatsDaily, User
 
 log = logging.getLogger(__name__)
 FEEDBACK_DAYS = 365
+STATS_DAYS = 400  # the dashboard's counts (stats.py KEEP_DAYS)
 
 
 def stale_signup(settings: Settings, now: datetime | None = None):
@@ -34,6 +35,7 @@ def sweep(session: Session, settings: Settings, now: datetime | None = None) -> 
     plain = {"synchronize_session": False}
     accounts = session.execute(delete(User).where(*stale_signup(settings, now)), execution_options=plain).rowcount
     said = session.execute(delete(Feedback).where(Feedback.created_at < now - timedelta(days=FEEDBACK_DAYS)), execution_options=plain).rowcount
+    session.execute(delete(StatsDaily).where(StatsDaily.day < (now - timedelta(days=STATS_DAYS)).date()), execution_options=plain)
     session.commit()
     if accounts or said:
         log.info("removed %d unconfirmed sign-ups and %d year-old feedback", accounts, said)

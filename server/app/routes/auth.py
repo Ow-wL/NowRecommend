@@ -32,6 +32,7 @@ from ..mail import Mailer, failure as mail_failure, get_mailer, reset_mail, veri
 from ..models import UsageDaily, User
 from ..ratelimit import client_address
 from ..retention import stale_signup
+from ..stats import count
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -214,6 +215,7 @@ def signup(request: SignupRequest, http: Request, response: Response, session: S
         day.give_back()  # no account was made: like the "already registered" answer above, it uses nothing up
         raise taken from None
     session.refresh(user)
+    count(session, "signup")
     if confirm:
         response.status_code = 202
         return {"verify": "sent" if _send_verify(user, http, session, signer, mailer, settings) else "failed", "email": user.email}
@@ -336,6 +338,7 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
         raise refused
     attempt.give_back()
     session.refresh(user)
+    count(session, "login")
     return _session_answer(signer, user, version)
 
 
@@ -499,6 +502,7 @@ def confirm_email(request: VerifyConfirm, session: Session = Depends(get_session
     session.refresh(user)
     if user.email_verified_at is None:  # the password changed in between
         raise spent
+    count(session, "verify")
     return {"verified": True, "email": user.email}
 
 
