@@ -67,7 +67,7 @@ def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], dis
     raw, reference = recommend_free(model, category, payload)
     validation = validate_free(raw, wanted, [*avoid, *disliked, *liked, *profile.customNames], [*vocab.conditionTags, *vocab.extraTags],
                                detail_required=not food, excluded_values=vocab.blocked(conditions.excluded) if conditions.excluded else None, years=years,
-                               dishes=dishes, rank=store.rank if store and not food else None, reference=reference)
+                               dishes=dishes, rank=store.rank if store and not food else None, reference=None if food else reference)
     validation.reference = reference
     # Read in the request log: how often an unlisted or unchecked song still went out.
     validation.issues.update(f"store_{p.listed}" for p in validation.picks if p.listed in (MISSING, UNKNOWN))

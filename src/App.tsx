@@ -203,6 +203,8 @@ export default function App() {
     const raw = `${item.subtitle}의 ${item.name} 같은 노래`.slice(0, 300);
     homeAsk.current = { category: 'music', raw };
     start('music', raw, true);
+    // Left out by id as well, so the catalog (used when the model is off or fails) does not hand the same song back.
+    setSession(s => ({ ...s, excludedIds: [item.id] }));
   }
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
   const voice = useVoiceInput(text => setSession(s => changeText(s, (s.raw.trim() ? `${s.raw.trimEnd()} ` : '') + text)), message => notify(message));

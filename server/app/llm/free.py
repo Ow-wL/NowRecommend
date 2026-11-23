@@ -189,7 +189,6 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
     allowed = set(allowed_tags) if allowed_tags is not None else None
     picks: list[FreePick] = []
     seen: set[str] = set()
-    reference_artist_used = False
     for entry in raw:
         if not isinstance(entry, dict):
             issues["malformed"] += 1
@@ -211,11 +210,6 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         if reference and reference[0] and pick_key(name) == pick_key(reference[0]):
             issues["reference"] += 1
             continue
-        if reference and reference[1] and pick_key(detail) == pick_key(reference[1]):
-            if reference_artist_used:
-                issues["reference_artist"] += 1
-                continue
-            reference_artist_used = True
         confidence = entry.get("confidence") if entry.get("confidence") in CONFIDENCE else "low"
         tags = [t for t in dict.fromkeys(entry.get("tags") or []) if isinstance(t, str) and (allowed is None or t in allowed)]
         if allowed is not None and len(tags) < len(entry.get("tags") or []):
@@ -239,11 +233,8 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
         picks.append(FreePick(name, detail, taste, context, confidence, tags[:6], ingredients, base, entry.get("broad") is True, year))
     if rank is not None and picks:
         picks = rank(picks)
-    # One song per artist while there are others to show; a repeat only fills in when picks would run short. Done after the
-    # store order (2026-11-24): before it, a listed second song by one artist went ahead of an unchecked song by another.
-    # A song the store does not list stays behind every song it lists or could not ask about.
     if detail_required:
-        picks = [*_one_per_artist([p for p in picks if p.listed != MISSING]), *_one_per_artist([p for p in picks if p.listed == MISSING])]
+        picks = _song_order(picks, pick_key(reference[1]) if reference and reference[1] else "", issues)
     spares = picks[count:]
     if len(picks) > count:
         issues["extra"] += len(picks) - count
@@ -253,10 +244,23 @@ def validate_free(raw: list, count: int, blocked: list[str], allowed_tags: list[
     return FreeValidation(picks, +issues, dropped_by_name, spares)
 
 
-def _one_per_artist(picks: list[FreePick]) -> list[FreePick]:
+def _song_order(picks: list[FreePick], reference_artist: str, issues: Counter) -> list[FreePick]:
+    """After the store order (2026-11-24; before it, a listed second song by one artist went ahead of an unchecked song by
+    another): one song per artist while there are others to show, a repeat only filling in when picks would run short, and a
+    song the store does not list behind every song it lists or could not ask about. The reference artist keeps its first
+    song in this order and no more, so a checked song wins over an earlier unlisted one."""
+    groups: dict[tuple[bool, bool], list[FreePick]] = {(m, r): [] for m in (False, True) for r in (False, True)}
     artists: set[str] = set()
-    first = [p for p in picks if not (pick_key(p.detail) in artists or artists.add(pick_key(p.detail)))]
-    return [*first, *[p for p in picks if p not in first]]
+    for missing in (False, True):
+        for pick in (p for p in picks if (p.listed == MISSING) == missing):
+            artist = pick_key(pick.detail)
+            if artist == reference_artist and artist in artists:
+                issues["reference_artist"] += 1
+                continue
+            repeat = artist in artists
+            artists.add(artist)
+            groups[(missing, repeat)].append(pick)
+    return [*groups[(False, False)], *groups[(False, True)], *groups[(True, False)], *groups[(True, True)]]
 
 
 def recommend_free(model: JsonModel, category: str, payload: dict) -> tuple[list, tuple[str, str] | None]:

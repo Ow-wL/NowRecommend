@@ -234,8 +234,10 @@ def test_the_song_a_request_is_like_is_not_recommended_back(catalog):
 def test_a_spare_replaces_a_pick_that_turns_out_already_seen(catalog):
     seen = ai_item_id("music", "본 곡", "가수 가")
     model = FakeModel({"picks": [pick("본 곡", "가수 가"), pick("새 곡", "가수 나"), pick("예비 곡", "가수 다")]})
+    # The browser saw "본 곡" under the id it will resolve to, but this database has no row for it, so no label blocks it
+    # before it is stored: it is dropped only by its id, and the spare takes its place.
     with client_for(catalog, model) as client:
-        client.post("/api/recommend", json={"category": "music", "count": 1})  # stores "본 곡" as an item
         answer = client.post("/api/recommend", json={"category": "music", "count": 2, "seenIds": [seen]}).json()
     names = [r["item"]["name"] for r in answer["results"]]
     assert names == ["새 곡", "예비 곡"]
+    assert "blocked_id=1" in answer["meta"]["issues"]

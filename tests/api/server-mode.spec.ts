@@ -303,6 +303,7 @@ test('a song card asks for songs like it, and the request names the song', async
   await expect.poll(() => sent.length).toBe(2);
   expect(sent[1].category).toBe('music');
   expect(sent[1].raw).toBe('한로로의 입춘 같은 노래');
+  expect(sent[1].excludedIds).toEqual(['ai-ipchun']);
 });
 
 test('a card can be reported as a guest, and the admin page shows only what the server allows', async ({ page }) => {

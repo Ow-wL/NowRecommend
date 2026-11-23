@@ -95,3 +95,19 @@ def test_one_song_per_artist_is_decided_after_the_store_order():
     result = validate_free(raw, 2, [], rank=SongStore(fake).rank)
     assert [p.name for p in result.picks] == ["첫 곡", "확인 못 한 곡"]
     assert [p.name for p in result.spares] == ["둘째 곡"]
+
+
+def test_an_artist_already_shown_does_not_lead_the_unlisted_songs():
+    fake = FakeStore({"가 확인된 곡": [hit(1, "확인된 곡", "가")]})
+    raw = [song("확인된 곡", "가"), song("없는 곡", "가"), song("다른 없는 곡", "나")]
+    result = validate_free(raw, 2, [], rank=SongStore(fake).rank)
+    assert [p.name for p in result.picks] == ["확인된 곡", "다른 없는 곡"]
+
+
+def test_the_reference_artist_keeps_its_first_song_in_store_order():
+    """An unlisted first song by the reference artist no longer uses up its one place before the store is asked."""
+    fake = FakeStore({"한로로 0+0": [hit(1, "0+0", "한로로")], "밴드 다른 곡": [hit(2, "다른 곡", "밴드")]})
+    raw = [song("없는 곡", "한로로"), song("0+0", "한로로"), song("다른 곡", "밴드")]
+    result = validate_free(raw, 3, [], rank=SongStore(fake).rank, reference=("입춘", "한로로"))
+    assert [p.name for p in result.picks] == ["0+0", "다른 곡"]
+    assert result.issues["reference_artist"] == 1
