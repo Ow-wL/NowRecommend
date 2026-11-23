@@ -25,6 +25,6 @@ test('a screen that fails to draw offers a way out, keeps the data, and is repor
   // The way out works once the cause is gone, and nothing stored was touched.
   await page.evaluate(() => sessionStorage.removeItem('nowrecommend-test-crash'));
   await page.getByRole('button', { name: '홈에서 다시 시작' }).click();
-  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹지? 한 문장이면 끝.' })).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nowrecommend-prototype-v1')!).favorites)).toEqual(['f05']);
 });

@@ -30,7 +30,7 @@ test('the security policy lets the app work and stops a script from elsewhere', 
   expect(policy).toMatch(/script-src 'self' 'sha256-[A-Za-z0-9+/=]+'/);
   expect(policy).not.toMatch(/script-src[^;]*unsafe/);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹지? 한 문장이면 끝.' })).toBeVisible();
   // A walk through what talks to other hosts: the API, the font, pictures, the documents.
   await page.goto('/#/recommend/food');
   await page.getByRole('button', { name: /추천받기$/ }).click();
@@ -91,7 +91,7 @@ test('a browser a few years old still gets the app, not the error page', async (
     meta: { mode: 'retrieval_only', eligibleCount: 17, newCount: 3, catalogVersion: 'db-test', requestId: 'r' } }));
   await page.goto('/');
   expect(await page.evaluate(() => [typeof crypto.randomUUID, typeof structuredClone, typeof [].at, typeof ''.at, typeof AbortSignal.timeout])).toEqual(Array(5).fill('function'));
-  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹지? 한 문장이면 끝.' })).toBeVisible();
   // A round of recommendations makes ids and copies conditions; choosing one writes a history entry.
   await page.goto('/#/recommend/food');
   await page.getByRole('button', { name: /추천받기$/ }).click();

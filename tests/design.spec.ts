@@ -5,10 +5,15 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await page.goto('/');
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(242, 242, 247)');
-    // The tiles may run past the fold; what has to be on the first screen is each tile's button.
-    for (const go of await page.locator('.door-go').all()) {
-      const box = await go.boundingBox();
+    // The home's one promise (2026-11-23): the sentence box and its button are on the first screen; the other ways in
+    // (the doors) follow below it, and on a wide screen their buttons are on the first screen too.
+    for (const part of [page.getByLabel('지금 상황'), page.getByRole('button', { name: /메뉴 골라 줘/ })]) {
+      const box = await part.boundingBox();
       expect(box!.y + box!.height).toBeLessThan(844);
+    }
+    if (width > 640) for (const go of await page.locator('.door-go').all()) {
+      const box = await go.boundingBox();
+      expect(box!.y + box!.height).toBeLessThan(900);
     }
     await page.screenshot({ path: `artifacts/light-home-${width}-default.png`, fullPage: true });
     for (const category of ['food', 'music']) {

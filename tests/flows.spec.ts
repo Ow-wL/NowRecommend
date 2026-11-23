@@ -50,7 +50,7 @@ test('the reproduction sentence: kept, partial and unsupported conditions before
 
 test('food journey, favorites, history and browser persistence', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹지? 한 문장이면 끝.' })).toBeVisible();
   await page.getByRole('button', { name: '음식 추천', exact: true }).click();
   await page.getByRole('button', { name: '취향 추가', exact: true }).click();
   await expect(page.getByRole('button', { name: '저장하고 시작' })).toBeDisabled();

@@ -330,7 +330,8 @@ test('an admin lists reports and settles one, and the list follows the status', 
   await page.route(`${API}/api/me/store`, route => fulfill(route, { store: null, updatedAt: null }));
   await page.route(`${API}/api/auth/me`, route => fulfill(route, { user: { id: 'u', email: 'a@example.com', name: '관리', isAdmin: true }, hasStore: false, storeUpdatedAt: null }));
   await page.goto('/#/taste');
-  await page.getByRole('button', { name: /오류 신고·의견 관리/ }).click();
+  await page.locator('.list-row', { hasText: '관리' }).click();
+  await page.getByRole('tab', { name: '오류 신고' }).click();
   const card = page.locator('.report-card');
   await expect(card).toContainText('인절미 빙수');await expect(card).toContainText('사진이 메뉴와 달라요');await expect(card).toContainText('손님');
   await expect(card.locator('.report-note')).toHaveText('<b>딸기</b> 사진이에요');  // a note is text, never markup

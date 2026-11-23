@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import { STATEMENTS } from '../src/typeContent';
 import {emptyStore} from '../src/domain';
 import {openConditions} from './ui';
 test('preview, save, rename, reload and delete independent condition presets',async({page})=>{
@@ -57,7 +58,7 @@ for(const width of [320,360,390])test(`music actions stay on one line each at ${
 });
 test('the taste type test gives a code by questions, and asks for recommendations in its words',async({page})=>{
   await page.goto('/#/type');await page.getByRole('button',{name:'테스트 시작'}).click();
-  for(let i=0;i<16;i++){await expect(page.locator('.type-question small')).toHaveText(`${i+1} / 16`);await page.locator('.type-choice').first().click();}
+  for(let i=0;i<24;i++){await expect(page.locator('.type-question small')).toHaveText(`${i+1} / 24`);const text=(await page.locator('.type-question h2').textContent())!.trim();const s=STATEMENTS.food.find(x=>x.text===text)!;await page.getByRole('button',{name:s.key==='a'?'매우 그렇다':'전혀 아니다'}).click();}
   await expect(page.locator('.type-result h2')).toContainText('혼밥 국밥 장인');await expect(page.locator('.type-result h2')).toBeFocused();
   await page.reload();await expect(page.locator('.type-result h2')).toContainText('혼밥 국밥 장인');
   await page.getByRole('button',{name:/이 유형으로 추천받기/}).click();

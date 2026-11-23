@@ -71,7 +71,7 @@ test('the AI lab is not offered to guests or members, and its address leads home
   await expect(page.getByRole('button', { name: /AI 실험실/ })).toHaveCount(0);
   await page.goto('/#/lab');
   await expect(page).toHaveURL(/#\/home$/);
-  await expect(page.getByRole('heading', { name: '오늘 뭐 먹고, 뭐 들을까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘 뭐 먹지? 한 문장이면 끝.' })).toBeVisible();
 });
 
 test('an admin account sees the lab and sends its token with the lab’s requests', async ({ page }) => {

@@ -1,5 +1,5 @@
 import type { Category } from './data';
-import { axisLeans, relatedTypes, shareSearch, sides, typeName, typeProfile, type TasteTypeResult } from './tasteType';
+import { axisLeans, percentsOf, relatedTypes, shareSearch, sides, typeName, typeProfile, type TasteTypeResult } from './tasteType';
 
 // The taste type as a picture to post: the four letters, the type's name, how far each axis leans, and where it came
 // from. Drawn in the browser on a canvas, so nothing leaves the device until the person shares it.
@@ -15,12 +15,12 @@ function lines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): s
   if (line) out.push(line);
   return out;
 }
-type CardResult = Pick<TasteTypeResult, 'code' | 'counts'>;
+type CardResult = Pick<TasteTypeResult, 'code' | 'counts' | 'scores'>;
 /** A 4:5 picture, the shape feeds and chats show whole: letters, name, the one line, how far each axis leans, and the question back. */
 export function drawTypeCard(canvas: HTMLCanvasElement, category: Category, result: CardResult, owner = ''): void {
   canvas.width = WIDTH; canvas.height = HEIGHT;
   const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas');
-  const colour = COLORS[category], { code, counts } = result, left = 132, inner = WIDTH - left * 2;
+  const colour = COLORS[category], { code } = result, left = 132, inner = WIDTH - left * 2;
   ctx.fillStyle = colour.bg; ctx.fillRect(0, 0, WIDTH, HEIGHT);
   ctx.fillStyle = '#FFFFFF'; rounded(ctx, 60, 60, WIDTH - 120, HEIGHT - 120, 56); ctx.fill();
   ctx.textBaseline = 'top'; ctx.textAlign = 'left';
@@ -37,7 +37,7 @@ export function drawTypeCard(canvas: HTMLCanvasElement, category: Category, resu
   const profile = typeProfile(category, code);
   if (profile) { ctx.fillStyle = '#4E4A43'; ctx.font = `500 36px ${FONT}`; y += 4; for (const line of lines(ctx, profile.line, inner)) { ctx.fillText(line, left, y); y += 52; } }
   y += 28;
-  const leans = axisLeans(category, counts);
+  const leans = axisLeans(category, percentsOf(result));
   if (leans.length) for (const lean of leans) {
     const first = lean.aPercent >= 50;
     ctx.font = `600 30px ${FONT}`;
