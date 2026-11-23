@@ -2,8 +2,9 @@
 last one. Counts only, never what was written: the mail goes through the mail service (Resend), and the privacy policy
 sends it nothing that people wrote. Off unless FEEDBACK_DIGEST_TO names an address.
 
-Sent from the daily run (budget.forget_old), so on any day the service is used. The window starts at the last day that
-run happened (its "sweep:day" mark, kept 7 days), so a quiet day in between is not left out.
+Sent from the daily run (budget.forget_old), so on any day the service is used. The window starts at the last day a
+digest left (its "digest:sent" mark, kept 7 days like every counter), so neither a quiet day nor a day whose mail failed
+is left out; with no mark, it covers the week before.
 """
 import logging
 from datetime import date, datetime, time, timedelta, timezone
@@ -19,9 +20,12 @@ log = logging.getLogger(__name__)
 KINDS = ("problem", "idea", "praise", "other")
 
 
+SENT = "digest:sent"
+
+
 def window_start(session: Session, today: date, kst) -> datetime:
-    """Midnight (KST) of the last day before today that the daily run happened; a week back if none is known."""
-    last = session.scalar(select(func.max(UsageDaily.day)).where(UsageDaily.bucket == "sweep:day", UsageDaily.day < today))
+    """Midnight (KST) of the last day before today that a digest left; a week back if none is known."""
+    last = session.scalar(select(func.max(UsageDaily.day)).where(UsageDaily.bucket == SENT, UsageDaily.day < today))
     return datetime.combine(last or today - timedelta(days=7), time(0), kst)
 
 
@@ -41,7 +45,9 @@ def send_digest(session: Session, settings: Settings, mailer: Mailer | None, tod
     admin = f"{settings.public_app_url.rstrip('/')}/#/admin"
     try:
         mailer.send(to, *digest_mail(counts, int(reports), start.date(), (end - timedelta(days=1)).date(), admin))
-        return True
-    except Exception as error:  # noqa: BLE001 - tomorrow's mail counts from tomorrow's window; the admin page has it all
+    except Exception as error:  # noqa: BLE001 - not marked: the next day's mail counts from where this one would have
         log.error("feedback digest could not be sent: %s", mail_failure(error))
         return False
+    session.merge(UsageDaily(day=today, bucket=SENT, count=1))
+    session.commit()
+    return True

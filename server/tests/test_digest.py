@@ -47,7 +47,8 @@ def add_feedback(s, kind, when):
 
 
 def test_counts_since_the_last_daily_run_and_never_what_was_written(session):
-    session.add(UsageDaily(day=TODAY - timedelta(days=3), bucket="sweep:day", count=1))  # the last run: three days ago
+    session.add(UsageDaily(day=TODAY - timedelta(days=3), bucket="digest:sent", count=1))  # the last mail: three days ago
+    session.add(UsageDaily(day=TODAY - timedelta(days=1), bucket="sweep:day", count=1))  # a run whose mail failed: not a start
     add_feedback(session, "problem", at(TODAY - timedelta(days=4), 12))  # before the window: was in that day's mail
     add_feedback(session, "problem", at(TODAY - timedelta(days=3), 9))
     add_feedback(session, "idea", at(TODAY - timedelta(days=1), 23))
@@ -73,6 +74,16 @@ def test_nothing_is_sent_when_nothing_came_or_nobody_is_named(session):
     assert not send_digest(session, settings(), None, TODAY, KST)
     assert outbox.sent == []
     assert not send_digest(session, settings(), Outbox(fails=True), TODAY, KST)  # a failure is logged, not raised
+
+
+def test_a_failed_mail_leaves_its_days_for_the_next_one(session):
+    add_feedback(session, "problem", at(TODAY - timedelta(days=2), 10))
+    session.commit()
+    assert not send_digest(session, settings(), Outbox(fails=True), TODAY - timedelta(days=1), KST)
+    outbox = Outbox()
+    assert send_digest(session, settings(), outbox, TODAY, KST)
+    assert "새 의견 1건" in outbox.sent[0]["subject"]
+    assert not send_digest(session, settings(), Outbox(), TODAY + timedelta(days=1), KST)  # counted from today on: nothing new
 
 
 def test_the_daily_run_sends_it_once(session, monkeypatch):
