@@ -206,13 +206,13 @@ def store_lookup(title: str, artist: str, get: Callable[[str, dict], list[dict]]
     Between them (2026-11-10), the US hits read back by id in the Korean store: the US store names "너의 의미" "Meaning of You", and the
     artist's Korean list stops at 200 songs, so both doors missed songs that are listed. A run checked before that keeps its answers
     unless `songs --again` asks for the missing ones once more."""
-    from .cli.media import artist_matches, title_matches
+    from .cli.media import artist_matches, search_term, title_matches
 
     def pick(hits: list[dict], check_artist: bool) -> dict | None:
         return next((h for h in hits if h.get("trackName") and title_matches(title, h["trackName"]) and (not check_artist or artist_matches(artist, h.get("artistName", "")))), None)
 
     try:
-        us = get("search", {"term": f"{artist} {title}", "country": "US", "entity": "song", "limit": 10})
+        us = get("search", {"term": search_term(title, artist), "country": "US", "entity": "song", "limit": 10})
         hit = pick(us, True)
         if hit is None and (ids := [h["trackId"] for h in us if h.get("trackId")]):
             same = {h.get("trackId"): h for h in us}

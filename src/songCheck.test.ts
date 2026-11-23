@@ -34,6 +34,14 @@ describe('song check', () => {
     const other = await lookupSong('Song (feat. A)', 'Yiruma', ['Yiruma'], vi.fn().mockResolvedValue(store([{ ...hit, trackName: 'Song (feat. B)' }])) as typeof fetch);
     expect(other).toBeUndefined();
   });
+  it('searches without the bracketed parts of the title, and still finds the song', async () => {
+    const fetcher = vi.fn().mockResolvedValue(store([{ ...hit, trackName: 'Nan Chun', artistName: 'SE SO NEON' }]));
+    const found = await lookupSong('Nan Chun (亂春)', 'SE SO NEON', ['SE SO NEON'], fetcher as typeof fetch);
+    expect(new URL(String(fetcher.mock.calls[0][0])).searchParams.get('term')).toBe('SE SO NEON Nan Chun');
+    expect(found).toBeDefined();
+    expect(titleMatches('난춘 (亂春)', '난춘')).toBe(true);
+    expect(titleMatches('Song (어쿠스틱 버전)', 'Song')).toBe(false);  // a version in Korean is still a version
+  });
   it('keeps a named version apart in both directions', () => {
     expect(matchRank('Song (Live)', 'Song (Live)')).toBe(2);
     expect(matchRank('Song (Live)', 'Song')).toBe(0);

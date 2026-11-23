@@ -23,7 +23,7 @@ from typing import Protocol
 
 import httpx
 
-from .cli.media import artist_matches, title_matches
+from .cli.media import artist_matches, search_term, title_matches
 
 log = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class SongStore:
     def _search(self, todo: list[tuple[str, str]], started: float) -> tuple[dict[tuple[str, str], str], dict[tuple[str, str], list[dict]]]:
         """The US search for every song at once: the songs it settles, and the open ones with their hits."""
         pool = ThreadPoolExecutor(max_workers=len(todo))
-        futures = {pool.submit(self._ask, "search", {"term": f"{a} {t}", "country": "US", "entity": "song", "limit": 10}, self.deadline_s): (t, a)
+        futures = {pool.submit(self._ask, "search", {"term": search_term(t, a), "country": "US", "entity": "song", "limit": 10}, self.deadline_s): (t, a)
                    for t, a in todo}
         done, _ = wait(futures, timeout=max(0.0, self.deadline_s - (self.clock() - started)))
         pool.shutdown(wait=False, cancel_futures=True)

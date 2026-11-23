@@ -57,6 +57,13 @@ def norm(text: str | None) -> str:
     return re.sub(r"[\W_]+", "", (text or "").casefold())
 
 
+def search_term(title: str, artist: str) -> str:
+    """What the store search is asked: "아티스트 제목" without the title's bracketed parts. The model writes "난춘 (亂春)", and the
+    store answered "새소년 난춘 (亂春)" with nothing at all while "새소년 난춘" finds it (2026-11-24), so a listed song read as missing."""
+    core = re.sub(r"\s*[\(\[].*?[\)\]]", "", title).strip() or title
+    return f"{artist} {core}".strip()
+
+
 def title_matches(want: str, got: str) -> bool:
     a, b = norm(want), norm(re.sub(r"\s*[\(\[].*?[\)\]]", "", got))  # store titles add "(feat. …)", "[Remastered]"
     core = norm(re.sub(r"\s*[\(\[].*?[\)\]]", "", want))

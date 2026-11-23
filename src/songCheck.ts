@@ -18,7 +18,9 @@ const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/[^\
 // A film credit is never part of the song. Guests are compared apart from the title (see matchRank).
 // "(Live)", "[Remastered]" or " - Acoustic" stay in the title, so those versions do not count as the same song.
 const guestPart = /\s*[([](?:feat\.?|ft\.?|with)\s+([^)\]]+)[)\]]/gi;
-const baseTitle = (text: string) => norm(text.replace(guestPart, '').replace(/\s*[([]from\b.*?[)\]]/gi, '').replace(/\s+-\s+from\b.*$/i, ''));
+// Hanja in brackets spells the title, it does not name a version: "난춘 (亂春)" is the store's "난춘" (2026-11-24).
+const hanjaPart = /\s*[([][\p{Script=Han}\s]+[)\]]/gu;
+const baseTitle = (text: string) => norm(text.replace(guestPart, '').replace(hanjaPart, '').replace(/\s*[([]from\b.*?[)\]]/gi, '').replace(/\s+-\s+from\b.*$/i, ''));
 const creditSplit = /\s*(?:,|&|\/|×|\bfeat\.?|\bft\.?|\bwith\b|\band\b)\s*/i;
 export const guestsIn = (text: string) => [...text.matchAll(guestPart)].flatMap(m => m[1].split(creditSplit)).map(norm).filter(Boolean);
 
@@ -109,7 +111,8 @@ export async function lookupSong(title: string, artist: string, names: string[] 
   if (koreanFirst) { const media = await fromKoreanArtist(); if (media) return media; }
   let found: ReturnType<typeof pick>;
   try {
-    found = pick(await ask({ term: `${names[0]} ${title}`, limit: '10' }));
+    // Without the title's bracketed parts: "새소년 난춘 (亂春)" finds nothing in the store, "새소년 난춘" finds it (2026-11-24).
+    found = pick(await ask({ term: `${names[0]} ${title.replace(/\s*[([].*?[)\]]/g, '').trim() || title}`, limit: '10' }));
     if (!found && (names.length > 1 || (hangul.test(title) && !koreanFirst))) found = pick(await ask({ term: names[0], attribute: 'artistTerm', limit: '200' }));
   } catch (error) {
     if (koreanFirst) throw error;

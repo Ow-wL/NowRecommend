@@ -111,3 +111,10 @@ def test_the_reference_artist_keeps_its_first_song_in_store_order():
     result = validate_free(raw, 3, [], rank=SongStore(fake).rank, reference=("입춘", "한로로"))
     assert [p.name for p in result.picks] == ["0+0", "다른 곡"]
     assert result.issues["reference_artist"] == 1
+
+
+def test_the_search_leaves_out_the_titles_bracketed_parts():
+    """The model wrote "난춘 (亂春)"; the store finds nothing for "새소년 난춘 (亂春)" and finds the song for "새소년 난춘" (2026-11-24)."""
+    fake = FakeStore({"새소년 난춘": [hit(1, "Nan Chun", "SE SO NEON")]}, {1: hit(1, "난춘", "새소년")})
+    assert SongStore(fake).check([("난춘 (亂春)", "새소년")]) == [FOUND]
+    assert [c[1]["term"] for c in fake.calls if c[0] == "search"] == ["새소년 난춘"]
