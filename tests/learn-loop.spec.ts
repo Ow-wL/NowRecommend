@@ -16,13 +16,13 @@ test('the results and the completion page show how a choice shapes the next reco
   await expect(page.getByRole('heading', { name: '선택을 기록했어요' })).toBeVisible();
   await expect(loop.locator('li.done')).toHaveCount(2);
   await expect(loop.locator('li.now')).toContainText('다음이 달라져요');
-  await expect(loop.locator('p')).toContainText('7일 동안 조금 뒤로 미뤄');
+  await expect(loop.locator('p')).toContainText('7일 동안 되도록 뒤로 미뤄');
   await page.waitForTimeout(900);  // the page fades in
   await page.screenshot({ path: 'test-results/loop-complete.png', fullPage: true });
   await page.getByRole('radio', { name: '만족' }).check();
   await page.getByRole('button', { name: '만족도·메모 저장' }).click();
   await expect(loop.locator('li.done')).toHaveCount(3);
-  await expect(loop.locator('p')).toContainText('비슷한 특징을 더 챙겨요');
+  await expect(loop.locator('p')).toContainText('비슷한 특징을 조금 더 챙겨요');
 });
 
 for (const category of ['food', 'music'] as const) test(`a ${category} type result opens with a drawing and a short summary, the long reading folded`, async ({ page }) => {
