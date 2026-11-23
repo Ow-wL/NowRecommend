@@ -3,6 +3,7 @@
 In-memory and per process: enough for one small deployment. Behind a reverse proxy set TRUST_PROXY=true
 so the client address comes from X-Forwarded-For instead of the proxy's own address.
 """
+import ipaddress
 import logging
 import time
 from collections import deque
@@ -49,8 +50,19 @@ def client_address(request: Request, trust_proxy: bool) -> str:
     client sent (a spoofed header bypassed the limit, review 2026-10-26); the proxy appends the address it saw."""
     forwarded = request.headers.get("x-forwarded-for", "")
     if trust_proxy and forwarded:
-        return forwarded.split(",")[-1].strip()
-    return request.client.host if request.client else "unknown"
+        return per_subscriber(forwarded.split(",")[-1].strip())
+    return per_subscriber(request.client.host) if request.client else "unknown"
+
+
+
+def per_subscriber(address: str) -> str:
+    """An IPv6 address as its /64 (2026-11-23): one home or phone is handed a whole /64, so counting each address would let
+    one caller count as millions. IPv4 and anything unreadable stay as they are."""
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return address
+    return str(ipaddress.ip_network(f"{ip}/64", strict=False)) if ip.version == 6 else address
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

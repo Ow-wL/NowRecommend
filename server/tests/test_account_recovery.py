@@ -540,10 +540,10 @@ def test_an_email_made_to_look_like_another_accounts_counter_does_not_stop_its_o
     limited(app, 3, anywhere=50)
     owner, elsewhere = at("198.51.100.7"), at("203.0.113.9")
     made_up = {"email": "lee@example.com|198.51.100.7", "password": "wrong-password"}
-    assert [client.post("/api/auth/login", json=made_up, headers=elsewhere).status_code for _ in range(4)] == [401, 401, 401, 429]
+    # Since 2026-11-23 such an address is not an address at all (auth.EMAIL takes a bare mailbox): refused before anything is counted.
+    assert [client.post("/api/auth/login", json=made_up, headers=elsewhere).status_code for _ in range(4)] == [422, 422, 422, 422]
     assert client.post("/api/auth/login", json=RIGHT, headers=owner).status_code == 200
-    names = [bucket.split(":")[1] for bucket, count in counts(app).items() if bucket.startswith("login:") and count]
-    assert sorted(names) == ["all", "at"]  # what the made-up address used: its own two counts, and nothing of lee's
+    assert not [bucket for bucket, count in counts(app).items() if bucket.startswith("login:") and count]
 
 
 def test_deleting_the_account_takes_the_counters_kept_under_its_id(world):

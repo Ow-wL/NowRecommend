@@ -23,7 +23,9 @@ PBKDF2_ITERATIONS = 600_000
 RESET = "reset"  # the purpose of a password reset token (TokenSigner)
 VERIFY = "verify"  # the purpose of an address confirmation token (2026-11-18)
 SALT_BYTES = 16
-EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# A bare mailbox (2026-11-23): `"x"<victim@…>` or `a,victim@…` passed the looser pattern, and the mail library then
+# delivered to a different address than the one counted and stored.
+EMAIL = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$")
 
 
 def hash_password(password: str, iterations: int | None = None) -> str:

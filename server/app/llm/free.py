@@ -16,6 +16,7 @@ from .validate import clean_reason
 
 CONFIDENCE = ("high", "medium", "low")
 NAME_LIMIT = 80
+WEB = re.compile(r"https?://|www\.|\b[\w-]+\.(?:com|kr|net|org|io|co|me|ly|gg|xyz|shop|site)\b", re.IGNORECASE)
 
 COMMON_RULES = """
 공통 규칙
@@ -151,6 +152,10 @@ def clean_name(value: object) -> str | None:
         return None
     # Lite sometimes answers with HTML entities ("Gymnop&eacute;die").
     text = " ".join(html.unescape(value).split())
+    # A name or artist is kept as an item other people see (ai_items.py), so a web address that a request talked the
+    # model into writing is not kept (security review 2026-11-23); no real dish or song is named like one.
+    if WEB.search(text):
+        return None
     return text[:NAME_LIMIT] if text else None
 
 

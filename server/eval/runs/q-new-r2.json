@@ -1,0 +1,4620 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-23",
+  "songStore": true,
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MS1": {
+   "wanted": 5,
+   "ms": 5135.141400001885,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "River Flows in You",
+     "detail": "Yiruma",
+     "taste_reason": "새로운 취향이지만 잔잔한 선율에 가까워요.",
+     "context_reason": "과제에 집중하기 좋은 차분한 피아노 연주곡에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "found"
+    },
+    {
+     "name": "Merry-Go-Round of Life",
+     "detail": "Joe Hisaishi",
+     "taste_reason": "새로운 취향이지만 왈츠풍의 부드러운 피아노에 가까워요.",
+     "context_reason": "책상 앞에 앉아 과제를 시작할 때 가라앉지 않게 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "found"
+    },
+    {
+     "name": "Comptine d'un autre été, l'après-midi",
+     "detail": "Yann Tiersen",
+     "taste_reason": "새로운 취향이지만 반복되는 리듬의 피아노 곡에 가까워요.",
+     "context_reason": "반복되는 피아노 선율이 과제 리듬을 잡아주는 데 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "found"
+    },
+    {
+     "name": "Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "taste_reason": "새로운 취향이지만 클래식 피아노 야상곡에 가까워요.",
+     "context_reason": "늦은 시간 차분한 마음으로 과제를 이어갈 때 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null,
+     "listed": "found"
+    },
+    {
+     "name": "Kiss the Rain",
+     "detail": "Yiruma",
+     "taste_reason": "새로운 취향이지만 편안한 건반 소리에 가까워요.",
+     "context_reason": "조용히 생각을 정리하며 과제할 때 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 피아노 곡으로 과제용에 적합함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "히사이시 죠의 대표적인 피아노 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔하고 차분한 피아노 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "쇼팽의 대표적인 잔잔한 야상곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "과제하며 듣기 좋은 잔잔한 피아노 곡"
+    }
+   ]
+  },
+  "MS2": {
+   "wanted": 5,
+   "ms": 4340.947500000766,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Run To You",
+     "detail": "DJ DOC",
+     "taste_reason": "빠른 템포의 댄스 곡에 가까워요",
+     "context_reason": "빠른 비트와 시원한 보컬이 달리기에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2000,
+     "listed": "found"
+    },
+    {
+     "name": "Dynamite",
+     "detail": "BTS",
+     "taste_reason": "경쾌한 디스코 팝에 가까워요",
+     "context_reason": "밝고 경쾌한 리듬이 러닝의 활력을 더해줘요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "Can't Stop the Feeling!",
+     "detail": "Justin Timberlake",
+     "taste_reason": "경쾌한 팝 장르에 가까워요",
+     "context_reason": "중독성 있는 펑키한 베이스가 발걸음을 가볍게 만들어요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "found"
+    },
+    {
+     "name": "Blinding Lights",
+     "detail": "The Weeknd",
+     "taste_reason": "신디사이저 중심의 곡에 가까워요",
+     "context_reason": "질주감을 주는 신스 사운드가 달리기 속도감을 높여줘요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "Hey Ya!",
+     "detail": "Outkast",
+     "taste_reason": "에너지 넘치는 곡에 가까워요",
+     "context_reason": "쉼 없이 몰아치는 어쿠스틱 기타와 리듬이 흥을 돋워요",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "달리기에 어울리는 신나는 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "활기차고 운동에 어울림"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 템포로 러닝에 적합"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "빠른 비트로 달리기 좋음"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치고 신나는 곡"
+    }
+   ]
+  },
+  "MS3": {
+   "wanted": 5,
+   "ms": 4580.546299999696,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "비와 당신",
+     "detail": "박중훈",
+     "taste_reason": "평소 잔잔한 곡을 선호하는 취향에 가까워요.",
+     "context_reason": "어쿠스틱 기타와 서정적인 보컬이 비 오는 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2006,
+     "listed": "unknown"
+    },
+    {
+     "name": "빗속에서",
+     "detail": "이문세",
+     "taste_reason": "평소 따뜻한 멜로디를 좋아하는 취향에 가까워요.",
+     "context_reason": "차분한 밴드 사운드와 감성적인 보컬이 차분한 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1985,
+     "listed": "unknown"
+    },
+    {
+     "name": "Rain",
+     "detail": "태연",
+     "taste_reason": "평소 섬세한 감성의 곡을 즐기는 취향에 가까워요.",
+     "context_reason": "재즈 리듬과 감미로운 보컬이 고요한 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "unknown"
+    },
+    {
+     "name": "너를 만나",
+     "detail": "폴킴",
+     "taste_reason": "평소 진심 어린 가사를 아끼는 취향에 가까워요.",
+     "context_reason": "섬세한 피아노 연주와 호소력 짙은 목소리가 밤 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "unknown"
+    },
+    {
+     "name": "혜화동 (또는 로터리)",
+     "detail": "동물원",
+     "taste_reason": "평소 포근한 통기타 선율을 반기는 취향에 가까워요.",
+     "context_reason": "담담한 기타 연주와 소박한 목소리가 깊은 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 어울리는 감성 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 어울리는 대표곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 밤 듣기 좋은 분위기"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 발라드이나 비 테마는 아님"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적이나 비 테마는 아님"
+    }
+   ]
+  },
+  "MS4": {
+   "wanted": 5,
+   "ms": 3464.958200002002,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "재즈 장르에 가까워요.",
+     "context_reason": "여유로운 재즈 선율에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "재즈",
+      "차분함",
+      "중간 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959,
+     "listed": "unknown"
+    },
+    {
+     "name": "So What",
+     "detail": "Miles Davis",
+     "taste_reason": "재즈 장르에 가까워요.",
+     "context_reason": "깊이 있는 재즈 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "재즈",
+      "차분함",
+      "낮은 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959,
+     "listed": "unknown"
+    },
+    {
+     "name": "Autumn Leaves",
+     "detail": "Cannonball Adderley",
+     "taste_reason": "재즈 장르에 가까워요.",
+     "context_reason": "감미로운 재즈 선율에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "재즈",
+      "감성",
+      "중간 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1958,
+     "listed": "unknown"
+    },
+    {
+     "name": "Fly Me to the Moon",
+     "detail": "Frank Sinatra",
+     "taste_reason": "재즈 장르에 가까워요.",
+     "context_reason": "클래식한 재즈 보컬에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "재즈",
+      "보컬",
+      "중간 에너지",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1964,
+     "listed": "unknown"
+    },
+    {
+     "name": "My Favorite Things",
+     "detail": "John Coltrane",
+     "taste_reason": "재즈 장르에 가까워요.",
+     "context_reason": "몰입감 있는 재즈 연주에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "재즈",
+      "차분함",
+      "중간 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1961,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 재즈 명곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "마일스 데이비스 재즈곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "캐논볼 애더리의 재즈곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "프랭크 시나트라 재즈곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "존 콜트레인의 재즈곡"
+    }
+   ]
+  },
+  "MS5": {
+   "wanted": 5,
+   "ms": 3395.8259999999427,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "제비꽃",
+     "detail": "조동진",
+     "taste_reason": "평소에 좋아하던 감성과 비슷한 분위기에 가까워요.",
+     "context_reason": "느린 피아노 선율과 잔잔한 보컬이 깊은 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "unknown"
+    },
+    {
+     "name": "Fly Me to the Moon",
+     "detail": "Julie London",
+     "taste_reason": "차분한 보컬 톤을 즐기는 취향에 가까워요.",
+     "context_reason": "부드러운 재즈 기타와 속삭이는 목소리가 잠들기 전 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1963,
+     "listed": "unknown"
+    },
+    {
+     "name": "Autumn Leaves",
+     "detail": "Bill Evans",
+     "taste_reason": "편안한 악기 연주를 즐기는 취향에 가까워요.",
+     "context_reason": "섬세한 피아노 선율이 마음을 차분하게 가라앉혀요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "재즈",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959,
+     "listed": "unknown"
+    },
+    {
+     "name": "아이와 나의 바다",
+     "detail": "아이유",
+     "taste_reason": "호소력 짙은 보컬을 아끼는 취향에 가까워요.",
+     "context_reason": "차분하게 시작해 깊어지는 감성이 밤에 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "정류장",
+     "detail": "패닉",
+     "taste_reason": "담담한 목소리로 부르는 곡을 좋아하는 취향에 가까워요.",
+     "context_reason": "어쿠스틱 기타 연주가 편안한 분위기를 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔하고 편안한 포크송"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "부드럽고 편안한 재즈 보컬"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 재즈 피아노 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "후반부에 고음과 웅장함 존재"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔하고 서정적인 곡"
+    }
+   ]
+  },
+  "MS6": {
+   "wanted": 5,
+   "ms": 4112.801700001,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "제비꽃",
+     "detail": "조동진",
+     "taste_reason": "평소 취향이 없어 담백한 곡으로 골랐어요.",
+     "context_reason": "차분한 어쿠스틱 기타 선율에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1985,
+     "listed": "unknown"
+    },
+    {
+     "name": "어쿠스틱 러브",
+     "detail": "에피톤 프로젝트",
+     "taste_reason": "평소 취향이 없어 편안한 곡으로 골랐어요.",
+     "context_reason": "따뜻한 통기타 소리가 감성을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2010,
+     "listed": "unknown"
+    },
+    {
+     "name": "바람이 분다",
+     "detail": "이소라",
+     "taste_reason": "평소 취향이 없어 깊이 있는 곡으로 골랐어요.",
+     "context_reason": "섬세한 기타 연주와 읊조리는 가사에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "unknown"
+    },
+    {
+     "name": "사랑에 빠지고 싶다",
+     "detail": "김조한",
+     "taste_reason": "평소 취향이 없어 진솔한 곡으로 골랐어요.",
+     "context_reason": "피아노와 기타 중심의 편곡에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2007,
+     "listed": "unknown"
+    },
+    {
+     "name": "먼지가 되어",
+     "detail": "김광석",
+     "taste_reason": "평소 취향이 없어 친숙한 곡으로 골랐어요.",
+     "context_reason": "소박한 통기타 연주와 목소리에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 감성에 잘 어울림"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "요청에 부합하는 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱한 발라드 곡"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "무난한 감성 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 어쿠스틱 곡"
+    }
+   ]
+  },
+  "MS7": {
+   "wanted": 5,
+   "ms": 4156.816900002013,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 1
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Dynamite",
+     "detail": "BTS",
+     "taste_reason": "새로운 취향으로 가볍게 즐기기 좋아요.",
+     "context_reason": "디스코 리듬과 밝은 신디사이저 사운드가 경쾌한 산책에 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "Can't Stop the Feeling!",
+     "detail": "Justin Timberlake",
+     "taste_reason": "새로운 취향으로 가볍게 즐기기 좋아요.",
+     "context_reason": "경쾌한 펑크 팝 비트가 저절로 리듬을 타며 걷게 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "found"
+    },
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "taste_reason": "새로운 취향으로 가볍게 즐기기 좋아요.",
+     "context_reason": "신나는 브라스와 펑키한 베이스 라인이 활기찬 야외 활동에 제격이에요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    },
+    {
+     "name": "Sugar",
+     "detail": "Maroon 5",
+     "taste_reason": "새로운 취향으로 가볍게 즐기기 좋아요.",
+     "context_reason": "funk 기반의 신나는 기타 리프가 산책할 때 기분 좋은 에너지를 불어넣어줘요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    },
+    {
+     "name": "Walking on Sunshine",
+     "detail": "Katrina and the Waves",
+     "taste_reason": "새로운 취향으로 가볍게 즐기기 좋아요.",
+     "context_reason": "빠른 템포의 브라스와 경쾌한 보컬이 산책길에 활기를 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1983,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "산책 시 듣기 좋은 밝은 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 활기찬 분위기"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 활기찬 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝은 팝 송으로 적합"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "산책에 잘 어울리는 명곡"
+    }
+   ]
+  },
+  "MN1": {
+   "wanted": 5,
+   "ms": 4438.73970000277,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "혜화동 (산본동)",
+     "detail": "동물원",
+     "taste_reason": "새로운 취향으로 발견하기 좋은 담담한 곡이에요.",
+     "context_reason": "어쿠스틱 기타 선율과 차분한 보컬이 깊은 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "unknown"
+    },
+    {
+     "name": "혜화동",
+     "detail": "유재하",
+     "taste_reason": "새로운 취향으로 발견하기 좋은 아늑한 음악이에요.",
+     "context_reason": "피아노 연주와 쓸쓸한 목소리가 고요한 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1987,
+     "listed": "unknown"
+    },
+    {
+     "name": "먼지가 되어",
+     "detail": "김광석",
+     "taste_reason": "새로운 취향으로 추천하는 포크 음악이에요.",
+     "context_reason": "통기타 하나와 읊조리는 가사가 조용한 시간에 스며들어요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "unknown"
+    },
+    {
+     "name": "나무",
+     "detail": "권진아",
+     "taste_reason": "새로운 취향으로 어울리는 감성적인 노래예요.",
+     "context_reason": "섬세한 피아노와 맑은 목소리가 여운을 남겨요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "unknown"
+    },
+    {
+     "name": "안아줘",
+     "detail": "정준일",
+     "taste_reason": "새로운 취향으로 듣기 좋은 깊은 감성의 곡이에요.",
+     "context_reason": "서서히 고조되는 악기 편성과 애절한 보컬이 몰입감을 줘요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "새벽 감성에 어울리는 곡"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "no",
+     "yearOk": true,
+     "note": "유재하의 혜화동 곡은 없음"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "새벽에 듣기 좋은 포크 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 새벽 감성 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 새벽 감성 곡"
+    }
+   ]
+  },
+  "MN2": {
+   "wanted": 5,
+   "ms": 4626.641700000619,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Blinding Lights",
+     "detail": "The Weeknd",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "빠른 템포와 신디사이저 사운드가 드라이브에 어울려요",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "Dynamite",
+     "detail": "방탄소년단",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "경쾌한 디스코 비트가 달리는 차 안을 채워줘요",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "펀키한 베이스 라인이 흥겨운 분위기를 만들어줘요",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    },
+    {
+     "name": "Shape of You",
+     "detail": "Ed Sheeran",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "중독성 있는 퍼커션 리듬이 길을 달릴 때 흥을 돋워줘요",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "중간 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "found"
+    },
+    {
+     "name": "Sugar",
+     "detail": "Maroon 5",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "신나는 기타 리프와 리듬이 드라이브의 즐거움을 더해줘요",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "팝",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 드라이브용 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "경쾌하고 활기찬 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 신나는 펑크 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "리드미컬하고 드라이브에 적합"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 신나는 곡"
+    }
+   ]
+  },
+  "MN3": {
+   "wanted": 5,
+   "ms": 4739.982800001599,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Super Shy",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향의 경쾌한 곡에 가까워요.",
+     "context_reason": "지하철의 지루함을 달래줄 가벼운 비트에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "found"
+    },
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "taste_reason": "새로운 취향의 시원한 곡에 가까워요.",
+     "context_reason": "퇴근길 발걸음을 가볍게 만드는 록 사운드에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Dynamite",
+     "detail": "방탄소년단",
+     "taste_reason": "새로운 취향의 신나는 곡에 가까워요.",
+     "context_reason": "퇴근길 활력을 불어넣는 경쾌한 디스코에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "너를 만나",
+     "detail": "폴킴",
+     "taste_reason": "새로운 취향의 감성적인 곡에 가까워요.",
+     "context_reason": "지친 하루 끝에 위로가 되는 부드러운 선율에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "found"
+    },
+    {
+     "name": "주저하는 연인들을 위해",
+     "detail": "잔나비",
+     "taste_reason": "새로운 취향의 빈티지한 곡에 가까워요.",
+     "context_reason": "지하철 창밖 야경과 어우러지는 웅장한 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 듣기 좋은 경쾌한 팝 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 감상하기 좋은 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길 기분 전환에 적합함"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 들기 편안한 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "퇴근길에 듣기 좋은 감성적인 곡"
+    }
+   ]
+  },
+  "MN4": {
+   "wanted": 5,
+   "ms": 4519.643600000563,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "사랑했지만",
+     "detail": "김광석",
+     "taste_reason": "새로운 취향으로 접하기 좋은 감성적인 곡에 가까워요.",
+     "context_reason": "통기타 연주와 담담한 목소리가 그리움의 감정에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "어쿠스틱",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1991,
+     "listed": "found"
+    },
+    {
+     "name": "기억의 습작",
+     "detail": "전람회",
+     "taste_reason": "새로운 취향으로 접하기 좋은 감성적인 곡에 가까워요.",
+     "context_reason": "묵직한 저음의 보컬과 웅장한 건반 편곡이 쓸쓸한 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "발라드",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1994,
+     "listed": "found"
+    },
+    {
+     "name": "눈이 내리네",
+     "detail": "박효신",
+     "taste_reason": "새로운 취향으로 접하기 좋은 감성적인 곡에 가까워요.",
+     "context_reason": "서정적인 피아노 선율과 애절한 보컬이 이별의 아픔에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "발라드",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "unknown"
+    },
+    {
+     "name": "가시",
+     "detail": "버즈",
+     "taste_reason": "새로운 취향으로 접하기 좋은 감성적인 곡에 가까워요.",
+     "context_reason": "애절한 록 발라드 사운드가 슬픈 감정을 북돋아 주기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "록",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2005,
+     "listed": "unknown"
+    },
+    {
+     "name": "비상",
+     "detail": "임재범",
+     "taste_reason": "새로운 취향으로 접하기 좋은 감성적인 곡에 가까워요.",
+     "context_reason": "거친 음색과 폭발적인 고음이 가슴 먹먹한 순간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "발라드",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1997,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 이별 발라드 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이별과 아련함이 느껴지는 곡"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "박효신의 눈의 꽃 등을 의미한 듯함"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이별 후 애절한 감정의 곡"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "슬픔보다는 극복과 희망의 메시지"
+    }
+   ]
+  },
+  "MS3t": {
+   "wanted": 5,
+   "ms": 3861.1496000012266,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "너를 만나",
+     "detail": "폴킴",
+     "taste_reason": "섬세한 감정선의 발라드에 가까워요.",
+     "context_reason": "풍성한 피아노 연주와 감미로운 목소리가 새벽에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "발라드",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "found"
+    },
+    {
+     "name": "주저하는 연인들을 위해",
+     "detail": "잔나비",
+     "taste_reason": "서정적인 록 발라드에 가까워요.",
+     "context_reason": "빈티지한 악기 연주와 깊이 있는 가사가 새벽에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "록",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "비와 당신",
+     "detail": "럼블 피쉬",
+     "taste_reason": "익숙한 멜로디의 곡에 가까워요.",
+     "context_reason": "서정적인 보컬과 잔잔한 기타 선율이 새벽에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2008,
+     "listed": "unknown"
+    },
+    {
+     "name": "가끔",
+     "detail": "크러쉬",
+     "taste_reason": "부드러운 R&B 감성에 가까워요.",
+     "context_reason": "나지막한 음색과 차분한 비트가 새벽에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "unknown"
+    },
+    {
+     "name": "혜화동 (단발머리)",
+     "detail": "박보람",
+     "taste_reason": "추억을 떠올리게 하는 곡에 가까워요.",
+     "context_reason": "따뜻한 기타 선율과 담담한 목소리가 새벽에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2015,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 밤 듣기 좋은 발라드 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적이고 잔잔하여 밤에 어울림"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 주제의 대표적인 감성곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "비 오는 날 어울리는 감성 R&B"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 감성이나 비/밤 특화는 아님"
+    }
+   ]
+  },
+  "MS6t": {
+   "wanted": 5,
+   "ms": 4187.407500001427,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "아이와 나의 바다",
+     "detail": "아이유",
+     "taste_reason": "차분하게 마음을 채워주는 음악에 가까워요.",
+     "context_reason": "어쿠스틱 기타와 서정적인 멜로디가 감성적인 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "어쿠스틱",
+      "발라드",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "그렇게 너에게",
+     "detail": "소란",
+     "taste_reason": "따뜻한 감성을 전해주는 곡에 가까워요.",
+     "context_reason": "산뜻한 어쿠스틱 사운드가 편안한 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2013,
+     "listed": "unknown"
+    },
+    {
+     "name": "사랑에 빠지고 싶다",
+     "detail": "김조한",
+     "taste_reason": "깊은 감성을 자극하는 보컬 곡에 가까워요.",
+     "context_reason": "피아노 중심의 잔잔한 연주가 깊은 생각에 잠기는 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "보컬",
+      "피아노",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    },
+    {
+     "name": "바람이 분다",
+     "detail": "이소라",
+     "taste_reason": "특유의 짙은 감성을 지닌 음악에 가까워요.",
+     "context_reason": "절제된 어쿠스틱 편곡이 쓸쓸하고 감성적인 순간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "보컬",
+      "어쿠스틱",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "unknown"
+    },
+    {
+     "name": "먼지가 되어",
+     "detail": "김광석",
+     "taste_reason": "익숙하고 편안한 포크 감성에 가까워요.",
+     "context_reason": "통기타 하나로 채워진 소리가 차분한 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "감성",
+      "보컬",
+      "어쿠스틱",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "웅장한 발라드 곡임"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "어쿠스틱 감성에 부합"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "감성 발라드 곡"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적 발라드 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "대표적인 어쿠스틱 곡"
+    }
+   ]
+  },
+  "MT2at": {
+   "wanted": 5,
+   "ms": 4048.8084999997227,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Dynamite",
+     "detail": "방탄소년단",
+     "taste_reason": "경쾌한 멜로디를 즐기는 취향에 가까워요.",
+     "context_reason": "신나는 디스코 리듬이 아침 발걸음을 가볍게 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "taste_reason": "서정적인 멜로디를 선호하는 취향에 가까워요.",
+     "context_reason": "시원한 록 사운드와 단단한 보컬이 활력을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Hype Boy",
+     "detail": "NewJeans",
+     "taste_reason": "감각적인 사운드를 즐기는 취향에 가까워요.",
+     "context_reason": "가벼운 비트와 편안한 멜로디가 출근길에 가볍게 듣기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "좋은 날",
+     "detail": "아이유",
+     "taste_reason": "아이유의 목소리를 좋아하는 취향에 가까워요.",
+     "context_reason": "밝은 분위기와 맑은 보컬이 활기찬 출근길에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2010,
+     "listed": "unknown"
+    },
+    {
+     "name": "스물다섯, 스물하나",
+     "detail": "자우림",
+     "taste_reason": "풍부한 감성의 노랫말을 아끼는 취향에 가까워요.",
+     "context_reason": "어쿠스틱 기타와 서정적인 가사가 창밖 풍경을 보며 가기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "감성",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2013,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 출근길에 적합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 좋음"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "경쾌한 출근길 추천 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 있는 출근길 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 적합"
+    }
+   ]
+  },
+  "MT2bt": {
+   "wanted": 5,
+   "ms": 3498.9085999986855,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Ditto",
+     "detail": "NewJeans",
+     "taste_reason": "뉴진스의 독보적 감성을 좋아해 편안한 곡에 가까워요.",
+     "context_reason": "포근한 드럼 비트가 복잡한 출근 지하철에서 듣기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "감성",
+      "중간 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Butter",
+     "detail": "BTS",
+     "taste_reason": "방탄소년단의 밝은 에너지를 좋아해 활기찬 곡에 가까워요.",
+     "context_reason": "신나는 리듬이 바쁜 출근길 발걸음을 가볍게 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "Attention",
+     "detail": "NewJeans",
+     "taste_reason": "뉴진스의 트렌디한 감성을 좋아해 대중적인 곡에 가까워요.",
+     "context_reason": "상쾌한 리듬이 아침 출근길 공기와 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "중간 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "unknown"
+    },
+    {
+     "name": "Dynamite",
+     "detail": "SEVENTEEN",
+     "taste_reason": "세븐틴의 청량한 음악을 좋아해 활기찬 곡에 가까워요.",
+     "context_reason": "힘찬 브라스 사운드가 활기찬 아침을 시작하게 해줘요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "unknown"
+    },
+    {
+     "name": "오르트 구름",
+     "detail": "윤하",
+     "taste_reason": "윤하의 시원한 고음역대를 좋아해 밝은 곡에 가까워요.",
+     "context_reason": "질주하는 록 사운드가 출근길 발걸음을 재촉해줘요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "높은 에너지",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 적합한 인기곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "활기찬 출근길 음악"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 어울리는 곡"
+    },
+    {
+     "index": 3,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "no",
+     "yearOk": true,
+     "note": "Dynamite는 BTS 곡임"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "활기차고 벅차오르는 출근곡"
+    }
+   ]
+  },
+  "MX1": {
+   "wanted": 5,
+   "ms": 3521.8062000021746,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "The Autumn Leaves",
+     "detail": "Yiruma",
+     "taste_reason": "이루마의 섬세한 피아노 연주를 좋아해 골랐어요.",
+     "context_reason": "잔잔한 피아노 연주가 방해 없이 과제에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "unknown"
+    },
+    {
+     "name": "Chopin Nocturne Op. 9 No. 2",
+     "detail": "Frédéric Chopin",
+     "taste_reason": "클래식 피아노 음악을 좋아하는 취향에 가까워요.",
+     "context_reason": "부드러운 선율이 깊은 몰입과 과제에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null,
+     "listed": "unknown"
+    },
+    {
+     "name": "Letter",
+     "detail": "Yiruma",
+     "taste_reason": "부드러운 피아노 곡을 즐겨 듣는 취향에 가까워요.",
+     "context_reason": "담담하게 이어지는 건반 소리가 과제에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "unknown"
+    },
+    {
+     "name": "May Be",
+     "detail": "Yiruma",
+     "taste_reason": "익숙한 피아노 멜로디를 선호하는 취향에 어울려요.",
+     "context_reason": "반복되는 편안한 리듬이 과제에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "unknown"
+    },
+    {
+     "name": "Passing By",
+     "detail": "Yiruma",
+     "taste_reason": "차분한 감성의 건반 연주를 좋아하는 편이라 골랐어요.",
+     "context_reason": "조용히 흐르는 피아노 음이 과제에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "과제",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이루마의 잔잔한 피아노 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "가사 없는 클래식 피아노 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "이루마의 가사 없는 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "집중할 때 듣기 좋은 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 피아노 항주곡"
+    }
+   ]
+  },
+  "MX2": {
+   "wanted": 5,
+   "ms": 4482.734100001835,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Popcorn",
+     "detail": "Hot Butter",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "빠른 템포의 전자음이 활기찬 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1972,
+     "listed": "found"
+    },
+    {
+     "name": "Take Five",
+     "detail": "The Dave Brubeck Quartet",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "독특한 박자의 재즈 연주가 경쾌한 느낌에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "출퇴근",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959,
+     "listed": "found"
+    },
+    {
+     "name": "Sir Duke",
+     "detail": "Stevie Wonder",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "풍성한 관악기 연주가 흥겨운 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "연주곡",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1976,
+     "listed": "found"
+    },
+    {
+     "name": "Green Onions",
+     "detail": "Booker T. & the M.G.'s",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "그루브한 해먼드 오르간 연주가 리듬감에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "드라이브",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1962,
+     "listed": "found"
+    },
+    {
+     "name": "The Entertainer",
+     "detail": "Marvin Hamlisch",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "경쾌한 피아노 선율이 밝은 기분에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "출퇴근",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1973,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "연주곡이나 차분한 재즈"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": true,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬이 있는 곡임"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 연주곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "보컬 없는 신나는 피아노곡"
+    }
+   ]
+  },
+  "MX3": {
+   "wanted": 5,
+   "ms": 4674.673800000164,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "River Flows In You",
+     "detail": "Yiruma",
+     "taste_reason": "새로운 취향인 피아노 연주곡에 가까워요.",
+     "context_reason": "맑은 피아노 선율이 차분한 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "found"
+    },
+    {
+     "name": "Autumn Leaves",
+     "detail": "Bill Evans",
+     "taste_reason": "새로운 취향인 재즈 연주곡에 가까워요.",
+     "context_reason": "섬세한 피아노 트리오 연주가 조용히 스며들어요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "중간 에너지",
+      "재즈",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959,
+     "listed": "found"
+    },
+    {
+     "name": "밤편지",
+     "detail": "아이유",
+     "taste_reason": "새로운 취향인 어쿠스틱 발라드에 가까워요.",
+     "context_reason": "기타 선율과 담담한 목소리가 조용한 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "found"
+    },
+    {
+     "name": "제주도의 푸른 밤",
+     "detail": "최성원",
+     "taste_reason": "새로운 취향인 차분한 포크에 가까워요.",
+     "context_reason": "편안한 통기타 소리가 휴식 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "산책",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "found"
+    },
+    {
+     "name": "사랑에 빠지고 싶다",
+     "detail": "김조한",
+     "taste_reason": "새로운 취향인 감성적인 발라드에 가까워요.",
+     "context_reason": "잔잔한 피아노와 호소력 있는 목소리가 깊은 여운을 줘요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 피아노 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 재즈 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 가요 발라드"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 포크 가요"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 감성 발라드"
+    }
+   ]
+  },
+  "MX4": {
+   "wanted": 5,
+   "ms": 4840.575199999876,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 1
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Butter",
+     "detail": "BTS",
+     "taste_reason": "밝고 에너지가 넘치는 팝 곡이라 좋아하실 취향에 가까워요.",
+     "context_reason": "신나는 리듬과 경쾌한 브라스 사운드가 기분 전환에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    },
+    {
+     "name": "Attention",
+     "detail": "NewJeans",
+     "taste_reason": "세련된 그루브와 청량한 보컬 중심이라 즐겨 듣는 곡들과 결이 비슷해요.",
+     "context_reason": "기분 좋게 몸을 흔들기 좋은 이지 리스닝 팝 사운드에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Blueming",
+     "detail": "아이유",
+     "taste_reason": "톡톡 튀는 밴드 사운드와 시원한 보컬이라 즐겨 듣는 노래들과 이어져요.",
+     "context_reason": "경쾌한 일렉트릭 기타 리프가 분위기를 환기하는 데 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "록",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "Spicy",
+     "detail": "aespa",
+     "taste_reason": "강렬하고 에너제틱한 보컬 곡이라 즐겨 듣는 음악들과 맥락이 같아요.",
+     "context_reason": "도입부부터 몰아치는 베이스와 웅장한 사운드가 기분 전환에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "found"
+    },
+    {
+     "name": "Permission to Dance",
+     "detail": "BTS",
+     "taste_reason": "긍정적인 에너지를 주는 경쾌한 스타일이라 평소 취향에 잘 맞아요.",
+     "context_reason": "신나는 가사와 활기찬 댄스 팝 사운드가 기분 전환에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "보컬",
+      "팝",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 댄스곡으로 부합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "청량하고 신나는 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 팝 록 노래"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치고 신남"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "활기차고 신나는 곡"
+    }
+   ]
+  },
+  "MX5": {
+   "wanted": 5,
+   "ms": 3408.2137000004877,
+   "failures": [],
+   "issues": {
+    "excluded_value": 2,
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Dynamite",
+     "detail": "BTS",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 밝은 곡이에요.",
+     "context_reason": "빠른 템포와 신나는 디스코 사운드가 활력을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "Blinding Lights",
+     "detail": "The Weeknd",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 신나는 곡이에요.",
+     "context_reason": "80년대 풍의 신스 사운드가 질주하는 기분을 북돋아줘요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "Watermelon Sugar",
+     "detail": "Harry Styles",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 경쾌한 곡이에요.",
+     "context_reason": "따스한 기타 리프와 신나는 리듬이 기분을 들뜨게 해요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 펑크 곡이에요.",
+     "context_reason": "화려한 브라스와 강렬한 리듬이 흥겨움을 이끌어내요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    },
+    {
+     "name": "Can't Stop the Feeling!",
+     "detail": "Justin Timberlake",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 팝 곡이에요.",
+     "context_reason": "탄력 있는 리듬과 경쾌한 합창이 에너지를 채워줘요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 디스코 팝곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 신스팝"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝지만 에너지 강도는 보통"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 펑크/팝"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 에너지 넘치는 팝"
+    }
+   ]
+  },
+  "MC1": {
+   "wanted": 5,
+   "ms": 3728.1199999997625,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Autumn Leaves",
+     "detail": "Bill Evans",
+     "taste_reason": "재즈 피아노 선율이 평소 좋아하던 곡들의 리듬감과 비슷해요.",
+     "context_reason": "느린 재즈 피아노 선율이 잠들기 전 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "재즈",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1959,
+     "listed": "found"
+    },
+    {
+     "name": "River Flows In You",
+     "detail": "Yiruma",
+     "taste_reason": "맑은 피아노 음색이 평소 음악 취향에 가까워요.",
+     "context_reason": "차분한 피아노 독주가 편안한 분위기를 만들어줘요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "found"
+    },
+    {
+     "name": "Gymnopédie No.1",
+     "detail": "Erik Satie",
+     "taste_reason": "부드러운 클래식 선율이 듣기 편안해요.",
+     "context_reason": "아주 느린 템포의 피아노 곡이 잠잘 때 듣기 좋아요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": null,
+     "listed": "unknown"
+    },
+    {
+     "name": "Fly Me to the Moon",
+     "detail": "Julie London",
+     "taste_reason": "부드러운 보컬이 평소 즐겨 듣는 팝 음악과 결이 닮았어요.",
+     "context_reason": "속삭이는 듯한 보컬과 가벼운 반주가 잠자리 들 때 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1963,
+     "listed": "unknown"
+    },
+    {
+     "name": "Spiegel im Spiegel",
+     "detail": "Arvo Pärt",
+     "taste_reason": "미니멀한 악기 구성이 색다른 취향을 만족시켜줘요.",
+     "context_reason": "바이올린과 피아노의 반복적인 선율이 마음을 가라앉혀줘요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1978,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 재즈 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 피아노 항경곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "조용하고 차분한 클래식"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "잔잔한 보컬 재즈곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "매우 차분한 현대 클래식"
+    }
+   ]
+  },
+  "MC2": {
+   "wanted": 5,
+   "ms": 3087.727800000721,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Uptown Funk",
+     "detail": "Mark Ronson",
+     "taste_reason": "새로운 활력을 주는 신나는 리듬에 가까워요.",
+     "context_reason": "펑키한 베이스와 브라스가 운동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    },
+    {
+     "name": "Can't Stop the Feeling!",
+     "detail": "Justin Timberlake",
+     "taste_reason": "기분 좋은 에너지를 주는 곡에 가까워요.",
+     "context_reason": "밝은 디스코 리듬이 운동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "found"
+    },
+    {
+     "name": "Dynamite",
+     "detail": "BTS",
+     "taste_reason": "경쾌한 분위기로 전환해 주는 곡에 가까워요.",
+     "context_reason": "복고풍 디스코 사운드가 운동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2020,
+     "listed": "found"
+    },
+    {
+     "name": "Sugar",
+     "detail": "Maroon 5",
+     "taste_reason": "대중적인 멜로디의 신나는 곡에 가까워요.",
+     "context_reason": "그루브한 리듬이 운동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "found"
+    },
+    {
+     "name": "Hey Ya!",
+     "detail": "Outkast",
+     "taste_reason": "독특하고 경쾌한 리듬의 곡에 가까워요.",
+     "context_reason": "빠른 어쿠스틱 기타와 보컬이 운동에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "운동",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 에너지 넘침"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "밝고 에너제틱함"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "경쾌하고 신나는 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "업템포의 신나는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "에너지 넘치는 댄스곡"
+    }
+   ]
+  },
+  "MC3": {
+   "wanted": 5,
+   "ms": 4520.522800001345,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "River Flows in You",
+     "detail": "Yiruma",
+     "taste_reason": "차분한 선율을 좋아하는 취향에 가까워요.",
+     "context_reason": "맑은 피아노 선율만 흘러 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2001,
+     "listed": "found"
+    },
+    {
+     "name": "Merry-Go-Round of Life",
+     "detail": "Joe Hisaishi",
+     "taste_reason": "풍성한 감정선의 음악을 좋아해 마음에 들 거예요.",
+     "context_reason": "화려한 왈츠풍의 오케스트라 연주에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "found"
+    },
+    {
+     "name": "Summer",
+     "detail": "Joe Hisaishi",
+     "taste_reason": "밝고 경쾌한 선율을 좋아하는 취향에 맞아요.",
+     "context_reason": "청량한 피아노와 현악기가 어우러져 산책에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1999,
+     "listed": "found"
+    },
+    {
+     "name": "Passing By",
+     "detail": "Pianist Sejeong",
+     "taste_reason": "담담하고 편안한 연주곡을 찾는 취향에 가까워요.",
+     "context_reason": "단정한 피아노 한 대만 울려 집중과 휴식에 어울려요.",
+     "confidence": "medium",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    },
+    {
+     "name": "Letter",
+     "detail": "Niviro",
+     "taste_reason": "반복되는 리듬감이 있는 곡을 좋아하는 취향이에요.",
+     "context_reason": "신디사이저 중심의 깔끔한 멜로디라 작업에 어울려요.",
+     "confidence": "medium",
+     "tags": [
+      "과제",
+      "중간 에너지",
+      "연주곡",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "유명한 피아노 연주곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "하울의 움직이는 성 OST 연주곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "기쿠지로의 여름 OST 연주곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "unsure",
+     "yearOk": true,
+     "note": "연주곡 형태 요청 부합"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "NIVIRO의 인스트루멘털 트랙"
+    }
+   ]
+  },
+  "MT1a": {
+   "wanted": 5,
+   "ms": 3759.4356999979937,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "제비꽃",
+     "detail": "조동진",
+     "taste_reason": "좋아했던 서정적인 한국 가요 감성에 가까워요.",
+     "context_reason": "통기타와 담담한 목소리가 차분한 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1979,
+     "listed": "unknown"
+    },
+    {
+     "name": "Autumn Leaves",
+     "detail": "Joseph Kosma",
+     "taste_reason": "클래식과 연주곡을 즐기는 취향에 잘 어울려요.",
+     "context_reason": "재즈 피아노의 부드러운 선율이 차분한 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "연주곡",
+      "재즈"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1945,
+     "listed": "unknown"
+    },
+    {
+     "name": "혜화동 (또는 어떤 가문의 이야기)",
+     "detail": "동물원",
+     "taste_reason": "좋아하는 감성적인 국내 발라드에 가까워요.",
+     "context_reason": "통기타와 따뜻한 보컬이 추억을 떠올리게 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "산책",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "unknown"
+    },
+    {
+     "name": "Solitude",
+     "detail": "Billie Holiday",
+     "taste_reason": "잔잔한 재즈 연주곡과 닮아 있어요.",
+     "context_reason": "낮은 음역의 보컬과 피아노가 깊은 밤에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "재즈",
+      "피아노"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1952,
+     "listed": "unknown"
+    },
+    {
+     "name": "안녕",
+     "detail": "너드커넥션",
+     "taste_reason": "서정적인 멜로디를 좋아하는 취향에 가까워요.",
+     "context_reason": "섬세한 보컬과 밴드 사운드가 감성적인 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 조동진의 곡으로 취향에 부합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "클래식/재즈 표준 차분한 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "서정적이고 차분한 대표 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "차분한 재즈 발라드 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "너드커넥션의 감성적인 곡"
+    }
+   ]
+  },
+  "MT1b": {
+   "wanted": 5,
+   "ms": 4341.675899999245,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Super Shy",
+     "detail": "NewJeans",
+     "taste_reason": "밝고 에너지가 넘치는 곡이라 좋아할 만해요.",
+     "context_reason": "가벼운 비트와 상큼한 보컬이 기분 전환에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "found"
+    },
+    {
+     "name": "Butter",
+     "detail": "BTS",
+     "taste_reason": "리드미컬한 댄스 팝 장르라 취향에 가까워요.",
+     "context_reason": "신나는 브라스 사운드가 활기찬 하루에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "팝",
+      "보컬",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    },
+    {
+     "name": "strawberry moon",
+     "detail": "아이유",
+     "taste_reason": "달콤한 음색과 편안한 분위기를 지녔어요.",
+     "context_reason": "부드러운 신스 사운드가 나른한 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    },
+    {
+     "name": "Ditto",
+     "detail": "NewJeans",
+     "taste_reason": "친숙한 멜로디와 편안한 감성이 돋보여요.",
+     "context_reason": "따뜻한 음색이 일상적인 순간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Attention",
+     "detail": "NewJeans",
+     "taste_reason": "청량한 보컬 중심의 곡이라 잘 맞아요.",
+     "context_reason": "시원한 곡 전개와 멜로디가 가벼운 산책에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "취향과 잘 맞는 인기곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "좋아하는 아티스트 곡"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "좋아하는 아티스트 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "좋아하는 아티스트 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "좋아하는 아티스트 곡"
+    }
+   ]
+  },
+  "MT2a": {
+   "wanted": 5,
+   "ms": 4667.858100001467,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "안녕",
+     "detail": "폴킴",
+     "taste_reason": "섬세한 감정 표현이 돋보이는 발라드 곡이에요.",
+     "context_reason": "아침 출근길 창밖 풍경을 보며 듣기 좋은 곡이에요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "차분함",
+      "보컬",
+      "발라드",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "found"
+    },
+    {
+     "name": "제주도의 푸른 밤",
+     "detail": "최성원",
+     "taste_reason": "편안하게 마음을 환기시켜 주는 곡이라 좋아하실 거예요.",
+     "context_reason": "복잡한 출근길 대중교통에서 잠시 여행하는 기분을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "차분함",
+      "어쿠스틱",
+      "보컬",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "found"
+    },
+    {
+     "name": "서른즈음에",
+     "detail": "김광석",
+     "taste_reason": "담담한 가사와 어쿠스틱 기타 편곡이 취향과 잘 맞아요.",
+     "context_reason": "이른 아침 출근하는 길의 깊은 생각에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "차분함",
+      "어쿠스틱",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1994,
+     "listed": "found"
+    },
+    {
+     "name": "나의 사춘기에게",
+     "detail": "볼빨간사춘기",
+     "taste_reason": "섬세한 가사와 차분한 분위기가 감성적인 곡들과 닮았어요.",
+     "context_reason": "출근길 마음을 차분히 가라앉히는 데 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "차분함",
+      "보컬",
+      "발라드",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "found"
+    },
+    {
+     "name": "모든 날, 모든 순간",
+     "detail": "폴킴",
+     "taste_reason": "감미로운 목소리와 따뜻한 피아노 선율이 돋보여요.",
+     "context_reason": "출근길 버스 안에서 차분하게 몰입하기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "차분함",
+      "피아노",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 적합한 감성적인 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 좋은 곡"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "다소 쓸쓸하나 들을 만함"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길 위로가 되는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 잔잔히 듣기 좋음"
+    }
+   ]
+  },
+  "MT2b": {
+   "wanted": 5,
+   "ms": 4374.017999998614,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Super Shy",
+     "detail": "NewJeans",
+     "taste_reason": "활기찬 대중음악 취향에 가까워요.",
+     "context_reason": "빠른 템포의 상큼한 비트가 출근길에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "found"
+    },
+    {
+     "name": "Butter",
+     "detail": "BTS",
+     "taste_reason": "활기찬 팝 음악을 좋아하는 취향에 맞아요.",
+     "context_reason": "신나는 브라스 사운드가 활기찬 출근길에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    },
+    {
+     "name": "Celebrity",
+     "detail": "아이유",
+     "taste_reason": "아이유의 감성적인 보컬을 좋아하는 취향에 가까워요.",
+     "context_reason": "세련된 신디사이저 사운드가 아침 이동 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    },
+    {
+     "name": "Attention",
+     "detail": "NewJeans",
+     "taste_reason": "익숙한 케이팝 감성을 좋아하는 취향에 가까워요.",
+     "context_reason": "부드럽고 리드미컬한 선율이 아침 발걸음에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "팝",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Permission to Dance",
+     "detail": "BTS",
+     "taste_reason": "신나는 리듬을 선호하는 취향에 어울려요.",
+     "context_reason": "긍정적인 에너지를 주는 피아노 선율이 출근길에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "출퇴근",
+      "활기참",
+      "팝",
+      "보컬",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길 및 활기찬 취향에 잘 어울림"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 듣기 밝고 활기참"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길에 들기 적합한 밝은 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "출근길 추천에 잘 어울리는 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "활기차고 출근길에 잘 맞음"
+    }
+   ]
+  },
+  "MY1": {
+   "wanted": 5,
+   "ms": 4449.3091000003915,
+   "failures": [],
+   "issues": {
+    "out_of_years": 3,
+    "extra": 1,
+    "store_unknown": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "눈의 꽃",
+     "detail": "박효신",
+     "taste_reason": "선택하신 취향이 없어 아련한 감성의 발라드로 채워드려요.",
+     "context_reason": "애절한 보컬과 풍성한 스트링 연주가 2000년대 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "감성",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "found"
+    },
+    {
+     "name": "사랑화",
+     "detail": "엠씨더맥스",
+     "taste_reason": "선택하신 취향이 없어 폭발적인 고음의 발라드로 채워드려요.",
+     "context_reason": "시원한 록 사운드 기반의 보컬 가창력이 돋보여요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "높은 에너지",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2005,
+     "listed": "unknown"
+    },
+    {
+     "name": "응급실",
+     "detail": "아이즈",
+     "taste_reason": "선택하신 취향이 없어 대중적인 록 발라드로 채워드려요.",
+     "context_reason": "친숙한 멜로디와 애절한 가사 선율이 귀에 감겨요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "중간 에너지",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2005,
+     "listed": "unknown"
+    },
+    {
+     "name": "소주 한 잔",
+     "detail": "임창정",
+     "taste_reason": "선택하신 취향이 없어 진한 서정성의 발라드로 채워드려요.",
+     "context_reason": "특유의 애절한 가사와 호소력 짙은 목소리가 돋보여요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "중간 에너지",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "unknown"
+    },
+    {
+     "name": "다시 사랑한다 말할까",
+     "detail": "김동률",
+     "taste_reason": "선택하신 취향이 없어 오케스트라 사운드의 곡으로 채워드려요.",
+     "context_reason": "풍성한 악기 구성과 감성적인 노랫말이 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "중간 에너지",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2004년 발매된 대표 발라드 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2004년 엠씨더맥스 발라드 곡"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": false,
+     "note": "아이즈 리메이크 버전은 2020년 발매"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2003년 발매된 대표 발라드 곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2001년 발매된 김동률 발라드 곡"
+    }
+   ]
+  },
+  "MY2": {
+   "wanted": 5,
+   "ms": 3804.4422999992094,
+   "failures": [],
+   "issues": {
+    "out_of_years": 1,
+    "extra": 3,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "누구나 예쁜 사람을 좋아해",
+     "detail": "잼",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 경쾌한 댄스 곡에 가까워요.",
+     "context_reason": "빠른 비트와 시원한 신디사이저 사운드가 활기찬 분위기에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1995,
+     "listed": "unknown"
+    },
+    {
+     "name": "하여가",
+     "detail": "서태지와 아이들",
+     "taste_reason": "새로운 취향으로 즐기기 좋은 힙합 록 넘버에 가까워요.",
+     "context_reason": "강한 타악기와 빠른 랩이 폭발적인 에너지에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1993,
+     "listed": "unknown"
+    },
+    {
+     "name": "잘 안다고오",
+     "detail": "룰라",
+     "taste_reason": "새로운 취향으로 접하기 좋은 흥겨운 댄스 곡에 가까워요.",
+     "context_reason": "경쾌한 리듬과 시원한 보컬이 신나는 무드에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1995,
+     "listed": "unknown"
+    },
+    {
+     "name": "너에게",
+     "detail": "엄정화",
+     "taste_reason": "새로운 취향으로 신나게 즐기기 좋은 댄스 곡에 가까워요.",
+     "context_reason": "화려한 브라스와 빠른 비트가 활기찬 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "unknown"
+    },
+    {
+     "name": "날아라 병아리",
+     "detail": "N.EX.T",
+     "taste_reason": "새로운 취향으로 듣기 좋은 웅장한 록 곡에 가까워요.",
+     "context_reason": "역동적인 기타 연주와 호소력 있는 목소리가 몰입감을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1994,
+     "listed": "unknown"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "90년대 잼의 신나는 댄스 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "1993년 서태지와 아이들의 곡"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "no",
+     "yearOk": true,
+     "note": "룰라의 곡이 아닌 실오류"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "1990년대 엄정화의 댄스 곡"
+    },
+    {
+     "index": 4,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나는 곡이 아닌 슬픈 락 록"
+    }
+   ]
+  },
+  "MY3": {
+   "wanted": 5,
+   "ms": 3425.0428000013926,
+   "failures": [],
+   "issues": {
+    "extra": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Ditto",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향이지만 차분한 분위기에 가까워요.",
+     "context_reason": "부드러운 드럼 앤 베이스 비트와 편안한 보컬이 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "taste_reason": "새로운 취향이지만 록 기반의 곡에 가까워요.",
+     "context_reason": "담담하게 시작해 고조되는 악기 편성과 시원한 목소리가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "Spicy",
+     "detail": "aespa",
+     "taste_reason": "새로운 취향이지만 에너지가 넘치는 곡에 가까워요.",
+     "context_reason": "묵직한 신스 사운드가 드라이브에 어울려요.",
+     "confidence": "medium",
+     "tags": [
+      "드라이브",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "found"
+    },
+    {
+     "name": "Hype Boy",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향이지만 대중적인 팝에 가까워요.",
+     "context_reason": "상쾌한 리듬과 청량한 보컬이 가벼운 산책에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "found"
+    },
+    {
+     "name": "OMG",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향이지만 팝 장르에 가까워요.",
+     "context_reason": "통기타와 힙합 리듬이 어우러져 편안하게 듣기 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "found"
+    }
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2022년 발매된 잔잔한 곡"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2022년 발매된 팝 록 곡"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "note": "신나고 격렬한 댄스곡"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2022년 발매된 댄스곡"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "note": "2023년 발매된 힙합 댄스곡"
+    }
+   ]
+  }
+ }
+}
