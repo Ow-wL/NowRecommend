@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { capFamiliar, changeText, checkText, inYears, parseYears, yearLabel, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session, evidenceText } from './domain';
+import { capFamiliar, changeText, checkText, decadeYears, inYears, parseYears, yearLabel, yearsProblem, conditionChecks, emptyConditions, emptyProfile, NO_TASTE_REASON, parseConditions, recommend, updateFeedback, type Session, evidenceText } from './domain';
 import { items } from './data';
 const session = (changes: Partial<Session> = {}): Session => ({ category: 'food', raw: '', conditions: emptyConditions(), excludedIds: [], revision: 0, ...changes });
 describe('release years', () => {
@@ -14,6 +14,22 @@ describe('release years', () => {
     expect(parseYears('2017년 노래', at)).toEqual({ from: 2017, to: 2017 });
     expect(parseYears('요즘 노래', at)).toEqual({ from: 2024 });
     expect(parseYears('비 오는 밤', at)).toBeUndefined();
+  });
+  it('stops at this year: songs after it do not exist yet', () => {
+    const at = 2026;
+    expect(parseYears('2020년대 노래', at)).toEqual({ from: 2020, to: 2026 });
+    expect(parseYears('2025년부터 2030년까지', at)).toEqual({ from: 2025, to: 2026 });
+    expect(parseYears('2030년 노래', at)).toEqual({ from: 2030, to: 2030 });  // kept, so the panel says why
+    expect(yearsProblem({ from: 2030, to: 2030 }, at)).toBe('발매 연도는 올해(2026년)까지만 고를 수 있어요.');
+    expect(yearsProblem({ from: 2015, to: 2027 }, at)).toBe('발매 연도는 올해(2026년)까지만 고를 수 있어요.');
+    expect(yearsProblem({ from: 2027 }, at)).toBe('발매 연도는 올해(2026년)까지만 고를 수 있어요.');
+    expect(yearsProblem({ from: 2019, to: 2015 }, at)).toBe('시작 연도가 끝 연도보다 늦어요.');
+    expect(yearsProblem({ from: 2020, to: 2026 }, at)).toBeUndefined();
+    expect(yearsProblem(undefined, at)).toBeUndefined();
+    expect(decadeYears(2020, at)).toEqual({ from: 2020, to: 2026 });
+    expect(decadeYears(2010, at)).toEqual({ from: 2010, to: 2019 });
+    expect(yearLabel({ from: 2020, to: 2026 }, at)).toBe('2020년대');
+    expect(yearLabel({ from: 2021, to: 2026 }, at)).toBe('2021~2026년');
   });
   it('labels and checks a range; no known year is outside every range', () => {
     expect(yearLabel({ from: 1990, to: 1999 })).toBe('1990년대');

@@ -242,6 +242,11 @@ export function effectiveConditions(editor: ConditionEditor): Conditions {
 const fullYear = (y: number, now: number) => y >= 100 ? y : y + (2000 + y <= now ? 2000 : 1900);
 /** The release years a sentence names ("90년대 발라드", "2015년 이후", "2010년부터 2015년까지", "최근"). Mirrored as understood words in server/app/parsing/rules.py. */
 export function parseYears(text: string, now = new Date().getFullYear()): YearRange | undefined {
+  const y = namedYears(text, now);
+  // Nothing is out after this year: "2020년대" means up to now. A range that starts later is kept so the year panel says why it cannot be asked.
+  return y && y.to !== undefined && y.to > now && !(y.from !== undefined && y.from > now) ? { ...y, to: now } : y;
+}
+function namedYears(text: string, now: number): YearRange | undefined {
   const range = text.match(/(\d{2,4})\s*년?\s*(?:부터|~|-)\s*(\d{2,4})\s*년(?:까지)?/);
   if (range) { const a = fullYear(+range[1], now), b = fullYear(+range[2], now); return a <= b ? { from: a, to: b } : undefined; }
   const decade = text.match(/(\d{2,4})\s*년대/);
@@ -251,9 +256,19 @@ export function parseYears(text: string, now = new Date().getFullYear()): YearRa
   const exact = text.match(/(\d{4})\s*년/); if (exact) return { from: +exact[1], to: +exact[1] };
   return /최근|최신|요즘/.test(text) ? { from: now - 2 } : undefined;
 }
-export function yearLabel(y: YearRange): string {
-  if (y.from !== undefined && y.to !== undefined) return y.from === y.to ? `${y.from}년` : y.from % 10 === 0 && y.to === y.from + 9 ? `${y.from}년대` : `${y.from}~${y.to}년`;
+export function yearLabel(y: YearRange, now = new Date().getFullYear()): string {
+  if (y.from !== undefined && y.to !== undefined) return y.from === y.to ? `${y.from}년` : y.from % 10 === 0 && (y.to === y.from + 9 || (y.to === now && y.from + 9 > now)) ? `${y.from}년대` : `${y.from}~${y.to}년`;
   return y.from !== undefined ? `${y.from}년 이후` : y.to !== undefined ? `${y.to}년 이전` : '전체 시기';
+}
+/** The decade chip's range: the current decade stops at this year. */
+export const decadeYears = (d: number, now = new Date().getFullYear()): YearRange => ({ from: d, to: Math.min(d + 9, now) });
+/** Why a release-year range cannot be asked, if it cannot. A year after this one names no song that exists, and the model
+ *  answered such a range with made-up songs (reported 2026-11-23); the server refuses it too (schemas.YearRange). */
+export function yearsProblem(y: YearRange | undefined, now = new Date().getFullYear()): string | undefined {
+  if (!y) return undefined;
+  if ((y.from !== undefined && y.from > now) || (y.to !== undefined && y.to > now)) return `발매 연도는 올해(${now}년)까지만 고를 수 있어요.`;
+  if (y.from !== undefined && y.to !== undefined && y.from > y.to) return '시작 연도가 끝 연도보다 늦어요.';
+  return undefined;
 }
 /** A song with no known year cannot be said to fall in the range (same as the server's filter). */
 export const inYears = (i: Pick<Item, 'releaseYear'>, y: YearRange) => i.releaseYear !== undefined && (y.from === undefined || i.releaseYear >= y.from) && (y.to === undefined || i.releaseYear <= y.to);

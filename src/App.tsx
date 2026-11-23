@@ -12,7 +12,7 @@ import { ParseNotice } from './components/ParseNotice';
 import { LoadingResults } from './components/LoadingResults';
 import { ReviewForm } from './components/ReviewForm';
 import { QualityNotice } from './components/QualityNotice';
-import { emptyStore, yearLabel, presetKey, presetLabel, parseConditions, unsupportedConditions, createEditor, changeText, applyParsed, toggleCondition, conditionConflicts, conditionChecks, cleanConditions, eligibleCandidates, recommend, applyBatch, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset, type YearRange, type Store } from './domain';
+import { emptyStore, yearLabel, yearsProblem, decadeYears, presetKey, presetLabel, parseConditions, unsupportedConditions, createEditor, changeText, applyParsed, toggleCondition, conditionConflicts, conditionChecks, cleanConditions, eligibleCandidates, recommend, applyBatch, replacementRequest, canReplace, applyReplacement, candidateInfo, updateFeedback, type HistoryEntry, type Profile, type Session, type Recommendation, type Feedback, type Preset, type YearRange, type Store } from './domain';
 import { ConditionNotes } from './components/ConditionNotes';
 import { Comparison } from './components/Comparison';
 import { ItemArt } from './components/ItemArt';
@@ -567,7 +567,9 @@ export default function App() {
   const kind = category === 'food' ? '메뉴' : '음악';
   // Personalised only if a taste is registered; conditions alone are not "내 취향".
   const unconfirmedSongs = results.filter(r => ['missing', 'failed'].includes(songChecks[r.item.id])).length;
-  const yearsInvalid = category === 'music' && !!session.years && session.years.from !== undefined && session.years.to !== undefined && session.years.from > session.years.to;
+  const yearsError = category === 'music' ? yearsProblem(session.years) : undefined;
+  const yearsInvalid = !!yearsError;
+  const thisYear = new Date().getFullYear();
   const setYears = (years?: YearRange) => setSession(s => ({ ...s, years, yearsFromText: false, currentIds: undefined, snapshot: undefined }));
   const requestName = session.raw || presetLabel(session) || (category === 'music' && session.years && !conditionCount ? `${yearLabel(session.years)} 음악` : '') || (conditionCount ? `고른 조건에 맞춘 ${kind}` : hasTaste(store.profiles[category]) ? `내 취향으로 고른 ${kind}` : `지금 만나볼 ${kind}`);
   const resumeName = session.raw || presetLabel(session) || '직접 고른 조건';
@@ -732,14 +734,14 @@ export default function App() {
               <h3 id="year-title">발매 시기</h3>
               <div className="chips" role="group" aria-labelledby="year-title">
                 <button className={`chip ${!session.years ? 'selected' : ''}`} aria-pressed={!session.years} onClick={() => setYears(undefined)}>전체</button>
-                {[1980, 1990, 2000, 2010, 2020].map(d => { const on = session.years?.from === d && session.years?.to === d + 9; return <button key={d} className={`chip ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setYears(on ? undefined : { from: d, to: d + 9 })}>{d}년대</button>; })}
+                {[1980, 1990, 2000, 2010, 2020].map(d => { const decade = decadeYears(d, thisYear); const on = session.years?.from === decade.from && session.years?.to === decade.to; return <button key={d} className={`chip ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setYears(on ? undefined : decade)}>{d}년대</button>; })}
               </div>
               <div className="year-range">
-                <label>시작<input type="number" inputMode="numeric" min={1900} max={2100} placeholder="예: 2015" value={session.years?.from ?? ''} onChange={e => { const v = e.target.value ? +e.target.value : undefined; const next = { ...session.years, from: v }; setYears(next.from === undefined && next.to === undefined ? undefined : next); }} /></label>
+                <label>시작<input type="number" inputMode="numeric" min={1900} max={thisYear} placeholder="예: 2015" value={session.years?.from ?? ''} onChange={e => { const v = e.target.value ? +e.target.value : undefined; const next = { ...session.years, from: v }; setYears(next.from === undefined && next.to === undefined ? undefined : next); }} /></label>
                 <span aria-hidden="true">~</span>
-                <label>끝<input type="number" inputMode="numeric" min={1900} max={2100} placeholder="예: 2019" value={session.years?.to ?? ''} onChange={e => { const v = e.target.value ? +e.target.value : undefined; const next = { ...session.years, to: v }; setYears(next.from === undefined && next.to === undefined ? undefined : next); }} /></label>
+                <label>끝<input type="number" inputMode="numeric" min={1900} max={thisYear} placeholder="예: 2019" value={session.years?.to ?? ''} onChange={e => { const v = e.target.value ? +e.target.value : undefined; const next = { ...session.years, to: v }; setYears(next.from === undefined && next.to === undefined ? undefined : next); }} /></label>
               </div>
-              {yearsInvalid && <p className="error-box" role="alert">시작 연도가 끝 연도보다 늦어요.</p>}
+              {yearsError && <p className="error-box" role="alert">{yearsError}</p>}
             </section>}
             <details className="panel more-conditions">
               <summary><SlidersHorizontal size={16} /> 조건 직접 고르기<ChevronDown size={16} className="chevron" /></summary>

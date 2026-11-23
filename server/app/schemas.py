@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -23,6 +24,13 @@ class YearRange(BaseModel):
 
     @model_validator(mode="after")
     def in_order(self) -> "YearRange":
+        # No song is out after this year (KST). Asked for one, the model made songs up (reported 2026-11-23). A range that
+        # runs past it ("2020년대" from an older screen) ends at this year; one that starts after it names nothing.
+        now = datetime.now(timezone(timedelta(hours=9))).year
+        if self.start is not None and self.start > now:
+            raise ValueError(f"발매 연도는 올해({now}년)까지만 고를 수 있어요")
+        if self.end is not None and self.end > now:
+            self.end = now
         if self.start is not None and self.end is not None and self.start > self.end:
             raise ValueError("시작 연도가 끝 연도보다 늦어요")
         return self
