@@ -97,7 +97,7 @@ export function requestForType(category: Category, code: string, now = new Date(
   const decided = (n: number) => !percents || Math.abs(percents[n] - 50) >= DECIDED;
   const parts = sides(category, code).filter((_, n) => decided(n));
   const years: YearRange | undefined = category !== 'music' || !decided(2) ? undefined : code[2] === 'R' ? { to: now - 10 } : { from: now - 2 };
-  return { raw: parts.map(p => p.wish).join(', ').slice(0, 280) + ' 위주로 추천해줘', conditions: { tags: parts.flatMap(p => p.tag ? [p.tag] : []), excluded: [] }, ...(years ? { years } : {}) };
+  return { raw: parts.length ? parts.map(p => p.wish).join(', ').slice(0, 280) + ' 위주로 추천해줘' : '', conditions: { tags: parts.flatMap(p => p.tag ? [p.tag] : []), excluded: [] }, ...(years ? { years } : {}) };
 }
 
 // Who gets along: the same taste on the first two axes with the other two filling each other in, and the reverse.

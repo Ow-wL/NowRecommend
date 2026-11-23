@@ -31,12 +31,13 @@ def today() -> date:
 
 
 def count(session: Session, name: str, day: date | None = None) -> None:
-    """One more `name` today. Its own statement and commit; whatever goes wrong is only logged."""
+    """One more `name` today, on a connection of its own: the request's session (its open transaction, the objects it
+    holds) is not committed, rolled back or expired by it. Whatever goes wrong is only logged."""
     if name not in EVENTS:
         raise ValueError(name)
     try:
-        session.execute(_BUMP, {"day": day or today(), "name": name})
-        session.commit()
+        with session.get_bind().connect() as connection:
+            connection.execute(_BUMP, {"day": day or today(), "name": name})
+            connection.commit()
     except Exception:  # noqa: BLE001 - a lost count must not cost anyone their recommendation
-        session.rollback()
         log.exception("stats: could not count %s", name)

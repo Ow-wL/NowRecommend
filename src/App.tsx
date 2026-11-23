@@ -284,7 +284,8 @@ export default function App() {
   // The store is saved together with the sync agreement that describes it, as one record (src/storage.ts).
   useEffect(() => { const failed = storageBlocked || !writeStore(store, sync.agreement()); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
   // A sentence from the home screen: once the request page holds it, it is asked without another press (the health words were checked there).
-  useEffect(() => { if (homeAsk.current !== null && page === 'recommend' && step === 'input' && session.category === 'food' && session.raw === homeAsk.current) { homeAsk.current = null; submitNow(); } }, [page, step, session]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // Anything else on that page (another request taking over, the sentence changed) drops it: it is never sent later.
+  useEffect(() => { if (homeAsk.current === null || page !== 'recommend' || step !== 'input') return; const asked = homeAsk.current; homeAsk.current = null; if (session.category === 'food' && session.raw === asked) submitNow(); }, [page, step, session]);  // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
   // The AI lab compares engines and picks models: an admin tool since 2026-11-17 (the server refuses everyone else).
   const labAllowed = apiEnabled() && !!account?.user.isAdmin;

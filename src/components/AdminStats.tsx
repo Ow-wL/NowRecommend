@@ -59,7 +59,7 @@ export function AdminStats({ token }: { token?: string }) {
   const dark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light' || document.documentElement.dataset.theme === 'dark';
   const colors = dark ? { food: '#D9714F', music: '#4A8BD6' } : { food: '#C4623F', music: '#2F6FB5' };  // checked with the dataviz validator, both modes
   const view = useMemo(() => {
-    if (!board) return null;
+    if (!board || board.days.length !== days) return null;  // the other period's numbers are not shown under this one's label
     const list = board.days.map(d => d.day), today = board.days[board.days.length - 1]?.counts || {};
     const features = FEATURES.map(([name, label]) => ({ name, label, total: sum(board, name) })).sort((a, b) => b.total - a.total);
     return { list, today, features, top: Math.max(1, ...features.map(f => f.total)),
