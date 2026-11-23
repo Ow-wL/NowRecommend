@@ -42,18 +42,20 @@
   --fast: 140ms; --normal: 280ms; --ease: cubic-bezier(.32, .72, 0, 1);
 }
 :root[data-theme="dark"] {
+  /* Tints are the light pastel mixed into the grey surfaces, not the hue darkened (2026-11-24): a darkened warm hue read as
+     brown and olive. The colour itself stays in the ink, the fills and the glow on the large cards (styles.css). */
   color-scheme: dark;
   --bg-canvas: #000000; --bg-surface: #1C1C1E; --bg-elevated: #2C2C2E; --bg-hover: #3A3A3C; --bg-pressed: #48484A; --bg-selected: #3A3A3C;
   --line: rgb(235 235 245 / 14%); --border-subtle: rgb(235 235 245 / 14%); --border-control: #8E8E93;
   --text-primary: #F5F5F7; --text-secondary: #D1D1D6; --text-muted: #AEAEB2;
   --accent: #F5F5F7; --accent-fill: #F5F5F7; --accent-hover: #FFFFFF; --accent-pressed: #D1D1D6; --text-on-accent: #1C1C1E; --bg-soft: #3A3A3C;
-  --food-soft: #33241F; --food-tint: #3D2A23; --food-ink: #FFB9A3;
+  --food-soft: #403B3B; --food-tint: #3F3737; --food-ink: #FFB9A3;
   --food-fill: #F7BFAC; --food-fill-hover: #FACDBD; --food-fill-pressed: #EDAE99; --food-on: #3A1508;
-  --music-soft: #1D2A3B; --music-tint: #223347; --music-ink: #ABCBF3;
+  --music-soft: #393C42; --music-tint: #353940; --music-ink: #ABCBF3;
   --music-fill: #B0CEF4; --music-fill-hover: #C0D8F7; --music-fill-pressed: #9DC0EC; --music-on: #10294D;
-  --sun-soft: #33290F; --sun-ink: #F6CF7E;
-  --pair-tint: #362C14; --pair-ink: #F6CF7E; --pair-fill: #F6CF7E; --pair-fill-hover: #F9DA97; --pair-fill-pressed: #EBBF66; --pair-on: #33290F;
-  --success: #7FD3AE; --warning: #F0C25A; --bg-warning: #33290F; --danger: #F4A0A3; --bg-danger: #3A2022;
+  --sun-soft: #403C36; --sun-ink: #F6CF7E;
+  --pair-tint: #3E3931; --pair-ink: #F6CF7E; --pair-fill: #F6CF7E; --pair-fill-hover: #F9DA97; --pair-fill-pressed: #EBBF66; --pair-on: #33290F;
+  --success: #7FD3AE; --warning: #F0C25A; --bg-warning: #403C36; --danger: #F4A0A3; --bg-danger: #3A2022;
   --focus: #F5F5F7; --overlay: rgb(0 0 0 / 56%);
   --bg-inverse: #F5F5F7; --text-inverse: #1C1C1E;
 

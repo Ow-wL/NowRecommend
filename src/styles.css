@@ -147,6 +147,11 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .door.food { background: var(--food-tint); }
 .door.music { background: var(--music-tint); }
 .door.pair { background: var(--pair-tint); }
+/* Dark: a grey card lit from the top by its own pastel, so the colour stays without turning brown. */
+:root[data-theme="dark"] .door.food { background: radial-gradient(120% 70% at 50% 0%, rgb(247 191 172 / 22%), transparent 72%), var(--bg-surface); }
+:root[data-theme="dark"] .door.music { background: radial-gradient(120% 70% at 50% 0%, rgb(176 206 244 / 22%), transparent 72%), var(--bg-surface); }
+:root[data-theme="dark"] .door.pair { background: radial-gradient(120% 70% at 50% 0%, rgb(246 207 126 / 20%), transparent 72%), var(--bg-surface); }
+:root[data-theme="dark"] .door-go { background: var(--bg-elevated); }
 .door-copy { display: flex; flex-direction: column; align-items: center; word-break: keep-all; }
 .door-copy strong { font-size: clamp(32px, 3.6vw, 44px); line-height: 1.16; font-weight: 700; letter-spacing: -0.036em; }
 .door-copy small { margin-top: 6px; color: var(--text-secondary); font-size: 16px; font-weight: 400; letter-spacing: -0.014em; }
@@ -396,6 +401,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .type-art { display: block; width: 100%; height: auto; overflow: visible; }
 .type-art .ta-halo { fill: var(--food-tint); }
 .type-art.music .ta-halo { fill: var(--music-tint); }
+:root[data-theme="dark"] .type-art .ta-halo { fill: var(--food-fill); fill-opacity: .12; }
+:root[data-theme="dark"] .type-art.music .ta-halo { fill: var(--music-fill); }
 .type-art .ta-bowl, .type-art .ta-disc, .type-art .ta-keys { fill: var(--card); stroke: var(--food-ink); stroke-width: 3; }
 .type-art .ta-foot { fill: var(--food-ink); }
 .type-art .ta-food { fill: var(--food); }
