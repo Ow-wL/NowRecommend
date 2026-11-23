@@ -96,6 +96,8 @@ class Settings(BaseSettings):
     unverified_keep_days: int = 7
     feedback_daily_per_address: int = 10
     feedback_daily_total: int = 200
+    # Where the daily count of new feedback and error reports goes (digest.py, 2026-11-23). Empty: no mail.
+    feedback_digest_to: str = ""
     # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
     reset_daily_per_address: int = 10
     reset_daily_per_email: int = 3

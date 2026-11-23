@@ -97,6 +97,13 @@ def forget_old(session: Session, day: date | None = None) -> None:
         except Exception:  # noqa: BLE001 - the request that happened to come first is not failed for it; tomorrow tries again
             session.rollback()
             log.exception("daily removal failed")
+        from .digest import send_digest
+        from .mail import get_mailer
+        try:
+            send_digest(session, get_settings(), get_mailer(), day, KST)
+        except Exception:  # noqa: BLE001 - as above
+            session.rollback()
+            log.exception("feedback digest failed")
     else:
         session.commit()
 
@@ -109,7 +116,11 @@ def take_total() -> bool:
         return True
     try:
         with get_sessionmaker()() as session:
-            return take(session, TOTAL, limit) is not None
+            if take(session, TOTAL, limit) is not None:
+                return True
+        # Watched by an alert (DEPLOY.md): past this, recommendations come from the list instead of the model.
+        log.warning("AI daily limit reached (AI_DAILY_LIMIT=%d); the model is not called until midnight KST", limit)
+        return False
     except Exception:  # noqa: BLE001 - whatever the database said, the answer here is "do not call the model"
         log.exception("AI budget could not be read; the model is not called")
         return False

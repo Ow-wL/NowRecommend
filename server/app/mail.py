@@ -8,7 +8,7 @@ is sent. Without SMTP_HOST there is no mailer and the routes that need one answe
 import logging
 import smtplib
 import ssl
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from email.message import EmailMessage
 from email.utils import format_datetime, formataddr, make_msgid, parseaddr
 from typing import Protocol
@@ -127,6 +127,30 @@ def verify_mail(name: str, link: str, hours: int) -> tuple[str, str, str]:
         f'<a href="{href}" style="color:#2F5F9E;word-break:break-all">{href}</a></p>')
     html = _page(subject, "버튼 하나로 가입이 끝나요.", "이메일만 확인하면 끝나요", "가입을 마무리해요", body,
                  "이 주소로 지금 추천 가입을 신청해서 보내 드린 확인 메일이에요.", _site(link))
+    return subject, text, html
+
+
+def digest_mail(counts: dict[str, int], reports: int, first: date, last: date, admin: str) -> tuple[str, str, str]:
+    """Subject, plain text and HTML of the operator's daily count of feedback and error reports (digest.py). Counts only."""
+    labels = {"problem": "불편·오류", "idea": "제안", "praise": "칭찬", "other": "기타"}
+    total = sum(counts.values())
+    period = f"{first:%m/%d}" if first == last else f"{first:%m/%d}~{last:%m/%d}"
+    subject = f"[지금 추천] 새 의견 {total}건, 오류 신고 {reports}건 ({period})"
+    parts = ", ".join(f"{labels[k]} {n}" for k, n in counts.items() if n)
+    text = (f"{period}에 들어온 것: 의견 {total}건{f' ({parts})' if parts else ''}, 오류 신고 {reports}건.\n\n"
+            f"관리 화면에서 읽고 처리해 주세요: {admin}\n\n내용은 메일에 담지 않아요. 관리자 계정으로 로그인해야 보여요.\n")
+    chips = "".join(_chip(f"{labels[k]} {n}", "#FFF6DF", "#6B4A00") for k, n in counts.items() if n)
+    href = _escape(admin)
+    body = (f'<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:{_TEXT}">{_escape(period)}에 의견 <b>{total}건</b>, '
+            f'오류 신고 <b>{reports}건</b>이 들어왔어요.</p>'
+            + (f'<p style="margin:0 0 22px;line-height:1">{chips}</p>' if chips else '')
+            + f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>'
+            f'<td bgcolor="{_INK}" style="background:{_INK};border-radius:999px">'
+            f'<a href="{href}" style="display:inline-block;padding:15px 30px;font-size:16px;font-weight:700;color:#FFFFFF;text-decoration:none;border-radius:999px">관리 화면 열기 &rarr;</a>'
+            f'</td></tr></table>'
+            f'<p style="margin:0;font-size:12px;line-height:1.6;color:{_MUTED}">내용은 메일에 담지 않아요. 관리자 계정으로 로그인해야 보여요.</p>')
+    html = _page(subject, f"의견 {total}건, 오류 신고 {reports}건", "새로 들어온 의견", "운영자 알림", body,
+                 "운영자에게 하루 한 번 보내는 알림이에요.", _site(admin))
     return subject, text, html
 
 
