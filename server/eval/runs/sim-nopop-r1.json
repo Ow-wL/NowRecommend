@@ -1,0 +1,2105 @@
+{
+ "meta": {
+  "engine": "ai",
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-11-24",
+  "songStore": true,
+  "judge": "gemini-3.6-flash"
+ },
+ "cases": {
+  "MR1": {
+   "wanted": 5,
+   "ms": 4837.2461999970255,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "먼지가 되어",
+     "detail": "김광석",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "통기타와 짙은 감성의 보컬이 어울려요",
+     "confidence": "high",
+     "tags": [
+      "어쿠스틱",
+      "보컬",
+      "감성",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "found"
+    },
+    {
+     "name": "붉은 노을",
+     "detail": "이문세",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "시원한 보컬과 대중적인 멜로디가 어울려요",
+     "confidence": "high",
+     "tags": [
+      "팝",
+      "보컬",
+      "활기참",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1988,
+     "listed": "found"
+    },
+    {
+     "name": "오르트구름",
+     "detail": "윤하",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "희망찬 가사와 웅장한 밴드 사운드가 어울려요",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "활기참",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "태양을 피하는 방법",
+     "detail": "비",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "강렬한 에너지의 곡이라 분위기가 맞아요",
+     "confidence": "high",
+     "tags": [
+      "팝",
+      "보컬",
+      "활기참",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2003,
+     "listed": "unknown"
+    },
+    {
+     "name": "청춘",
+     "detail": "김창완",
+     "taste_reason": "새로운 취향에 가까워요",
+     "context_reason": "서정적인 멜로디와 어쿠스틱 사운드가 어울려요",
+     "confidence": "high",
+     "tags": [
+      "어쿠스틱",
+      "보컬",
+      "차분함",
+      "낮은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1984,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "입춘",
+    "한로로"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "어쿠스틱 감성은 통하나 스타일 다름"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "입춘의 분위기와 다른 대중적 팝/댄스"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "벅차오르는 록 사운드와 분위기가 유사"
+    },
+    {
+     "index": 3,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "장르와 분위기가 전혀 다름"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "청춘의 감성은 유사하나 록 분위기 다름"
+    }
+   ]
+  },
+  "MR2": {
+   "wanted": 5,
+   "ms": 3507.4737000031746,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "기다리다",
+     "detail": "윤하",
+     "taste_reason": "새로운 취향을 넓히기에 가까워요.",
+     "context_reason": "차분한 밴드 사운드가 감성을 자극해요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2006,
+     "listed": "found"
+    },
+    {
+     "name": "사랑한다는 말",
+     "detail": "김동률",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "서정적인 멜로디와 깊은 음색이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "감성",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "found"
+    },
+    {
+     "name": "바람이 분다",
+     "detail": "이소라",
+     "taste_reason": "새로운 취향에 가까워요.",
+     "context_reason": "쓸쓸한 분위기와 읊조리는 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "found"
+    },
+    {
+     "name": "좋아좋아",
+     "detail": "일기예보",
+     "taste_reason": "새로운 취향을 발견하기에 가까워요.",
+     "context_reason": "따스한 어쿠스틱 기타 선율이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "어쿠스틱",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1996,
+     "listed": "unknown"
+    },
+    {
+     "name": "너의 의미",
+     "detail": "산울림",
+     "taste_reason": "새로운 취향을 넓히기에 가까워요.",
+     "context_reason": "포크 록 감성의 편안한 편곡이 돋보여요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1984,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "Everything",
+    "검정치마"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "서정적 발라드이나 인디 감성과는 차이"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "클래식한 발라드로 사운드 스타일 다름"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "애절한 감성 발라드로 질감 다름"
+    },
+    {
+     "index": 3,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "밝고 경쾌한 포크 팝으로 분위기 다름"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "몽환적 요소 있으나 곡 분위기 상이"
+    }
+   ]
+  },
+  "MR3": {
+   "wanted": 5,
+   "ms": 5574.352200004796,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "기다리다",
+     "detail": "윤하",
+     "taste_reason": "평소 취향 정보가 없어 곡의 서정적인 감성에 맞춰 골랐어요.",
+     "context_reason": "애절한 감성과 감미로운 피아노 선율이 어우러져요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "피아노",
+      "보컬",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2006,
+     "listed": "found"
+    },
+    {
+     "name": "비밀의 화원",
+     "detail": "아이유",
+     "taste_reason": "평소 취향 정보가 없어 곡의 서정적인 감성에 맞춰 골랐어요.",
+     "context_reason": "따뜻한 어쿠스틱 기타와 서정적인 멜로디가 돋보여요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "어쿠스틱",
+      "보컬",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "unknown"
+    },
+    {
+     "name": "모든 날, 모든 순간",
+     "detail": "폴킴",
+     "taste_reason": "평소 취향 정보가 없어 곡의 서정적인 감성에 맞춰 골랐어요.",
+     "context_reason": "부드러운 보컬과 감성적인 멜로디가 닮아 있어요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "감성",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "unknown"
+    },
+    {
+     "name": "기억의 습작",
+     "detail": "전람회",
+     "taste_reason": "평소 취향 정보가 없어 곡의 서정적인 감성에 맞춰 골랐어요.",
+     "context_reason": "깊이 있는 저음 보컬과 클래식한 편곡이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "감성",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1993,
+     "listed": "unknown"
+    },
+    {
+     "name": "사랑에 빠지고 싶다",
+     "detail": "김조한",
+     "taste_reason": "평소 취향 정보가 없어 곡의 서정적인 감성에 맞춰 골랐어요.",
+     "context_reason": "짙은 감정선의 보컬과 서정적인 멜로디가 공감을 자아내요.",
+     "confidence": "high",
+     "tags": [
+      "발라드",
+      "보컬",
+      "감성",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "주저하는 연인들을 위해",
+    "잔나비"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "감성적 발라드이나 잔나비 특유의 편곡과 차이"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "빈티지 레트로 감성은 일부 통하나 차이 존재"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "서정적 어쿠스틱 발라드로 유사성 일부 존재"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "웅장하고 서정적인 감성의 발라드"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "애절한 팝 발라드로 밴드 레트로와는 차이"
+    }
+   ]
+  },
+  "MR4": {
+   "wanted": 5,
+   "ms": 5976.40279999905,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "폭포",
+     "detail": "새소년",
+     "taste_reason": "평소 취향 정보가 없어 에너지가 넘치는 밴드 사운드로 골라봤어요.",
+     "context_reason": "질주하는 밴드 사운드와 강렬한 보컬이 시원한 에너지를 줘요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    },
+    {
+     "name": "외딴섬을 유랑하기",
+     "detail": "쏜애플",
+     "taste_reason": "평소 취향 정보가 없지만 몰입감 있는 록 사운드에 가까워요.",
+     "context_reason": "역동적인 연주와 독특한 보컬 멜로디가 몰입감을 더해줘요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "unknown"
+    },
+    {
+     "name": "소나기",
+     "detail": "너드커넥션",
+     "taste_reason": "평소 취향 정보가 없어 시원한 질의 모던록에 가까워요.",
+     "context_reason": "시원하게 터지는 후렴구와 밴드 편성이 분위기를 고조시켜요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "꿈",
+     "detail": "세이수미",
+     "taste_reason": "평소 취향 정보가 없지만 신나는 서프록 스타일에 가까워요.",
+     "context_reason": "경쾌한 기타 사운드와 속도감 있는 리듬이 흥겨움을 더해요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "운동",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "unknown"
+    },
+    {
+     "name": "정글",
+     "detail": "글렌체크",
+     "taste_reason": "평소 취향 정보가 없어 신디사이저가 돋보이는 곡이에요.",
+     "context_reason": "중독성 있는 리듬과 강렬한 신스 사운드가 흥을 돋워요.",
+     "confidence": "high",
+     "tags": [
+      "활기참",
+      "높은 에너지",
+      "드라이브",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2013,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "NO PAIN",
+    "실리카겔"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "강렬한 록 사운드와 분위기가 유사함"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "인디 록/밴드 사운드로 잘 어울림"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "밴드곡이나 서정성이 더 강함"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "서프/서정적 인디 록으로 결이 다름"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "신스팝/일렉트로닉 성향이 큼"
+    }
+   ]
+  },
+  "MR5": {
+   "wanted": 5,
+   "ms": 3025.2959999997984,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Youth",
+     "detail": "Daughter",
+     "taste_reason": "좋아하시는 취향이 없어 새로운 스타일로 골라봤어요.",
+     "context_reason": "차분한 어쿠스틱 기타와 덤덤한 보컬이 돋보여요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "어쿠스틱",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2013,
+     "listed": "unknown"
+    },
+    {
+     "name": "Coffee",
+     "detail": "Urban Zakapa",
+     "taste_reason": "좋아하시는 취향이 없어 새로운 스타일로 골라봤어요.",
+     "context_reason": "부드러운 음색과 감성적인 멜로디가 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2009,
+     "listed": "unknown"
+    },
+    {
+     "name": "Off My Face",
+     "detail": "Justin Bieber",
+     "taste_reason": "좋아하시는 취향이 없어 새로운 스타일로 골라봤어요.",
+     "context_reason": "어쿠스틱 기타 선율과 감미로운 목소리가 닮았어요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "어쿠스틱",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "Lost",
+     "detail": "End Of The World",
+     "taste_reason": "좋아하시는 취향이 없어 새로운 스타일로 골라봤어요.",
+     "context_reason": "몽환적인 밴드 사운드와 편안한 곡조가 이어져요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "감성",
+      "중간 에너지",
+      "팝",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    },
+    {
+     "name": "Comet",
+     "detail": "Jannabi",
+     "taste_reason": "좋아하시는 취향이 없어 새로운 스타일로 골라봤어요.",
+     "context_reason": "빈티지한 악기 구성과 아련한 감성이 묻어나요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "록",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "seasons",
+    "wave to earth"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "서정적인 인디 포크 곡으로 잘 어울림"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "잔잔하나 R&B 발라드로 장르가 약간 다름"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "어쿠스틱 기반 잔잔하고 서정적인 분위기"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "인디 팝 느낌이 있으나 분위기 차이 존재"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "잔잔한 밴드 곡이나 무드가 살짝 다름"
+    }
+   ]
+  },
+  "MR6": {
+   "wanted": 5,
+   "ms": 5188.580499998352,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "기묘한 일기",
+     "detail": "잔나비",
+     "taste_reason": "새로운 취향이지만 독특한 인디 감성에 가까워요.",
+     "context_reason": "나른한 기타 리프와 빈티지한 사운드가 닮아 있어요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "어쿠스틱",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "unknown"
+    },
+    {
+     "name": "돌아가자",
+     "detail": "장기하와 얼굴들",
+     "taste_reason": "새로운 취향이지만 편안한 록 스타일에 가까워요.",
+     "context_reason": "덤덤한 가사와 여유로운 리듬이 닮아 있어요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    },
+    {
+     "name": "공항에서",
+     "detail": "검정치마",
+     "taste_reason": "새로운 취향이지만 몽환적인 인디 팝에 가까워요.",
+     "context_reason": "나른한 음색과 기타 중심의 편곡이 비슷해요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    },
+    {
+     "name": "양화대교",
+     "detail": "자이언티",
+     "taste_reason": "새로운 취향이지만 일상적인 감성에 가까워요.",
+     "context_reason": "덤덤하게 읊조리는 보컬 톤이 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2014,
+     "listed": "unknown"
+    },
+    {
+     "name": "지구멸망",
+     "detail": "기리보이",
+     "taste_reason": "새로운 취향이지만 힙합 기반의 인디 감성에 가까워요.",
+     "context_reason": "루스한 비트와 읊조리는 창법이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "낮은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "위잉위잉",
+    "혁오"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "레트로 인디 밴드 사운드로 다소 부합"
+    },
+    {
+     "index": 1,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "인디 록 분위기이나 분위기는 약간 다름"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "쓸쓸하고 몽환적인 인디 록으로 유사"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "시대감·감성은 비슷하나 R&B 장르"
+    },
+    {
+     "index": 4,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "힙합 장르로 밴드 사운드와 거리가 믊"
+    }
+   ]
+  },
+  "MR7": {
+   "wanted": 5,
+   "ms": 4431.677699998545,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 2
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "바람이 분다",
+     "detail": "이소라",
+     "taste_reason": "깊고 진한 감성의 보컬 곡에 가까워요.",
+     "context_reason": "어쿠스틱 기타 선율과 차분한 보컬이 밤 시간에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "found"
+    },
+    {
+     "name": "사랑한다는 말",
+     "detail": "김동률",
+     "taste_reason": "정돈된 편곡과 서정적인 발라드에 가까워요.",
+     "context_reason": "피아노 선율과 깊은 목소리가 조용히 듣기 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "발라드",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2004,
+     "listed": "found"
+    },
+    {
+     "name": "먼지가 되어",
+     "detail": "김광석",
+     "taste_reason": "통기타 반주 중심의 포크 곡에 가까워요.",
+     "context_reason": "소박한 기타 소리와 익숙한 목소리가 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "산책",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1991,
+     "listed": "found"
+    },
+    {
+     "name": "제비꽃",
+     "detail": "조동진",
+     "taste_reason": "편안하고 소박한 어쿠스틱 음악에 가까워요.",
+     "context_reason": "담담한 기타 연주와 낮은 목소리가 휴식에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "산책",
+      "차분함",
+      "낮은 에너지",
+      "어쿠스틱",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1985,
+     "listed": "unknown"
+    },
+    {
+     "name": "사랑에 빠지고 싶다",
+     "detail": "김조한",
+     "taste_reason": "섬세한 감정선의 보컬 곡에 가까워요.",
+     "context_reason": "피아노 중심의 잔잔한 반주가 새벽 감성에 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "발라드",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2011,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "밤편지",
+    "아이유"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "아이유 밤편지와 어울리는 잔잔한 발라드"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "잔잔하고 서정적인 분위기의 발라드 곡"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "어쿠스틱하나 리듬감이 밤편지보다 강함"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "잔잔하고 포크적인 감성이 잘 어울림"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "잔잔하고 애절한 발라드 곡"
+    }
+   ]
+  },
+  "MR8": {
+   "wanted": 5,
+   "ms": 4045.1742000004742,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "주저하는 연인들을 위해",
+     "detail": "잔나비",
+     "taste_reason": "평소의 취향과 연결하기보다 새로운 록 장르에 가까워요.",
+     "context_reason": "시원한 밴드 사운드와 감성적인 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    },
+    {
+     "name": "너를 만나",
+     "detail": "폴킴",
+     "taste_reason": "평소의 취향과 연결하기보다 새로운 팝 장르에 가까워요.",
+     "context_reason": "감성적인 멜로디와 호소력 짙은 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "unknown"
+    },
+    {
+     "name": "어떻게 이별까지 사랑하겠어, 널 사랑하는 거지",
+     "detail": "AKMU (악뮤)",
+     "taste_reason": "평소의 취향과 연결하기보다 새로운 발라드 장르에 가까워요.",
+     "context_reason": "서정적인 밴드 편곡과 호소력 짙은 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    },
+    {
+     "name": "사건의 지평선",
+     "detail": "윤하",
+     "taste_reason": "평소의 취향과 연결하기보다 새로운 록 장르에 가까워요.",
+     "context_reason": "시원한 밴드 사운드와 폭발적인 고음이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "높은 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "unknown"
+    },
+    {
+     "name": "비와 당신",
+     "detail": "이무진",
+     "taste_reason": "평소의 취향과 연결하기보다 새로운 록 장르에 가까워요.",
+     "context_reason": "덤덤한 밴드 연주와 매력적인 음색이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "한 페이지가 될 수 있게",
+    "DAY6"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "밴드 곡이나 템포와 분위기가 다름"
+    },
+    {
+     "index": 1,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "밴드가 아닌 솔로 발라드"
+    },
+    {
+     "index": 2,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "밴드 음악이 아닌 듀오 발라드"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "청량한 록 요소가 있으나 솔로 가수"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "록 밴드 커버곡이나 분위기 다름"
+    }
+   ]
+  },
+  "MR9": {
+   "wanted": 5,
+   "ms": 3068.9314999981434,
+   "failures": [],
+   "issues": {
+    "reference": 1,
+    "reference_artist": 1,
+    "extra": 2,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "OMG",
+     "detail": "NewJeans",
+     "taste_reason": "새로운 취향의 음악이에요.",
+     "context_reason": "몽환적인 보컬과 미디엄 템포가 닮아 있어요.",
+     "confidence": "high",
+     "tags": [
+      "새벽",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2023,
+     "listed": "unknown"
+    },
+    {
+     "name": "Strawberry Moon",
+     "detail": "아이유",
+     "taste_reason": "새로운 취향의 음악이에요.",
+     "context_reason": "부드러운 미디엄 템포 사운드가 편안하게 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "차분함",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "한 페이지가 될 수 있게",
+     "detail": "DAY6 (데이식스)",
+     "taste_reason": "새로운 취향의 음악이에요.",
+     "context_reason": "서정적인 멜로디 라인이 비슷하게 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "활기참",
+      "중간 에너지",
+      "보컬",
+      "록",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    },
+    {
+     "name": "Off My Face",
+     "detail": "Justin Bieber",
+     "taste_reason": "새로운 취향의 음악이에요.",
+     "context_reason": "어쿠스틱한 편성과 감성적인 무드가 이어져요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "어쿠스틱",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    },
+    {
+     "name": "Love Dive",
+     "detail": "IVE (아이브)",
+     "taste_reason": "새로운 취향의 음악이에요.",
+     "context_reason": "세련된 사운드와 몽환적인 분위기가 잘 맞아요.",
+     "confidence": "high",
+     "tags": [
+      "드라이브",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2022,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "Ditto",
+    "NewJeans"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "요청 대상 본인의 다른 곡"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "몽환적이고 아련한 이지리스닝"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "청량하지만 록 사운드로 벅참"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "차분하고 아련한 어쿠스틱 팝"
+    },
+    {
+     "index": 4,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "몽환적이나 더 화려하고 강렬함"
+    }
+   ]
+  },
+  "MR10": {
+   "wanted": 5,
+   "ms": 4767.185899996548,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Smells Like Teen Spirit",
+     "detail": "Nirvana",
+     "taste_reason": "얼터너티브 록 장르에 가까워요.",
+     "context_reason": "거친 기타 리프와 폭발적인 후렴구가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "중간 에너지",
+      "감성"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1991,
+     "listed": "unknown"
+    },
+    {
+     "name": "Here",
+     "detail": "Pavement",
+     "taste_reason": "로파이 록 사운드에 가까워요.",
+     "context_reason": "나른한 멜로디와 어쿠스틱 기타 편성이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "낮은 에너지",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1992,
+     "listed": "unknown"
+    },
+    {
+     "name": "Black",
+     "detail": "Pearl Jam",
+     "taste_reason": "얼터너티브 록 보컬에 가까워요.",
+     "context_reason": "애절한 보컬과 감성적인 기타 연주가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "감성",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1991,
+     "listed": "unknown"
+    },
+    {
+     "name": "Bullet with Butterfly Wings",
+     "detail": "The Smashing Pumpkins",
+     "taste_reason": "얼터너티브 록 감성에 가까워요.",
+     "context_reason": "강렬한 기타 사운드와 역동적인 에너지가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1995,
+     "listed": "unknown"
+    },
+    {
+     "name": "Loser",
+     "detail": "Beck",
+     "taste_reason": "얼터너티브 록 감성에 가까워요.",
+     "context_reason": "특유의 루즈한 보컬과 힙합 비트가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 1993,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "Creep",
+    "Radiohead"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "90년대 얼터너티브 명곡이나 분위기 다름"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "90년대 인디 록/로파이 감성 유사"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "90년대 록 발라드, 묵직한 감성 유사"
+    },
+    {
+     "index": 3,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "90년대 얼터너티브 록이나 더 격앙됨"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "90년대 아웃사이더 정서의 록 음악"
+    }
+   ]
+  },
+  "MR11": {
+   "wanted": 5,
+   "ms": 4476.563000003807,
+   "failures": [],
+   "issues": {
+    "reference_artist": 1,
+    "extra": 3
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Get You",
+     "detail": "Daniel Caesar",
+     "taste_reason": "새로운 취향을 넓히기 좋은 곡이에요.",
+     "context_reason": "감미로운 R&B 감성과 부드러운 보컬이 잘 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "found"
+    },
+    {
+     "name": "Location",
+     "detail": "Khalid",
+     "taste_reason": "새로운 취향을 넓히기 좋은 곡이에요.",
+     "context_reason": "나른한 톤의 보컬과 여유로운 리듬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "found"
+    },
+    {
+     "name": "Beyond",
+     "detail": "Leon Bridges",
+     "taste_reason": "새로운 취향을 넓히기 좋은 곡이에요.",
+     "context_reason": "따뜻한 어쿠스틱 기타와 소울풀한 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "차분함",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "found"
+    },
+    {
+     "name": "Focus",
+     "detail": "H.E.R.",
+     "taste_reason": "새로운 취향을 넓히기 좋은 곡이에요.",
+     "context_reason": "차분한 R&B 무드와 섬세한 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "found"
+    },
+    {
+     "name": "Gravity",
+     "detail": "Brent Faiyaz",
+     "taste_reason": "새로운 취향을 넓히기 좋은 곡이에요.",
+     "context_reason": "몽환적인 R&B 사운드와 부드러운 음색이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "새벽",
+      "차분함",
+      "낮은 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "found"
+    }
+   ],
+   "reference": [
+    "Best Part",
+    "Daniel Caesar"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "동일 아티스트의 본인 곡은 0점"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "유사한 무드의 감성 R&B"
+    },
+    {
+     "index": 2,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "따뜻하고 감성적인 R&B 곡"
+    },
+    {
+     "index": 3,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "Best Part 피처링 아티스트의 유사곡"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "몽환적이고 느린 템포의 R&B"
+    }
+   ]
+  },
+  "MR12": {
+   "wanted": 5,
+   "ms": 3964.993899993715,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 4
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "Seoul",
+     "detail": "RM",
+     "taste_reason": "선택하신 취향 정보가 없어 새로운 음악으로 추천해 드려요.",
+     "context_reason": "특유의 감성을 담은 보컬 톤이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "팝",
+      "보컬",
+      "차분함"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "found"
+    },
+    {
+     "name": "거짓말",
+     "detail": "아마도이자람밴드",
+     "taste_reason": "선택하신 취향 정보가 없어 새로운 음악으로 추천해 드려요.",
+     "context_reason": "허스키한 보컬과 폭발적인 밴드 사운드가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2012,
+     "listed": "unknown"
+    },
+    {
+     "name": "산책",
+     "detail": "소금",
+     "taste_reason": "선택하신 취향 정보가 없어 새로운 음악으로 추천해 드려요.",
+     "context_reason": "개성 있는 음색의 보컬 톤이 비슷해요.",
+     "confidence": "high",
+     "tags": [
+      "감성",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2019,
+     "listed": "unknown"
+    },
+    {
+     "name": "파도",
+     "detail": "새소년",
+     "taste_reason": "선택하신 취향 정보가 없어 새로운 음악으로 추천해 드려요.",
+     "context_reason": "같은 아티스트의 밴드 사운드와 보컬 스타일이 이어져요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "높은 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "unknown"
+    },
+    {
+     "name": "검은 방",
+     "detail": "여유와얼굴들",
+     "taste_reason": "선택하신 취향 정보가 없어 새로운 음악으로 추천해 드려요.",
+     "context_reason": "개성 있는 보컬과 밴드 편성이 닮아 있어요.",
+     "confidence": "high",
+     "tags": [
+      "록",
+      "보컬",
+      "중간 에너지"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2021,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "난춘",
+    "새소년"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "보컬 스타일 다름"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "인디 록/포크 보컬 유사"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "음색 및 장르 차이 존재"
+    },
+    {
+     "index": 3,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "동일 아티스트 곡 자체"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "몽환적 인디 보컬 유사"
+    }
+   ]
+  },
+  "MR13": {
+   "wanted": 5,
+   "ms": 4948.084900002868,
+   "failures": [],
+   "issues": {
+    "extra": 4,
+    "store_unknown": 5
+   },
+   "dropped": [],
+   "picks": [
+    {
+     "name": "그럴 땐",
+     "detail": "스무살",
+     "taste_reason": "평소 취향이 없어 새로운 취향에 가까워요.",
+     "context_reason": "어쿠스틱 기타 선율과 담백한 보컬 톤이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "unknown"
+    },
+    {
+     "name": "바람",
+     "detail": "치즈",
+     "taste_reason": "평소 취향이 없어 새로운 취향에 가까워요.",
+     "context_reason": "부드러운 음색과 산뜻한 편성이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "휴식",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "팝"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "unknown"
+    },
+    {
+     "name": "우연히",
+     "detail": "소란",
+     "taste_reason": "평소 취향이 없어 새로운 취향에 가까워요.",
+     "context_reason": "경쾌한 밴드 사운드와 청량한 보컬이 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "활기참",
+      "중간 에너지",
+      "보컬",
+      "록"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2018,
+     "listed": "unknown"
+    },
+    {
+     "name": "널 사랑하지 않아",
+     "detail": "어반자카파",
+     "taste_reason": "평소 취향이 없어 새로운 취향에 가까워요.",
+     "context_reason": "담담하게 이어지는 보컬 선율이 어울려요.",
+     "confidence": "medium",
+     "tags": [
+      "새벽",
+      "감성",
+      "낮은 에너지",
+      "보컬",
+      "발라드"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2016,
+     "listed": "unknown"
+    },
+    {
+     "name": "좋아해",
+     "detail": "디에이드",
+     "taste_reason": "평소 취향이 없어 새로운 취향에 가까워요.",
+     "context_reason": "맑은 음색과 어쿠스틱한 반주가 어울려요.",
+     "confidence": "high",
+     "tags": [
+      "산책",
+      "감성",
+      "중간 에너지",
+      "보컬",
+      "어쿠스틱"
+     ],
+     "ingredients": [],
+     "base_dish": "",
+     "broad": false,
+     "release_year": 2017,
+     "listed": "unknown"
+    }
+   ],
+   "reference": [
+    "우주를 줄게",
+    "볼빨간사춘기"
+   ],
+   "judge": [
+    {
+     "index": 0,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "인디 팝 어쿠스틱 분위기 부합"
+    },
+    {
+     "index": 1,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "상큼한 인디 팝 감성에 부합"
+    },
+    {
+     "index": 2,
+     "fit": 1,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "밝은 밴드 곡이나 보컬 성향 차이"
+    },
+    {
+     "index": 3,
+     "fit": 0,
+     "breaksExclusion": false,
+     "opposesRequest": true,
+     "real": "yes",
+     "yearOk": true,
+     "famous": true,
+     "note": "애절한 발라드이며 매우 유명함"
+    },
+    {
+     "index": 4,
+     "fit": 2,
+     "breaksExclusion": false,
+     "opposesRequest": false,
+     "real": "yes",
+     "yearOk": true,
+     "famous": false,
+     "note": "어쿠스틱 팝 감성 부합"
+    }
+   ]
+  }
+ }
+}
