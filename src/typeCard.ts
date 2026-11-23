@@ -1,4 +1,8 @@
 import type { Category } from './data';
+/** Where the card was made, as people type it ("nowrec.kr"): the site's own address, so a move of host needs no change here. */
+export function siteName(where: Pick<Location, 'host' | 'pathname'> | undefined = typeof location === 'undefined' ? undefined : location): string {
+  return where ? `${where.host}${where.pathname}`.replace(/\/(index\.html)?$/, '') : 'nowrec.kr';
+}
 import { axisLeans, percentsOf, relatedTypes, shareSearch, sides, typeName, typeProfile, type TasteTypeResult } from './tasteType';
 
 // The taste type as a picture to post: the four letters, the type's name, how far each axis leans, and where it came
@@ -65,7 +69,7 @@ export function drawTypeCard(canvas: HTMLCanvasElement, category: Category, resu
     ctx.fillStyle = '#1D1B18'; ctx.font = `600 32px ${FONT}`; ctx.fillText(`${best.code} ${best.name}`, left + 170, y);
   }
   ctx.fillStyle = colour.ink; ctx.font = `700 36px ${FONT}`; ctx.fillText('너는 어떤 유형이야?', left, HEIGHT - 212);
-  ctx.fillStyle = '#6C675E'; ctx.font = `500 28px ${FONT}`; ctx.fillText('지금 추천 · ow-wl.github.io/NowRecommend', left, HEIGHT - 160);
+  ctx.fillStyle = '#6C675E'; ctx.font = `500 28px ${FONT}`; ctx.fillText(`지금 추천 · ${siteName()}`, left, HEIGHT - 160);
 }
 export function typeCardDataUrl(category: Category, result: CardResult, owner = ''): string {
   const canvas = document.createElement('canvas'); drawTypeCard(canvas, category, result, owner); return canvas.toDataURL('image/png');
