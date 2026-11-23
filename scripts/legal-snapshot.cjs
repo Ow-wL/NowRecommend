@@ -32,7 +32,10 @@ const escape = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
       }));
       return { title, effective: effective.trim(), blocks };
     });
-    if (!doc.effective.includes(version)) throw new Error(`${kind}: the site shows "${doc.effective}", not ${version}`);
+    // A second version of a day shows as "2026-11-18 (그날 두 번째 판)" (src/legal.ts versionLabel).
+    const [day, nth] = version.split('.');
+    const shown = !nth ? doc.effective.includes(day) && !doc.effective.includes('번째 판') : doc.effective.includes(day) && doc.effective.includes(`${nth === '2' ? '두' : nth} 번째 판`);
+    if (!shown) throw new Error(`${kind}: the site shows "${doc.effective}", not ${version}`);
     const link = text => escape(text).replace(/(https:\/\/[^\s)<&]*[^\s)<&.,])/g, '<a href="$1" rel="noopener noreferrer">$1</a>');
     const body = doc.blocks.map(block => `<section><h2>${escape(block.heading)}</h2>\n${block.parts.map(part => part.list
       ? `<ul>\n${part.list.map(item => `<li>${link(item)}</li>`).join('\n')}\n</ul>` : `<p>${link(part.text)}</p>`).join('\n')}</section>`).join('\n');

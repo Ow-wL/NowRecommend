@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { apiEnabled } from '../api/client';
+import { sendStat } from '../api/stats';
 import { ArrowLeft, ArrowRight, MapPin, Play, RefreshCw } from 'lucide-react';
 import type { Category, Item } from '../data';
 import type { Preset, Profile } from '../domain';
@@ -48,6 +50,7 @@ export function Pairing({ items, profiles, signals, moment, onChoose, onHome, no
     const pairs = recommendPairs(request, ranked(request), items, seen);
     if (!pairs.length) { notify('조건에 맞는 조합을 찾지 못했어요. 제외 조건을 줄여 보세요.'); return; }
     focusHeading.current = true; setChosen([]);
+    if (apiEnabled()) sendStat('pair');  // a count for the admin dashboard, nothing more
     setRound({ request, pairs, seen: withSeen(seen, pairs) });
   }
   function otherSong(pair: Pair) {

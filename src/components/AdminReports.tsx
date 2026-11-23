@@ -9,7 +9,7 @@ const FILTERS: [Filter, string][] = [['open', '미처리'], ['resolved', '처리
 const STATUS_LABEL: Record<ReportStatus, string> = { open: '미처리', resolved: '처리 완료', dismissed: '반려' };
 
 // The admin's list of error reports (#/admin). The server decides who may read it; this page only says what it answered.
-export function AdminReports({ token, onBack }: { token?: string; onBack: () => void }) {
+export function AdminReports({ token, onBack, bare = false }: { token?: string; onBack: () => void; /** Under the admin page's tabs: no heading of its own. */ bare?: boolean }) {
   const [filter, setFilter] = useState<Filter>('open');
   const [data, setData] = useState<ReportList | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [news, setNews] = useState('');
   const asked = useRef(0), heading = useRef<HTMLHeadingElement>(null);
@@ -29,11 +29,11 @@ export function AdminReports({ token, onBack }: { token?: string; onBack: () => 
     catch { setBusy(false); setNews(`${report.item.name}: 처리하지 못했어요. 다시 시도해주세요.`); }
   }
   return <>
-    <div className="flow-head">
+    {bare ? <h2 ref={heading} tabIndex={-1} className="sr-only">오류 신고</h2> : <div className="flow-head">
       <button className="back-link" onClick={onBack}><ArrowLeft size={16} /> 내 취향으로</button>
       <h1 ref={heading} tabIndex={-1}>오류 신고 관리</h1>
       <p>사용자가 보낸 사진·정보 오류를 확인하고 처리해요.</p>
-    </div>
+    </div>}
     <div className="flow-body neutral-scope">
       {error ? <div className="notice warning" role="alert"><div><strong>{error}</strong></div></div> : <>
         <div className="report-toolbar">

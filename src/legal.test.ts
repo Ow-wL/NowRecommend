@@ -131,7 +131,7 @@ describe('versions of the documents', () => {
       for (const kind of ['terms', 'privacy']) {
         const page = kept[`../public/legal/${version}/${kind}.html`];
         expect(page, `public/legal/${version}/${kind}.html`).toBeDefined();
-        expect(page).toContain(`시행일 ${version}`);
+        expect(page).toContain(`시행일 ${versionLabel(version)}`);
         expect(page).toContain('지난 판');
       }
     }

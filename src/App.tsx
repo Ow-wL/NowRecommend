@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } fro
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
 import { SoundSettings } from './components/SoundSettings';
-import { ArrowLeft, ArrowRight, BookOpen, Check, KeyRound, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, PenLine, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ShieldCheck, BookOpen, Check, KeyRound, CheckCheck, ChevronDown, ChevronRight, CircleDashed, Clock3, Cloud, CloudOff, CloudSun, Columns2, Headphones, Heart, House, Info, ListMusic, LogIn, LogOut, MapPin, Mic, PenLine, Play, CalendarDays, Sparkles, SmilePlus, RefreshCw, Search, Settings2, Share2, SlidersHorizontal, Square, ThumbsUp, Trash2, Utensils, X, Plus } from 'lucide-react';
 import { options, exclusions, categoryLabel, situationTags, type Category, type Item } from './data';
 import { loadCatalog, useCatalog } from './catalog';
 import { apiEnabled } from './api/client';
@@ -38,10 +38,10 @@ import { clearWeather, readWeather, requestWeather, weatherLabel, type Weather }
 import { Presets, ConditionsSummary } from './components/Presets';
 import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
-import { AdminReports } from './components/AdminReports';
 import { ReportDialog } from './components/ReportDialog';
 import { FeedbackDialog } from './components/FeedbackDialog';
-import { AdminFeedback } from './components/AdminFeedback';
+import { AdminPage } from './components/AdminPage';
+import { countVisit, sendStat } from './api/stats';
 import { TasteReasons } from './components/TasteReasons';
 import { TasteType } from './components/TasteType';
 import { requestForType } from './tasteType';
@@ -84,6 +84,18 @@ function historyGroups(entries: HistoryEntry[]): [string, HistoryEntry[]][] {
 }
 const toggle = (values: string[], value: string) => values.includes(value) ? values.filter(v => v !== value) : [...values, value];
 
+const HOME_HINT: Record<ReturnType<typeof timeSlot>, string> = {
+  morning: '예: 출근 전에 간단히, 따뜻한 걸로', lunch: '예: 회사 근처에서 빨리 먹을 든든한 점심', afternoon: '예: 오후에 출출할 때 가볍게 한 입',
+  evening: '예: 비 오는 저녁, 혼자 맵지 않게', night: '예: 야식으로 가볍게, 너무 짜지 않게',
+};
+const HOME_EXAMPLES: Record<ReturnType<typeof timeSlot>, string[]> = {
+  morning: ['간단한 아침', '따뜻한 국물로 시작', '빵 말고 밥'],
+  lunch: ['빨리 먹을 든든한 점심', '동료들과 나눠 먹을 메뉴', '맵지 않은 점심'],
+  afternoon: ['가볍게 출출할 때', '달달한 간식', '상큼한 한 입'],
+  evening: ['혼자 먹을 따뜻한 저녁', '친구랑 매콤한 거', '고생한 날 든든하게'],
+  night: ['가벼운 야식', '친구들과 시킬 야식', '조용히 혼자 먹을 거'],
+};
+
 export default function App() {
   // Development only: lets a browser test see the screen an error while drawing leads to (tests/session.spec.ts).
   if (import.meta.env.DEV) { let crash = false; try { crash = sessionStorage.getItem('nowrecommend-test-crash') === '1'; } catch { /* no storage, no test */ } if (crash) throw new Error('test crash'); }
@@ -91,6 +103,8 @@ export default function App() {
   const catalog = useCatalog();
   const { items } = catalog;
   useEffect(() => { void loadCatalog(); }, []);
+  // The admin dashboard counts this browser once a day (only the date is kept here; src/api/stats.ts).
+  useEffect(() => { if (apiEnabled()) countVisit(); }, []);
   const [store, setStore] = useState(loaded.store);
   useLayoutEffect(()=>{const apply=()=>applyAppearance(store.appearance);apply();const media=window.matchMedia('(prefers-color-scheme:dark)');if(store.appearance?.mode!=='system')return;media.addEventListener('change',apply);return ()=>media.removeEventListener('change',apply);},[store.appearance]);
   const [storageBlocked, setStorageBlocked] = useState(loaded.issue === 'damaged');
@@ -175,6 +189,14 @@ export default function App() {
   useEffect(() => { if (!consentInForce(store.health)) setHistoryPreview(open => open && healthTerms(open.raw, open.review?.note, ...open.rounds.map(r => r.raw)).length ? null : open); }, [store.health]);
   const [weatherBusy, setWeatherBusy] = useState(false);
   const slot = timeSlot();
+  // The home sentence (2026-11-23): typed or tapped there, it starts a food request and asks at once.
+  const [homeText, setHomeText] = useState('');
+  const homeAsk = useRef<string | null>(null);
+  function askFromHome(text: string) {
+    const raw = text.trim().slice(0, 300);
+    if (!raw) return;
+    withHealth([raw], () => { homeAsk.current = raw; setHomeText(''); start('food', raw, true); });
+  }
   // Spoken words join the sentence; the rules and the AI then read it like typed text.
   const voice = useVoiceInput(text => setSession(s => changeText(s, (s.raw.trim() ? `${s.raw.trimEnd()} ` : '') + text)), message => notify(message));
   const [reportItem, setReportItem] = useState<Item | null>(null), [reportedIds, setReportedIds] = useState<string[]>([]);
@@ -261,6 +283,8 @@ export default function App() {
   const storeNow = useRef(store); storeNow.current = store;
   // The store is saved together with the sync agreement that describes it, as one record (src/storage.ts).
   useEffect(() => { const failed = storageBlocked || !writeStore(store, sync.agreement()); setStorageWarning(failed); if (failed) setToast(t=>t ? {...t,message:'이번 변경을 브라우저에 저장하지 못했어요. 화면에서만 유지돼요.'} : null); }, [store, storageBlocked]);
+  // A sentence from the home screen: once the request page holds it, it is asked without another press (the health words were checked there).
+  useEffect(() => { if (homeAsk.current !== null && page === 'recommend' && step === 'input' && session.category === 'food' && session.raw === homeAsk.current) { homeAsk.current = null; submitNow(); } }, [page, step, session]);  // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (page === 'complete' && !completed?.selected) setPage('history'); }, [page, completed]);
   // The AI lab compares engines and picks models: an admin tool since 2026-11-17 (the server refuses everyone else).
   const labAllowed = apiEnabled() && !!account?.user.isAdmin;
@@ -519,7 +543,8 @@ export default function App() {
 
   const pageTitle: Record<Page, string> = { home: '홈', recommend: `${categoryLabel[category]} 추천`, onboard: editingProfile ? '취향 편집' : '첫 취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '로그인', complete: '선택 완료', type: '취향 유형 테스트', terms: '이용약관', privacy: '개인정보 처리방침', admin: '오류 신고 관리', lab: 'AI 실험실', pair: '같이 추천' };
   const navItems = [{ page: 'home' as Page, label: '홈', icon: House }, { page: 'recommend' as Page, category: 'food' as Category, label: '음식 추천', icon: Utensils }, { page: 'recommend' as Page, category: 'music' as Category, label: '음악 추천', icon: Headphones }];
-  const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal }];
+  const myItems = [{ page: 'favorites' as Page, label: '즐겨찾기', icon: Heart }, { page: 'history' as Page, label: '추천 기록', icon: Clock3 }, { page: 'taste' as Page, label: '내 취향', icon: SlidersHorizontal },
+    ...(apiEnabled() && account?.user.isAdmin ? [{ page: 'admin' as Page, label: '관리', icon: ShieldCheck }] : [])];
   const chips = (values: string[], selected: string[], onClick: (v: string) => void, kind = '') => <div className="chips">{values.map(v => <button key={v} className={`chip ${kind} ${selected.includes(v) ? 'selected' : ''}`} aria-pressed={selected.includes(v)} onClick={() => onClick(v)}>{selected.includes(v) && <Check size={13} />}{v}</button>)}</div>;
   const tabFilter = <div className="filter-tabs" role="group" aria-label="분야 필터">{(['all', 'food', 'music'] as const).map(f => <button key={f} aria-pressed={filter === f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f === 'all' ? '전체' : categoryLabel[f]}</button>)}</div>;
   const reportSongCheck = (id: string, status: SongStatus) => setSongChecks(all => all[id] === status ? all : { ...all, [id]: status });
@@ -529,7 +554,7 @@ export default function App() {
 
   // Navigation: top bar on wide screens, bottom tab bar on phones (DESIGN.md §2). Same accessible names in both.
   const allNav: { page: Page; label: string; icon: typeof House; category?: Category }[] = [...navItems, ...myItems];
-  const shortLabel: Record<string, string> = { '홈': '홈', '음식 추천': '음식', '음악 추천': '음악', '즐겨찾기': '즐겨찾기', '추천 기록': '기록', '내 취향': '취향' };
+  const shortLabel: Record<string, string> = { '홈': '홈', '음식 추천': '음식', '음악 추천': '음악', '즐겨찾기': '즐겨찾기', '추천 기록': '기록', '내 취향': '취향', '관리': '관리' };
   const navLink = (n: typeof allNav[number]) => <button key={n.label} aria-label={n.label} aria-current={navActive(n) ? 'page' : undefined} className={`topnav-link ${n.category ? `cat-${n.category}` : ''} ${navActive(n) ? 'active' : ''}`} onClick={() => goNav(n)}>{shortLabel[n.label]}{n.page === 'favorites' && store.favorites.length > 0 && <span className="nav-count" aria-hidden="true">{store.favorites.length}</span>}</button>;
   // Onboarding belongs to the taste page when editing, otherwise to that category's recommendation.
   const navPage: Page = page === 'onboard' ? (editingProfile ? 'taste' : 'recommend') : page;
@@ -589,17 +614,28 @@ export default function App() {
 
       <div className="page-view" key={viewKey} data-direction={motion.current.direction}>
       {page === 'home' && <>
-        <section className="home-hero"><h1><span>오늘 뭐 먹고,</span> <span>뭐 들을까요?</span></h1></section>
+        {/* One promise (2026-11-23): tell today's situation in a sentence, get three dishes for it. Music and pairs come after. */}
+        <section className="home-hero home-promise">
+          <h1><span>오늘 뭐 먹지?</span> <span>한 문장이면 끝.</span></h1>
+          <p>지금 상황을 적으면 내 입맛에 맞는 메뉴 3개를 바로 골라 드려요.</p>
+          <form className="promise-form" onSubmit={e => { e.preventDefault(); askFromHome(homeText); }}>
+            <label className="sr-only" htmlFor="home-sentence">지금 상황</label>
+            <input id="home-sentence" value={homeText} maxLength={300} onChange={e => setHomeText(e.target.value)} placeholder={HOME_HINT[slot]} autoComplete="off" enterKeyHint="go" />
+            <button className="button primary" disabled={!homeText.trim()}>메뉴 골라 줘 <ArrowRight size={17} /></button>
+          </form>
+          <div className="promise-examples" aria-label="예시 문장">{HOME_EXAMPLES[slot].map(text => <button key={text} className="chip" onClick={() => askFromHome(text)}>{text}</button>)}</div>
+        </section>
         {active && requestHasContent && <section className={`resume-banner cat-${session.category}`}>
           <p className="resume-copy"><span>진행 중</span> <strong>{resumeName}</strong></p>
           <button className="text-button resume-end" onClick={endRequest}>요청 종료</button>
           <button className="button primary compact" onClick={() => start(session.category)}>이어서 보기</button>
         </section>}
-        <section className="doors" aria-label="추천 시작">{(['food', 'music'] as Category[]).map(c => <button className={`door ${c}`} key={c} onClick={() => start(c)}>
+        <h2 className="doors-title">이것도 골라 볼까요?</h2>
+        <section className="doors doors-more" aria-label="다른 추천">{(['food', 'music'] as Category[]).map(c => <button className={`door ${c}`} key={c} onClick={() => start(c)}>
           <span className="door-copy">
             <strong>{categoryLabel[c]}</strong>
-            <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : c === 'food' ? '오늘의 한 끼를 골라요' : '지금 들을 곡을 골라요'}</small>
-            <span className="door-go">추천받기 <ArrowRight size={17} /></span>
+            <small>{hasTaste(store.profiles[c]) ? `내 취향 ${store.profiles[c].selected.length + store.profiles[c].tags.length}개 반영` : c === 'food' ? '조건을 하나씩 골라서' : '지금 들을 곡을 골라요'}</small>
+            <span className="door-go">{c === 'food' ? '자세히 고르기' : '추천받기'} <ArrowRight size={17} /></span>
           </span>
           <DoorMark kind={c} />
         </button>)}
@@ -809,10 +845,10 @@ export default function App() {
         </div>
       </div>; })()}
 
-      {page === 'admin' && <><AdminReports token={account?.token} onBack={() => navigate('taste')} /><AdminFeedback token={account?.token} /></>}
+      {page === 'admin' && <AdminPage token={account?.token} onBack={() => navigate('taste')} />}
       {(page === 'terms' || page === 'privacy') && <Legal kind={page} onBack={() => navigate('home')} onOther={() => navigate(page === 'terms' ? 'privacy' : 'terms')} />}
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
-        onSave={(c, result) => setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } }))} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
+        onSave={(c, result) => { if (result.source === 'quiz' && apiEnabled()) sendStat(`type:${c}`); setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } })); }} onBack={() => navigate(labAllowed ? 'lab' : 'taste')} backLabel={labAllowed ? '실험실로' : '내 취향으로'} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
         onRecommend={(c, result) => { const base = { ...newSession(c), ...requestForType(c, result.code, undefined, result.counts) }; start(c, base.raw, true); setSession(base); setStep('input'); }} />}
       {page === 'lab' && labAllowed && <Lab guard={withHealth} onTasteType={() => navigate('type')} key={labCategory} category={labCategory} profile={store.profiles[labCategory]} items={items} onCategory={c => { setLabCategory(c); try { sessionStorage.setItem('nowrecommend-lab-category', c); } catch { /* fine */ } }} onEditTaste={() => editTaste(labCategory)} onHome={() => navigate('home')} />}
       {page === 'favorites' && <Favorites ids={store.favorites} card={itemCard} onRecommend={recommendSaved} onStart={start}/>}
@@ -864,7 +900,7 @@ export default function App() {
         <div className="my-links">
           <button className="list-row" onClick={() => navigate('history')}><span className="list-copy"><b>추천 기록</b><small>지난 추천과 선택 {store.history.length}개</small></span><ChevronRight size={18} /></button>
           <button className="list-row" onClick={() => { setNameDraft(store.name); setDialog('account'); }}><span className="list-copy"><b>프로필·화면 설정</b><small>이름, 테마, 미리듣기 소리, 데이터 백업</small></span><ChevronRight size={18} /></button>
-          {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>오류 신고·의견 관리</b><small>사용자가 보낸 사진·정보 오류와 의견 확인</small></span><ChevronRight size={18} /></button>}
+          {account?.user.isAdmin && <button className="list-row" onClick={() => navigate('admin')}><span className="list-copy"><b>관리</b><small>이용 통계, 오류 신고와 의견</small></span><ChevronRight size={18} /></button>}
           <button className="list-row" onClick={() => setOpinionOpen(true)}><span className="list-copy"><b>의견 보내기</b><small>불편한 점, 바라는 기능, 좋았던 점</small></span><ChevronRight size={18} /></button>
           <button className="list-row" onClick={() => navigate('type')}><span className="list-copy"><b>취향 유형 테스트</b><small>음식·음악 취향을 네 글자로, 공유 카드까지</small></span><ChevronRight size={18} /></button>
           {/* Experiments live off the main flow (#/lab); the home screen stays on recommending. */}

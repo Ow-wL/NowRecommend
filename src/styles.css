@@ -156,6 +156,20 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .door.pair .door-go { color: var(--pair-ink); }
 .door-go svg { transition: transform var(--normal) var(--ease); }
 .door-mark { flex: none; display: block; width: min(var(--art), 100%); height: auto; }
+/* The home's one promise (2026-11-23): the sentence box is the first thing to do; the doors below are the other ways in. */
+.home-promise { max-width: 760px; margin-inline: auto; padding-bottom: clamp(28px, 3.4vw, 44px); }
+.home-promise > p { margin-top: 12px; color: var(--text-secondary); font-size: clamp(16px, 1.6vw, 19px); letter-spacing: -0.016em; word-break: keep-all; }
+.promise-form { display: flex; gap: 8px; margin-top: 24px; padding: 8px; border-radius: 999px; background: var(--food-tint); box-shadow: var(--shadow-control); }
+.promise-form input { flex: 1; min-width: 0; min-height: 52px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--card); color: var(--text-primary); font-size: 17px; letter-spacing: -0.016em; }
+.promise-form input:focus-visible { outline: 2px solid var(--food-ink); outline-offset: 1px; }
+.promise-form .button { flex: none; min-height: 52px; padding: 0 22px; border-radius: 999px; font-size: 16px; }
+.promise-examples { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.promise-examples .chip { background: var(--card); color: var(--food-ink); font-weight: 600; }
+.doors-title { margin: 8px 0 14px; color: var(--text-muted); font-size: 15px; font-weight: 600; text-align: center; letter-spacing: -0.01em; }
+.doors-more .door { --art: clamp(96px, calc(100vh - 720px), 150px); gap: 18px; padding: clamp(20px, 2.4vw, 28px) clamp(14px, 2vw, 24px) 26px; }
+.doors-more .door-copy strong { font-size: clamp(24px, 2.6vw, 30px); }
+.doors-more .door-copy small { font-size: 14px; }
+.doors-more .door-go { margin-top: 12px; padding: 10px 18px; font-size: 14px; }
 .lab-link { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 24px; margin-top: 20px; }
 .lab-link .text-button { color: var(--text-muted); font-weight: 500; }
 /* A pair: the dish and the song side by side, one line on why, two actions. */
@@ -268,6 +282,40 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .report-kind input { width: 18px; height: 18px; flex-shrink: 0; }
 .report-form textarea { width: 100%; }
 .details-report { display: block; margin-bottom: 8px; min-height: 36px; font-size: 13px; color: var(--text-muted); }
+/* The admin page (2026-11-23): tabs under the heading; the dashboard reads top-down: numbers, two charts, the feature list, a table. */
+.admin-tabs { margin-top: 16px; }
+.admin-feedback { margin-top: 8px; }
+.admin-stats .report-toolbar h2, .admin-feedback .report-toolbar h2 { margin-right: auto; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.stats-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stats-tile { display: grid; gap: 2px; padding: 16px 18px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow-card); }
+.stats-tile small { color: var(--text-muted); font-size: 13px; font-weight: 600; }
+.stats-tile b { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.stats-tile span { color: var(--text-secondary); font-size: 13px; }
+.stats-panel { margin-bottom: 16px; padding: 18px 18px 12px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow-card); }
+.stats-panel h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.016em; }
+.stats-panel h3 small { margin-left: 6px; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.stats-chart { position: relative; margin: 8px 0 0; }
+.stats-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.stats-grid { stroke: var(--line); stroke-width: 1; }
+.stats-axis { fill: var(--text-muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.stats-cross { stroke: var(--border-control); stroke-width: 1; stroke-dasharray: 3 3; }
+.stats-dot { stroke: var(--card); stroke-width: 2; }
+.stats-tip { position: absolute; top: 0; transform: translateX(-50%); display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--bg-inverse); color: var(--text-inverse); font-size: 12px; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+.stats-legend { display: flex; gap: 16px; margin-top: 4px; color: var(--text-secondary); font-size: 13px; }
+.stats-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.stats-legend i { width: 14px; height: 3px; border-radius: 2px; }
+.stats-bars { display: grid; gap: 8px; margin-top: 12px; list-style: none; }
+.stats-bars li { display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) 44px; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary); }
+.stats-bars i { height: 10px; border-radius: 5px; background: var(--fill-1); overflow: hidden; }
+.stats-bars u { display: block; height: 100%; border-radius: 5px; background: var(--text-secondary); }
+.stats-bars b { text-align: right; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.stats-table { margin-bottom: 12px; }
+.stats-table summary { cursor: pointer; padding: 8px 0; color: var(--text-secondary); font-weight: 600; }
+.stats-table .table-scroll { overflow-x: auto; }
+.stats-table table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stats-table th, .stats-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+.stats-table th[scope="row"], .stats-table thead th:first-child { text-align: left; }
+@media (max-width: 640px) { .stats-bars li { grid-template-columns: minmax(96px, 120px) minmax(0, 1fr) 36px; } }
 .report-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
 .report-toolbar .filter-tabs { flex-wrap: wrap; }
 .report-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
@@ -896,6 +944,10 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 }
 @media (max-width: 640px) {
   .doors { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .promise-form { flex-direction: column; border-radius: 26px; }
+  .promise-form .button { width: 100%; }
+  .doors-more .door { --art: clamp(72px, 22vw, 96px); padding: 16px 18px 16px 22px; }
+  .doors-more .door-copy strong { font-size: 24px; }
   .home-hero { padding: 12px 0 20px; }
   /* Side by side inside the door on a phone, so both doors fit on the first screen. */
   .pair-sides { grid-template-columns: minmax(0, 1fr); gap: 14px; }
