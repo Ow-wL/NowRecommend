@@ -28,7 +28,7 @@ test('a result says who you are, how far you lean and who you get along with', a
   await expect(page.locator('.type-list li').first()).toHaveText(TYPE_DETAILS.food.SHTA.traits[0]);
   await expect(page.locator('.type-leans li')).toHaveCount(4);
   await expect(page.locator('.type-leans li').first()).toContainText('100%');
-  await expect(page.locator('.type-picks li')).toHaveCount(3);
+  await expect(page.locator('.type-quick li')).toHaveCount(3);  // strength, caution, picks at a glance
   await expect(page.locator('.type-related')).toContainText('잘 맞는 유형');
   await expect(page.locator('.type-card img')).toBeVisible();
 });

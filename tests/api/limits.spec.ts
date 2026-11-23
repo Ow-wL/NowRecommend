@@ -61,26 +61,15 @@ test('a signed-in person is counted as themselves, and a spent service budget re
   await expect(page.getByText('오늘 준비한 AI 추천이 모두 소진됐어요.')).toBeVisible();
 });
 
-test('the AI lab is not offered to guests or members, and its address leads home', async ({ page }) => {
-  await setup(page, { token: 'tok-member', user: member });
+test('the AI lab is gone (2026-11-23): nobody is offered it, and its old address leads home', async ({ page }) => {
+  await setup(page, { token: 'tok-admin', user: { ...member, isAdmin: true } });
   await page.goto('/#/home');
   await expect(page.getByRole('button', { name: '내 계정' })).toBeVisible();
   await expect(page.getByRole('button', { name: /AI 실험실/ })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '취향 유형' })).toBeVisible();  // a menu item of its own now
   await page.goto('/#/taste');
-  await expect(page.getByRole('button', { name: /취향 유형 테스트/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /AI 실험실/ })).toHaveCount(0);
   await page.goto('/#/lab');
   await expect(page).toHaveURL(/#\/home$/);
   await expect(page.getByRole('heading', { name: '오늘 뭐 먹지? 한 문장이면 끝.' })).toBeVisible();
-});
-
-test('an admin account sees the lab and sends its token with the lab’s requests', async ({ page }) => {
-  await setup(page, { token: 'tok-admin', user: { ...member, isAdmin: true } });
-  const sent: (string | undefined)[] = [];
-  await page.route(`${API}/api/lab/models`, route => { if (route.request().method() === 'GET') sent.push(route.request().headers()['authorization']); return fulfill(route, { models: ['lite'] }); });
-  await page.goto('/#/home');
-  await page.getByRole('button', { name: /AI 실험실/ }).first().click();
-  await expect(page).toHaveURL(/#\/lab$/);
-  await expect.poll(() => sent.length).toBeGreaterThan(0);
-  expect(new Set(sent)).toEqual(new Set(['Bearer tok-admin']));  // every lab request carries it
 });

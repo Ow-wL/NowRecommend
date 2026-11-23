@@ -368,6 +368,93 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .type-leans em { margin: 0 5px; font-style: normal; font-variant-numeric: tabular-nums; }
 .type-leans i { grid-column: 1 / -1; grid-row: 2; height: 8px; overflow: hidden; border-radius: 999px; background: var(--fill-2); }
 .type-leans u { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+/* How a choice shapes the next recommendation (2026-11-23): three steps on a line that fills up to where one is. */
+.learn-loop { --loop: var(--food-ink); --loop-soft: var(--food-tint); margin: 16px 0; padding: 16px 18px 14px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow-card); }
+.learn-loop.music { --loop: var(--music-ink); --loop-soft: var(--music-tint); }
+.learn-loop ol { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.learn-loop li { position: relative; display: grid; justify-items: center; gap: 4px; text-align: center; color: var(--text-muted); font-size: 13px; word-break: keep-all; }
+/* the connector to the next step, drawn from this dot's centre; it fills once this step is done */
+.learn-loop li:not(:last-child)::after { content: ''; position: absolute; top: 19px; left: calc(50% + 22px); width: calc(100% - 44px); height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--loop) 50%, var(--fill-2) 50%) 100% 0 / 200% 100%; }
+.learn-loop li.done:not(:last-child)::after { animation: loop-fill .6s var(--ease) forwards; }
+.learn-loop.compact li:not(:last-child)::after { top: 15px; left: calc(50% + 18px); width: calc(100% - 36px); }
+.loop-dot { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--fill-1); color: var(--text-muted); transition: background var(--normal) var(--ease), color var(--normal) var(--ease); }
+.learn-loop.compact .loop-dot { width: 32px; height: 32px; }
+.learn-loop li.done .loop-dot { background: var(--loop); color: var(--card); }
+.learn-loop li.now .loop-dot { background: var(--loop-soft); color: var(--loop); box-shadow: 0 0 0 0 var(--loop-soft); animation: loop-ping 1.8s ease-out infinite; }
+.learn-loop li b { color: var(--text-secondary); font-size: 14px; }
+.learn-loop li.now b, .learn-loop li.done b { color: var(--text-primary); }
+.learn-loop small { font-size: 12px; }
+.learn-loop p { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--text-secondary); font-size: 14px; line-height: 1.55; text-align: center; word-break: keep-all; }
+.learn-loop.compact { padding: 12px 14px 10px; }
+.learn-loop.compact p { margin-top: 8px; padding-top: 8px; font-size: 13px; }
+@keyframes loop-fill { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes loop-ping { 0% { box-shadow: 0 0 0 0 var(--loop-soft); } 70% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .learn-loop * { animation: none !important; } .learn-loop li.done:not(:last-child)::after { background-position: 0 0; } }
+/* The type at a glance (2026-11-23): a drawn scene of the four letters beside the code and name. */
+.type-hero { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); align-items: center; gap: 8px 24px; }
+.type-hero-copy h2 { margin-top: 6px; }
+.type-art { display: block; width: 100%; height: auto; overflow: visible; }
+.type-art .ta-halo { fill: var(--food-tint); }
+.type-art.music .ta-halo { fill: var(--music-tint); }
+.type-art .ta-bowl, .type-art .ta-disc, .type-art .ta-keys { fill: var(--card); stroke: var(--food-ink); stroke-width: 3; }
+.type-art .ta-foot { fill: var(--food-ink); }
+.type-art .ta-food { fill: var(--food); }
+.type-art .ta-plate-in { fill: var(--food-soft); }
+.type-art .ta-leaf { fill: #7FB77E; }
+.type-art .ta-flame { fill: #E8805F; transform-origin: 120px 64px; animation: ta-flicker 1.6s ease-in-out infinite; }
+.type-art .ta-flame-core { fill: #F7D58C; }
+.type-art .ta-steam path { fill: none; stroke: var(--text-muted); stroke-width: 3; stroke-linecap: round; opacity: .7; animation: ta-rise 3.2s ease-in-out infinite; }
+.type-art .ta-steam path:nth-child(2) { animation-delay: .6s; }
+.type-art .ta-steam path:nth-child(3) { animation-delay: 1.2s; }
+.type-art .ta-mark, .type-art .ta-mark path { fill: var(--food-ink); }
+.type-art .ta-utensil { fill: var(--food-ink); opacity: .85; }
+.type-art.music .ta-disc { fill: var(--music-on); stroke: none; }
+.type-art.music .ta-release .ta-disc { fill: var(--music-ink); }
+.type-art.music .ta-groove { fill: none; stroke: rgb(255 255 255 / 22%); stroke-width: 2; }
+.type-art.music .ta-label { fill: var(--music); }
+.type-art.music .ta-hole { fill: var(--card); }
+.type-art.music .ta-mark { fill: var(--music-ink); }
+.type-art.music .ta-side { fill: var(--music-ink); }
+.type-art.music .ta-keys { fill: var(--card); stroke: var(--music-ink); }
+.type-art.music .ta-black { fill: var(--music-ink); }
+.type-art .ta-line { fill: none; stroke: var(--music-ink); stroke-width: 4; stroke-linecap: round; }
+.type-art .ta-bars rect { fill: var(--music-ink); transform-box: fill-box; transform-origin: 50% 100%; animation: ta-bounce .9s ease-in-out infinite alternate; }
+.type-art .ta-calm { animation: ta-drift 4s ease-in-out infinite; }
+.type-art .ta-vinyl { transform-origin: 120px 92px; animation: ta-spin 6s linear infinite; }
+.type-art .ta-twinkle { transform-box: fill-box; transform-origin: center; animation: ta-twinkle 2.4s ease-in-out infinite; }
+.type-art .ta-pulse { transform-box: fill-box; transform-origin: center; animation: ta-pulse 2.2s ease-in-out infinite; }
+.type-art .ta-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: ta-sway 3s ease-in-out infinite; }
+.type-art .ta-wave { animation: ta-twinkle 1.8s ease-in-out infinite; }
+@keyframes ta-flicker { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.94, 1.08); } }
+@keyframes ta-rise { 0% { transform: translateY(6px); opacity: 0; } 40% { opacity: .7; } 100% { transform: translateY(-8px); opacity: 0; } }
+@keyframes ta-bounce { from { transform: scaleY(.4); } to { transform: scaleY(1.6); } }
+@keyframes ta-drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+@keyframes ta-spin { to { transform: rotate(360deg); } }
+@keyframes ta-twinkle { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.7); opacity: .55; } }
+@keyframes ta-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes ta-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .type-art * { animation: none !important; } }
+.type-glance { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+.type-glance li { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px 8px 8px; border-radius: 999px; background: var(--fill-1); font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.type-glance b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--food-fill); color: var(--food-on); font-size: 13px; }
+.type-result.music .type-glance b { background: var(--music-fill); color: var(--music-on); }
+.type-glance em { font-style: normal; color: var(--text-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.type-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+.type-quick li { display: grid; gap: 4px; padding: 14px 16px; border-radius: 18px; background: var(--fill-1); font-size: 14px; line-height: 1.5; color: var(--text-primary); word-break: keep-all; }
+.type-quick small { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.type-quick .good small { color: var(--success); }
+.type-quick .care small { color: var(--warning); }
+.type-more { margin-top: 20px; border-top: 1px solid var(--line); }
+.type-more summary { display: flex; align-items: center; justify-content: space-between; min-height: 52px; cursor: pointer; font-size: 15px; font-weight: 700; list-style: none; }
+.type-more summary::-webkit-details-marker { display: none; }
+.type-more[open] summary .chevron { transform: rotate(180deg); }
+.type-more .type-about { margin-top: 0; }
+@media (max-width: 640px) {
+  .type-hero { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+  .type-hero .type-art { max-width: 220px; }
+  .type-hero .type-code { justify-content: center; }
+  .type-quick { grid-template-columns: minmax(0, 1fr); }
+}
 /* The 5-point answer (2026-11-23): five circles, the strongest answers biggest, agreeing on the left. */
 .type-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; gap: 6px; margin-bottom: 18px; }
 .type-scale-choice { display: grid; justify-items: center; gap: 8px; padding: 8px 2px; border-radius: 16px; color: var(--text-secondary); font-size: 13px; font-weight: 600; word-break: keep-all; }

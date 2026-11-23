@@ -12,7 +12,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 log = logging.getLogger(__name__)
-LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/lab/music/free", "/api/lab/food/free", "/api/auth/signup", "/api/auth/login", "/api/reports",
+LIMITED_PATHS = {"/api/recommend", "/api/parse", "/api/auth/signup", "/api/auth/login", "/api/reports",
                  # every route that tries a password or sends mail
                  "/api/auth/password", "/api/auth/delete", "/api/auth/logout-all", "/api/auth/reset/request", "/api/auth/reset/confirm",
                  "/api/client-errors", "/api/auth/verify", "/api/feedback", "/api/stats"}

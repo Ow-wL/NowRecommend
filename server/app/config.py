@@ -18,11 +18,6 @@ class Settings(BaseSettings):
     embedding_model: str = "gemini-embedding-2"
     embedding_dim: int = 768  # must equal the vector(768) column
     llm_model: str = "gemini-3.6-flash"
-    # Models the music lab may use for free recommendations (plans-music-ai.md); the first is the default.
-    lab_free_models: list[str] = ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
-    # Calls per day (UTC, this process) for every lab model after the first: the free tier gives gemini-3.6-flash
-    # only ~20 a day, and any visitor could otherwise spend it in a minute (review 2026-10-26). 0 = no cap.
-    lab_extra_model_daily_limit: int = 10
     rerank_enabled: bool = True
     # How POST /api/recommend answers music (2026-11-02, after the lab comparison): "ai" = the model names songs from its
     # own knowledge (llm/free.py), falling back to the catalog pipeline when it fails; "catalog" = the pipeline only.
@@ -64,9 +59,6 @@ class Settings(BaseSettings):
     # short deploy window with an older frontend still in browsers; the account is then stored without a consent record.
     signup_consent_required: bool = True
     legal_path: Path = PROJECT_ROOT / "shared" / "legal.json"  # the documents' version and the service's age, shared with the frontend
-    # The AI lab (/api/lab) compares engines and lets the caller pick a model: an admin tool. True opens it to everyone
-    # (local experiments without accounts).
-    lab_public: bool = False
     trust_proxy: bool = False
     # Accounts (2026-11-02). Without AUTH_SECRET the auth routes answer 503 and the app stays guest-only. Rotating the
     # secret signs every account out. Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"

@@ -53,7 +53,9 @@ test('a dish that disappointed stays back after the week is over', async ({ page
 test('the feeling form says what the rating does', async ({ page }) => {
   await ask(page, '담백한 저녁');
   await page.getByRole('button', { name: `${dish.name} 오늘은 이걸로` }).click();
-  await expect(page.locator('.review-form')).toContainText('만족과 아쉬움은 다음 추천에 반영돼요. 메모는 기록용이에요.');
+  // Since 2026-11-23 the three steps above the form say it (src/components/LearnLoop.tsx); the form keeps the note's part.
+  await expect(page.locator('.learn-loop')).toContainText('평가를 남기면 다음 추천에 반영돼요');
+  await expect(page.locator('.review-form')).toContainText('메모는 기록용이에요.');
 });
 
 test('each card says how many conditions it answers and on what basis', async ({ page }) => {

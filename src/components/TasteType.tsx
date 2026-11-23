@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Download, Image as ImageIcon, RefreshCw, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Download, Image as ImageIcon, RefreshCw, Send, Sparkles } from 'lucide-react';
+import { TypeArt } from './TypeArt';
 import { downloadFile, shareTypeCard, shareTypeLink, typeCardDataUrl, typeCardFile } from '../typeCard';
 import { categoryLabel, type Category, type Item } from '../data';
 import { AXES, axisLeans, codeFromItems, codeFromScores, compareTypes, MIN_ITEMS_FOR_TYPE, parseShared, percentsOf, poles, relatedTypes, SCALE, scoresFromAnswers, sides, statements, togetherItems, typeName, typeProfile, type Answer, type SharedType, type SharedTypes, type TasteTypeResult } from '../tasteType';
@@ -42,9 +43,9 @@ function FriendPanel({ category, shared, friend, mine, items, onStart, onClose }
 
 // The taste type test: 24 statements on a 5-point scale, or read from the registered taste. The result page reads like a
 // personality profile (src/typeContent.ts): what the type is like, its strengths, where to watch out, how to use the app.
-export function TasteType({ results, likedItems, items, onSave, onRecommend, onBack, onEditTaste, backLabel = '실험실로', owner = '', onNotice }: {
+export function TasteType({ results, likedItems, items, onSave, onRecommend, onBack, onEditTaste, backLabel = '', owner = '', onNotice }: {
   results: Partial<Record<Category, TasteTypeResult>>; likedItems: Record<Category, Item[]>; items: Item[];
-  onSave: (category: Category, result: TasteTypeResult) => void; onRecommend: (category: Category, result: TasteTypeResult) => void; onBack: () => void; onEditTaste: (category: Category) => void;
+  onSave: (category: Category, result: TasteTypeResult) => void; onRecommend: (category: Category, result: TasteTypeResult) => void; /** A link back, when the page is opened from somewhere (none: it is a menu page). */ onBack?: () => void; onEditTaste: (category: Category) => void;
   backLabel?: string; /** The person's name on the card and in the link, when they set one. */ owner?: string; onNotice?: (message: string) => void;
 }) {
   const [shared, setShared] = useState<SharedTypes | null>(() => parseShared(window.location.search));
@@ -73,7 +74,7 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
 
   return <>
     <div className="flow-head">
-      <button className="back-link" onClick={onBack}><ArrowLeft size={16} /> {backLabel}</button>
+      {onBack && <button className="back-link" onClick={onBack}><ArrowLeft size={16} /> {backLabel}</button>}
       <h1>취향 유형 테스트</h1>
       <p>음식과 음악 취향을 MBTI처럼 네 글자로 나눠 봐요. 재미로 보는 유형이에요.</p>
       <div className="filter-tabs lab-category" role="group" aria-label="테스트 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => { setCategory(c); setAnswers(null); }}>{categoryLabel[c]}</button>)}</div>
@@ -89,13 +90,36 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
         </div>
         <button className="text-button" onClick={() => setAnswers(step ? answers.slice(0, -1) : null)}>{step ? '이전 문장' : '그만두기'}</button>
       </section> : result ? <section className={`panel type-result ${category}`}>
-        <Letters code={result.code} />
-        <h2 tabIndex={-1}><span className="sr-only">{result.code} </span>{typeName(category, result.code)}</h2>
-        {profile && <p className="type-line">{profile.line}</p>}
-        {profile && <p className="type-about">{profile.summary}</p>}
-        {percents ? <div className="type-block"><h3>네 가지 축</h3><Leans category={category} percents={percents} explain /></div>
-          : <ul className="type-sides">{sides(category, result.code).map(s => <li key={s.letter}><b>{s.letter}</b>{s.label}</li>)}</ul>}
-        {profile && <>
+        {/* At a glance (2026-11-23): the picture, the code and name, the four sides in a word each, and three short lines.
+            The long reading is folded below for whoever wants it. */}
+        <div className="type-hero">
+          <TypeArt category={category} code={result.code} />
+          <div className="type-hero-copy">
+            <Letters code={result.code} />
+            <h2 tabIndex={-1}><span className="sr-only">{result.code} </span>{typeName(category, result.code)}</h2>
+            {profile && <p className="type-line">{profile.line}</p>}
+          </div>
+        </div>
+        <ul className="type-glance" aria-label="한눈에 보기">{sides(category, result.code).map((s, n) => <li key={s.letter}><b>{s.letter}</b>{s.label}{percents && <em>{s.letter === AXES[category][n].a ? percents[n] : 100 - percents[n]}%</em>}</li>)}</ul>
+        {profile && <ul className="type-quick">
+          <li className="good"><small>강점</small><span>{profile.strengths[0]}</span></li>
+          <li className="care"><small>조심</small><span>{profile.cautions[0]}</span></li>
+          <li><small>{category === 'food' ? '찰떡 메뉴' : '어울리는 장면'}</small><span>{profile.picks.join(' · ')}</span></li>
+        </ul>}
+        {profile && <div className="type-tip"><p><strong>추천 활용 팁</strong>{profile.tip}</p><button className="button primary" onClick={() => onRecommend(category, result)}><Sparkles size={16} />이 유형으로 추천받기</button></div>}
+        {related && <div className="type-related">
+          <p><small>잘 맞는 유형</small><strong>{related.best.code} {related.best.name}</strong><span>{related.best.why}</span></p>
+          <p><small>티격태격 유형</small><strong>{related.worst.code} {related.worst.name}</strong><span>{related.worst.why}</span></p>
+        </div>}
+        <div className="type-actions">
+          <button className="button primary" onClick={() => void sendLink()}><Send size={16} />친구에게 보내고 궁합 보기</button>
+          {!profile && <button className="button secondary" onClick={() => onRecommend(category, result)}><Sparkles size={16} />이 유형으로 추천받기</button>}
+          <button className="button secondary" onClick={() => setAnswers([])}><RefreshCw size={16} />다시 테스트</button>
+        </div>
+        {profile && <details className="type-more">
+          <summary>이 유형 자세히 읽기<ChevronDown size={16} className="chevron" /></summary>
+          <p className="type-about">{profile.summary}</p>
+          {percents && <div className="type-block"><h3>네 가지 축</h3><Leans category={category} percents={percents} explain /></div>}
           <div className="type-block"><h3>이런 사람이에요</h3><ul className="type-list">{profile.traits.map(t => <li key={t}>{t}</li>)}</ul></div>
           <div className="type-two">
             <div className="type-block good"><h3>강점</h3><ul className="type-list">{profile.strengths.map(t => <li key={t}>{t}</li>)}</ul></div>
@@ -106,19 +130,9 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
             <div className="type-block"><h3>자주 하는 말</h3><ul className="type-quotes">{profile.sayings.map(t => <li key={t}>“{t}”</li>)}</ul></div>
           </div>
           <div className="type-block"><h3>{category === 'food' ? '같이 먹을 때' : '같이 들을 때'}</h3><p>{profile.together}</p></div>
-          <div className="type-picks"><h3>{category === 'food' ? '이 유형의 찰떡 메뉴' : '이 유형이 좋아할 장면'}</h3><ul>{profile.picks.map(p => <li key={p}>{p}</li>)}</ul></div>
-          <div className="type-tip"><p><strong>추천 활용 팁</strong>{profile.tip}</p><button className="button primary" onClick={() => onRecommend(category, result)}><Sparkles size={16} />이 유형으로 추천받기</button></div>
-        </>}
-        {related && <div className="type-related">
-          <p><small>잘 맞는 유형</small><strong>{related.best.code} {related.best.name}</strong><span>{related.best.why}</span></p>
-          <p><small>티격태격 유형</small><strong>{related.worst.code} {related.worst.name}</strong><span>{related.worst.why}</span></p>
-        </div>}
+        </details>}
+        {!profile && percents && <Leans category={category} percents={percents} explain />}
         <p className="muted small">{how}</p>
-        <div className="type-actions">
-          <button className="button primary" onClick={() => void sendLink()}><Send size={16} />친구에게 보내고 궁합 보기</button>
-          {!profile && <button className="button secondary" onClick={() => onRecommend(category, result)}><Sparkles size={16} />이 유형으로 추천받기</button>}
-          <button className="button secondary" onClick={() => setAnswers([])}><RefreshCw size={16} />다시 테스트</button>
-        </div>
         <p className="muted small">링크에는 유형과 성향 비율, 설정한 이름만 담겨요.</p>
         {card && <figure className="type-card">
           <img src={card} alt={`${result.code} ${typeName(category, result.code)} 유형 카드`} />
