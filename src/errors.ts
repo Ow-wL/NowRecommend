@@ -11,8 +11,9 @@ export const RELEASE = String(import.meta.env?.VITE_RELEASE ?? '').trim().slice(
 export type ClientError = { kind: 'render' | 'error' | 'promise'; message: string; stack: string; page: string; release: string };
 /** The first part of the address only (#/reset/<token> → "reset"): which screen, never what was on it. */
 export const pageOf = (hash: string) => (hash.match(/^#\/([a-z]+)/)?.[1] ?? 'home').slice(0, 20);
-/** Noise that is not the app's: browser extensions, and a layout notice browsers raise on their own. */
-const ignorable = (message: string, stack: string) => /extension:\/\//.test(stack) || /^ResizeObserver loop/.test(message) || message === 'Script error.';
+/** Noise that is not the app's: browser extensions, the script Instagram/Facebook's in-app browser adds to the page
+ * (iabjs://, e.g. "Java object is gone" when that browser closes, 2026-11-24), and a layout notice browsers raise on their own. */
+const ignorable = (message: string, stack: string) => /(extension|iabjs):\/\//.test(stack) ||/^ResizeObserver loop/.test(message) || message === 'Script error.';
 
 /** Takes out what could identify someone if an error's text happened to carry it: e-mail addresses, long random-looking
  * strings (tokens, ids), and whatever follows ? or # in an address. */

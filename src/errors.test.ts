@@ -28,6 +28,9 @@ describe('browser error reports', () => {
   it('leave out what is not the app’s: extensions, the browser’s own layout notice, errors with nothing to say', () => {
     const fromExtension = new Error('boom'); fromExtension.stack = 'Error: boom\n at chrome-extension://abcdef/content.js:1:1';
     expect(describeError('error', fromExtension, '#/home')).toBeNull();
+    const fromInAppBrowser = new Error('Error invoking postMessage: Java object is gone');
+    fromInAppBrowser.stack = 'Error: Error invoking postMessage: Java object is gone\n    at sendDataToNative (iabjs://abc:1:11722)';
+    expect(describeError('error', fromInAppBrowser, '#/type')).toBeNull();
     expect(describeError('error', 'ResizeObserver loop completed with undelivered notifications.', '#/home')).toBeNull();
     expect(describeError('error', 'Script error.', '#/home')).toBeNull();
     expect(describeError('promise', undefined, '#/home')).toBeNull();
