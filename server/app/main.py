@@ -4,8 +4,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .auth import absent_hash
 from .config import get_settings
-from .errors import ErrorResponseMiddleware
+from .errors import ErrorResponseMiddleware, PasswordBusy
 from .legal import get_legal
 from .ratelimit import RateLimitMiddleware
 from .bodylimit import BodyLimitMiddleware
@@ -18,6 +19,7 @@ from .vocab import get_vocab
 async def lifespan(_: FastAPI):
     get_vocab()  # A broken shared/vocab.json should stop startup, not surface mid-request.
     get_legal()  # likewise shared/legal.json: sign-up cannot work without it
+    absent_hash()  # made once now, so the first login for an unknown address takes no longer than any other
     yield
 
 
@@ -27,10 +29,17 @@ async def quiet_validation_error(request, exc: RequestValidationError):
     return JSONResponse({"detail": [{k: v for k, v in e.items() if k in ("type", "loc", "msg")} for e in exc.errors()]}, status_code=422)
 
 
+async def password_busy(request, exc):
+    """Too many password checks at once (auth.HASH_WORKERS): try again shortly, instead of every request slowing down."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"detail": "지금 로그인 요청이 많아요. 잠시 후 다시 시도해주세요."}, status_code=503, headers={"Retry-After": "5"})
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="지금 추천 API", version="0.1.0", lifespan=lifespan)
     # A refused field is named, but what was sent is not sent back (a short password would be): 2026-11-23 review.
     app.add_exception_handler(RequestValidationError, quiet_validation_error)
+    app.add_exception_handler(PasswordBusy, password_busy)
     settings = get_settings()
     # Innermost, so CORS (added last, outermost) still decorates the 500 it produces and browsers read it as a server error.
     app.add_middleware(ErrorResponseMiddleware)

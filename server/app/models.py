@@ -4,7 +4,7 @@ from datetime import datetime
 from pgvector.sqlalchemy import Vector
 from datetime import date
 
-from sqlalchemy import ARRAY, JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, Text, Uuid, false, func, text
+from sqlalchemy import ARRAY, JSON, BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Identity, Index, Integer, Text, Uuid, false, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -59,7 +59,7 @@ class Item(Base):
 
 class RecommendationLog(Base):
     __tablename__ = "recommendation_logs"
-    __table_args__ = (CheckConstraint("mode IN ('rag','retrieval_only')", name="logs_mode"),)
+    __table_args__ = (CheckConstraint("mode IN ('rag','retrieval_only')", name="logs_mode"), Index("recommendation_logs_created_at", "created_at"))
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -152,6 +152,17 @@ class Feedback(Base):
     contact: Mapped[str | None] = mapped_column(Text)  # an address to answer to, only if the person gave one
     page: Mapped[str] = mapped_column(Text, server_default="")
     app_version: Mapped[str] = mapped_column(Text, server_default="")
+
+
+class AccessLog(Base):
+    """An address and when it came in (2026-11-24, migration 0013): a visit, sign-up, login or recommendation. Kept 30
+    days (retention.py) for looking into abuse and failures, as the privacy policy's 접속 기록 says; not linked to an account."""
+    __tablename__ = "access_log"
+    __table_args__ = (Index("access_log_at", "at"),)
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), Identity(), primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    address: Mapped[str] = mapped_column(Text)
+    event: Mapped[str] = mapped_column(Text)
 
 
 class StatsDaily(Base):

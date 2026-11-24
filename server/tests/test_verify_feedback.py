@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.db import get_session
 from app.mail import get_mailer, verify_mail
 from app.main import create_app
-from app.models import Feedback, Report, StatsDaily, UsageDaily, User
+from app.models import AccessLog, Feedback, Report, StatsDaily, UsageDaily, User
 from app.retention import sweep
 from app.routes.auth import get_signer
 
@@ -43,7 +43,7 @@ def settings(**more):
 @pytest.fixture
 def world():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for table in (User, UsageDaily, Feedback, StatsDaily, Report):
+    for table in (User, UsageDaily, Feedback, StatsDaily, Report, AccessLog):
         table.__table__.create(engine)
     make = sessionmaker(engine, expire_on_commit=False)
 
@@ -142,7 +142,7 @@ def test_an_account_from_before_confirmation_loses_its_session_until_confirmed(w
 
 def test_confirmation_mails_are_counted_per_inbox_and_for_the_service(world):
     client, outbox, app, *_ = world
-    app.dependency_overrides[get_settings] = lambda: settings(verify_daily_per_email=2, verify_daily_total=3)
+    app.dependency_overrides[get_settings] = lambda: settings(verify_daily_per_email=2, verify_daily_total=3, verify_daily_per_address=10)
     client.post("/api/auth/signup", json=SIGNUP)
     answers = [client.post("/api/auth/login", json=RIGHT).json()["detail"] for _ in range(2)]
     assert len(outbox.sent) == 2 and "더 보낼 수 없어요" in answers[-1]

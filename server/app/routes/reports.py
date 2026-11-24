@@ -7,14 +7,17 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..ai_items import is_ai_pick
+from ..budget import Allowance, guest_key
+from ..config import Settings, get_settings
 from ..db import get_session
 from ..models import Item, Report, User
+from ..ratelimit import client_address
 from ..stats import count
 from .auth import _iso, current_user, optional_user_id
 
@@ -56,7 +59,13 @@ def public_report(report: Report, item: Item | None) -> dict:
 
 
 @router.post("/api/reports", status_code=201)
-def create_report(request: ReportRequest, session: Session = Depends(get_session), user_id: uuid.UUID | None = Depends(optional_user_id)):
+def create_report(request: ReportRequest, http: Request, session: Session = Depends(get_session), user_id: uuid.UUID | None = Depends(optional_user_id),
+                  settings: Settings = Depends(get_settings)):
+    # A day's reports from one place and from everyone (2026-11-24): AI items keep coming, so the per-item cap alone let one
+    # place fill the admin list without end.
+    place = Allowance(session, f"report:{guest_key(client_address(http, settings.trust_proxy), settings.auth_secret)}", settings.report_daily_per_address, False)
+    if not place.take():
+        raise HTTPException(429, "오늘은 더 신고할 수 없어요. 내일 다시 시도해주세요.")
     # The item's row is locked until this report is in, so reports of one item arriving together are counted one by one.
     item = session.get(Item, request.itemId, with_for_update=True)
     if item is None:
@@ -68,6 +77,9 @@ def create_report(request: ReportRequest, session: Session = Depends(get_session
     same = next((r for r in waiting if r.kind == request.kind and r.note == request.note and r.user_id == user_id), None)
     if same or len(waiting) >= OPEN_PER_ITEM:
         return {"id": str((same or waiting[0]).id)}
+    # The service's day counts only reports that are kept (a repeat or an unknown item above takes nothing from it).
+    if not Allowance(session, "report:total", settings.report_daily_total, False).take():
+        raise HTTPException(429, "오늘은 신고를 더 받을 수 없어요. 내일 다시 시도해주세요.")
     report = Report(item_id=item.id, category=item.category, item_name=item.name, item_subtitle=item.subtitle, kind=request.kind,
                     note=request.note, user_id=user_id)
     session.add(report)

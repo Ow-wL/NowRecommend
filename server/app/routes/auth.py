@@ -10,6 +10,7 @@ deployment that has not set the secret yet is no worse than before accounts exis
 """
 import hmac
 import smtplib
+from contextlib import contextmanager
 import socket
 import json
 import logging
@@ -18,16 +19,17 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints, field_validator
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..auth import TokenSigner, absent_hash, hash_password, needs_rehash, normalize_email, valid_email, verify_password
+from ..auth import PasswordBusy, TokenSigner, absent_hash, hash_password, needs_rehash, normalize_email, valid_email, verify_password
 from ..budget import KST, Allowance, give_back, guest_key, signup_day, take
 from ..config import Settings, get_settings
 from ..db import get_session
 from ..legal import get_legal
+from ..llm.free import WEB
 from ..mail import Mailer, failure as mail_failure, get_mailer, reset_mail, verify_mail
 from ..models import UsageDaily, User
 from ..ratelimit import client_address
@@ -39,7 +41,15 @@ router = APIRouter()
 
 Email = Annotated[str, StringConstraints(min_length=3, max_length=254)]
 Password = Annotated[str, StringConstraints(min_length=8, max_length=128)]
-Name = Annotated[str, StringConstraints(min_length=1, max_length=16)]
+def _no_web_address(name: str) -> str:
+    # The name goes into the service's own signed mails (mail.py), so a sign-up named "보안확인 evil.kr" would have them
+    # carry a link (security review 2026-11-24). No one's name looks like a web address.
+    if WEB.search(name):
+        raise ValueError("이름에 웹 주소는 넣을 수 없어요")
+    return name
+
+
+Name = Annotated[str, StringConstraints(min_length=1, max_length=16), AfterValidator(_no_web_address)]
 
 
 class Credentials(BaseModel):
@@ -205,7 +215,12 @@ def signup(request: SignupRequest, http: Request, response: Response, session: S
     if not day.take():
         raise HTTPException(429, "오늘은 이 네트워크에서 더 가입할 수 없어요. 내일 다시 시도해주세요.")
     confirm = settings.email_verification
-    user = User(email=request.email, name=request.name, password_hash=hash_password(request.password), last_login_at=None if confirm else now,
+    try:
+        hashed = hash_password(request.password)
+    except PasswordBusy:
+        day.give_back()  # nothing was made
+        raise
+    user = User(email=request.email, name=request.name, password_hash=hashed, last_login_at=None if confirm else now,
                 terms_version=request.termsVersion if agreed else None, terms_agreed_at=now if agreed else None)
     session.add(user)
     try:
@@ -215,7 +230,7 @@ def signup(request: SignupRequest, http: Request, response: Response, session: S
         day.give_back()  # no account was made: like the "already registered" answer above, it uses nothing up
         raise taken from None
     session.refresh(user)
-    count(session, "signup")
+    count(session, "signup", address=client_address(http, settings.trust_proxy))
     if confirm:
         response.status_code = 202
         return {"verify": "sent" if _send_verify(user, http, session, signer, mailer, settings) else "failed", "email": user.email}
@@ -278,6 +293,16 @@ class PasswordAttempt:
             give_back(self.session, bucket, limit, self.day)
         self.taken = []
 
+    @contextmanager
+    def unless_busy(self):
+        """Around the hashing: a password that could not be checked at all (PasswordBusy, too many at once) was not a
+        wrong one, so its counts go back before the 503 (GPT review 2026-11-24)."""
+        try:
+            yield
+        except PasswordBusy:
+            self.give_back()
+            raise
+
 
 def login_attempt(email: str, http: Request, session: Session, settings: Settings) -> PasswordAttempt:
     """Wrong passwords at the login form are counted twice, both per hour:
@@ -296,7 +321,10 @@ def login_attempt(email: str, http: Request, session: Session, settings: Setting
     counts named alike and the pair joined with a mark, that made-up email's count from everywhere would be the very row
     of lee's count at that address, and anyone could use it up from anywhere."""
     secret, address = settings.auth_secret, client_address(http, settings.trust_proxy)
-    return PasswordAttempt(session, [(f"login:at:{guest_key(address, guest_key(email, secret))}", settings.login_fails_per_hour),
+    # The place over every account first (2026-11-24): a password sprayed across many accounts stops there, before a count
+    # is made for each new address it tries.
+    return PasswordAttempt(session, [(f"login:from:{guest_key(address, secret)}", settings.login_fails_per_hour_address),
+                                     (f"login:at:{guest_key(address, guest_key(email, secret))}", settings.login_fails_per_hour),
                                      (f"login:all:{guest_key(email, secret)}", settings.login_fails_per_hour_any)])
 
 
@@ -316,7 +344,9 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
     # checked against a hash nothing matches, so the answer takes as long as it does for one that has.
     checked = user.password_hash if user is not None else ""
     refused = HTTPException(401, "이메일 또는 비밀번호가 맞지 않아요.")
-    if not verify_password(request.password, checked or absent_hash()) or user is None:
+    with attempt.unless_busy():
+        right = verify_password(request.password, checked or absent_hash())
+    if not right or user is None:
         raise refused
     if settings.email_verification and user.email_verified_at is None:
         # The right password, so this tells only the account's owner (or whoever has the password) that it waits for a
@@ -330,7 +360,8 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
     # check and here leaves this login with nothing (it proved the old password), and the token is issued for the
     # version this UPDATE saw, not for whatever a later read would show. A hash made with fewer rounds than are used now
     # is redone in the same statement, while the password is at hand.
-    values = {"last_login_at": datetime.now(timezone.utc), **({"password_hash": hash_password(request.password)} if needs_rehash(checked) else {})}
+    with attempt.unless_busy():
+        values = {"last_login_at": datetime.now(timezone.utc), **({"password_hash": hash_password(request.password)} if needs_rehash(checked) else {})}
     version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked).values(**values)
                               .returning(User.token_version)).scalar()
     session.commit()
@@ -338,7 +369,7 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
         raise refused
     attempt.give_back()
     session.refresh(user)
-    count(session, "login")
+    count(session, "login", address=client_address(http, settings.trust_proxy))
     return _session_answer(signer, user, version)
 
 
@@ -377,7 +408,9 @@ def write_store(upload: StoreUpload, user: User = Depends(current_user), session
 def delete_account(request: DeleteRequest, user: User = Depends(current_user), session: Session = Depends(get_session),
                    settings: Settings = Depends(get_settings)):
     attempt = password_attempt(user, session, settings)
-    if not verify_password(request.password, user.password_hash):
+    with attempt.unless_busy():
+        right = verify_password(request.password, user.password_hash)
+    if not right:
         raise HTTPException(401, "비밀번호가 맞지 않아요.")
     attempt.give_back()
     # The counters kept under the account's id (its AI requests of the day, its wrong current passwords) go with it, not
@@ -418,7 +451,9 @@ def change_password(request: PasswordChange, user: User = Depends(current_user),
     password is 403, so the browser can tell it from an ended session (401)."""
     attempt = password_attempt(user, session, settings)
     checked = user.password_hash
-    if not verify_password(request.currentPassword, checked):
+    with attempt.unless_busy():
+        right = verify_password(request.currentPassword, checked)
+    if not right:
         raise HTTPException(403, "현재 비밀번호가 맞지 않아요.")
     attempt.give_back()
     version = _replace_password(user, session, checked, request.newPassword)
@@ -451,7 +486,9 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
     if user is None:
         return RESET_SENT
     # Per account as well, whoever asks and from wherever: an inbox cannot be flooded with these.
-    mine = Allowance(session, f"reset:e:{guest_key(user.email, settings.auth_secret)}", settings.reset_daily_per_email, False)
+    # An account never confirmed gets one a day (2026-11-24): made-up sign-ups were a way to mail strangers and spend the day.
+    per_email = settings.reset_daily_per_email if user.email_verified_at is not None or not settings.email_verification else 1
+    mine = Allowance(session, f"reset:e:{guest_key(user.email, settings.auth_secret)}", per_email, False)
     if not mine.take():
         log.warning("reset mail not sent: today's mails for this account are used up")
         return RESET_SENT

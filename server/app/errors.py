@@ -15,6 +15,10 @@ logger = logging.getLogger("app.errors")
 MESSAGE = "서버 오류가 났어요. 잠시 후 다시 시도해 주세요."
 
 
+
+class PasswordBusy(Exception):
+    """Too many password checks at once (auth.HASH_WORKERS); answered 503 (main.py)."""
+
 class ErrorResponseMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app

@@ -10,10 +10,13 @@ import hmac
 import json
 import os
 import re
+import threading
 import time
 from functools import lru_cache
 from collections.abc import Callable
 from dataclasses import dataclass
+
+from .errors import PasswordBusy  # kept where a reload of this module does not make a second class of it
 
 # Work per password guess. 600,000 rounds of PBKDF2-HMAC-SHA256 is the current OWASP figure (it was 310,000 here until
 # 2026-11-17). Every stored hash names its own count, so older ones keep verifying and are redone at the next login
@@ -23,6 +26,19 @@ PBKDF2_ITERATIONS = 600_000
 RESET = "reset"  # the purpose of a password reset token (TokenSigner)
 VERIFY = "verify"  # the purpose of an address confirmation token (2026-11-18)
 SALT_BYTES = 16
+# Hashes worked out at once (security review 2026-11-24): the instance has one CPU, and logins arriving together from a few
+# places took all of it from everyone else. A hash waits for one of these; past HASH_WAIT_S the request answers 503.
+HASH_WORKERS = threading.BoundedSemaphore(2)
+HASH_WAIT_S = 2.0  # a waiting request holds a thread and a database connection (GPT review 2026-11-24)
+
+
+def _pbkdf2(password: str, salt: bytes, iterations: int) -> bytes:
+    if not HASH_WORKERS.acquire(timeout=HASH_WAIT_S):
+        raise PasswordBusy
+    try:
+        return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    finally:
+        HASH_WORKERS.release()
 # A bare mailbox (2026-11-23): `"x"<victim@…>` or `a,victim@…` passed the looser pattern, and the mail library then
 # delivered to a different address than the one counted and stored.
 EMAIL = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$")
@@ -31,7 +47,7 @@ EMAIL = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-
 def hash_password(password: str, iterations: int | None = None) -> str:
     iterations = PBKDF2_ITERATIONS if iterations is None else iterations
     salt = os.urandom(SALT_BYTES)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    digest = _pbkdf2(password, salt, iterations)
     return f"pbkdf2_sha256${iterations}${_b64(salt)}${_b64(digest)}"
 
 
@@ -40,7 +56,7 @@ def verify_password(password: str, stored: str) -> bool:
         scheme, iterations, salt, digest = stored.split("$")
         if scheme != "pbkdf2_sha256":
             return False
-        expected = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), _unb64(salt), int(iterations))
+        expected = _pbkdf2(password, _unb64(salt), int(iterations))
         return hmac.compare_digest(expected, _unb64(digest))
     except (ValueError, TypeError):
         return False

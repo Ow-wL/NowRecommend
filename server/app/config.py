@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     # mails' total (50) that stays under the mail service's free 100 a day.
     email_verification: bool = False
     verify_link_hours: int = 24
-    verify_daily_per_address: int = 10
+    verify_daily_per_address: int = 3  # 10 → 3 (security review 2026-11-24): four addresses used the whole day's 40
     verify_daily_per_email: int = 3
     verify_daily_total: int = 40
     # An account never confirmed (and never signed in, holding nothing) is removed this many days after it was made, plus
@@ -93,7 +93,7 @@ class Settings(BaseSettings):
     # What one place may add to the dashboard's counts in a day (POST /api/stats, routes/stats.py).
     stats_daily_per_address: int = 50
     # Reset mails per day (Korean day; 0 = off): from one address, and to one account, so nobody's inbox can be flooded.
-    reset_daily_per_address: int = 10
+    reset_daily_per_address: int = 3  # 10 → 3, as for the confirmation mails (2026-11-24)
     reset_daily_per_email: int = 3
     # Reset mails of the whole service per day (0 = off). The mail service's free plan sends 100 a day (2026-11-17): past
     # this the form still answers the same and no mail leaves, so one day's flood cannot use the plan up or get the
@@ -106,6 +106,12 @@ class Settings(BaseSettings):
     # For one account from every address together: guesses spread over many addresses stop too. Only at this number do
     # all logins for the account wait for the next hour; signed-in sessions go on and a mailed reset link gets in.
     login_fails_per_hour_any: int = 100
+    # From one address over every account together (2026-11-24): one common password tried once at each of many accounts
+    # was stopped by neither count above.
+    login_fails_per_hour_address: int = 30
+    # Error reports per day (POST /api/reports, 2026-11-24): from one address, and for the whole service.
+    report_daily_per_address: int = 20
+    report_daily_total: int = 500
     # Largest synced browser store accepted by PUT /api/me/store (backups cap at 5MB in the browser; 1MB ≈ 50 entries with rounds).
     store_max_bytes: int = 1_000_000
     # PUT /api/me/store per client per minute (0 = off). The browser waits 1.5s after a change, so 40 is its own ceiling.

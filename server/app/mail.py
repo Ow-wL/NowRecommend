@@ -81,13 +81,15 @@ def get_mailer() -> Mailer | None:
 
 
 def reset_mail(name: str, link: str, minutes: int) -> tuple[str, str, str]:
-    """Subject, plain text and HTML of the password reset mail. The link is the only thing to act on."""
+    """Subject, plain text and HTML of the password reset mail. The link is the only thing to act on. `name` is left out of
+    the mail (2026-11-24): an account not yet confirmed carries whatever name its sign-up typed, and this mail goes to the
+    inbox's owner under the service's own signed address."""
     subject = "[지금 추천] 비밀번호 재설정 안내"
-    text = (f"{name}님, 안녕하세요.\n\n지금 추천 계정의 비밀번호 재설정을 요청하셨어요. 아래 주소를 열어 새 비밀번호를 정해주세요.\n\n{link}\n\n"
+    text = (f"안녕하세요.\n\n지금 추천 계정의 비밀번호 재설정을 요청하셨어요. 아래 주소를 열어 새 비밀번호를 정해주세요.\n\n{link}\n\n"
             f"이 주소는 {minutes}분 동안, 한 번만 쓸 수 있어요.\n요청하신 적이 없다면 이 메일은 무시하셔도 돼요. 비밀번호는 바뀌지 않아요.\n\n보내기 전용 주소라 답장은 받지 못해요.\n")
     href = _escape(link)
     body = (
-        f'<p style="margin:0 0 6px;font-size:17px;font-weight:700;color:{_INK}">{_escape(name)}님, 안녕하세요.</p>'
+        f'<p style="margin:0 0 6px;font-size:17px;font-weight:700;color:{_INK}">안녕하세요.</p>'
         f'<p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:{_TEXT}">지금 추천 계정의 비밀번호 재설정을 요청하셨어요. 아래 버튼을 눌러 새 비밀번호를 정해주세요.</p>'
         # The button is a table cell with its own background, so a client that drops the link's padding still shows a button.
         f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>'
@@ -106,14 +108,15 @@ def reset_mail(name: str, link: str, minutes: int) -> tuple[str, str, str]:
 
 
 def verify_mail(name: str, link: str, hours: int) -> tuple[str, str, str]:
-    """Subject, plain text and HTML of the mail that confirms a new account's address (2026-11-18)."""
+    """Subject, plain text and HTML of the mail that confirms a new account's address (2026-11-18). As in reset_mail, the
+    name typed at sign-up is left out: anyone can sign up with someone else's address."""
     subject = "[지금 추천] 이메일 주소를 확인해주세요"
-    text = (f"{name}님, 지금 추천에 가입해 주셔서 고마워요.\n\n아래 주소를 열고 \"이메일 확인하기\"를 누르면 가입이 끝나요. 그다음 가입할 때 정한 비밀번호로 로그인해 주세요.\n\n{link}\n\n"
+    text = (f"지금 추천에 가입해 주셔서 고마워요.\n\n아래 주소를 열고 \"이메일 확인하기\"를 누르면 가입이 끝나요. 그다음 가입할 때 정한 비밀번호로 로그인해 주세요.\n\n{link}\n\n"
             f"이 주소는 {hours}시간 동안 쓸 수 있어요.\n가입하신 적이 없다면 이 메일은 무시하셔도 돼요. 확인하지 않은 가입은 7일이 지나면 지워져요.\n\n"
             f"보내기 전용 주소라 답장은 받지 못해요.\n")
     href = _escape(link)
     body = (
-        f'<p style="margin:0 0 6px;font-size:17px;font-weight:700;color:{_INK}">{_escape(name)}님, 반가워요.</p>'
+        f'<p style="margin:0 0 6px;font-size:17px;font-weight:700;color:{_INK}">반가워요.</p>'
         f'<p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:{_TEXT}">지금 추천에 가입해 주셔서 고마워요. 아래 버튼을 누르고 열린 화면에서 확인을 마치면 가입이 끝나요. 그다음 가입할 때 정한 비밀번호로 로그인해 주세요.</p>'
         f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>'
         f'<td bgcolor="{_INK}" style="background:{_INK};border-radius:999px">'

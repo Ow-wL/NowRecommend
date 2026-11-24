@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.db import get_session
 from app.mail import SmtpMailer, get_mailer, reset_mail
 from app.main import create_app
-from app.models import Feedback, StatsDaily, UsageDaily, User
+from app.models import AccessLog, Feedback, StatsDaily, UsageDaily, User
 from app.routes.auth import get_signer
 
 SIGNUP = {"email": "lee@example.com", "password": "password1", "name": "주형"}
@@ -50,6 +50,7 @@ def world():
     UsageDaily.__table__.create(engine)
     Feedback.__table__.create(engine)
     StatsDaily.__table__.create(engine)  # the dashboard counts (stats.py)
+    AccessLog.__table__.create(engine)  # the access list (stats.py)
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():
@@ -126,7 +127,7 @@ def test_a_forgotten_password_is_reset_from_the_mailed_link_once(world):
     asked = client.post("/api/auth/reset/request", json={"email": " Lee@Example.com "})
     assert asked.status_code == 202 and asked.json() == {"sent": True}
     [mail_out] = outbox.sent
-    assert mail_out["to"] == "lee@example.com" and "비밀번호 재설정" in mail_out["subject"] and "30분" in mail_out["text"] and "주형" in mail_out["text"]
+    assert mail_out["to"] == "lee@example.com" and "비밀번호 재설정" in mail_out["subject"] and "30분" in mail_out["text"] and "주형" not in mail_out["text"]  # the typed name stays out (2026-11-24)
     token = outbox.link_token()
     assert token in mail_out["html"]
 
@@ -232,9 +233,10 @@ def test_smtp_upgrades_before_the_password_and_sends_text_and_html(monkeypatch):
     assert tls.message["From"] == "no-reply@example.com" and not tls.message.is_multipart()
 
 
-def test_the_reset_mail_escapes_the_name_and_mail_is_off_without_settings(monkeypatch):
+def test_the_reset_mail_leaves_the_name_out_and_mail_is_off_without_settings(monkeypatch):
+    # The name typed at sign-up is not in the mail at all (2026-11-24), so neither part can carry markup from it.
     subject, text, html = reset_mail('<b>"주형"</b>', "https://app.example.com/#/reset/abc", 30)
-    assert "<b>" in text and "<b>" not in html and "&lt;b&gt;&quot;주형&quot;&lt;/b&gt;" in html and "비밀번호 재설정" in subject
+    assert "주형" not in text and "주형" not in html and "<b>" not in html and "비밀번호 재설정" in subject
     assert 'href="https://app.example.com/#/reset/abc"' in html
     monkeypatch.setattr(mail, "get_settings", lambda: Settings(smtp_host=None, mail_from=None))
     assert get_mailer() is None
@@ -523,7 +525,9 @@ def test_guesses_spread_over_many_addresses_stop_the_account_and_a_mailed_link_s
     assert spread == [401, 401, 401, 401, 401, 429]  # five from five places: the account's hour is used up
     assert client.post("/api/auth/login", json=RIGHT, headers=at("198.51.100.7")).status_code == 429  # now the owner waits too
     refused = counts(app)
-    assert sorted(count for count in refused.values() if count) == [1, 1, 1, 1, 1, 5]  # a refused try is counted nowhere: what it took for its address was given back
+    # each place's try counted for the account at that place and for the place over every account (2026-11-24), and the
+    # account's five together; a refused try is counted nowhere: what it took for its address was given back
+    assert sorted(count for count in refused.values() if count) == [1] * 10 + [5]
     # A session that is signed in goes on, and the mailed link is the way in.
     assert client.get("/api/auth/me", headers=auth).status_code == 200
     assert client.post("/api/auth/reset/request", json={"email": "lee@example.com"}, headers=at("198.51.100.7")).status_code == 202
@@ -610,7 +614,7 @@ def test_the_counts_keep_no_address_and_a_right_password_leaves_nothing_behind(w
     assert set(counts(app).values()) <= {0}  # every count that was taken was given back
     client.post("/api/auth/login", json=WRONG, headers=at("203.0.113.9"))
     kept = {bucket: count for bucket, count in counts(app).items() if count}
-    assert len(kept) == 2 and all(bucket.startswith("login:") for bucket in kept)
+    assert len(kept) == 3 and all(bucket.startswith("login:") for bucket in kept)  # at this place, everywhere, and from this place
     assert not any(part in bucket for bucket in kept for part in ("lee", "@", "203.0.113"))
 
 

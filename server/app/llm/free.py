@@ -17,7 +17,8 @@ from .validate import clean_reason
 
 CONFIDENCE = ("high", "medium", "low")
 NAME_LIMIT = 80
-WEB = re.compile(r"https?://|www\.|\b[\w-]+\.(?:com|kr|net|org|io|co|me|ly|gg|xyz|shop|site|dev|app|ai|tv|link|store)\b", re.IGNORECASE)
+# Full-width and ideographic dots count as dots (2026-11-24), and the endings scams use most are in the list.
+WEB = re.compile(r"https?://|www[.．。]|\b[\w-]+[.．。](?:com|kr|net|org|io|co|me|ly|gg|xyz|shop|site|dev|app|ai|tv|link|store|info|biz|cc|jp|cn|ru|uk|top|online|club|live|pro|vip|fun|space|website|tech|click|icu|buzz|tk|ml|cf|gq)\b", re.IGNORECASE)
 
 COMMON_RULES = """
 공통 규칙

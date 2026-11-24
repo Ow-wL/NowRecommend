@@ -113,6 +113,8 @@ def test_a_repeated_report_and_a_pile_on_one_item_add_no_rows(client, db_session
     """2026-11-17: the same thing said again answers with the report already open; one item holds at most OPEN_PER_ITEM open."""
     from app.routes.reports import OPEN_PER_ITEM
 
+    from app.config import Settings, get_settings
+    client.app.dependency_overrides[get_settings] = lambda: Settings(report_daily_per_address=100)  # one place says it all here
     item = db_session.scalars(select(Item.id).where(Item.status == "reviewed")).first()
     first = client.post("/api/reports", json={"itemId": item, "kind": "wrong_info", "note": "재료가 달라요"})
     again = client.post("/api/reports", json={"itemId": item, "kind": "wrong_info", "note": "재료가 달라요"})

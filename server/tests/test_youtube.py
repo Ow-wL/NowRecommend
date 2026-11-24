@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.config import Settings, get_settings
 from app.db import get_session
 from app.main import create_app
-from app.models import Feedback, StatsDaily, UsageDaily, User
+from app.models import AccessLog, Feedback, StatsDaily, UsageDaily, User
 from app.routes.youtube import find_song
 from app.youtube import FOUND_TTL, MISSING_TTL, YouTubeFinder, YouTubeUnavailable, candidates, playable, youtube_finder
 
@@ -225,6 +225,7 @@ def world():
     User.__table__.create(engine)  # the daily removal (retention.py) runs with the first count of a day
     Feedback.__table__.create(engine)
     StatsDaily.__table__.create(engine)  # the dashboard counts (stats.py)
+    AccessLog.__table__.create(engine)  # the access list (stats.py)
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():

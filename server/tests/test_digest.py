@@ -10,7 +10,7 @@ from app.budget import KST, forget_old
 from app.config import Settings, get_settings
 from app.digest import send_digest
 from app.mail import digest_mail
-from app.models import Feedback, Report, StatsDaily, UsageDaily, User
+from app.models import AccessLog, Feedback, Report, StatsDaily, UsageDaily, User
 
 TODAY = date(2026, 11, 23)
 
@@ -28,7 +28,7 @@ class Outbox:
 @pytest.fixture
 def session():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for table in (User, UsageDaily, Feedback, Report, StatsDaily):
+    for table in (User, UsageDaily, Feedback, Report, StatsDaily, AccessLog):
         table.__table__.create(engine)
     with sessionmaker(engine, expire_on_commit=False)() as s:
         yield s
