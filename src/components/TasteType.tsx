@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronDown, Download, Image as ImageIcon, RefreshCw, Send, Sparkles } from 'lucide-react';
 import { TypeArt } from './TypeArt';
+import { TypeAtlas } from './TypeAtlas';
 import { downloadFile, shareTypeCard, shareTypeLink, typeCardDataUrl, typeCardFile } from '../typeCard';
 import { categoryLabel, type Category, type Item } from '../data';
 import { AXES, axisLeans, codeFromItems, codeFromScores, compareTypes, MIN_ITEMS_FOR_TYPE, parseShared, percentsOf, poles, relatedTypes, SCALE, scoresFromAnswers, sides, statements, togetherItems, typeName, typeProfile, type Answer, type SharedType, type SharedTypes, type TasteTypeResult } from '../tasteType';
@@ -85,7 +86,7 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
         <div className="type-progress" role="progressbar" aria-label="테스트 진행" aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={step}><span style={{ width: `${step / questions.length * 100}%` }} /></div>
         <small>{step + 1} / {questions.length}</small>
         <h2 tabIndex={-1}>{questions[step].text}</h2>
-        <div className="type-scale" role="group" aria-label="얼마나 그런가요?">
+        <div className="type-scale" role="group" aria-label="얼마나 그런가요?" key={step}>
           {SCALE.map(s => <button key={s.value} className={`type-scale-choice v${s.value + 2}`} onClick={() => answer(s.value)}><i aria-hidden="true" /><span>{s.label}</span></button>)}
         </div>
         <button className="text-button" onClick={() => setAnswers(step ? answers.slice(0, -1) : null)}>{step ? '이전 문장' : '그만두기'}</button>
@@ -150,6 +151,7 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
             : <button className="button secondary" onClick={() => onEditTaste(category)}>취향 {MIN_ITEMS_FOR_TYPE}개 이상 등록하기</button>}
         </div>
       </section>}
+      {!answers && <TypeAtlas category={category} mine={result || undefined} />}
     </div>
   </>;
 }

@@ -4,6 +4,8 @@ import { ApiError } from '../api/client';
 import { deleteFeedback, feedbackKinds, fetchFeedback, type FeedbackEntry } from '../api/feedback';
 
 const KIND_LABEL = Object.fromEntries(feedbackKinds) as Record<FeedbackEntry['kind'], string>;
+// The screen it was sent from, in the words of the app's own menus (screenName in api/feedback.ts keeps the route's first word).
+const PAGE_LABEL: Record<string, string> = { home: '홈', recommend: '추천', onboard: '취향 등록', favorites: '즐겨찾기', history: '추천 기록', taste: '내 취향', login: '로그인', complete: '추천 완료', type: '취향 유형', admin: '관리', pair: '음식·음악 짝꿍', terms: '이용약관', privacy: '개인정보 처리방침' };
 
 // What people sent with 의견 보내기, for an admin account (#/admin, under the error reports). Shown as plain text.
 export function AdminFeedback({ token }: { token?: string }) {
@@ -41,11 +43,11 @@ export function AdminFeedback({ token }: { token?: string }) {
     <p className="sr-only" role="status">{news}</p>
     {error ? <div className="notice warning" role="alert"><div><strong>{error}</strong></div></div> : <>
       {!items.length && !busy && <p className="empty-small">받은 의견이 없어요.</p>}
-      <ul className="report-list">{items.map(item => <li key={item.id} className="report-card">
+      <ul className="report-list">{items.map(item => <li key={item.id} className="report-card text-only">
         <div className="report-body">
           <p className="report-kind-label">{KIND_LABEL[item.kind]}</p>
           <p className="report-note">{item.message}</p>
-          <small className="muted">{new Date(item.createdAt).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })}{item.page && ` · ${item.page} 화면`}{item.appVersion && ` · ${item.appVersion}`}{item.contact && ` · 답장: ${item.contact}`}</small>
+          <small className="muted">{new Date(item.createdAt).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })}{item.page && ` · ${PAGE_LABEL[item.page] || item.page} 화면`}{item.appVersion && ` · ${item.appVersion}`}{item.contact && ` · 답장: ${item.contact}`}</small>
           <div className="report-actions"><button className="button secondary compact" disabled={busy} onClick={() => void remove(item)}><Trash2 size={15} />지우기</button></div>
         </div>
       </li>)}</ul>

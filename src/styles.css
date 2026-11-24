@@ -290,6 +290,28 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 /* The admin page (2026-11-23): tabs under the heading; the dashboard reads top-down: numbers, two charts, the feature list, a table. */
 .admin-tabs { margin-top: 16px; }
 .admin-feedback { margin-top: 8px; }
+.admin-access { margin-top: 8px; }
+.admin-insights { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.stats-tiles.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
+.insight-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.insight-columns h4 { margin: 6px 0 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.insight-columns h4 small, .stats-panel h3 small { font-weight: 500; color: var(--text-muted); }
+.insight-list { display: grid; gap: 6px; margin: 0 0 10px; padding: 0; list-style: none; font-size: 14px; }
+.insight-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.insight-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.insight-list li small { color: var(--text-muted); }
+.insight-list li b { flex: none; font-variant-numeric: tabular-nums; }
+.mono, .insight-list.mono > li > span { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.hour-bars { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); align-items: end; gap: 3px; height: 120px; }
+.hour-bars span { display: grid; grid-template-rows: 1fr auto; height: 100%; text-align: center; }
+.hour-bars i { align-self: end; display: block; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--text-secondary); }
+.hour-bars small { font-size: 10px; color: var(--text-muted); height: 14px; }
+.access-filter { margin: 12px 0; max-width: 360px; }
+.access-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.access-table th, .access-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.access-table th { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.access-table .text-button { padding: 0; font: inherit; }
+@media (max-width: 640px) { .stats-tiles.compact { grid-template-columns: minmax(0, 1fr); } }
 .admin-stats .report-toolbar h2, .admin-feedback .report-toolbar h2 { margin-right: auto; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 .stats-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .stats-tile { display: grid; gap: 2px; padding: 16px 18px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow-card); }
@@ -325,6 +347,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .report-toolbar .filter-tabs { flex-wrap: wrap; }
 .report-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .report-card { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 16px; padding: 14px; border-radius: var(--radius-card); }
+/* A feedback card has no picture: the text takes the whole row (2026-11-24: it was squeezed into the 84px picture column). */
+.report-card.text-only { grid-template-columns: minmax(0, 1fr); }
 .report-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .report-title b { font-size: 16px; }
 .report-title small { color: var(--text-muted); font-size: 13px; }
@@ -472,7 +496,9 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .cat-food .type-scale-choice.v4, .cat-food .type-scale-choice.v3 { color: var(--food-ink); }
 .cat-music .type-scale-choice.v4, .cat-music .type-scale-choice.v3 { color: var(--music-ink); }
 .type-scale-choice.v2 { color: var(--text-muted); }
-.type-scale-choice:hover i, .type-scale-choice:focus-visible i { transform: scale(1.08); background: currentColor; }
+/* Hover only where there is a pointer that hovers (2026-11-24): on a tablet the tapped circle stayed filled into the next statement. */
+.type-scale-choice:focus-visible i { transform: scale(1.08); background: currentColor; }
+@media (hover: hover) { .type-scale-choice:hover i { transform: scale(1.08); background: currentColor; } }
 /* The long result: one block per thing to know, two side by side where they answer each other. */
 .type-pole { grid-column: 1 / -1; grid-row: 3; margin-top: 2px; color: var(--text-secondary); font-size: 14px; line-height: 1.55; word-break: keep-all; }
 .type-pole b { margin-right: 6px; color: var(--text-primary); }
@@ -504,6 +530,29 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .type-related p { display: grid; gap: 4px; padding: 16px; border-radius: 18px; background: var(--fill-1); align-content: start; }
 .type-related strong { font-size: 15px; letter-spacing: -0.016em; word-break: keep-all; }
 .type-related span { font-size: 13px; line-height: 1.5; color: var(--text-secondary); word-break: keep-all; }
+/* Every type at a glance (2026-11-24, TypeAtlas.tsx): a grid to browse, a sheet per type. */
+.type-related button { position: relative; display: grid; gap: 4px; padding: 16px 36px 16px 16px; border-radius: 18px; background: var(--fill-1); text-align: left; align-content: start; color: inherit; }
+.type-related button > svg { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); color: var(--text-muted); }
+@media (hover: hover) { .type-related button:hover { background: var(--fill-2); } }
+.type-atlas { margin-top: 16px; }
+.type-atlas h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.type-atlas-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; }
+.type-atlas-card { display: grid; gap: 4px; width: 100%; height: 100%; padding: 12px 14px 14px; border-radius: 18px; background: var(--bg-soft); text-align: left; color: inherit; align-content: start; }
+.type-atlas-card .type-art { width: 72px; margin-bottom: 4px; }
+.type-atlas-card.mine { box-shadow: inset 0 0 0 2px var(--accent); }
+.type-atlas-code { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
+.type-atlas-code em { font-style: normal; font-size: 11px; letter-spacing: 0; padding: 2px 6px; border-radius: 999px; background: var(--accent-fill); color: var(--text-on-accent); }
+.type-atlas-card strong { font-size: 15px; letter-spacing: -0.016em; word-break: keep-all; }
+.type-atlas-card small { font-size: 12px; line-height: 1.45; color: var(--text-secondary); word-break: keep-all; }
+@media (hover: hover) { .type-atlas-card:hover { filter: brightness(.97); } }
+:root[data-theme="dark"] .type-atlas-card:hover { filter: brightness(1.12); }
+.type-sheet { display: grid; gap: 4px; }
+.type-sheet-hero { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; align-items: center; }
+.type-sheet-mine { margin: 8px 0 4px; padding: 10px 14px; border-radius: 14px; background: var(--fill-1); font-size: 14px; word-break: keep-all; }
+.type-sheet-mine strong { color: var(--accent); }
+.type-sheet-mine span { display: block; margin-top: 2px; font-size: 13px; color: var(--text-secondary); }
+@media (max-width: 760px) { .type-atlas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .type-sheet-hero { grid-template-columns: 88px minmax(0, 1fr); } }
 .type-friend { display: grid; gap: 4px; margin-bottom: 16px; padding: 32px 28px; border-radius: var(--radius-card); background: var(--bg-soft); justify-items: start; }
 .type-friend h2 { font-size: 24px; line-height: 1.35; letter-spacing: -0.03em; }
 .type-friend .type-leans { width: 100%; }

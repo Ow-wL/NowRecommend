@@ -44,16 +44,36 @@ test('an admin finds 관리 in the menu and reads the dashboard', async ({ page 
   await page.route(`${API}/api/stats`, route => route.request().method() === 'OPTIONS' ? fulfill(route, {}) : route.fulfill({ status: 204, headers: cors }));
   await page.route(`${API}/api/admin/stats**`, route => fulfill(route, board(Number(new URL(route.request().url()).searchParams.get('days')))));
   await page.route(`${API}/api/admin/reports**`, route => fulfill(route, { reports: [], counts: { open: 0, resolved: 0, dismissed: 0 } }));
-  await page.route(`${API}/api/admin/feedback**`, route => fulfill(route, { feedback: [], more: false }));
+  await page.route(`${API}/api/admin/feedback**`, route => fulfill(route, { feedback: [{ id: 'f1', kind: 'idea', message: '아주 긴 의견 '.repeat(20), contact: null, page: 'type', appVersion: '', createdAt: '2026-11-24T09:00:00Z' }], more: false }));
+  const music = { requests: 3, ai: 2, fallback: 1, errors: 0, latencyP50: 3100, latencyP95: 4200, issues: { store_missing: 2 },
+    topItems: [{ id: 'm1', name: '입춘', artist: '한로로', count: 2 }], topTags: [{ tag: '차분함', count: 2 }], topExcluded: [] };
+  await page.route(`${API}/api/admin/insights**`, route => fulfill(route, { days: Number(new URL(route.request().url()).searchParams.get('days')), recommendations: { music },
+    hours: Array.from({ length: 24 }, (_, h) => h === 18 ? 3 : 0), accounts: { total: 2, confirmed: 2, admins: 1, newInPeriod: 1, activeWeek: 1, withSavedData: 1 },
+    access: { addressesToday: 2, addressesInPeriod: 3, busiest: [{ address: '203.0.113.7', count: 4, last: '2026-11-24T09:00:00Z' }] },
+    ai: { usedToday: 12, dailyLimit: 3000 }, feedbackKinds: { idea: 1 }, reportStatus: {} }));
+  await page.route(`${API}/api/admin/access**`, route => fulfill(route, { entries: [{ id: 2, at: '2026-11-24T09:00:00Z', address: '203.0.113.7', event: 'login' }, { id: 1, at: '2026-11-24T08:50:00Z', address: '198.51.100.23', event: 'visit' }], more: false }));
   await page.goto('/#/home');
   await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '관리' }).click();
   await expect(page.getByRole('heading', { name: '이용 통계' })).toBeVisible();
   await expect(page.locator('.stats-tile').first()).toContainText('오늘 방문');
   await page.screenshot({ path: 'test-results/admin-stats.png', fullPage: true });
-  await page.getByRole('button', { name: '7일' }).click();
+  await page.getByRole('group', { name: '기간', exact: true }).getByRole('button', { name: '7일' }).click();
   await expect(page.locator('.stats-tile').nth(1)).toContainText('7일 방문');
+  // The details below the counts (2026-11-24): what was recommended most, how the AI did, the busiest addresses.
+  const details = page.locator('.admin-insights');
+  await expect(details).toContainText('입춘');
+  await expect(details).toContainText('스토어에 없는 곡');
+  await expect(details).toContainText('203.0.113.7');
+  await page.getByRole('tab', { name: '접속 기록' }).click();
+  await expect(page.locator('.access-table tbody tr')).toHaveCount(2);
+  await page.getByRole('button', { name: '203.0.113.7 기록만 보기' }).click();
+  await expect(page.locator('.access-table tbody tr')).toHaveCount(1);
   await page.getByRole('tab', { name: '의견' }).click();
-  await expect(page.getByText('받은 의견이 없어요.')).toBeVisible();
+  // A feedback card has no picture: its text uses the whole width (it was squeezed into the 84px picture column).
+  const note = page.locator('.admin-feedback .report-note').first();
+  const [noteBox, cardBox] = [await note.boundingBox(), await page.locator('.admin-feedback .report-card').first().boundingBox()];
+  expect(noteBox!.width).toBeGreaterThan(cardBox!.width * 0.8);
+  await expect(page.locator('.admin-feedback small').first()).toContainText('취향 유형 화면');
 });
 
 test('someone who is not an admin has no 관리 in the menu', async ({ page }) => {

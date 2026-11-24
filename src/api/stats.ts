@@ -32,3 +32,28 @@ export function countVisit(options: Options = {}, now = new Date()): boolean {
   sendStat('visit', options);
   return true;
 }
+
+// More of what the server already keeps (2026-11-24): how recommendations went, accounts, and the 30-day access list.
+export type TopItem = { id: string; name: string; artist: string; count: number };
+export type TopTag = { tag: string; count: number };
+export type CategoryInsight = { requests: number; ai: number; fallback: number; errors: number; latencyP50: number | null; latencyP95: number | null;
+  issues: Record<string, number>; topItems: TopItem[]; topTags: TopTag[]; topExcluded: TopTag[] };
+export type Insights = {
+  days: number; recommendations: Partial<Record<'food' | 'music', CategoryInsight>>; hours: number[];
+  accounts: { total: number; confirmed: number; admins: number; newInPeriod: number; activeWeek: number; withSavedData: number };
+  access: { addressesToday: number; addressesInPeriod: number; busiest: { address: string; count: number; last: string }[] };
+  ai: { usedToday: number; dailyLimit: number }; feedbackKinds: Record<string, number>; reportStatus: Record<string, number>;
+};
+const validInsights = (v: any): v is Insights => !!v && Number.isInteger(v.days) && !!v.recommendations && typeof v.recommendations === 'object'
+  && Array.isArray(v.hours) && v.hours.length === 24 && !!v.accounts && !!v.access && Array.isArray(v.access.busiest) && !!v.ai;
+export function fetchInsights(token: string, days: number, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson(`/api/admin/insights?days=${days}`, validInsights, { base, fetchImpl, headers: authHeaders(token) });
+}
+
+export type AccessEntry = { id: number; at: string; address: string; event: string };
+export type AccessPage = { entries: AccessEntry[]; more: boolean };
+const validAccess = (v: any): v is AccessPage => !!v && typeof v.more === 'boolean' && Array.isArray(v.entries)
+  && v.entries.every((e: any) => Number.isInteger(e?.id) && typeof e.at === 'string' && typeof e.address === 'string' && typeof e.event === 'string');
+export function fetchAccess(token: string, before?: number, { base = API_BASE_URL, fetchImpl }: Options = {}) {
+  return apiJson(`/api/admin/access?limit=100${before ? `&before=${before}` : ''}`, validAccess, { base, fetchImpl, headers: authHeaders(token) });
+}
