@@ -452,6 +452,6 @@ export function evidenceText(checks: ConditionCheck[], source: { aiPick: boolean
 }
 /** What a check says, for screen readers and the comparison table. A partial exclusion never reads as applied. */
 export function checkText(c: ConditionCheck): string {
-  if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.value === '매콤함' ? '맵지 않음' : `${c.value} 제외`}, ${c.aiBasis ? 'AI가 적은 재료 기준' : '등록 정보 기준'} 적용`;
+  if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.value === '매콤함' ? '맵지 않음' : `${c.value} 제외`}, ${!c.aiBasis ? '등록 정보 기준' : c.value === '매콤함' ? 'AI 추정' : 'AI가 적은 재료 기준'} 적용`;  // 매콤함 is a trait, not an ingredient
   return c.state === 'met' ? `${c.label} 맞음` : `${c.label}: 등록 정보 없음`;
 }

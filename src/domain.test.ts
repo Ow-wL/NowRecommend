@@ -128,6 +128,8 @@ describe('discovery and reasons', () => {
     const aiPork = conditionChecks({ ...dakgomtang, id: 'ai-food-1' }, { tags: [], excluded: ['돼지고기'] })[0];
     expect(aiPork.label).toBe('돼지고기 제외(AI 추정)');
     expect(checkText(aiPork)).toBe('돼지고기 제외, AI가 적은 재료 기준 적용');
+    const aiMild = conditionChecks({ ...dakgomtang, id: 'ai-food-1' }, { tags: [], excluded: ['매콤함'] })[0];
+    expect(checkText(aiMild)).toBe('맵지 않음, AI 추정 적용');  // a trait, not an ingredient the AI listed
   });
 });
 
