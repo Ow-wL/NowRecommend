@@ -124,6 +124,10 @@ describe('discovery and reasons', () => {
     const pork = conditionChecks(dakgomtang, { tags: [], excluded: ['돼지고기'] })[0];
     expect(pork.label).toBe('돼지고기 제외(등록 정보 기준)');
     expect(checkText(pork)).toBe('돼지고기 제외, 등록 정보 기준 적용');
+    // A dish the AI named: its ingredients are the model's, never "registered" (Codex pre-deploy review 2026-11-26).
+    const aiPork = conditionChecks({ ...dakgomtang, id: 'ai-food-1' }, { tags: [], excluded: ['돼지고기'] })[0];
+    expect(aiPork.label).toBe('돼지고기 제외(AI 추정)');
+    expect(checkText(aiPork)).toBe('돼지고기 제외, AI가 적은 재료 기준 적용');
   });
 });
 
