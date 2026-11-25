@@ -40,6 +40,8 @@ export function AdminConsole({ token, email, onExit }: { token?: string; email?:
     document.title = `${SECTIONS.find(s => s.id === section)?.label} · 관리 · 지금 추천`;
     document.getElementById('admin-main')?.focus();
   }, [section]);
+  const [appTitle] = useState(() => document.title);
+  useEffect(() => () => { document.title = appTitle; }, [appTitle]);  // the app's own title again on the way out
   useEffect(() => {
     if (!token) return;
     let live = true;
