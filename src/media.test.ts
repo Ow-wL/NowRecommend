@@ -12,7 +12,7 @@ vi.mock('./media.json', () => ({ default: {
   f01: { image: 'https://images.unsplash.com/a.jpg', source: 'unsplash', credit: { author: 'A', license: 'CC0', licenseUrl: '', page: 'https://unsplash.com/photos/x' } },
 } }));
 
-const { tileImage, mediaFor, findSong, youtubeSearch, songLink, overseasLink, mapSearch, recipeSearch } = await import('./media');
+const { tileImage, midImage, mediaFor, findSong, youtubeSearch, songLink, overseasLink, mapSearch, recipeSearch } = await import('./media');
 const { items } = await import('./data');
 
 describe('item media', () => {
@@ -32,6 +32,13 @@ describe('item media', () => {
     expect(tileImage('/food/f02.jpg')).toBe('/food/tile/f02.jpg');
     expect(tileImage('/NowRecommend/food/f-kimbap.jpg')).toBe('/NowRecommend/food/tile/f-kimbap.jpg');  // under a base path
     expect(tileImage('https://upload.example.test/food/a.jpg')).toBe('https://upload.example.test/food/a.jpg');  // someone else's address is not ours to rewrite
+  });
+  it('offers a 720 pixel copy only where one exists', () => {
+    expect(midImage('/food/f02.jpg')).toBe('/food/mid/f02.jpg');
+    expect(midImage('/NowRecommend/food/f-kimbap.jpg')).toBe('/NowRecommend/food/mid/f-kimbap.jpg');
+    expect(midImage('https://images.unsplash.com/a?w=960&h=960&fit=crop')).toBe('https://images.unsplash.com/a?w=720&h=720&fit=crop');
+    expect(midImage('https://is1.mzstatic.com/x/600x600bb.jpg')).toBeUndefined();  // an album cover is 600 already
+    expect(midImage('https://upload.example.test/food/a.jpg')).toBeUndefined();
   });
 
   it('finds a free-form song in the catalog regardless of case and spacing', () => {

@@ -24,6 +24,15 @@ export const tileImage = (url: string) => /^https:\/\//.test(url)
   ? url.replace('w=960&h=960', 'w=420&h=420').replace('/600x600bb', '/300x300bb')
   : url.replace(/(^|\/)food\/([\w-]+\.jpg)$/, '$1food/tile/$2');
 
+/** The same picture at 720 pixels, for `srcset` beside the 960 pixel one (2026-11-26): the result cards are 335-390 CSS
+ *  pixels wide, so a phone at 2x is served by it. Only where a 720 copy exists: a photo saved with the site (public/food/mid,
+ *  scripts/make-tiles.cjs) or a picture host that resizes on request; anything else has none (undefined). */
+export const midImage = (url: string): string | undefined => {
+  if (/^https:\/\//.test(url)) return url.includes('w=960&h=960') ? url.replace('w=960&h=960', 'w=720&h=720') : undefined;
+  const mid = url.replace(/(^|\/)food\/([\w-]+\.jpg)$/, '$1food/mid/$2');
+  return mid === url ? undefined : mid;
+};
+
 /** Covers still marked for a person to confirm (`check`) are not shown. A photo saved with the site is served from its base path. */
 export function mediaFor(id: string): Media | undefined {
   const entry: Entry | undefined = table[id] || found.get(id);

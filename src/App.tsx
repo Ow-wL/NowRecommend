@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { applyAppearance } from './theme';
 import { AppearanceSettings } from './components/AppearanceSettings';
 import { SoundSettings } from './components/SoundSettings';
@@ -39,7 +39,9 @@ import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
 import { ReportDialog } from './components/ReportDialog';
 import { FeedbackDialog } from './components/FeedbackDialog';
-import { AdminConsole } from './components/admin/AdminConsole';
+// The admin console is fetched only when opened (2026-11-26): it is about a tenth of the app's script and only the operator
+// uses it. It needs the network anyway (every panel asks the API), so the service worker keeps it as it is fetched.
+const AdminConsole = lazy(() => import('./components/admin/AdminConsole').then(module => ({ default: module.AdminConsole })));
 import { LearnLoop } from './components/LearnLoop';
 import { countVisit, sendStat } from './api/stats';
 import { TasteReasons } from './components/TasteReasons';
@@ -602,7 +604,7 @@ export default function App() {
   const shownChoices = showAllChoices || query || activeFilter || tasteDecade || selectedOnly ? visibleChoices : visibleChoices.filter((i, n) => n < 24 || draftProfile.selected.includes(i.id));
 
   // The admin console is a screen of its own (2026-11-26): none of the app's bars or menus around it.
-  if (page === 'admin') return <AdminConsole token={account?.token} email={account?.user.email} onExit={() => navigate('taste')} />;
+  if (page === 'admin') return <Suspense fallback={<main className="admin-loading" role="status">관리 화면을 불러오는 중이에요…</main>}><AdminConsole token={account?.token} email={account?.user.email} onExit={() => navigate('taste')} /></Suspense>;
 
   return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} ${page === 'pair' ? ' cat-pair' : page === 'complete' ? ` cat-${completed?.category || category}` : ['recommend', 'onboard'].includes(page) ? ` cat-${category}` : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus();}}>본문 바로가기</a>

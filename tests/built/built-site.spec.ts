@@ -125,13 +125,13 @@ test('the security policy lets Apple Music\'s player into a frame, and no other 
   expect(asked.filter(url => /frames\.example/.test(url))).toEqual([]);
 });
 
-test('every food photo the table names is shipped with its small copy, and none loads from Unsplash', async ({ page, request }) => {
+test('every food photo the table names is shipped with its smaller copies, and none loads from Unsplash', async ({ page, request }) => {
   const media = JSON.parse(readFileSync(new URL('../../src/media.json', import.meta.url), 'utf8')) as Record<string, { image: string; source: string; credit?: { author: string; page: string } }>;
   const entries = Object.entries(media), saved = entries.filter(([, entry]) => !/^https:\/\//.test(entry.image));
   expect(saved.length).toBeGreaterThan(60);
   for (const [id, entry] of saved) {
     expect(entry.image, id).toBe(`food/${id}.jpg`);
-    for (const path of [`/food/${id}.jpg`, `/food/tile/${id}.jpg`]) {  // the tile: `node scripts/make-tiles.cjs`
+    for (const path of [`/food/${id}.jpg`, `/food/tile/${id}.jpg`, `/food/mid/${id}.jpg`]) {  // the copies: `node scripts/make-tiles.cjs`
       const answer = await request.get(path);
       expect(answer.status(), path).toBe(200);
       expect(answer.headers()['content-type'], path).toBe('image/jpeg');  // not the app's page, served for an address that is not there
@@ -141,6 +141,7 @@ test('every food photo the table names is shipped with its small copy, and none 
   const named = saved.map(([id]) => `${id}.jpg`).sort(), folder = new URL('../../public/food/', import.meta.url);
   expect(readdirSync(folder).filter(name => name.endsWith('.jpg')).sort()).toEqual(named);
   expect(readdirSync(new URL('tile/', folder)).sort()).toEqual(named);
+  expect(readdirSync(new URL('mid/', folder)).sort()).toEqual(named);
   // The Unsplash photos moved into the site and still say whose they are.
   const unsplash = entries.filter(([, entry]) => entry.source === 'unsplash');
   expect(unsplash).toHaveLength(38);
@@ -151,7 +152,7 @@ test('every food photo the table names is shipped with its small copy, and none 
   }
   // In the page, under its policy: the small copy is the small size, the photo the full one.
   await page.goto('/');
-  const sizes = await page.evaluate(async () => Promise.all(['food/tile/f01.jpg', 'food/f01.jpg'].map(async path => {
+  const sizes = await page.evaluate(async () => Promise.all(['food/tile/f01.jpg', 'food/mid/f01.jpg', 'food/f01.jpg'].map(async path => {
     const image = new Image(); image.src = new URL(path, document.baseURI).href; await image.decode(); return image.naturalWidth; })));
-  expect(sizes).toEqual([420, 960]);
+  expect(sizes).toEqual([420, 720, 960]);
 });
