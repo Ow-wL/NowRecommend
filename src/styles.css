@@ -854,6 +854,7 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .crash-screen { max-width: 520px; margin: 0 auto; padding: 96px 24px; }
 .crash-screen h1 { font-size: 26px; }
 .crash-screen p { margin-top: 12px; color: var(--text-muted); line-height: 1.6; }
+.admin-loading { max-width: 520px; margin: 0 auto; padding: 96px 24px; color: var(--text-muted); }
 .crash-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .send-note a { text-decoration: underline; text-underline-offset: 3px; }
 .legal-page { max-width: 720px; margin: 0 auto; padding: 8px 0 48px; }
