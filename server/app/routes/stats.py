@@ -151,18 +151,21 @@ class AccessSearch(BaseModel):
 def access_search(search: AccessSearch, response: Response, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
     """As below, narrowed by an address (its start), an event or a day (KST). Narrowing to an address is a look at one
     place's history, so its first page is recorded (admin_audit), as the details of one address are."""
-    if search.address and search.before is None:
+    if search.address:  # every page of it: each shows more of that place's history
         from .admin import audit
         audit(session, admin, "view_address", "address", search.address)
         session.commit()
-    return access_list(response, search.before, search.limit, search.address, search.event, search.day, admin, session)
+    return _access(response, search.before, search.limit, search.address, search.event, search.day, session)
 
 
 @router.get("/api/admin/access")
-def access_list(response: Response, before: int | None = None, limit: int = 50, address: str | None = None, event: str | None = None,
-                day: date | None = None, _: User = Depends(require_admin), session: Session = Depends(get_session)):
+def access_list(response: Response, before: int | None = None, limit: int = 50, _: User = Depends(require_admin), session: Session = Depends(get_session)):
     """The latest entries of the access list (30 days), newest first; `before` (an entry id) pages back. Narrowing
-    (address, event, day) is for POST /api/admin/access/search, which records a look at one address."""
+    (address, event, day) is POST /api/admin/access/search, which records a look at one address."""
+    return _access(response, before, limit, None, None, None, session)
+
+
+def _access(response: Response, before: int | None, limit: int, address: str | None, event: str | None, day: date | None, session: Session):
     if not 1 <= limit <= 200:
         raise HTTPException(422, "한 번에 1~200개까지 볼 수 있어요.")
     response.headers["Cache-Control"] = "no-store"

@@ -1,5 +1,5 @@
 """What is removed once a day (2026-11-18): sign-ups never confirmed, and feedback older than a year (and since
-2026-11-26 admin actions older than a year).
+2026-11-26 admin actions older than two years).
 
 Run with the first count of a day (budget.take), the same moment the old daily counters go, so it happens on any day the
 service is used without a scheduler. Each removal is one DELETE whose conditions are checked by the database itself, so

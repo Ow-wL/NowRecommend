@@ -229,12 +229,17 @@ def suspend_member(member_id: uuid.UUID, request: Suspension, admin: Admin, sess
         try:
             mailer.send(user.email, *suspend_mail(request.reason, f"{settings.public_app_url.rstrip('/')}/#/terms"))
             mailed = True
-            record.detail = {**record.detail, "notified": True}
-            session.commit()
         except Exception as error:  # noqa: BLE001 - the stop holds; the admin is told the mail did not go
-            session.rollback()
             import logging
             logging.getLogger(__name__).error("suspension notice could not be sent: %s", mail_failure(error))
+        if mailed:
+            record.detail = {**record.detail, "notified": True}
+            try:
+                session.commit()
+            except Exception:  # noqa: BLE001 - the mail went; only the record of it is missing, which the log says
+                session.rollback()
+                import logging
+                logging.getLogger(__name__).exception("suspension notice went, but the record could not say so")
     session.refresh(user)
     return {**_member(session, user, settings), "mailed": mailed}
 
