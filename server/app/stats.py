@@ -17,7 +17,9 @@ from .budget import KST
 log = logging.getLogger(__name__)
 
 # What the server counts itself.
-SERVER_EVENTS = ("recommend:food", "recommend:music", "youtube", "signup", "verify", "login", "feedback", "report")
+SERVER_EVENTS = ("recommend:food", "recommend:music", "youtube", "signup", "verify", "login", "feedback", "report",
+                 # Since 2026-11-26 (admin console): model calls against the day's limit, and errors browsers sent.
+                 "ai", "client_error")
 # What a browser may report: its first visit of the day (by its own clock, KST), and features that make no request.
 CLIENT_EVENTS = ("visit", "pair", "type:food", "type:music")
 EVENTS = SERVER_EVENTS + CLIENT_EVENTS

@@ -41,6 +41,9 @@ router = APIRouter()
 
 Email = Annotated[str, StringConstraints(min_length=3, max_length=254)]
 Password = Annotated[str, StringConstraints(min_length=8, max_length=128)]
+SUSPENDED = "이 계정은 이용이 제한됐어요. 자세한 내용은 가입한 이메일로 보낸 안내를 확인하거나 문의해주세요."
+
+
 def _no_web_address(name: str) -> str:
     # The name goes into the service's own signed mails (mail.py), so a sign-up named "보안확인 evil.kr" would have them
     # carry a link (security review 2026-11-24). No one's name looks like a web address.
@@ -150,7 +153,7 @@ def _token_user(authorization: str | None, signer: TokenSigner | None, session: 
     if not claims or not _is_uuid(claims[0]):
         return None
     user = session.get(User, uuid.UUID(claims[0]))
-    if user is None or user.token_version != claims[1]:
+    if user is None or user.token_version != claims[1] or user.suspended_at is not None:  # suspended: signed out (2026-11-26)
         return None
     return None if settings.email_verification and user.email_verified_at is None else user
 
@@ -356,6 +359,10 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
         sent = fresh and _send_verify(user, http, session, signer, mailer, settings)
         raise HTTPException(403, "이메일 확인이 아직이에요. " + ("확인 메일을 보냈어요. 메일의 버튼을 누른 뒤 다시 로그인해주세요." if sent else
                                                        "지금은 확인 메일을 더 보낼 수 없어요. 받은 메일을 찾아보거나 내일 다시 시도해주세요."))
+    if user.suspended_at is not None:
+        # Said only to whoever has the right password (2026-11-26), as the terms say the reason is told by mail.
+        attempt.give_back()
+        raise HTTPException(403, SUSPENDED)
     # One UPDATE, and only if the stored hash is still the one just checked: a password changed or reset between the
     # check and here leaves this login with nothing (it proved the old password), and the token is issued for the
     # version this UPDATE saw, not for whatever a later read would show. A hash made with fewer rounds than are used now
@@ -485,6 +492,9 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
     user = session.scalar(select(User).where(User.email == request.email))
     if user is None:
         return RESET_SENT
+    if user.suspended_at is not None:  # a reset would sign it in; the answer stays the same as for any address
+        log.warning("reset mail not sent: the account is suspended")
+        return RESET_SENT
     # Per account as well, whoever asks and from wherever: an inbox cannot be flooded with these.
     # An account never confirmed gets one a day (2026-11-24): made-up sign-ups were a way to mail strangers and spend the day.
     per_email = settings.reset_daily_per_email if user.email_verified_at is not None or not settings.email_verification else 1
@@ -557,6 +567,8 @@ def confirm_reset(request: ResetConfirm, session: Session = Depends(get_session)
     spent = HTTPException(400, "링크가 만료됐거나 이미 사용됐어요. 비밀번호 재설정을 다시 요청해주세요.")
     if user is None or not hmac.compare_digest(signer.fingerprint(checked), claims[1]):
         raise spent
+    if user.suspended_at is not None:  # a link mailed before the suspension does not sign in either
+        raise HTTPException(403, SUSPENDED)
     # The link reached the inbox, so the address is confirmed too (kept as it was if it already was).
     now = datetime.now(timezone.utc)
     version = _replace_password(user, session, checked, request.password, last_login_at=now,

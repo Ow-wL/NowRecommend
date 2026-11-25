@@ -1,7 +1,7 @@
 """The browser's side of the daily counts, and the admin dashboard that reads them (stats.py, 2026-11-23)."""
 import statistics
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -139,14 +139,23 @@ def insights(response: Response, days: int = 7, _: User = Depends(require_admin)
 
 
 @router.get("/api/admin/access")
-def access_list(response: Response, before: int | None = None, limit: int = 50, _: User = Depends(require_admin), session: Session = Depends(get_session)):
-    """The latest entries of the access list (30 days), newest first; `before` (an entry id) pages back."""
+def access_list(response: Response, before: int | None = None, limit: int = 50, address: str | None = None, event: str | None = None,
+                day: date | None = None, _: User = Depends(require_admin), session: Session = Depends(get_session)):
+    """The latest entries of the access list (30 days), newest first; `before` (an entry id) pages back. Since 2026-11-26
+    narrowed by an address (its start), an event or a day (KST)."""
     if not 1 <= limit <= 200:
         raise HTTPException(422, "한 번에 1~200개까지 볼 수 있어요.")
     response.headers["Cache-Control"] = "no-store"
     query = select(AccessLog).where(AccessLog.at >= datetime.now(KST) - timedelta(days=ACCESS_DAYS)).order_by(AccessLog.id.desc()).limit(limit + 1)
     if before is not None:
         query = query.where(AccessLog.id < before)
+    if address:
+        query = query.where(AccessLog.address.startswith(address[:64], autoescape=True))
+    if event:
+        query = query.where(AccessLog.event == event)
+    if day is not None:
+        start = datetime.combine(day, datetime.min.time(), KST)
+        query = query.where(AccessLog.at >= start, AccessLog.at < start + timedelta(days=1))
     rows = session.scalars(query).all()
     return {"entries": [{"id": r.id, "at": r.at.isoformat(), "address": r.address, "event": r.event} for r in rows[:limit]],
             "more": len(rows) > limit}

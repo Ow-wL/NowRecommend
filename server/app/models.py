@@ -55,6 +55,8 @@ class Item(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # An admin took it out of recommendations (status 'rejected', 2026-11-26); the seed job leaves it so (catalog.seed_items).
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class RecommendationLog(Base):
@@ -80,7 +82,7 @@ class User(Base):
     tastes, favourites, history and presets follow the account across devices; the server only checks its size.
     JSON on SQLite so the auth routes can be tested without PostgreSQL (tests/test_auth.py)."""
     __tablename__ = "users"
-    __table_args__ = (Index("users_email", "email", unique=True),)
+    __table_args__ = (Index("users_email", "email", unique=True), Index("users_created_at", "created_at"))
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(Text)  # normalized: trimmed, lower case
@@ -103,6 +105,9 @@ class User(Base):
     # When the address was shown to be this person's: the link of the confirmation mail was opened, or a reset link was
     # used (2026-11-18). NULL: not confirmed, and with EMAIL_VERIFICATION on, the account does not sign in.
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # An admin stopped the account (terms: 이용 제한, 2026-11-26): no token is accepted, no sign-in or reset (routes/auth.py).
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suspended_reason: Mapped[str | None] = mapped_column(Text)
 
 
 class UsageDaily(Base):
@@ -142,6 +147,7 @@ class Feedback(Base):
     __tablename__ = "feedback"
     __table_args__ = (
         CheckConstraint("kind IN ('praise','problem','idea','other')", name="feedback_kind"),
+        CheckConstraint("status IN ('new','done')", name="feedback_status"),
         Index("feedback_created", "created_at"),
     )
 
@@ -152,13 +158,17 @@ class Feedback(Base):
     contact: Mapped[str | None] = mapped_column(Text)  # an address to answer to, only if the person gave one
     page: Mapped[str] = mapped_column(Text, server_default="")
     app_version: Mapped[str] = mapped_column(Text, server_default="")
+    # Whether an admin dealt with it, and a note only admins read (2026-11-26, migration 0014).
+    status: Mapped[str] = mapped_column(Text, server_default="new")
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    note: Mapped[str] = mapped_column(Text, server_default="")
 
 
 class AccessLog(Base):
     """An address and when it came in (2026-11-24, migration 0013): a visit, sign-up, login or recommendation. Kept 30
     days (retention.py) for looking into abuse and failures, as the privacy policy's 접속 기록 says; not linked to an account."""
     __tablename__ = "access_log"
-    __table_args__ = (Index("access_log_at", "at"),)
+    __table_args__ = (Index("access_log_at", "at"), Index("access_log_address", "address", "at"))
     id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), Identity(), primary_key=True)
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     address: Mapped[str] = mapped_column(Text)
@@ -173,3 +183,21 @@ class StatsDaily(Base):
     day: Mapped[date] = mapped_column(Date, primary_key=True)
     name: Mapped[str] = mapped_column(Text, primary_key=True)
     count: Mapped[int] = mapped_column(Integer, server_default="0")
+
+
+class AdminAudit(Base):
+    """What an admin did from the admin console (2026-11-26, migration 0014): suspending an account, ending its sign-ins,
+    hiding an item, settling feedback. Kept a year (retention.py). The actor's address is copied so the record still says
+    who acted after that account is gone."""
+    __tablename__ = "admin_audit"
+    __table_args__ = (Index("admin_audit_at", "at"), Index("admin_audit_target", "target_type", "target_id"))
+
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), Identity(), primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
+    actor_email: Mapped[str] = mapped_column(Text)
+    action: Mapped[str] = mapped_column(Text)
+    target_type: Mapped[str] = mapped_column(Text)
+    target_id: Mapped[str] = mapped_column(Text)
+    reason: Mapped[str] = mapped_column(Text, server_default="")
+    detail: Mapped[dict] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), server_default=text("'{}'"))

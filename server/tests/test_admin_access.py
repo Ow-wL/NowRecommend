@@ -17,7 +17,7 @@ from app.db import get_session
 from app.llm.free import WEB
 from app.mail import get_mailer
 from app.main import create_app
-from app.models import AccessLog, Feedback, Item, RecommendationLog, Report, StatsDaily, UsageDaily, User
+from app.models import AccessLog, AdminAudit, Feedback, Item, RecommendationLog, Report, StatsDaily, UsageDaily, User
 from app.retention import sweep
 from app.routes.auth import get_signer
 from tests.conftest import needs_db
@@ -40,7 +40,7 @@ def settings(**more):
 @pytest.fixture
 def world():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    for table in (User, UsageDaily, Feedback, StatsDaily, Report, AccessLog):
+    for table in (User, UsageDaily, Feedback, StatsDaily, Report, AccessLog, AdminAudit):
         table.__table__.create(engine)
     make = sessionmaker(engine, expire_on_commit=False)
 

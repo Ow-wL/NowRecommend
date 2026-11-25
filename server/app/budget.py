@@ -117,6 +117,8 @@ def take_total() -> bool:
     try:
         with get_sessionmaker()() as session:
             if take(session, TOTAL, limit) is not None:
+                from .stats import count  # kept 400 days for the admin console's trend (usage_daily keeps a week)
+                count(session, "ai")
                 return True
         # Watched by an alert (DEPLOY.md): past this, recommendations come from the list instead of the model.
         log.warning("AI daily limit reached (AI_DAILY_LIMIT=%d); the model is not called until midnight KST", limit)

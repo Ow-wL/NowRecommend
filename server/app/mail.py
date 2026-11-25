@@ -157,6 +157,24 @@ def digest_mail(counts: dict[str, int], reports: int, first: date, last: date, a
     return subject, text, html
 
 
+def suspend_mail(reason: str, terms: str) -> tuple[str, str, str]:
+    """Subject, plain text and HTML of the notice an account gets when an admin restricts it (admin console, 2026-11-26;
+    terms: the reason is told by the address the person signed up with). The reason is the admin's own words."""
+    subject = "[지금 추천] 계정 이용 제한 안내"
+    text = (f"안녕하세요.\n\n이용약관에 따라 지금 추천 계정의 이용을 제한했어요. 제한하는 동안에는 로그인할 수 없어요.\n\n"
+            f"이유: {reason}\n\n이의가 있거나 계정의 열람·삭제를 원하면 이용약관에 적힌 문의 주소로 알려주세요. 확인해서 답할게요.\n{terms}\n\n"
+            "보내기 전용 주소라 이 메일로 답장은 받지 못해요.\n")
+    body = (f'<p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:{_TEXT}">이용약관에 따라 계정의 이용을 제한했어요. '
+            '제한하는 동안에는 로그인할 수 없어요.</p>'
+            f'<p style="margin:0 0 14px;padding:14px 16px;border-radius:14px;background:#FFF6DF;font-size:15px;line-height:1.6;color:#6B4A00">'
+            f'<b>이유</b><br>{_escape(reason)}</p>'
+            f'<p style="margin:0;font-size:14px;line-height:1.7;color:{_MUTED}">이의가 있거나 계정의 열람·삭제를 원하면 '
+            f'<a href="{_escape(terms)}" style="color:{_INK}">이용약관</a>에 적힌 문의 주소로 알려주세요. 확인해서 답할게요.</p>')
+    html = _page(subject, "계정 이용을 제한했어요.", "계정 이용을 제한했어요", "이용 제한 안내", body,
+                 "이 메일은 지금 추천 계정의 이용 제한을 알리려고 보냈어요.", _site(terms))
+    return subject, text, html
+
+
 def trial_mail(site: str | None = None) -> tuple[str, str, str]:
     """Subject, plain text and HTML of the mail an operator sends to see that sending works (python -m app.cli.mail)."""
     subject = "[지금 추천] 메일 발송 확인"

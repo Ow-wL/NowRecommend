@@ -101,7 +101,8 @@ def list_reports(status: Status | Literal["all"] = "open", _: User = Depends(req
 
 
 @router.post("/api/admin/reports/{report_id}")
-def update_report(report_id: uuid.UUID, update: ReportUpdate, _: User = Depends(require_admin), session: Session = Depends(get_session)):
+def update_report(report_id: uuid.UUID, update: ReportUpdate, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
+    from .admin import audit
     report = session.get(Report, report_id)
     if report is None:
         raise HTTPException(404, "신고를 찾지 못했어요.")
@@ -110,6 +111,9 @@ def update_report(report_id: uuid.UUID, update: ReportUpdate, _: User = Depends(
         if not (item and item.parent_id and is_ai_pick(item.id)):
             raise HTTPException(409, "사진을 뺄 수 있는 항목이 아니에요.")
         item.parent_id = NO_PARENT
+        audit(session, admin, "report_drop_image", "item", item.id, name=item.name)
+    if update.status and update.status != report.status:
+        audit(session, admin, f"report_{update.status}", "report", str(report.id), item=report.item_id)
     if update.status:
         report.status = update.status
         report.resolved_at = None if update.status == "open" else datetime.now(timezone.utc)

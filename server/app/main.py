@@ -10,7 +10,7 @@ from .errors import ErrorResponseMiddleware, PasswordBusy
 from .legal import get_legal
 from .ratelimit import RateLimitMiddleware
 from .bodylimit import BodyLimitMiddleware
-from .routes import auth, catalog, client_errors, feedback, health, parse, recommend, reports, stats, youtube
+from .routes import admin, auth, catalog, client_errors, feedback, health, parse, recommend, reports, stats, youtube
 from .routes.auth import get_signer
 from .vocab import get_vocab
 
@@ -67,6 +67,15 @@ def create_app() -> FastAPI:
     app.include_router(youtube.router)
     app.include_router(feedback.router)
     app.include_router(stats.router)
+    app.include_router(admin.router)
+
+    @app.middleware("http")
+    async def admin_not_cached(request, call_next):
+        """Nothing an admin reads is kept by a browser or a proxy cache (admin console, 2026-11-26): it names people and places."""
+        response = await call_next(request)
+        if request.url.path.startswith("/api/admin/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
     return app
 
 

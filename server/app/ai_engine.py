@@ -83,7 +83,10 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
         return AiAnswer(pinned_rows, {}, None)
     liked, disliked = labels_for(session, profile.selected, category), labels_for(session, profile.disliked, category)
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
-    avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows)]))
+    # Items an admin hid (admin console, 2026-11-26) are asked to be avoided too, and dropped below if named anyway.
+    hidden = session.scalars(select(Item).where(Item.category == category, Item.hidden_at.is_not(None)).limit(60)).all()
+    avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows),
+                                *(item_label(r) for r in hidden)]))
     dishes = {r.name: {*r.tags, *r.ingredients} for r in reviewed_items(session) if r.category == "food"} if category == "food" else None
     validation = ask_picks(request, model, liked, disliked, avoid, wanted, dishes, song_store())
     # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too,
@@ -94,8 +97,8 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     queue, spares = [*validation.picks], [*validation.spares]
     while queue and len(unique) < wanted:
         for row, pick in zip(persist_picks(session, category, queue), queue, strict=True):
-            if row.id in blocked or row.id in seen_ids:
-                validation.issues["blocked_id" if row.id in blocked else "duplicate_id"] += 1
+            if row.id in blocked or row.id in seen_ids or getattr(row, "hidden_at", None) is not None:
+                validation.issues["hidden" if getattr(row, "hidden_at", None) is not None else "blocked_id" if row.id in blocked else "duplicate_id"] += 1
             elif len(unique) < wanted:
                 seen_ids.add(row.id)
                 unique.append((row, pick))
