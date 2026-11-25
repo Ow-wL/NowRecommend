@@ -508,6 +508,9 @@ def request_reset(request: ResetRequest, http: Request, session: Session = Depen
         mine.give_back()  # no mail leaves, so this account's own three are not used up by it
         log.error("reset mail not sent: today's mails for the whole service are used up (RESET_DAILY_TOTAL)")
         return RESET_SENT
+    session.refresh(user)
+    if user.suspended_at is not None:  # suspended while this request was counting
+        return RESET_SENT
     token = signer.issue_reset(str(user.id), user.password_hash, settings.reset_token_minutes * 60)
     link = f"{settings.public_app_url.rstrip('/')}/#/reset/{token}"
     try:
