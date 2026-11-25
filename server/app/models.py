@@ -55,7 +55,7 @@ class Item(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    # An admin took it out of recommendations (status 'rejected', 2026-11-26); the seed job leaves it so (catalog.seed_items).
+    # An admin took it out of recommendations (2026-11-26; status is kept); the catalog, retrieval and AI picks skip it.
     hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
@@ -187,7 +187,7 @@ class StatsDaily(Base):
 
 class AdminAudit(Base):
     """What an admin did from the admin console (2026-11-26, migration 0014): suspending an account, ending its sign-ins,
-    hiding an item, settling feedback. Kept a year (retention.py). The actor's address is copied so the record still says
+    hiding an item, settling feedback, and each look at one member or one address. Kept two years (retention.py). The actor's address is copied so the record still says
     who acted after that account is gone."""
     __tablename__ = "admin_audit"
     __table_args__ = (Index("admin_audit_at", "at"), Index("admin_audit_target", "target_type", "target_id"))

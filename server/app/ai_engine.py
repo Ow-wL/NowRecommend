@@ -76,7 +76,9 @@ def ask_picks(request: RecommendRequest, model: JsonModel, liked: list[str], dis
 
 def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> AiAnswer:
     category, profile = request.category, request.profile
-    pinned_rows = session.scalars(select(Item).where(Item.id.in_(request.pinnedIds), Item.category == category)).all() if request.pinnedIds else []
+    # Hidden by an admin (2026-11-26): not even when the browser pins it.
+    pinned_rows = session.scalars(select(Item).where(Item.id.in_(request.pinnedIds), Item.category == category, Item.hidden_at.is_(None))).all() if request.pinnedIds else []
+    pinned_rows = [r for r in pinned_rows if r.id in request.pinnedIds]
     pinned_rows.sort(key=lambda r: request.pinnedIds.index(r.id))
     wanted = request.result_count - len(pinned_rows)
     if wanted <= 0:
@@ -84,9 +86,10 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     liked, disliked = labels_for(session, profile.selected, category), labels_for(session, profile.disliked, category)
     # Everything shown in this request, excluded from it, or pinned must not come back as a "new" pick.
     # Items an admin hid (admin console, 2026-11-26) are asked to be avoided too, and dropped below if named anyway.
-    hidden = session.scalars(select(Item).where(Item.category == category, Item.hidden_at.is_not(None)).limit(60)).all()
+    hidden = session.scalars(select(Item).where(Item.category == category, Item.hidden_at.is_not(None))).all()
+    hidden_labels = {item_label(r).lower() for r in hidden}
     avoid = list(dict.fromkeys([*labels_for(session, [*request.seenIds, *request.excludedIds], category), *(item_label(r) for r in pinned_rows),
-                                *(item_label(r) for r in hidden)]))
+                                *(item_label(r) for r in hidden[:60])]))
     dishes = {r.name: {*r.tags, *r.ingredients} for r in reviewed_items(session) if r.category == "food"} if category == "food" else None
     validation = ask_picks(request, model, liked, disliked, avoid, wanted, dishes, song_store())
     # A pick that resolved to an item the client already saw or excluded (same song, different spelling) is dropped too,
@@ -97,8 +100,10 @@ def ask_model(session: Session, request: RecommendRequest, model: JsonModel) -> 
     queue, spares = [*validation.picks], [*validation.spares]
     while queue and len(unique) < wanted:
         for row, pick in zip(persist_picks(session, category, queue), queue, strict=True):
-            if row.id in blocked or row.id in seen_ids or getattr(row, "hidden_at", None) is not None:
-                validation.issues["hidden" if getattr(row, "hidden_at", None) is not None else "blocked_id" if row.id in blocked else "duplicate_id"] += 1
+            # By the row or by its name: a row rebuilt after a failed save carries no hidden_at.
+            hidden_pick = getattr(row, "hidden_at", None) is not None or item_label(row).lower() in hidden_labels
+            if row.id in blocked or row.id in seen_ids or hidden_pick:
+                validation.issues["hidden" if hidden_pick else "blocked_id" if row.id in blocked else "duplicate_id"] += 1
             elif len(unique) < wanted:
                 seen_ids.add(row.id)
                 unique.append((row, pick))

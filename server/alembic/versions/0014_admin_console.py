@@ -3,8 +3,8 @@
 - users.suspended_at / suspended_reason: an admin stopped this account (terms §이용 제한). A suspended account accepts no
   token and cannot sign in or reset its password (routes/auth.py).
 - feedback.status / handled_at / note: whether an admin dealt with it, and a note only admins read.
-- items.hidden_at: an admin took the item out of recommendations (status 'rejected'); the seed job leaves it hidden.
-- admin_audit: what an admin did, to what, and why; kept a year (retention.py).
+- items.hidden_at: an admin took the item out of recommendations (its review status is kept); the seed job leaves it hidden.
+- admin_audit: what an admin did or looked at, to what, and why; kept two years (retention.py).
 
 Expand migration (new nullable columns and a new table older code ignores). An image from before this revision does not
 start on it (the startup check wants the head it knows), so downgrade first to go back.
@@ -24,6 +24,8 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Waits at most a few seconds for a busy table instead of queueing every request behind this migration.
+    op.execute("SET LOCAL lock_timeout = '5s'")
     op.add_column("users", sa.Column("suspended_at", sa.DateTime(timezone=True)))
     op.add_column("users", sa.Column("suspended_reason", sa.Text))
     op.add_column("feedback", sa.Column("status", sa.Text, nullable=False, server_default="new"))

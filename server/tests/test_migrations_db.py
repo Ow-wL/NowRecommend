@@ -139,3 +139,21 @@ def test_only_listed_operational_tables_are_left_out_of_the_model_comparison():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert UNMANAGED_TABLES == {module.BACKUP}  # the table 0003 creates, and nothing else
+
+
+def test_0014_keeps_existing_feedback_and_goes_back_cleanly(migration_db):
+    """The admin console's migration (2026-11-26) on a database that already holds feedback: rows become 'new', and a
+    downgrade to 0013 takes the new columns and the action record away again."""
+    from app.migrations import current_revision, downgrade, migrate
+
+    migrate(include_contract=True)
+    downgrade("0013")
+    with migration_db.begin() as conn:
+        conn.execute(text("INSERT INTO feedback (id, kind, message) VALUES (gen_random_uuid(), 'idea', '좋아요')"))
+    assert migrate().target == "0014" and current_revision() == "0014"
+    with migration_db.connect() as conn:
+        assert conn.execute(text("SELECT status, note, handled_at FROM feedback")).one() == ("new", "", None)
+    downgrade("0013")
+    assert current_revision() == "0013" and not inspect(migration_db).has_table("admin_audit")
+    assert "status" not in {c["name"] for c in inspect(migration_db).get_columns("feedback")}
+    assert {"message"} <= {c["name"] for c in inspect(migration_db).get_columns("feedback")}

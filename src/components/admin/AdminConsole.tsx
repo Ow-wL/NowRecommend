@@ -74,7 +74,10 @@ export function AdminConsole({ token, email, onExit }: { token?: string; email?:
           <button type="button" className="icon-button" aria-label="새로고침" onClick={() => setStamp(n => n + 1)}><RefreshCw size={18} /></button>
         </div>
       </header>
-      <main id="admin-main" tabIndex={-1} className={`ac-main section-${section}`}>
+      {/* Keyed by the token: a sign-in that ends (or changes) drops every section's loaded data, open sheets included. */}
+      <main id="admin-main" key={token || 'signed-out'} tabIndex={-1} className={`ac-main section-${section}`}>
+        {!token && <div className="notice warning" role="alert"><div><strong>관리자 계정으로 로그인해야 볼 수 있어요.</strong></div></div>}
+        {token && <>
         {section === 'overview' && <AdminOverview token={token} days={days} go={setSection} stamp={stamp} />}
         {section === 'stats' && <div className="ac-embed"><AdminStats key={stamp} token={token} /></div>}
         {section === 'inbox' && <div className="ac-grid-inbox" key={stamp}>
@@ -87,6 +90,7 @@ export function AdminConsole({ token, email, onExit }: { token?: string; email?:
         {section === 'access' && <section className="ac-card ac-panel" key={stamp}><AdminAccess token={token} /></section>}
         {section === 'system' && <AdminSystem token={token} stamp={stamp} />}
         {section === 'audit' && <AdminAudit token={token} stamp={stamp} />}
+        </>}
       </main>
     </div>
   </div>;

@@ -29,6 +29,7 @@ def stale_signup(settings: Settings, now: datetime | None = None):
     now = now or datetime.now(timezone.utc)
     made_before = now - timedelta(days=settings.unverified_keep_days, hours=settings.verify_link_hours)
     return (User.email_verified_at.is_(None), User.last_login_at.is_(None), User.store.is_(None), User.is_admin.is_(False),
+            User.suspended_at.is_(None),  # a suspension is not undone by signing up again (2026-11-26)
             User.created_at < made_before)
 
 

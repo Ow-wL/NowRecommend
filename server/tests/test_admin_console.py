@@ -203,14 +203,59 @@ def test_one_address_opens_its_thirty_days_and_the_look_is_recorded(world):
         s.add_all([AccessLog(address="203.0.113.5", event="visit", at=now - timedelta(days=1)), AccessLog(address="203.0.113.5", event="login", at=now),
                    AccessLog(address="203.0.113.5", event="visit", at=now - timedelta(days=40)), AccessLog(address="198.51.100.2", event="visit", at=now)])
         s.commit()
-    history = client.get("/api/admin/access/address", params={"address": "203.0.113.5"}, headers=bearer(signer, admin)).json()
+    history = client.post("/api/admin/access/address", json={"address": "203.0.113.5"}, headers=bearer(signer, admin)).json()
     assert history["total"] == 2 and history["events"] == {"visit": 1, "login": 1} and len(history["days"]) == 2
-    narrowed = client.get("/api/admin/access", params={"address": "203.0.113", "event": "login"}, headers=bearer(signer, admin)).json()
+    narrowed = client.post("/api/admin/access/search", json={"address": "203.0.113", "event": "login"}, headers=bearer(signer, admin)).json()
     assert [e["address"] for e in narrowed["entries"]] == ["203.0.113.5"]
+    assert client.post("/api/admin/access/search", json={"event": "visit"}, headers=bearer(signer, admin)).status_code == 200  # no address: not a look at one place
     with make() as s:
-        assert s.scalar(select(AdminAudit.action)) == "view_address"
+        assert [(a.action, a.target_id) for a in s.scalars(select(AdminAudit).order_by(AdminAudit.id))] == [("view_address", "203.0.113.5"), ("view_address", "203.0.113")]
 
 
 def test_the_suspension_notice_names_the_reason_and_where_to_object():
     subject, text, html = suspend_mail("광고 글 반복 <b>", "https://app.example.com/#/terms")
     assert "이용 제한" in subject and "광고 글 반복 <b>" in text and "&lt;b&gt;" in html and "https://app.example.com/#/terms" in text
+
+
+class BrokenMail(Outbox):
+    def send(self, to, subject, text, html=None):
+        raise ConnectionRefusedError("no mail server")
+
+
+def test_a_failed_notice_leaves_the_suspension_in_place_and_says_so(world):
+    client, _, make, signer = world
+    client.app.dependency_overrides[get_mailer] = lambda: BrokenMail()
+    admin, member = person(make, "op@example.com", admin=True), person(make, "lee@example.com")
+    answer = client.post(f"/api/admin/members/{member.id}/suspend", json={"reason": "광고 반복"}, headers=bearer(signer, admin)).json()
+    assert answer["suspended"] and answer["mailed"] is False
+    with make() as s:
+        assert s.scalar(select(AdminAudit.detail)) == {"notified": False, "who": "le*@example.com"}
+
+
+def test_a_release_ends_the_tokens_issued_before_the_suspension(world):
+    client, _, make, signer = world
+    admin, member = person(make, "op@example.com", admin=True), person(make, "lee@example.com")
+    client.post(f"/api/admin/members/{member.id}/suspend", json={"reason": "확인 중", "notify": False}, headers=bearer(signer, admin))
+    client.post(f"/api/admin/members/{member.id}/unsuspend", json={}, headers=bearer(signer, admin))
+    assert client.get("/api/auth/me", headers=bearer(signer, member, 1)).status_code == 401  # minted between the two
+    assert client.get("/api/auth/me", headers=bearer(signer, member, 2)).status_code == 200
+
+
+def test_a_suspended_unconfirmed_sign_up_is_not_swept_away(world):
+    from app.retention import sweep
+    client, _, make, signer = world
+    old = datetime.now(timezone.utc) - timedelta(days=30)
+    with make() as s:
+        s.add_all([User(email="gone@example.com", name="a", password_hash="x", created_at=old),
+                   User(email="held@example.com", name="b", password_hash="x", created_at=old, suspended_at=old, suspended_reason="스팸")])
+        s.commit()
+        sweep(s, settings())
+        assert [u.email for u in s.scalars(select(User))] == ["held@example.com"]
+
+
+def test_odd_saved_data_still_opens_the_member(world):
+    client, _, make, signer = world
+    admin = person(make, "op@example.com", admin=True)
+    member = person(make, "lee@example.com", store={"version": 2, "favorites": "x", "profiles": {"food": {"selected": 3}, "music": "y"}, "tasteTypes": []})
+    details = client.get(f"/api/admin/members/{member.id}", headers=bearer(signer, admin))
+    assert details.status_code == 200 and details.json()["store"]["counts"] == {"liked": 0, "tasteTypes": 0}

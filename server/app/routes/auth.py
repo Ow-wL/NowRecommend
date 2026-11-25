@@ -351,6 +351,10 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
         right = verify_password(request.password, checked or absent_hash())
     if not right or user is None:
         raise refused
+    if user.suspended_at is not None:
+        # Said only to whoever has the right password (2026-11-26), as the terms say the reason is told by mail.
+        attempt.give_back()
+        raise HTTPException(403, SUSPENDED)
     if settings.email_verification and user.email_verified_at is None:
         # The right password, so this tells only the account's owner (or whoever has the password) that it waits for a
         # confirmation. A link is mailed again, for a new sign-up only within its keeping days (after them it is removed).
@@ -359,17 +363,14 @@ def login(request: Credentials, http: Request, session: Session = Depends(get_se
         sent = fresh and _send_verify(user, http, session, signer, mailer, settings)
         raise HTTPException(403, "이메일 확인이 아직이에요. " + ("확인 메일을 보냈어요. 메일의 버튼을 누른 뒤 다시 로그인해주세요." if sent else
                                                        "지금은 확인 메일을 더 보낼 수 없어요. 받은 메일을 찾아보거나 내일 다시 시도해주세요."))
-    if user.suspended_at is not None:
-        # Said only to whoever has the right password (2026-11-26), as the terms say the reason is told by mail.
-        attempt.give_back()
-        raise HTTPException(403, SUSPENDED)
     # One UPDATE, and only if the stored hash is still the one just checked: a password changed or reset between the
     # check and here leaves this login with nothing (it proved the old password), and the token is issued for the
     # version this UPDATE saw, not for whatever a later read would show. A hash made with fewer rounds than are used now
     # is redone in the same statement, while the password is at hand.
     with attempt.unless_busy():
         values = {"last_login_at": datetime.now(timezone.utc), **({"password_hash": hash_password(request.password)} if needs_rehash(checked) else {})}
-    version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked).values(**values)
+    # Not while suspended either: a suspension committed between the check above and here leaves this login with nothing.
+    version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked, User.suspended_at.is_(None)).values(**values)
                               .returning(User.token_version)).scalar()
     session.commit()
     if version is None:
@@ -442,7 +443,7 @@ def _replace_password(user: User, session: Session, checked_hash: str, password:
     UPDATE, so of two requests holding the same reset link (or the same old password) exactly one wins, and neither can
     undo a change that was finished in between. Returns the token version this UPDATE produced (RETURNING: reading the
     row again could show a later one, and hand a token that outlives someone else's "sign out everywhere"), or None."""
-    version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked_hash)
+    version = session.execute(update(User).where(User.id == user.id, User.password_hash == checked_hash, User.suspended_at.is_(None))
                               .values(password_hash=hash_password(password), token_version=User.token_version + 1, **also)
                               .returning(User.token_version)).scalar()
     session.commit()
