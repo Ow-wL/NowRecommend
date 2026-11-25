@@ -94,3 +94,20 @@ for (const width of [320, 390]) test(`the result and a friend's panel fit a ${wi
   await expect(page.locator('.type-match')).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('switching food and music halfway keeps each test where it was, and focus follows the question', async ({ page }) => {
+  // Review 2026-11-26: the switch threw the answers away, and starting left keyboard focus on the page body.
+  await page.goto('/#/type');
+  await page.getByRole('button', { name: '테스트 시작' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.type-question h2')).toBeFocused();
+  await page.getByRole('button', { name: '그렇다', exact: true }).click();
+  await page.getByRole('button', { name: '그렇다', exact: true }).click();
+  await expect(page.locator('.type-question small')).toHaveText('3 / 24');
+  await page.getByRole('group', { name: '테스트 분야' }).getByRole('button', { name: '음악' }).click();
+  await expect(page.locator('.type-question')).toHaveCount(0);  // music has a test of its own, not started
+  await page.getByRole('group', { name: '테스트 분야' }).getByRole('button', { name: '음식' }).click();
+  await expect(page.locator('.type-question small')).toHaveText('3 / 24');
+  await page.getByRole('button', { name: '이전 문장' }).click();
+  await expect(page.locator('.type-question h2')).toBeFocused();
+});

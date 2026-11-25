@@ -85,9 +85,12 @@ export function authErrorMessage(error: unknown, mode: 'login' | 'signup' | 'for
   if (error.kind === 'offline') return '서버에 연결하지 못했어요. 네트워크를 확인해주세요.';
   if (error.kind === 'timeout') return '서버 응답이 늦어요. 잠시 후 다시 시도해주세요.';
   if (error.status === 503) {
+    // Too many password checks at once (server/app/main.py password_busy): a moment's wait, not a missing feature (review 2026-11-26).
+    if (error.message.includes('요청이 많아요')) return '지금 로그인 요청이 많아요. 잠시 후 다시 시도해주세요.';
     if (mode === 'forgot') return '지금은 메일로 비밀번호를 다시 정할 수 없어요. 잠시 후 다시 시도해주세요.';
     if (mode === 'signup' && error.message.includes('메일')) return '지금은 가입 확인 메일을 보낼 수 없어 가입을 받지 못해요. 잠시 후 다시 시도해주세요.';
-    return '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
+    if (error.message.includes('계정 기능이 설정되지')) return '이 서버에는 계정 기능이 설정되지 않았어요. 로그인 없이 계속 쓸 수 있어요.';
+    return '지금은 요청을 처리할 수 없어요. 잠시 후 다시 시도해주세요.';
   }
   // The server's own sentence: it tells a busy minute from an account whose password was got wrong too often (and what to do then).
   if (error.status === 429) return error.message || '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';

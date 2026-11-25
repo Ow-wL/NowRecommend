@@ -51,7 +51,13 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
 }) {
   const [shared, setShared] = useState<SharedTypes | null>(() => parseShared(window.location.search));
   const [category, setCategory] = useState<Category>(() => shared && !shared.types.food && shared.types.music ? 'music' : 'food');
-  const [answers, setAnswers] = useState<Answer[] | null>(null);
+  // Answers in progress, one test per field: switching 음식/음악 halfway keeps both (review 2026-11-26).
+  const [progress, setProgress] = useState<Record<Category, Answer[] | null>>({ food: null, music: null });
+  const answers = progress[category];
+  const setAnswers = (next: Answer[] | null) => setProgress(p => ({ ...p, [category]: next }));
+  // Keyboard focus follows the question area as it opens or closes: its heading, so a screen reader reads it (review 2026-11-26).
+  const focusOn = (selector: string) => requestAnimationFrame(() => document.querySelector<HTMLElement>(selector)?.focus());
+  const begin = () => { setAnswers([]); focusOn('.type-question h2'); };
   const questions = statements(category), result = results[category], fromTaste = codeFromItems(category, likedItems[category]);
   const friend = shared?.types[category];
   const profile = result && typeProfile(category, result.code), related = result && relatedTypes(category, result.code);
@@ -78,10 +84,10 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
       {onBack && <button className="back-link" onClick={onBack}><ArrowLeft size={16} /> {backLabel}</button>}
       <h1>취향 유형 테스트</h1>
       <p>음식과 음악 취향을 MBTI처럼 네 글자로 나눠 봐요. 재미로 보는 유형이에요.</p>
-      <div className="filter-tabs lab-category" role="group" aria-label="테스트 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => { setCategory(c); setAnswers(null); }}>{categoryLabel[c]}</button>)}</div>
+      <div className="filter-tabs lab-category" role="group" aria-label="테스트 분야">{(['food', 'music'] as Category[]).map(c => <button key={c} aria-pressed={category === c} className={category === c ? 'active' : ''} onClick={() => setCategory(c)}>{categoryLabel[c]}</button>)}</div>
     </div>
     <div className={`flow-body cat-${category}`}>
-      {!answers && shared && friend && <FriendPanel category={category} shared={shared} friend={friend} mine={result} items={items} onStart={() => setAnswers([])} onClose={closeFriend} />}
+      {!answers && shared && friend && <FriendPanel category={category} shared={shared} friend={friend} mine={result} items={items} onStart={begin} onClose={closeFriend} />}
       {answers ? <section className="panel type-question">
         <div className="type-progress" role="progressbar" aria-label="테스트 진행" aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={step}><span style={{ width: `${step / questions.length * 100}%` }} /></div>
         <small>{step + 1} / {questions.length}</small>
@@ -89,7 +95,7 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
         <div className="type-scale" role="group" aria-label="얼마나 그런가요?" key={step}>
           {SCALE.map(s => <button key={s.value} className={`type-scale-choice v${s.value + 2}`} onClick={() => answer(s.value)}><i aria-hidden="true" /><span>{s.label}</span></button>)}
         </div>
-        <button className="text-button" onClick={() => setAnswers(step ? answers.slice(0, -1) : null)}>{step ? '이전 문장' : '그만두기'}</button>
+        <button className="text-button" onClick={() => { setAnswers(step ? answers.slice(0, -1) : null); focusOn(step ? '.type-question h2' : '.type-start h2, .type-result h2, .type-match-score, .type-friend .button.primary'); }}>{step ? '이전 문장' : '그만두기'}</button>
       </section> : result ? <section className={`panel type-result ${category}`}>
         {/* At a glance (2026-11-23): the picture, the code and name, the four sides in a word each, and three short lines.
             The long reading is folded below for whoever wants it. */}
@@ -115,7 +121,7 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
         <div className="type-actions">
           <button className="button primary" onClick={() => void sendLink()}><Send size={16} />친구에게 보내고 궁합 보기</button>
           {!profile && <button className="button secondary" onClick={() => onRecommend(category, result)}><Sparkles size={16} />이 유형으로 추천받기</button>}
-          <button className="button secondary" onClick={() => setAnswers([])}><RefreshCw size={16} />다시 테스트</button>
+          <button className="button secondary" onClick={begin}><RefreshCw size={16} />다시 테스트</button>
         </div>
         {profile && <details className="type-more">
           <summary>이 유형 자세히 읽기<ChevronDown size={16} className="chevron" /></summary>
@@ -146,7 +152,7 @@ export function TasteType({ results, likedItems, items, onSave, onRecommend, onB
         <h2 tabIndex={-1}>{categoryLabel[category]} 취향은 어떤 유형일까요?</h2>
         <p>문장 {questions.length}개에 얼마나 그런지 답하면 네 글자 유형, 축별 성향 비율, 강점과 조심할 점, 잘 맞는 유형까지 알려드려요. 3분쯤 걸려요.</p>
         <div className="type-actions">
-          <button className="button primary" onClick={() => setAnswers([])}>테스트 시작<ArrowRight size={16} /></button>
+          <button className="button primary" onClick={begin}>테스트 시작<ArrowRight size={16} /></button>
           {fromTaste ? <button className="button secondary" onClick={() => finish(fromTaste, 'taste')}>등록한 취향으로 바로 보기</button>
             : <button className="button secondary" onClick={() => onEditTaste(category)}>취향 {MIN_ITEMS_FOR_TYPE}개 이상 등록하기</button>}
         </div>
