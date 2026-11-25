@@ -153,7 +153,7 @@ def _store_counts(store: dict | None) -> dict[str, int]:
     if not isinstance(store, dict):
         return {}
     profiles = store.get("profiles") if isinstance(store.get("profiles"), dict) else {}
-    liked = sum(len(p.get("selected") or []) for p in profiles.values() if isinstance(p, dict))
+    liked = sum(len(p["selected"]) for p in profiles.values() if isinstance(p, dict) and isinstance(p.get("selected"), list))
     out = {"favorites": store.get("favorites"), "history": store.get("history"), "presets": store.get("presets")}
     counts = {k: len(v) for k, v in out.items() if isinstance(v, list)}
     counts["liked"] = liked
@@ -220,16 +220,21 @@ def suspend_member(member_id: uuid.UUID, request: Suspension, admin: Admin, sess
         raise HTTPException(409, "이미 정지된 계정이에요.")
     session.execute(update(User).where(User.id == user.id).values(suspended_at=datetime.now(timezone.utc), suspended_reason=request.reason,
                                                                    token_version=User.token_version + 1))
+    record = AdminAudit(actor_id=admin.id, actor_email=admin.email, action="suspend", target_type="member", target_id=str(user.id),
+                        reason=request.reason, detail={"notified": False, "who": mask_email(user.email)})
+    session.add(record)
+    session.commit()  # the stop holds before any mail goes: no notice for a suspension that did not happen
     mailed = False
     if request.notify and mailer is not None:
         try:
             mailer.send(user.email, *suspend_mail(request.reason, f"{settings.public_app_url.rstrip('/')}/#/terms"))
             mailed = True
+            record.detail = {**record.detail, "notified": True}
+            session.commit()
         except Exception as error:  # noqa: BLE001 - the stop holds; the admin is told the mail did not go
+            session.rollback()
             import logging
             logging.getLogger(__name__).error("suspension notice could not be sent: %s", mail_failure(error))
-    audit(session, admin, "suspend", "member", str(user.id), request.reason, notified=mailed, who=mask_email(user.email))
-    session.commit()
     session.refresh(user)
     return {**_member(session, user, settings), "mailed": mailed}
 
@@ -239,7 +244,8 @@ def unsuspend_member(member_id: uuid.UUID, request: Because, admin: Admin, sessi
     user = _get_member(session, member_id, lock=True)
     if user.suspended_at is None:
         raise HTTPException(409, "정지된 계정이 아니에요.")
-    user.suspended_at, user.suspended_reason = None, None
+    # Tokens issued in the moment before the suspension do not come back to life with the release.
+    session.execute(update(User).where(User.id == user.id).values(suspended_at=None, suspended_reason=None, token_version=User.token_version + 1))
     audit(session, admin, "unsuspend", "member", str(user.id), request.reason, who=mask_email(user.email))
     session.commit()
     return _member(session, user, settings)
@@ -355,10 +361,15 @@ def system(admin: Admin, session: Session = Depends(get_session), settings: Sett
 
 # ---- access list: one address ----
 
-@router.get("/api/admin/access/address")
-def address_history(address: Annotated[str, StringConstraints(min_length=3, max_length=64)], admin: Admin, session: Session = Depends(get_session)):
+class AddressLook(BaseModel):
+    address: Annotated[str, StringConstraints(min_length=3, max_length=64, strip_whitespace=True)]
+
+
+@router.post("/api/admin/access/address")
+def address_history(look: AddressLook, admin: Admin, session: Session = Depends(get_session)):
     """What the 30-day access list holds for one address (or IPv6 /64): when it came, how often, for what. Looking is
     recorded, as it is a look at one place's history."""
+    address = look.address
     since = datetime.now(KST) - timedelta(days=ACCESS_DAYS)
     rows = session.execute(select(AccessLog.at, AccessLog.event).where(AccessLog.address == address, AccessLog.at >= since).order_by(AccessLog.at)).all()
     audit(session, admin, "view_address", "address", address)

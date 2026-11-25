@@ -91,3 +91,21 @@ def test_the_request_log_is_read_without_text_and_by_kind(client, db_session):
     assert [r["category"] for r in catalog] == ["music"]
     assert client.get("/api/admin/items/f01", headers=headers).json()["shown30d"] == 1
     assert client.get("/api/admin/system", headers=headers).json()["database"]["ok"] is True
+
+
+def test_a_hidden_item_is_not_recommended_even_when_pinned(client, db_session):
+    from app.ai_engine import ask_model
+    from app.schemas import RecommendRequest
+    headers = admin(db_session)
+    client.post("/api/admin/items/f01/hide", json={"reason": "시험"}, headers=headers)
+    db_session.expire_all()
+
+    class Model:
+        model = "fake"
+
+        def generate_json(self, system, payload, schema):
+            raise RuntimeError("not asked when pins fill the answer")
+
+    request = RecommendRequest.model_validate({"category": "food", "raw": "", "pinnedIds": ["f01", "f02"], "count": 1})
+    answer = ask_model(db_session, request, Model())
+    assert [r.id for r in answer.rows] == ["f02"]

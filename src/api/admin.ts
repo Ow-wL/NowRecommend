@@ -59,7 +59,7 @@ export const fetchSystem = (token: string, o?: Options) => get('/api/admin/syste
 
 export type AddressHistory = { address: string; total: number; first: string | null; last: string | null; events: Record<string, number>; days: { day: string; count: number }[] };
 const validAddress = (v: any): v is AddressHistory => obj(v) && typeof v.address === 'string' && Array.isArray(v.days);
-export const fetchAddress = (token: string, address: string, o?: Options) => get(`/api/admin/access/address?address=${encodeURIComponent(address)}`, validAddress, token, o);
+export const fetchAddress = (token: string, address: string, o?: Options) => post('/api/admin/access/address', { address }, validAddress, token, o);
 
 export type ItemStatusFilter = 'all' | 'reviewed' | 'draft' | 'rejected' | 'hidden';
 export type ItemRow = { id: string; category: 'food' | 'music'; name: string; artist: string | null; subtitle: string; tags: string[]; status: string; source: string;

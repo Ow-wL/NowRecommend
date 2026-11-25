@@ -56,6 +56,6 @@ const validAccess = (v: any): v is AccessPage => !!v && typeof v.more === 'boole
   && v.entries.every((e: any) => Number.isInteger(e?.id) && typeof e.at === 'string' && typeof e.address === 'string' && typeof e.event === 'string');
 /** `filter` (2026-11-26): an address's start, one event, one day (YYYY-MM-DD, KST), narrowed on the server. */
 export function fetchAccess(token: string, before?: number, { base = API_BASE_URL, fetchImpl, filter = {} }: Options & { filter?: { address?: string; event?: string; day?: string } } = {}) {
-  const query = new URLSearchParams({ limit: '100', ...(before ? { before: String(before) } : {}), ...Object.fromEntries(Object.entries(filter).filter(([, v]) => v)) }).toString();
-  return apiJson(`/api/admin/access?${query}`, validAccess, { base, fetchImpl, headers: authHeaders(token) });
+  // In a POST body (2026-11-26), so an address looked for stays out of request logs; the server records the look.
+  return apiJson('/api/admin/access/search', validAccess, { base, fetchImpl, method: 'POST', body: { limit: 100, ...(before ? { before } : {}), ...Object.fromEntries(Object.entries(filter).filter(([, v]) => v)) }, headers: authHeaders(token) });
 }
