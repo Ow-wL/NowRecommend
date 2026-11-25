@@ -54,6 +54,8 @@ export type AccessEntry = { id: number; at: string; address: string; event: stri
 export type AccessPage = { entries: AccessEntry[]; more: boolean };
 const validAccess = (v: any): v is AccessPage => !!v && typeof v.more === 'boolean' && Array.isArray(v.entries)
   && v.entries.every((e: any) => Number.isInteger(e?.id) && typeof e.at === 'string' && typeof e.address === 'string' && typeof e.event === 'string');
-export function fetchAccess(token: string, before?: number, { base = API_BASE_URL, fetchImpl }: Options = {}) {
-  return apiJson(`/api/admin/access?limit=100${before ? `&before=${before}` : ''}`, validAccess, { base, fetchImpl, headers: authHeaders(token) });
+/** `filter` (2026-11-26): an address's start, one event, one day (YYYY-MM-DD, KST), narrowed on the server. */
+export function fetchAccess(token: string, before?: number, { base = API_BASE_URL, fetchImpl, filter = {} }: Options & { filter?: { address?: string; event?: string; day?: string } } = {}) {
+  const query = new URLSearchParams({ limit: '100', ...(before ? { before: String(before) } : {}), ...Object.fromEntries(Object.entries(filter).filter(([, v]) => v)) }).toString();
+  return apiJson(`/api/admin/access?${query}`, validAccess, { base, fetchImpl, headers: authHeaders(token) });
 }
