@@ -368,6 +368,33 @@ test('a spent or expired link says so and offers a new mail', async ({ page }) =
   await expect(page.getByRole('button', { name: '재설정 메일 받기' })).toBeVisible();
 });
 
+test('a reset that changed the password but could not read the account says the password changed and leads to login', async ({ page }) => {
+  // Review 2026-11-26: the password and the link were spent, yet the form said the reset failed and pointed back at the link.
+  const calls = await setup(page, { hasStore: true });
+  calls.server.getFails = true;
+  await page.goto('/#/reset/eyJzdWIiOiJ1MSIsInVzZSI6InJlc2V0In0.c2lnbmF0dXJlLXNpZ25hdHVyZQ');
+  await page.getByLabel('새 비밀번호', { exact: false }).fill('brand-new-pass');
+  await page.getByRole('button', { name: '비밀번호 바꾸고 로그인' }).click();
+  await expect(page.getByText('비밀번호를 바꿨어요.')).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();
+  await page.getByRole('button', { name: '로그인하러 가기' }).click();
+  await expect(page.getByLabel('이메일')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '새 비밀번호 정하기' })).toHaveCount(0);
+});
+
+test('the same, in a browser that was signed in: the old sign-in is dropped so the login form shows', async ({ page }) => {
+  // Codex review 2026-11-26: the reset ends the old token, but the stale account stayed and hid the login form.
+  const calls = await setup(page, { hasStore: true, signedIn: true });
+  calls.server.getFails = true;
+  await page.goto('/#/reset/eyJzdWIiOiJ1MSIsInVzZSI6InJlc2V0In0.c2lnbmF0dXJlLXNpZ25hdHVyZQ');
+  await page.getByLabel('새 비밀번호', { exact: false }).fill('brand-new-pass');
+  await page.getByRole('button', { name: '비밀번호 바꾸고 로그인' }).click();
+  await page.getByRole('button', { name: '로그인하러 가기' }).click();
+  await expect(page.getByLabel('이메일')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('nowrecommend-auth-v1'))).toBeNull();
+});
+
 test('changing the password keeps this browser signed in with the new token; a wrong current password stays in the dialog', async ({ page }) => {
   const calls = await setup(page, { hasStore: true });
   await logIn(page);

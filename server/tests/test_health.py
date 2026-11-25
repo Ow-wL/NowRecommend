@@ -48,6 +48,21 @@ def test_health_is_not_ok_on_a_database_that_was_never_migrated():
         assert client.get("/api/health").json()["database"]["revision"] == "0012"
 
 
+def test_api_docs_are_off_unless_asked_for(monkeypatch):
+    """Review 2026-11-26: the deployed API listed every route, the admin ones too, at /openapi.json."""
+    from app.config import get_settings
+    with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0012")) as client:
+        assert [client.get(path).status_code for path in ("/docs", "/redoc", "/openapi.json")] == [404, 404, 404]
+    monkeypatch.setenv("API_DOCS", "true")
+    get_settings.cache_clear()
+    try:
+        with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0012")) as client:
+            assert client.get("/openapi.json").status_code == 200
+    finally:
+        monkeypatch.delenv("API_DOCS")
+        get_settings.cache_clear()
+
+
 def test_cors_allows_local_frontend_only():
     with client_with(DatabaseStatus(ok=True, pgvector_available="0.8.0", revision="0012")) as client:
         allowed = client.get("/api/health", headers={"Origin": "http://127.0.0.1:5173"})

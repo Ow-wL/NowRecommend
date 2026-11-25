@@ -120,6 +120,10 @@ describe('discovery and reasons', () => {
     // on the registered data only, and a partial one never reads as applied.
     expect(checks.map(checkText)).toEqual(['혼자 맞음', '점심: 등록 정보 없음', '맵지 않음, 등록 정보 기준 적용', '해산물 제외 일부만 확인']);
     expect(checkText(checks[3])).not.toContain('적용');
+    // An ingredient left out says on the chip itself what it rests on (review 2026-11-26), and is read once, not twice.
+    const pork = conditionChecks(dakgomtang, { tags: [], excluded: ['돼지고기'] })[0];
+    expect(pork.label).toBe('돼지고기 제외(등록 정보 기준)');
+    expect(checkText(pork)).toBe('돼지고기 제외, 등록 정보 기준 적용');
   });
 });
 

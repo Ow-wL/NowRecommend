@@ -434,9 +434,10 @@ export function candidateInfo(session: Session, profile: Profile, catalog: Item[
  *   guarantee about the real dish); a group the data only covers in part ("해산물") stays "partial". Exclusions the data
  *   cannot check at all (국물, 고수) never become conditions; ConditionNotes names them as unsupported. */
 export type ConditionCheck = { label: string; value: string; kind: 'want' | 'exclude'; state: 'met' | 'untagged' | 'partial' };
+// An exclusion's chip says what it rests on (review 2026-11-26): the registered ingredients, not the dish as a shop makes it.
 export function conditionChecks(item: Item, conditions: Conditions): ConditionCheck[] {
   return [...conditions.tags.map(t => ({ label: t, value: t, kind: 'want' as const, state: item.tags.includes(t) ? 'met' as const : 'untagged' as const })),
-    ...conditions.excluded.map(v => ({ value: v, kind: 'exclude' as const, ...exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외`, state: 'met' as const } }))];
+    ...conditions.excluded.map(v => ({ value: v, kind: 'exclude' as const, ...exclusionGroups[v] ? { label: `${v} 일부 확인`, state: 'partial' as const } : { label: v === '매콤함' ? '맵지 않음' : `${v} 제외(등록 정보 기준)`, state: 'met' as const } }))];
 }
 /** One line on the card: how much of the request this answers, and what that rests on. "확인" because a tag that is missing
  * is not the same as not fitting (see ConditionCheck). An AI pick's tags are the model's own, so it never reads as registered data;
@@ -449,6 +450,6 @@ export function evidenceText(checks: ConditionCheck[], source: { aiPick: boolean
 }
 /** What a check says, for screen readers and the comparison table. A partial exclusion never reads as applied. */
 export function checkText(c: ConditionCheck): string {
-  if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.label}, 등록 정보 기준 적용`;
+  if (c.kind === 'exclude') return c.state === 'partial' ? `${c.value} 제외 일부만 확인` : `${c.value === '매콤함' ? '맵지 않음' : `${c.value} 제외`}, 등록 정보 기준 적용`;
   return c.state === 'met' ? `${c.label} 맞음` : `${c.label}: 등록 정보 없음`;
 }

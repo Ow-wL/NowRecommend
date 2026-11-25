@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BadgeCheck, Info, KeyRound, LogIn, Mail, UserPlus } from 'lucide-react';
 import { authErrorMessage, confirmEmail, confirmReset, login, pendingSignup, requestReset, signup, type AuthSession, type SignupPending } from '../api/auth';
 import { LEGAL_VERSION, MIN_AGE } from '../legal';
@@ -11,9 +11,10 @@ type Mode = 'login' | 'signup' | 'forgot';
  * `onSuccess` receives the server session; `onGuest` continues without an account.
  * Since 2026-11-18 a sign-up may answer without a session: the address is confirmed first, by the link of a mail
  * (`verifyToken` brings it back here: one button confirms, then the person logs in). */
-export function AuthPanel({ online, initialMode = 'login', initialName = '', resetToken, onResetDone, verifyToken, onVerifyDone, onSuccess, onGuest }: {
+export function AuthPanel({ online, initialMode = 'login', initialName = '', resetToken, onResetDone, verifyToken, onVerifyDone, onResetSignedOut, onSuccess, onGuest }: {
   online: boolean; initialMode?: Mode; initialName?: string; resetToken?: string; /** `again`: the link did not work and a new mail is wanted */ onResetDone?: (again?: boolean) => void;
   verifyToken?: string; onVerifyDone?: () => void;
+  /** The reset link changed the password but signing in after it failed: whoever was signed in here is signed out, so the login form shows. */ onResetSignedOut?: () => void;
   onSuccess: (session: AuthSession, mode: 'login' | 'signup') => Promise<void> | void; onGuest: () => void;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -21,6 +22,9 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [mailed, setMailed] = useState('');
   const [pending, setPending] = useState<SignupPending | null>(null);  // signed up; the confirmation mail is on its way
   const [confirmed, setConfirmed] = useState('');  // the address the link just confirmed: the login form starts from it
+  const [changed, setChanged] = useState(false);  // the reset link changed the password, but signing in after it failed
+  const linkNow = useRef(resetToken); linkNow.current = resetToken;
+  useEffect(() => { setChanged(false); }, [resetToken]);  // another link opened in this tab: its own form
   useEffect(() => { if (verifyToken) { setConfirmed(''); setError(''); } }, [verifyToken]);  // another link opened on this page: its own button
   // Sign-up: the terms, the privacy policy and the age, each agreed to on its own. Nothing is ticked beforehand.
   const [agreed, setAgreed] = useState({ terms: false, privacy: false, adult: false });
@@ -42,11 +46,17 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
     if (!ready) return;
     if (mode === 'signup' && !resetToken && healthTerms(name).length) { setError('이름에는 건강과 관련된 표현을 쓸 수 없어요. 다른 이름을 적어주세요.'); return; }
     setBusy(true); setError('');
+    // A newer link opened in this tab while this one was out takes the form over: this answer then changes nothing on it.
+    const link = resetToken, stale = () => !!link && linkNow.current !== link;
     try {
-      if (resetToken) {
-        const session = await confirmReset(resetToken, password);
+      if (link) {
+        const session = await confirmReset(link, password);
         setPassword('');
-        await onSuccess(session, 'login');
+        if (stale()) return;
+        // The password is changed and the link is spent from here on: a failure to read the account's data after it must not
+        // read as "the reset failed", and must not send the person back to the same link (review 2026-11-26).
+        try { await onSuccess(session, 'login'); }
+        catch { if (!stale()) setChanged(true); return; }
         onResetDone?.();
       } else if (mode === 'forgot') {
         await requestReset(email.trim());
@@ -57,9 +67,14 @@ export function AuthPanel({ online, initialMode = 'login', initialName = '', res
         await onSuccess(answer, mode);
       }
     } catch (err) {
-      setError(authErrorMessage(err, resetToken ? 'reset' : mode));
+      if (!stale()) setError(authErrorMessage(err, link ? 'reset' : mode));
     } finally { setBusy(false); }
   }
+
+  if (resetToken && changed) return <div className="auth-panel">
+    <div className="notice" role="status"><KeyRound size={18} /><div><strong>비밀번호를 바꿨어요.</strong><p>다만 계정의 취향·기록을 불러오지 못했어요. 새 비밀번호로 다시 로그인해주세요.</p></div></div>
+    <button className="button primary full-width" onClick={() => { onResetSignedOut?.(); onResetDone?.(); }}><LogIn size={17} />로그인하러 가기</button>
+  </div>;
 
   if (resetToken) return <div className="auth-panel">
     <form onSubmit={submit} className="auth-form" aria-busy={busy}>

@@ -36,7 +36,9 @@ async def password_busy(request, exc):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="지금 추천 API", version="0.1.0", lifespan=lifespan)
+    docs = get_settings().api_docs
+    app = FastAPI(title="지금 추천 API", version="0.1.0", lifespan=lifespan,
+                  docs_url="/docs" if docs else None, redoc_url="/redoc" if docs else None, openapi_url="/openapi.json" if docs else None)
     # A refused field is named, but what was sent is not sent back (a short password would be): 2026-11-23 review.
     app.add_exception_handler(RequestValidationError, quiet_validation_error)
     app.add_exception_handler(PasswordBusy, password_busy)
