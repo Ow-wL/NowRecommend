@@ -56,8 +56,9 @@ test('200 percent text, long names, minimum controls and actual contrast',async(
   await page.evaluate(()=>{document.querySelector('.result-grid h3')!.textContent='아주 긴 한글 메뉴 이름과 영어 제목 A Very Long Recommendation Name';});
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('.result-grid .more-toggle').first().click();
-  // A pressed button is still easing back from its slight shrink; measure at rest (DESIGN.md v8).
-  await page.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished)));
+  // A pressed button is still easing back from its slight shrink; measure at rest (DESIGN.md v8). An animation that is
+  // cancelled or replaced meanwhile rejects `finished` with AbortError: that one is already at rest, so it counts as done.
+  await page.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>undefined))));
   for(const selector of ['.save-button','.more-menu button','.card-actions button']){
     const heights=await page.locator(selector).evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().height));heights.forEach(h=>expect(h).toBeGreaterThanOrEqual(44));
   }
