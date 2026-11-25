@@ -65,7 +65,9 @@ test('a release ships its icons, its own address in link previews and a cache na
   expect(image).not.toContain('__PUBLIC_URL__');
   const worker = await (await request.get('/sw.js')).text();
   expect(worker).not.toContain('__BUILD__');
-  expect(worker).toMatch(/const VERSION = PREFIX \+ '[0-9a-z]+'/);
+  const build = worker.match(/const BUILD = '([0-9a-z]+)'/)?.[1];
+  expect(build).toBeTruthy();
+  await expect(page.locator('meta[name="nowrecommend-build"]')).toHaveAttribute('content', build!);  // the worker keeps only its own build's page
 });
 
 test('a browser a few years old still gets the app, not the error page', async ({ page }) => {
