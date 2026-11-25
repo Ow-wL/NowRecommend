@@ -77,10 +77,14 @@ def seed_items(session: Session, vocab: Vocab, items: list[dict]) -> SeedResult:
                                                    func.coalesce(func.lower(Item.artist), "") == (item.get("artist") or "").lower(),
                                                    Item.id != item["id"], Item.status != "reviewed")).all()
         for row in stale:
+            if row.hidden_at is not None:  # an admin hid it: the catalog row taking its place stays hidden too
+                item.setdefault("_hidden_at", row.hidden_at)
             session.delete(row)
     session.flush()
     for item in items:
         values = {k: item.get(k) for k in CONTENT_FIELDS}
+        if item.get("_hidden_at") is not None:
+            values["hidden_at"] = item.pop("_hidden_at")
         old = existing.get(item["id"])
         if old is not None and old.status == "reviewed" and all(getattr(old, k) == v for k, v in values.items()):
             result.unchanged += 1
@@ -129,7 +133,8 @@ def refresh_embeddings(session: Session, embedder: Embedder, force: bool = False
 
 
 def reviewed_items(session: Session, category: str | None = None) -> list[Item]:
-    query = select(Item).where(Item.status == "reviewed").order_by(Item.category, Item.id)
+    """The published catalog: reviewed, and not hidden by an admin (hidden_at, admin console 2026-11-26)."""
+    query = select(Item).where(Item.status == "reviewed", Item.hidden_at.is_(None)).order_by(Item.category, Item.id)
     if category:
         query = query.where(Item.category == category)
     return list(session.scalars(query))

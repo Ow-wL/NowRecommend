@@ -9,7 +9,7 @@ from ..vocab import get_vocab
 def eligible_query(category: str, excluded: list[str], disliked: list[str],
                    excluded_ids: list[str], candidate_ids: list[str] | None,
                    year_from: int | None = None, year_to: int | None = None) -> Select[tuple[Item]]:
-    query = select(Item).where(Item.category == category, Item.status == "reviewed")
+    query = select(Item).where(Item.category == category, Item.status == "reviewed", Item.hidden_at.is_(None))  # hidden: admin console
     if blocked := [*disliked, *excluded_ids]:
         query = query.where(Item.id.not_in(blocked))
     if candidate_ids is not None:

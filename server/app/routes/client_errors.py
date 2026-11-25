@@ -8,8 +8,12 @@ The text is the browser's, so it is cut to size and flattened to one line before
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel, ConfigDict, StringConstraints
+from sqlalchemy.orm import Session
+
+from ..db import get_session
+from ..stats import count
 
 log = logging.getLogger("app.client_errors")
 router = APIRouter()
@@ -31,7 +35,8 @@ def one_line(value: str) -> str:
 
 
 @router.post("/api/client-errors", status_code=204)
-def client_error(report: ClientError):
+def client_error(report: ClientError, session: Session = Depends(get_session)):
     log.warning("client error kind=%s page=%s release=%s message=%s stack=%s", report.kind, report.page, report.release,
                 one_line(report.message), one_line(report.stack))
+    count(session, "client_error")  # how many a day, for the admin console (2026-11-26); the text stays in the log only
     return Response(status_code=204)

@@ -1,4 +1,5 @@
-"""What is removed once a day (2026-11-18): sign-ups never confirmed, and feedback older than a year.
+"""What is removed once a day (2026-11-18): sign-ups never confirmed, and feedback older than a year (and since
+2026-11-26 admin actions older than a year).
 
 Run with the first count of a day (budget.take), the same moment the old daily counters go, so it happens on any day the
 service is used without a scheduler. Each removal is one DELETE whose conditions are checked by the database itself, so
@@ -11,12 +12,13 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from .config import Settings
-from .models import AccessLog, Feedback, StatsDaily, User
+from .models import AccessLog, AdminAudit, Feedback, StatsDaily, User
 
 log = logging.getLogger(__name__)
 FEEDBACK_DAYS = 365
 STATS_DAYS = 400  # the dashboard's counts (stats.py KEEP_DAYS)
 ACCESS_DAYS = 30  # the access list (privacy policy: 접속 기록 30일)
+AUDIT_DAYS = 730  # what admins did and looked at (admin console, 2026-11-26): two years, as the safety-measures standard asks of a system holding sensitive data
 
 
 def stale_signup(settings: Settings, now: datetime | None = None):
@@ -38,6 +40,7 @@ def sweep(session: Session, settings: Settings, now: datetime | None = None) -> 
     said = session.execute(delete(Feedback).where(Feedback.created_at < now - timedelta(days=FEEDBACK_DAYS)), execution_options=plain).rowcount
     session.execute(delete(StatsDaily).where(StatsDaily.day < (now - timedelta(days=STATS_DAYS)).date()), execution_options=plain)
     session.execute(delete(AccessLog).where(AccessLog.at < now - timedelta(days=ACCESS_DAYS)), execution_options=plain)
+    session.execute(delete(AdminAudit).where(AdminAudit.at < now - timedelta(days=AUDIT_DAYS)), execution_options=plain)
     session.commit()
     if accounts or said:
         log.info("removed %d unconfirmed sign-ups and %d year-old feedback", accounts, said)

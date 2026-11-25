@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.auth import TokenSigner, hash_password, normalize_email, valid_email, verify_password
 from app.db import get_session
 from app.main import create_app
-from app.models import AccessLog, Feedback, StatsDaily, UsageDaily, User
+from app.models import AccessLog, AdminAudit, Feedback, StatsDaily, UsageDaily, User
 from app.routes.auth import get_signer
 from tests.conftest import needs_db
 
@@ -47,6 +47,7 @@ def client():
     Feedback.__table__.create(engine)
     StatsDaily.__table__.create(engine)  # the dashboard counts (stats.py)
     AccessLog.__table__.create(engine)  # the access list (stats.py)
+    AdminAudit.__table__.create(engine)  # the admin action record (retention.py)
     make = sessionmaker(engine, expire_on_commit=False)
 
     def session():
