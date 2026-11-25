@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     youtube_daily_limit: int = Field(50, ge=0)
     youtube_daily_per_address: int = Field(10, ge=0)  # 0: no limit per address (the day's limit still holds; 0 there turns the player off)
     parse_enabled: bool = True  # LLM parsing, only for words the rule parser missed
+    # FastAPI's /docs, /redoc and /openapi.json (review 2026-11-26): off unless API_DOCS=true, so the deployed API does not
+    # hand out the list of its routes, the admin ones included. Turn it on in a local .env to browse the API.
+    api_docs: bool = False
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)
     db_connect_timeout: int = 3
@@ -63,7 +66,8 @@ class Settings(BaseSettings):
     # Accounts (2026-11-02). Without AUTH_SECRET the auth routes answer 503 and the app stays guest-only. Rotating the
     # secret signs every account out. Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"
     auth_secret: str | None = None
-    auth_token_days: int = 30
+    # 14 since 2026-11-26 (was 30): signing out drops the token in this browser only, so a copied token lives at most this long.
+    auth_token_days: int = 14
     # Outgoing mail for the password reset link (app/mail.py). Without SMTP_HOST and MAIL_FROM the reset routes answer 503.
     # Port 465 is TLS from the start; any other port must offer STARTTLS. MAIL_FROM: "지금 추천 <no-reply@example.com>".
     smtp_host: str | None = None

@@ -46,6 +46,10 @@ describe('auth API', () => {
     expect(JSON.parse(seen[1].body)).toEqual({ token: 'tok' });
     expect(authErrorMessage(new ApiError('http', '이메일 확인이 아직이에요. 확인 메일을 보냈어요.', 403), 'login')).toBe('이메일 확인이 아직이에요. 확인 메일을 보냈어요.');
     expect(authErrorMessage(new ApiError('http', 'x', 400), 'verify')).toContain('로그인하면 확인 메일을 다시');
+    // A busy minute is not "no accounts on this server" (review 2026-11-26), whichever form asked.
+    for (const mode of ['login', 'signup', 'reset'] as const) expect(authErrorMessage(new ApiError('http', '지금 로그인 요청이 많아요. 잠시 후 다시 시도해주세요.', 503), mode)).toBe('지금 로그인 요청이 많아요. 잠시 후 다시 시도해주세요.');
+    expect(authErrorMessage(new ApiError('http', '이 서버에는 계정 기능이 설정되지 않았어요.', 503), 'login')).toContain('계정 기능이 설정되지 않았어요');
+    expect(authErrorMessage(new ApiError('http', 'HTTP 503', 503), 'login')).toBe('지금은 요청을 처리할 수 없어요. 잠시 후 다시 시도해주세요.');  // a proxy's 503, without the server's sentence
   });
   it('reads the synced store with the bearer token and tells an unreadable blob from none', async () => {
     let headers: any;
@@ -77,7 +81,7 @@ describe('auth API', () => {
   });
   it('explains failures in the form’s words', () => {
     expect(authErrorMessage(new ApiError('http', 'x', 401), 'login')).toBe('이메일 또는 비밀번호가 맞지 않아요.');
-    expect(authErrorMessage(new ApiError('http', 'x', 503), 'login')).toContain('계정 기능이 설정되지 않았어요');
+    expect(authErrorMessage(new ApiError('http', '이 서버에는 계정 기능이 설정되지 않았어요.', 503), 'login')).toContain('계정 기능이 설정되지 않았어요');
     expect(authErrorMessage(new ApiError('http', 'x', 409), 'signup')).toContain('이미 가입된');
     expect(authErrorMessage(new ApiError('offline', 'x'), 'signup')).toContain('연결하지 못했어요');
     expect(authErrorMessage(new Error('boom'), 'login')).toContain('다시 시도');
