@@ -1,6 +1,6 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { copyFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer, type Server } from 'node:http';
+import { createServer, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, normalize } from 'node:path';
 
@@ -12,13 +12,30 @@ const DIST = new URL('../../dist/', import.meta.url).pathname.replace(/^\/(\w:)/
 const HEADING = '오늘 뭐 먹지? 한 문장이면 끝.';
 const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
 
-let release = { A: '', B: '' }, scripts = { A: '', B: '' }, dirB = '';
+let release = { A: '', B: '', C: '' }, scripts = { A: '', B: '', C: '' }, dirB = '', dirC = '';
 // What the host does right now: which release it serves, and whether it answers at all (down) or answers the page only
 // (pageOnly: the connection drops after the page, before its files, as on a train going into a tunnel), and where the page
-// itself comes from when that differs (pageRoot: an edge cache still serving the page of the release before).
-const host = { root: DIST, down: false, pageOnly: false, pageRoot: '' };
+// itself comes from when that differs (pageRoot: an edge cache still serving the page of the release before), and whether
+// the files wait for a go (held: a slow connection, so an install takes a while).
+const host = { root: DIST, down: false, pageOnly: false, pageRoot: '', held: null as Promise<void> | null };
 let server: Server, origin = '', dirOld = '';
 const seen: string[] = [];  // what reached the host, as 'path' or 'path dropped'
+
+// The next release made from one before: the page's own script and stylesheet under new names, and the build mark changed
+// in the page and the worker. The older files stay next to them, as on a host or edge cache that still has them.
+function makeRelease(from: string, build: string, next: string, letter: string) {
+  const dir = mkdtempSync(join(tmpdir(), `nowrec-release-${letter}-`));
+  cpSync(from, dir, { recursive: true });
+  let page = readFileSync(join(dir, 'index.html'), 'utf8');
+  for (const file of readdirSync(join(dir, 'assets')).filter(name => /^index-.+\.(js|css)$/.test(name))) {
+    const renamed = file.replace(/\.(js|css)$/, `${letter}.$1`);
+    copyFileSync(join(dir, 'assets', file), join(dir, 'assets', renamed));
+    page = page.replaceAll(`assets/${file}"`, `assets/${renamed}"`);
+  }
+  writeFileSync(join(dir, 'index.html'), page.replaceAll(build, next));
+  writeFileSync(join(dir, 'sw.js'), readFileSync(join(dir, 'sw.js'), 'utf8').replaceAll(build, next));
+  return { dir, script: page.match(/src="\.\/assets\/(index-[^"]+\.js)"/)![1] };
+}
 
 test.beforeAll(async () => {
   const worker = readFileSync(join(DIST, 'sw.js'), 'utf8');
@@ -26,31 +43,25 @@ test.beforeAll(async () => {
   release.A = (worker.match(/const BUILD = '([0-9a-z]+)'/) ?? worker.match(/PREFIX \+ '([0-9a-z]+)'/))?.[1] ?? '';
   expect(release.A, 'the built worker names its build').not.toBe('');
   release.B = release.A.slice(0, 10) + 'zz';
-  dirB = mkdtempSync(join(tmpdir(), 'nowrec-release-b-'));
-  cpSync(DIST, dirB, { recursive: true });
-  // B: the page's own script and stylesheet under new names, and the build mark changed in the page and the worker. A's
-  // files stay next to them, as on a host or edge cache that still has the release before.
-  let page = readFileSync(join(dirB, 'index.html'), 'utf8');
-  for (const file of readdirSync(join(dirB, 'assets')).filter(name => /^index-.+\.(js|css)$/.test(name))) {
-    const renamed = file.replace(/\.(js|css)$/, 'b.$1');
-    copyFileSync(join(dirB, 'assets', file), join(dirB, 'assets', renamed));
-    page = page.replaceAll(`assets/${file}`, `assets/${renamed}`);
-  }
-  writeFileSync(join(dirB, 'index.html'), page.replaceAll(release.A, release.B));
-  writeFileSync(join(dirB, 'sw.js'), worker.replaceAll(release.A, release.B));
+  release.C = release.A.slice(0, 10) + 'yy';
+  ({ dir: dirB, script: scripts.B } = makeRelease(DIST, release.A, release.B, 'b'));
+  ({ dir: dirC, script: scripts.C } = makeRelease(dirB, release.B, release.C, 'c'));
   scripts.A = readFileSync(join(DIST, 'index.html'), 'utf8').match(/src="\.\/assets\/(index-[^"]+\.js)"/)![1];
-  scripts.B = page.match(/src="\.\/assets\/(index-[^"]+\.js)"/)![1];
   server = createServer((request, response) => {
     if (host.down) { request.socket.destroy(); return; }
     let path = decodeURIComponent(new URL(request.url ?? '/', 'http://x').pathname);
     if (path.endsWith('/')) path += 'index.html';
     if (host.pageOnly && path !== '/index.html') { seen.push(`${path} dropped`); request.socket.destroy(); return; }
     seen.push(path);
+    if (host.held && path.startsWith('/assets/')) { const held = host.held; held.then(() => serve(path, response)); return; }
+    serve(path, response);
+  });
+  function serve(path: string, response: ServerResponse) {
     const root = path === '/index.html' && host.pageRoot ? host.pageRoot : host.root;
     const file = normalize(join(root, path));
     if (!file.startsWith(normalize(root)) || !existsSync(file)) { response.writeHead(404).end(); return; }
     response.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' }).end(readFileSync(file));
-  });
+  }
   // The release before the fix: A's page and files with the worker as it was deployed until then.
   dirOld = mkdtempSync(join(tmpdir(), 'nowrec-release-old-'));
   cpSync(DIST, dirOld, { recursive: true });
@@ -61,9 +72,9 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => {
   if (server) await new Promise(resolve => server.close(resolve));
-  for (const dir of [dirB, dirOld]) if (dir) rmSync(dir, { recursive: true, force: true });
+  for (const dir of [dirB, dirC, dirOld]) if (dir) rmSync(dir, { recursive: true, force: true });
 });
-test.beforeEach(() => { Object.assign(host, { root: DIST, down: false, pageOnly: false, pageRoot: '' }); seen.length = 0; });
+test.beforeEach(() => { Object.assign(host, { root: DIST, down: false, pageOnly: false, pageRoot: '', held: null }); seen.length = 0; });
 
 async function open(context: BrowserContext) {
   const page = await context.newPage();
@@ -165,10 +176,42 @@ test('the first release with the fix, over the worker deployed before it, is who
   await page.reload();
   await expect(page.getByRole('heading', { name: HEADING })).toBeVisible();
   await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.waiting?.state ?? ''), { timeout: 15000 }).toBe('installed');
+  // The old worker also kept B's script as the page loaded it; take that copy away, so only B's own cache can supply it.
+  await page.evaluate(async url => { await (await caches.open('nowrecommend-shell-old1')).delete(url); }, `${origin}/assets/${scripts.B}`);
+  expect(await page.evaluate(async ([name, url]) => Boolean(await (await caches.open(name)).match(url)), [`nowrecommend-shell-${release.B}`, `${origin}/assets/${scripts.B}`] as const)).toBe(true);
   // Offline under the old worker: B's page it stored finds B's files in B's cache, so the screen is whole. (Before B has
   // installed, nothing this release does can help: that window stays until the old worker is gone.)
   await offline(context);
   await page.reload();
   await expect(page.getByRole('heading', { name: HEADING })).toBeVisible();
   expect(await loadedScript(page)).toContain(scripts.B);
+});
+
+test('a worker taking over leaves alone the cache of a newer release still installing', async ({ context }) => {
+  const first = await open(context);
+  await first.goto(`${origin}/`);
+  await controlled(first);
+  // B installs and waits behind the open tab.
+  host.root = dirB;
+  await first.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
+  await expect.poll(() => first.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.waiting?.state ?? ''), { timeout: 15000 }).toBe('installed');
+  // C is out on a slow connection: its worker starts installing and waits for its files.
+  let go = () => {};
+  host.held = new Promise<void>(resolve => { go = resolve; });
+  host.root = dirC;
+  void first.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); }).catch(() => {});
+  await expect.poll(() => cacheKeys(first), { timeout: 15000 }).toContain(`nowrecommend-shell-${release.C}`);
+  // The tab closes: B takes over while C is still installing, and drops only A's cache. (Another address of the site, not
+  // the app's page, watches once the tab is gone; any page of the site opened earlier would keep A in charge.)
+  await first.close();
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  const watcher = await context.newPage();
+  await watcher.goto(`${origin}/robots.txt`);
+  await expect.poll(() => watcher.evaluate(() => caches.keys()), { timeout: 15000 }).not.toContain(`nowrecommend-shell-${release.A}`);
+  expect(await watcher.evaluate(() => caches.keys())).toContain(`nowrecommend-shell-${release.C}`);
+  // C's files arrive: C installs whole and waits, its page and script in its own cache.
+  go(); host.held = null;
+  await expect.poll(() => watcher.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.waiting?.state ?? ''), { timeout: 15000 }).toBe('installed');
+  expect(await watcher.evaluate(async ([name, page, script]) => { const cache = await caches.open(name); return Boolean(await cache.match(page)) && Boolean(await cache.match(script)); },
+    [`nowrecommend-shell-${release.C}`, `${origin}/index.html`, `${origin}/assets/${scripts.C}`] as const)).toBe(true);
 });

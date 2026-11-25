@@ -29,18 +29,23 @@ self.addEventListener('install', event => {
     const cache = await caches.open(VERSION);
     await cache.addAll(assets);
     await cache.put(PAGE, response);
-    // A worker activating meanwhile may have dropped this cache by name; then this install did not take, and is tried again.
+    // A worker activating meanwhile leaves this cache alone (it is not marked as having been in charge); should it be gone
+    // all the same, this install did not take, and is tried again.
     if (!(await caches.has(VERSION))) throw new Error('cache dropped while installing');
   }));
 });
+// Put in a worker's cache when it takes over: the cache of a worker that was in charge, as opposed to one a newer release is
+// still filling (or has filled and waits with).
+const ACTIVE = new URL('./.sw-active', self.registration.scope).href;
 self.addEventListener('activate', event => {
   // Only this app's own older caches: another site on the same address (other pages of the same host) keeps its own. No tab
-  // runs the old worker any more (it waited for that), so its files are no longer in use. A cache without its page yet is
-  // a newer release still installing (the page goes in last) and is left alone; one left behind by a failed install is
-  // dropped once nothing is installing.
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(PREFIX) && key !== VERSION).map(async key => {
-    const complete = Boolean(await (await caches.open(key)).match(PAGE));
-    if (complete || !self.registration.installing) await caches.delete(key);
+  // runs the old worker any more (it waited for that), so the caches of workers that were in charge go: marked, or from
+  // before the mark (a page without the build mark). Any other cache belongs to a newer release installing or waiting and
+  // is left alone; one left behind by a failed install goes once nothing is installing or waiting.
+  event.waitUntil(caches.open(VERSION).then(cache => cache.put(ACTIVE, new Response(''))).then(() => caches.keys()).then(keys => Promise.all(keys.filter(key => key.startsWith(PREFIX) && key !== VERSION).map(async key => {
+    const cache = await caches.open(key), page = await cache.match(PAGE);
+    const wasActive = Boolean(await cache.match(ACTIVE)) || (page !== undefined && !(await page.text()).includes('<meta name="nowrecommend-build"'));
+    if (wasActive || (!self.registration.installing && !self.registration.waiting)) await caches.delete(key);
   }))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', event => {
