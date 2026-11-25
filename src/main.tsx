@@ -8,14 +8,14 @@ import './styles.css';
 installErrorReporting();
 // A screen fetched on demand (the admin console) can be gone after a release: an open tab still asks for the old file,
 // which the host no longer has. Load the page once more to get the new release; once only, so an offline tab or a file
-// that keeps failing ends at the error screen instead of reloading forever (2026-11-26).
-window.addEventListener('vite:preloadError', event => {
+// that keeps failing ends at the error screen instead of reloading forever (2026-11-26). The error itself is left to go on
+// (no preventDefault): stopping it would hand the screen an empty module and a different error.
+window.addEventListener('vite:preloadError', () => {
   try {
     const last = Number(sessionStorage.getItem('nowrecommend-chunk-reload') || 0);
     if (!navigator.onLine || Date.now() - last < 60_000) return;
     sessionStorage.setItem('nowrecommend-chunk-reload', String(Date.now()));
   } catch { return; }
-  event.preventDefault();
   window.location.reload();
 });
 // Shown inside another site's frame, the app does not draw itself (2026-11-23): a static host cannot send
