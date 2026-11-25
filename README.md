@@ -333,7 +333,7 @@ py -3.14 -m venv .venv
 - **기록 요약 카드**: 내 취향 화면에 이번 달 선택 수, 음식·음악 비율, 자주 고른 특징, 자주 고르는 시간대, 만족 비율(`stats.ts`).
 - **기록 검색·달력·직접 기록**: 문장·항목·조건으로 찾고, 월 달력에서 날을 골라요. "직접 기록"은 추천 없이 먹거나 들은 카탈로그 항목을 느낌·메모와 함께 남겨요(`calendar.ts`, `HistoryCalendar.tsx`, `ManualRecord.tsx`, `history.ts`의 `manualEntry`).
 - **취향 유형 공유 카드**: 유형 결과를 정사각 이미지로 그려 공유·저장해요. 홈과 내 취향에서 바로 들어가요(`typeCard.ts`).
-- **PWA**: `public/manifest.webmanifest`와 `public/sw.js`. 빌드된 사이트에서만 등록하고, 페이지는 네트워크 우선·해시 자산은 캐시 우선이에요. 외부 사진과 API는 캐시하지 않아요.
+- **PWA**: `public/manifest.webmanifest`와 `public/sw.js`. 빌드된 사이트에서만 등록하고, 페이지는 네트워크 우선·해시 자산은 캐시 우선이에요. 외부 사진과 API는 캐시하지 않아요. 오프라인 페이지는 워커가 설치될 때 받은 자기 배포판의 것만 쓰고(페이지의 `nowrecommend-build` 표식으로 확인), 새 워커는 옛 판을 쓰는 탭이 모두 닫힌 뒤에 넘겨받아요(`tests/built/sw-release.spec.ts`).
 - **사진 자리 표시**: 그림이 뜨기 전 분야색 타일과 아이콘이 자리를 지키고 페이드인해요(`ItemArt`).
 - **API 500의 CORS 헤더**: 처리하지 못한 서버 오류도 CORS 헤더가 붙은 JSON 500으로 내려가 브라우저가 서버 오류로 읽어요(`server/app/errors.py`).
 - **오타 제안**: 조건 단어와 한 음절만 다른 말에 "혹시 … 말씀이신가요?"를 보여주고 누르면 그 단어만 바꿔요(`typo.ts`).
