@@ -15,6 +15,7 @@ export function parseRoute(hash: string): View {
   if (hash.startsWith('#/reset/') || hash.startsWith('#/verify/')) return { ...defaultView, page: 'login' };  // the login page shows the new-password form, or the confirmation
   const match = hash.match(/^#\/(recommend|onboard)\/(food|music)(?:\/(input|confirm|results))?$/);
   if (match) return { page: match[1] as Page, category: match[2] as Category, step: match[3] === 'results' ? 'results' : 'input' };
+  if (/^#\/admin\/[a-z]+$/.test(hash)) return { ...defaultView, page: 'admin' };  // a section of the admin console (2026-11-26)
   const page = hash.slice(2);
   return ['home','favorites','history','taste','login','complete','type','admin','pair','terms','privacy'].includes(page) ? { ...defaultView, page: page as Page } : defaultView;
 }

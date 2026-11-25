@@ -19,7 +19,7 @@ type Tip = { x: number; y: number; lines: string[] } | null;
 const W = 640, H = 200, PAD = { top: 12, right: 16, bottom: 26, left: 34 };
 
 /** One measure per day as bars, or several as lines. The y axis starts at 0; every day has a hover target as tall as the plot. */
-function DayChart({ days, series, kind, label }: { days: string[]; series: { name: string; color: string; values: number[] }[]; kind: 'bar' | 'line'; label: string }) {
+export function DayChart({ days, series, kind, label }: { days: string[]; series: { name: string; color: string; values: number[] }[]; kind: 'bar' | 'line'; label: string }) {
   const [tip, setTip] = useState<Tip>(null), [focus, setFocus] = useState(-1);
   const max = nice(Math.max(1, ...series.flatMap(s => s.values)));
   const iw = W - PAD.left - PAD.right, ih = H - PAD.top - PAD.bottom, step = iw / days.length;

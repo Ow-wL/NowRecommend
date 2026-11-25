@@ -29,7 +29,7 @@ export function AdminReports({ token, onBack, bare = false }: { token?: string; 
     catch { setBusy(false); setNews(`${report.item.name}: 처리하지 못했어요. 다시 시도해주세요.`); }
   }
   return <>
-    {bare ? <h2 ref={heading} tabIndex={-1} className="sr-only">오류 신고</h2> : <div className="flow-head">
+    {bare ? <h2 ref={heading} tabIndex={-1} className="ac-section-title">오류 신고</h2> : <div className="flow-head">
       <button className="back-link" onClick={onBack}><ArrowLeft size={16} /> 내 취향으로</button>
       <h1 ref={heading} tabIndex={-1}>오류 신고 관리</h1>
       <p>사용자가 보낸 사진·정보 오류를 확인하고 처리해요.</p>

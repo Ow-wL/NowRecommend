@@ -39,7 +39,7 @@ import { Favorites } from './components/Favorites';
 import { ItemDetails } from './components/ItemDetails';
 import { ReportDialog } from './components/ReportDialog';
 import { FeedbackDialog } from './components/FeedbackDialog';
-import { AdminPage } from './components/AdminPage';
+import { AdminConsole } from './components/admin/AdminConsole';
 import { LearnLoop } from './components/LearnLoop';
 import { countVisit, sendStat } from './api/stats';
 import { TasteReasons } from './components/TasteReasons';
@@ -267,6 +267,7 @@ export default function App() {
   }, []);
   useEffect(() => {
     const hash = routeFor(view);
+    if (view.page === 'admin' && /^#\/admin(\/[a-z]+)?$/.test(window.location.hash)) { lastHash.current = window.location.hash; return; }  // the console names its section (#/admin/members)
     if (window.location.hash !== hash) { lastHash.current = hash; window.location.hash = hash; }
   }, [view]);
   useEffect(() => { setTabWarning(!writeTab({ version: 1, view, session, active, draftProfile, editingProfile, query, selectedOnly, completedId })); }, [view, session, active, draftProfile, editingProfile, query, selectedOnly, completedId]);
@@ -600,6 +601,9 @@ export default function App() {
   // Twelve to start with, plus anything already picked; searching or filtering shows every match.
   const shownChoices = showAllChoices || query || activeFilter || tasteDecade || selectedOnly ? visibleChoices : visibleChoices.filter((i, n) => n < 24 || draftProfile.selected.includes(i.id));
 
+  // The admin console is a screen of its own (2026-11-26): none of the app's bars or menus around it.
+  if (page === 'admin') return <AdminConsole token={account?.token} email={account?.user.email} onExit={() => navigate('taste')} />;
+
   return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} ${page === 'pair' ? ' cat-pair' : page === 'complete' ? ` cat-${completed?.category || category}` : ['recommend', 'onboard'].includes(page) ? ` cat-${category}` : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus();}}>본문 바로가기</a>
     <header className="appbar">
@@ -855,7 +859,6 @@ export default function App() {
         </div>
       </div>; })()}
 
-      {page === 'admin' && <AdminPage token={account?.token} onBack={() => navigate('taste')} />}
       {(page === 'terms' || page === 'privacy') && <Legal kind={page} onBack={() => navigate('home')} onOther={() => navigate(page === 'terms' ? 'privacy' : 'terms')} />}
       {page === 'type' && <TasteType items={items} results={store.tasteTypes || {}} likedItems={{ food: store.profiles.food.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }), music: store.profiles.music.selected.flatMap(id => { const i = resolveItem(items, id); return i ? [i] : []; }) }}
         onSave={(c, result) => { if (result.source === 'quiz' && apiEnabled()) sendStat(`type:${c}`); setStore(s => ({ ...s, tasteTypes: { ...s.tasteTypes, [c]: result } })); }} owner={store.name === '취향 탐험가' ? '' : store.name} onNotice={notify} onEditTaste={editTaste}
