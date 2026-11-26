@@ -604,7 +604,7 @@ export default function App() {
   const shownChoices = showAllChoices || query || activeFilter || tasteDecade || selectedOnly ? visibleChoices : visibleChoices.filter((i, n) => n < 24 || draftProfile.selected.includes(i.id));
 
   // The admin console is a screen of its own (2026-11-26): none of the app's bars or menus around it.
-  if (page === 'admin') return <Suspense fallback={<main className="admin-loading" role="status">관리 화면을 불러오는 중이에요…</main>}><AdminConsole token={account?.token} email={account?.user.email} onExit={() => navigate('taste')} /></Suspense>;
+  if (page === 'admin') return <Suspense fallback={<main className="admin-loading" role="status">관리 화면을 불러오는 중이에요…</main>}><AdminConsole token={account?.token} email={account?.user.email} onExit={() => navigate('home')} /></Suspense>;
 
   return <div className={`app-shell page-${page}${inFlow ? ' in-flow' : ''} ${page === 'pair' ? ' cat-pair' : page === 'complete' ? ` cat-${completed?.category || category}` : ['recommend', 'onboard'].includes(page) ? ` cat-${category}` : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus();}}>본문 바로가기</a>

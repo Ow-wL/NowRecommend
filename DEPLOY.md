@@ -75,6 +75,20 @@
 gcloud run jobs execute nowrecommend-admin --project harness-recommend --region asia-northeast3 --wait --args=-m,app.cli.admin,grant,<이메일>
 ```
 
+**운영자 계정(2026-11-26).** 관리 콘솔의 회원 상세에서 다른 회원의 관리자 권한을 넣고 빼는 것은 운영자 계정 하나만 할 수 있습니다. 운영자는 API 환경 변수 `ADMIN_OWNER_ID`에 적은 **사용자 UUID**입니다. 이메일이 아닌 UUID여서 같은 주소로 다시 가입해도 운영자가 되지 않습니다. 값이 없거나 UUID가 아니면 콘솔에서는 아무도 권한을 바꿀 수 없습니다.
+- 운영자도 관리자여야 하고 정지되지 않은 상태여야 합니다. 바꿀 때마다 운영자 비밀번호를 다시 입력합니다.
+- 관리자로 지정된 계정은 기존 로그인이 끝납니다. 다시 로그인하면 관리 화면을 쓸 수 있습니다.
+- 회수하면 그 계정은 다음 요청부터 관리 화면을 쓸 수 없습니다. 선택하면 모든 기기에서 로그아웃시킬 수도 있습니다.
+- 다른 관리자는 운영자 계정을 정지하거나 로그아웃시킬 수 없습니다.
+- 바꾼 내용은 조치 기록(`grant_admin`·`revoke_admin`)에 남습니다. 서버 명령 `grant`·`revoke`도 "(서버 명령)"으로 남습니다.
+
+UUID는 `list`로 찾습니다(`admin: <UUID> <이메일>`). 찾은 UUID로 아래처럼 설정합니다.
+
+```bash
+gcloud run jobs execute nowrecommend-admin --project harness-recommend --region asia-northeast3 --wait --args=-m,app.cli.admin,list
+gcloud run services update nowrecommend-api --project harness-recommend --region asia-northeast3 --update-env-vars ADMIN_OWNER_ID=<UUID>
+```
+
 **되돌리기.** 화면은 `gh run rerun 41585437876 -R Ow-wL/NowRecommend`(`ce4f90a`, 디자인 v6.1)입니다. API는 트래픽만 돌리면 안 됩니다. 이전 이미지는 `0006`을 몰라 새 인스턴스가 시작하지 못합니다. 먼저 현재 이미지로 `python -m app.cli.migrate --downgrade 0004`를 실행해야 하고, 그러면 신고와 관리자 표시, 곡 연도, 상세 메뉴 연결이 사라집니다. 지운 뒤에는 시드로 추가된 음식 50개도 남습니다. 음식 AI만 끄려면 위 엔진 설정으로 충분합니다.
 
 배포 뒤 확인한 것: `/api/health` 200, `/api/admin/reports`(토큰 없음) 401, `/api/auth/login`(틀린 비밀번호) 401. 공개 사이트에서 손님으로 음식 목록 66개, "치킨 먹고 싶어"에 상세 메뉴 3개(AI 응답), 2000년대 음악 5곡 모두 범위 안, 취향 유형 테스트, 관리자 화면 거부, 신고 경로의 CORS(없는 항목 404)를 확인했고 콘솔 오류와 깨진 자산은 없었습니다. **운영에서 실제 신고 전송, 관리자 목록, 실제 계정 로그인은 확인하지 않았습니다.** 계정을 만들지 않았고, 신고가 목록에 남지 않게 하려는 이유입니다.

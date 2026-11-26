@@ -1,7 +1,7 @@
 """The admin console (2026-11-26): overview, members, recommendations and AI, system state, content and the action record.
 
-Every route needs an admin account (require_admin reads is_admin from the database on each request; admin rights are
-given only by app.cli.admin). Everything an admin changes, and every look at one member's details or one address's
+Every route needs an admin account (require_admin reads is_admin from the database on each request). Admin rights are
+given by app.cli.admin, or from the console by the one owner account (ADMIN_OWNER_ID, 2026-11-26) after typing its password. Everything an admin changes, and every look at one member's details or one address's
 history, is written to admin_audit in the same transaction as the change (kept two years, retention.py).
 
 What is shown follows the privacy policy: member lists mask the address (the full one only in a member's details), saved
@@ -28,7 +28,8 @@ from ..mail import Mailer, failure as mail_failure, get_mailer, suspend_mail
 from ..models import AccessLog, AdminAudit, Feedback, Item, RecommendationLog, Report, StatsDaily, User
 from ..retention import ACCESS_DAYS, AUDIT_DAYS, FEEDBACK_DAYS, STATS_DAYS
 from ..stats import EVENTS, today
-from .auth import _iso
+from ..auth import verify_password
+from .auth import _iso, password_attempt
 from .reports import require_admin
 
 router = APIRouter()
@@ -161,7 +162,19 @@ def _store_counts(store: dict | None) -> dict[str, int]:
     return counts
 
 
-def _member(session: Session, user: User, settings: Settings) -> dict:
+def owner_id(settings: Settings) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(settings.admin_owner_id.strip()) if settings.admin_owner_id else None
+    except ValueError:
+        return None
+
+
+def is_owner(user: User, settings: Settings) -> bool:
+    """The owner acts as one only while it is an admin and not stopped: a server-command revoke ends its console rights too."""
+    return user.id == owner_id(settings) and user.is_admin and user.suspended_at is None
+
+
+def _member(session: Session, user: User, settings: Settings, viewer: User | None = None) -> dict:
     import json
     store_bytes = len(json.dumps(user.store, ensure_ascii=False).encode()) if user.store is not None else 0
     reports = dict(session.execute(select(Report.status, func.count()).where(Report.user_id == user.id).group_by(Report.status)).all())
@@ -175,6 +188,8 @@ def _member(session: Session, user: User, settings: Settings) -> dict:
         "aiToday": {"used": used(session, f"ai:u:{user.id}"), "limit": settings.ai_daily_per_member},
         "reports": {s: reports.get(s, 0) for s in ("open", "resolved", "dismissed")},
         "actions": [_audit_row(a) for a in history],
+        "owner": user.id == owner_id(settings),
+        "canSetAdmin": viewer is not None and is_owner(viewer, settings) and user.id != viewer.id,
     }
 
 
@@ -190,7 +205,7 @@ def member_details(member_id: uuid.UUID, admin: Admin, session: Session = Depend
     user = _get_member(session, member_id)
     audit(session, admin, "view_member", "member", str(user.id), who=mask_email(user.email))
     session.commit()
-    return _member(session, user, settings)
+    return _member(session, user, settings, admin)
 
 
 class Suspension(BaseModel):
@@ -202,11 +217,13 @@ class Because(BaseModel):
     reason: Note = ""
 
 
-def _not_self_or_admin(admin: User, user: User, what: str) -> None:
+def _not_self_or_admin(admin: User, user: User, what: str, settings: Settings) -> None:
     if user.id == admin.id:
         raise HTTPException(409, f"내 계정은 {what}할 수 없어요.")
+    if user.id == owner_id(settings):  # even while a server command has taken its admin rights away
+        raise HTTPException(409, f"운영자 계정은 {what}할 수 없어요.")
     if user.is_admin:
-        raise HTTPException(409, f"관리자 계정은 {what}할 수 없어요. 먼저 서버 명령으로 관리자 권한을 거둬주세요.")
+        raise HTTPException(409, f"관리자 계정은 {what}할 수 없어요. 운영자가 먼저 관리자 권한을 거둬야 해요.")
 
 
 @router.post("/api/admin/members/{member_id}/suspend")
@@ -215,7 +232,7 @@ def suspend_member(member_id: uuid.UUID, request: Suspension, admin: Admin, sess
     """Stops the account (terms: 이용 제한): its tokens end now, it cannot sign in or reset its password. The reason is
     mailed to the account's address unless the admin says not to (the terms allow telling it right after an urgent stop)."""
     user = _get_member(session, member_id, lock=True)
-    _not_self_or_admin(admin, user, "정지")
+    _not_self_or_admin(admin, user, "정지", settings)
     if user.suspended_at is not None:
         raise HTTPException(409, "이미 정지된 계정이에요.")
     session.execute(update(User).where(User.id == user.id).values(suspended_at=datetime.now(timezone.utc), suspended_reason=request.reason,
@@ -241,7 +258,7 @@ def suspend_member(member_id: uuid.UUID, request: Suspension, admin: Admin, sess
                 import logging
                 logging.getLogger(__name__).exception("suspension notice went, but the record could not say so")
     session.refresh(user)
-    return {**_member(session, user, settings), "mailed": mailed}
+    return {**_member(session, user, settings, admin), "mailed": mailed}
 
 
 @router.post("/api/admin/members/{member_id}/unsuspend")
@@ -253,7 +270,7 @@ def unsuspend_member(member_id: uuid.UUID, request: Because, admin: Admin, sessi
     session.execute(update(User).where(User.id == user.id).values(suspended_at=None, suspended_reason=None, token_version=User.token_version + 1))
     audit(session, admin, "unsuspend", "member", str(user.id), request.reason, who=mask_email(user.email))
     session.commit()
-    return _member(session, user, settings)
+    return _member(session, user, settings, admin)
 
 
 @router.post("/api/admin/members/{member_id}/signout")
@@ -262,11 +279,70 @@ def sign_out_member(member_id: uuid.UUID, request: Because, admin: Admin, sessio
     user = _get_member(session, member_id, lock=True)
     if user.id == admin.id:
         raise HTTPException(409, "내 계정은 설정의 '모든 기기에서 로그아웃'을 써주세요.")
+    if user.id == owner_id(settings):
+        raise HTTPException(409, "운영자 계정은 다른 관리자가 로그아웃시킬 수 없어요.")
     session.execute(update(User).where(User.id == user.id).values(token_version=User.token_version + 1))
     audit(session, admin, "signout", "member", str(user.id), request.reason, who=mask_email(user.email))
     session.commit()
     session.refresh(user)
-    return _member(session, user, settings)
+    return _member(session, user, settings, admin)
+
+
+class AdminChange(BaseModel):
+    grant: bool
+    reason: Reason
+    password: str = Field(min_length=1, max_length=200)
+    endSessions: bool = False  # on a revoke: also end the account's sign-ins (a taken-over account)
+
+
+@router.post("/api/admin/members/{member_id}/admin")
+def set_admin(member_id: uuid.UUID, request: AdminChange, admin: Admin, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)):
+    """Gives or takes admin rights (2026-11-26). Only the owner account (ADMIN_OWNER_ID), and only after its password is typed
+    again: a token alone, taken from a browser, cannot make admins. GPT review 2026-11-26:
+    - the password is checked first (its try counters commit), then the owner row and the member row are locked and read
+      again, and the owner must still be the owner with the same password hash and token version it had when checked;
+    - a grant moves the member's token version on: a token issued before the grant does not become an admin token, the
+      member signs in again; a revoke ends the console at the next request (require_admin reads the row each time), and
+      can end every sign-in as well;
+    - the owner cannot change itself, and the change is recorded in the same transaction."""
+    if not is_owner(admin, settings):
+        raise HTTPException(403, "운영자 계정만 관리자 권한을 바꿀 수 있어요.")
+    if member_id == admin.id:
+        raise HTTPException(409, "내 계정의 관리자 권한은 바꿀 수 없어요.")
+    checked_hash, checked_version = admin.password_hash, admin.token_version
+    attempt = password_attempt(admin, session, settings)
+    with attempt.unless_busy():
+        right = verify_password(request.password, checked_hash)
+    if not right:
+        raise HTTPException(401, "비밀번호가 맞지 않아요.")
+    attempt.give_back()
+    me = session.get(User, admin.id, with_for_update=True, populate_existing=True)
+    if me is None or not is_owner(me, settings) or me.password_hash != checked_hash or me.token_version != checked_version:
+        session.rollback()
+        raise HTTPException(409, "운영자 계정의 상태가 방금 바뀌었어요. 다시 로그인해주세요.")
+    user = session.get(User, member_id, with_for_update=True, populate_existing=True)
+    if user is None:
+        session.rollback()
+        raise HTTPException(404, "회원을 찾지 못했어요.")
+    if request.grant:
+        if user.is_admin:
+            session.rollback()
+            raise HTTPException(409, "이미 관리자예요.")
+        if user.email_verified_at is None or user.suspended_at is not None:
+            session.rollback()
+            raise HTTPException(409, "이메일을 확인했고 정지되지 않은 계정만 관리자로 지정할 수 있어요.")
+        values = {"is_admin": True, "token_version": User.token_version + 1}
+    else:
+        if not user.is_admin:
+            session.rollback()
+            raise HTTPException(409, "관리자가 아니에요.")
+        values = {"is_admin": False, **({"token_version": User.token_version + 1} if request.endSessions else {})}
+    session.execute(update(User).where(User.id == user.id).values(**values))
+    audit(session, admin, "grant_admin" if request.grant else "revoke_admin", "member", str(user.id), request.reason,
+          who=mask_email(user.email), endSessions=bool(request.grant or request.endSessions))
+    session.commit()
+    session.refresh(user)
+    return _member(session, user, settings, admin)
 
 
 # ---- recommendations and AI ----

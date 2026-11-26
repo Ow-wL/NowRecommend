@@ -30,6 +30,8 @@ export type Member = MemberRow & {
   verifiedAt: string | null; suspendedAt: string | null; suspendedReason: string | null; termsVersion: string | null; termsAgreedAt: string | null;
   store: { bytes: number; version: number; updatedAt: string | null; counts: Record<string, number> };
   aiToday: { used: number; limit: number }; reports: Record<'open' | 'resolved' | 'dismissed', number>; actions: AuditEntry[]; mailed?: boolean;
+  /** The owner account (ADMIN_OWNER_ID); `canSetAdmin`: the one looking is the owner and this is someone else (2026-11-26). */
+  owner?: boolean; canSetAdmin?: boolean;
 };
 const validMemberPage = (v: any): v is MemberPage => obj(v) && Array.isArray(v.members) && Number.isInteger(v.total);
 const validMember = (v: any): v is Member => obj(v) && typeof v.id === 'string' && typeof v.email === 'string' && obj(v.store) && Array.isArray(v.actions);
@@ -39,6 +41,9 @@ export const fetchMember = (token: string, id: string, o?: Options) => get(`/api
 export const suspendMember = (token: string, id: string, reason: string, notify: boolean, o?: Options) =>
   post(`/api/admin/members/${encodeURIComponent(id)}/suspend`, { reason, notify }, validMember, token, o);
 export const unsuspendMember = (token: string, id: string, reason: string, o?: Options) => post(`/api/admin/members/${encodeURIComponent(id)}/unsuspend`, { reason }, validMember, token, o);
+/** Gives or takes admin rights; the owner types its own password again (routes/admin.py set_admin). */
+export const setMemberAdmin = (token: string, id: string, change: { grant: boolean; reason: string; password: string; endSessions?: boolean }, o?: Options) =>
+  post(`/api/admin/members/${encodeURIComponent(id)}/admin`, change, validMember, token, o);
 export const signOutMember = (token: string, id: string, reason: string, o?: Options) => post(`/api/admin/members/${encodeURIComponent(id)}/signout`, { reason }, validMember, token, o);
 
 export type TrendPoint = { day: string; requests: number; ai: number; catalog: number; errors: number; p50: number | null; p95: number | null; aiCalls: number };
@@ -84,4 +89,5 @@ export const ACTION_LABEL: Record<string, string> = {
   view_member: '회원 정보 열람', suspend: '이용 정지', unsuspend: '정지 해제', signout: '강제 로그아웃', view_address: 'IP 기록 열람',
   hide_item: '항목 숨김', show_item: '숨김 해제', feedback_done: '의견 처리 완료', feedback_new: '의견 다시 열기', feedback_note: '의견 메모',
   feedback_delete: '의견 삭제', report_resolved: '신고 처리 완료', report_dismissed: '신고 반려', report_open: '신고 다시 열기', report_drop_image: '참고 사진 빼기',
+  grant_admin: '관리자 지정', revoke_admin: '관리자 권한 회수',
 };
