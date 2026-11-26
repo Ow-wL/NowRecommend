@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # FastAPI's /docs, /redoc and /openapi.json (review 2026-11-26): off unless API_DOCS=true, so the deployed API does not
     # hand out the list of its routes, the admin ones included. Turn it on in a local .env to browse the API.
     api_docs: bool = False
+    # The one account that may give and take admin rights from the console (2026-11-26): its user id (a UUID, `python -m
+    # app.cli.admin list` prints it), not an address, so nobody can become it by signing up with an address first. Unset or
+    # not a UUID: the console cannot change admin rights at all (the server command still can).
+    admin_owner_id: str | None = None
     # The Gemini API rejects request deadlines under 10s with 400 INVALID_ARGUMENT (seen in R4).
     rerank_timeout_ms: int = Field(10000, ge=10000)
     db_connect_timeout: int = 3
