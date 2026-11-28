@@ -427,43 +427,60 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); min-heigh
 .type-art.music .ta-halo { fill: var(--music-tint); }
 :root[data-theme="dark"] .type-art .ta-halo { fill: var(--food-fill); fill-opacity: .12; }
 :root[data-theme="dark"] .type-art.music .ta-halo { fill: var(--music-fill); }
-.type-art .ta-bowl, .type-art .ta-disc, .type-art .ta-keys { fill: var(--card); stroke: var(--food-ink); stroke-width: 3; }
-.type-art .ta-foot { fill: var(--food-ink); }
-.type-art .ta-food { fill: var(--food); }
-.type-art .ta-plate-in { fill: var(--food-soft); }
-.type-art .ta-leaf { fill: #7FB77E; }
-.type-art .ta-flame { fill: #E8805F; transform-origin: 120px 64px; animation: ta-flicker 1.6s ease-in-out infinite; }
-.type-art .ta-flame-core { fill: #F7D58C; }
-.type-art .ta-steam path { fill: none; stroke: var(--text-muted); stroke-width: 3; stroke-linecap: round; opacity: .7; animation: ta-rise 3.2s ease-in-out infinite; }
+/* One scene per type (TypeArt.tsx, 2026-11-29). Fills are fixed pastels and the line is one deep colour per category, so a
+   drawing reads the same on the light and dark halo; loose marks (.fx, .fxf: notes, sparkles, steam) take the category
+   ink, which turns light in dark mode. */
+.type-art { --ta-line: #7A4632; --ta-fx: var(--food-ink); }
+.type-art.music { --ta-line: #2B4C7E; --ta-fx: var(--music-ink); }
+.type-art .ta-art :where(path, rect, circle, ellipse) { stroke: var(--ta-line); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.type-art .ta-art .fx { fill: none; stroke: var(--ta-fx); stroke-width: 4; }
+.type-art .ta-art .fxf { fill: var(--ta-fx); stroke: none; }
+.type-art .ta-art .ta-thick { stroke-width: 6; }
+.type-art .ta-art .ta-thin { stroke-width: 1.5; }
+.type-art .ta-art .ta-stick { stroke: #B7835E; stroke-width: 7; }
+.type-art .ta-art .ta-groove { fill: none; stroke: rgb(255 255 255 / 28%); stroke-width: 2; }
+.type-art .c-none { fill: none; }
+.type-art .c-coral { fill: #F6AE98; }
+.type-art .c-red { fill: #F28E80; }
+.type-art .c-butter { fill: #F8D88F; }
+.type-art .c-cream { fill: #FFF3DF; }
+.type-art .c-white { fill: #FFFFFF; }
+.type-art .c-clear { fill: #D9EEF4; }
+.type-art .c-mint { fill: #A9DEC4; }
+.type-art .c-leaf { fill: #96CC8F; }
+.type-art .c-sky { fill: #A9CCF2; }
+.type-art .c-pink { fill: #F7BDCC; }
+.type-art .c-brown { fill: #DDAA84; }
+.type-art .c-grey { fill: #DCDFE6; }
+.type-art .c-deep { fill: var(--ta-line); }
+.type-art .c-vinyl { fill: #3D4A66; }
+.type-art .ta-twinkle, .type-art .ta-pulse, .type-art .ta-thump { transform-box: fill-box; transform-origin: center; }
+.type-art .ta-twinkle { animation: ta-twinkle 2.4s ease-in-out infinite; }
+.type-art .ta-pulse { animation: ta-pulse 2.2s ease-in-out infinite; }
+.type-art .ta-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: ta-flicker 1.6s ease-in-out infinite; }
+.type-art .ta-thump { animation: ta-pulse .9s ease-in-out infinite; }
+.type-art .ta-bob { animation: ta-bob 2.6s ease-in-out infinite; }
+.type-art .ta-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: ta-sway 3s ease-in-out infinite; }
+.type-art .ta-spin { transform-box: fill-box; transform-origin: center; animation: ta-spin 6s linear infinite; }
+.type-art .ta-spin-small { transform-box: fill-box; transform-origin: center; animation: ta-spin 3s linear infinite; }
+.type-art .ta-bars rect { transform-box: fill-box; transform-origin: 50% 100%; animation: ta-bounce .9s ease-in-out infinite alternate; }
+.type-art .ta-steam path { opacity: .7; animation: ta-rise 3.2s ease-in-out infinite; }
 .type-art .ta-steam path:nth-child(2) { animation-delay: .6s; }
 .type-art .ta-steam path:nth-child(3) { animation-delay: 1.2s; }
-.type-art .ta-mark, .type-art .ta-mark path { fill: var(--food-ink); }
-.type-art .ta-utensil { fill: var(--food-ink); opacity: .85; }
-.type-art.music .ta-disc { fill: var(--music-on); stroke: none; }
-.type-art.music .ta-release .ta-disc { fill: var(--music-ink); }
-.type-art.music .ta-groove { fill: none; stroke: rgb(255 255 255 / 22%); stroke-width: 2; }
-.type-art.music .ta-label { fill: var(--music); }
-.type-art.music .ta-hole { fill: var(--card); }
-.type-art.music .ta-mark { fill: var(--music-ink); }
-.type-art.music .ta-side { fill: var(--music-ink); }
-.type-art.music .ta-keys { fill: var(--card); stroke: var(--music-ink); }
-.type-art.music .ta-black { fill: var(--music-ink); }
-.type-art .ta-line { fill: none; stroke: var(--music-ink); stroke-width: 4; stroke-linecap: round; }
-.type-art .ta-bars rect { fill: var(--music-ink); transform-box: fill-box; transform-origin: 50% 100%; animation: ta-bounce .9s ease-in-out infinite alternate; }
-.type-art .ta-calm { animation: ta-drift 4s ease-in-out infinite; }
-.type-art .ta-vinyl { transform-origin: 120px 92px; animation: ta-spin 6s linear infinite; }
-.type-art .ta-twinkle { transform-box: fill-box; transform-origin: center; animation: ta-twinkle 2.4s ease-in-out infinite; }
-.type-art .ta-pulse { transform-box: fill-box; transform-origin: center; animation: ta-pulse 2.2s ease-in-out infinite; }
-.type-art .ta-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: ta-sway 3s ease-in-out infinite; }
-.type-art .ta-wave { animation: ta-twinkle 1.8s ease-in-out infinite; }
+.type-art .ta-ring { animation: ta-twinkle 1.8s ease-in-out infinite; }
+.type-art .ta-ripple { transform-box: fill-box; transform-origin: center; animation: ta-ripple 3s ease-out infinite; }
+.type-art .ta-drop { animation: ta-bob 3s ease-in-out infinite; }
+.type-art .ta-sand { stroke-dasharray: 4 6; animation: ta-sand 1s linear infinite; }
 @keyframes ta-flicker { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.94, 1.08); } }
 @keyframes ta-rise { 0% { transform: translateY(6px); opacity: 0; } 40% { opacity: .7; } 100% { transform: translateY(-8px); opacity: 0; } }
-@keyframes ta-bounce { from { transform: scaleY(.4); } to { transform: scaleY(1.6); } }
-@keyframes ta-drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+@keyframes ta-bounce { from { transform: scaleY(.45); } to { transform: scaleY(1.1); } }
+@keyframes ta-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 @keyframes ta-spin { to { transform: rotate(360deg); } }
 @keyframes ta-twinkle { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.7); opacity: .55; } }
-@keyframes ta-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes ta-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 @keyframes ta-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes ta-ripple { 0% { transform: scale(.85); opacity: 1; } 100% { transform: scale(1.12); opacity: .2; } }
+@keyframes ta-sand { to { stroke-dashoffset: -10; } }
 @media (prefers-reduced-motion: reduce) { .type-art * { animation: none !important; } }
 .type-glance { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
 .type-glance li { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px 8px 8px; border-radius: 999px; background: var(--fill-1); font-size: 14px; font-weight: 600; color: var(--text-primary); }
