@@ -42,6 +42,9 @@ function site(env: Record<string, string>): Plugin {
       return page.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />\n    <meta name="nowrecommend-build" content="${build}" />`);
     } },
     closeBundle() {
+      // The shared type link's page (public/type/index.html) is copied as it is; its preview needs the site's address too.
+      const typePage = join(outDir, 'type', 'index.html');
+      if (existsSync(typePage)) writeFileSync(typePage, readFileSync(typePage, 'utf8').replaceAll('__PUBLIC_URL__', publicUrl));
       const worker = join(outDir, 'sw.js');
       if (existsSync(worker)) writeFileSync(worker, readFileSync(worker, 'utf8').replaceAll('__BUILD__', build));
     },

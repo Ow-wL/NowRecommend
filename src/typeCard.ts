@@ -85,7 +85,9 @@ export function downloadFile(file: File) {
 }
 export type CardOutcome = 'shared' | 'downloaded' | 'cancelled' | 'failed';
 const shareLine = (category: Category, code: string) => `내 ${category === 'food' ? '음식' : '음악'} 취향 유형은 ${code} · ${typeName(category, code)}! 너는 뭐야? 우리 궁합도 봐 줘.`;
-const resultUrl = (results: Parameters<typeof shareSearch>[0], owner: string) => `${location.origin}${location.pathname}${shareSearch(results, owner)}#/type`;
+// Through type/ (public/type/index.html, 2026-11-29): its link preview is the type test's own picture, and it passes the
+// same ?t=... on to the app at once.
+const resultUrl = (results: Parameters<typeof shareSearch>[0], owner: string) => `${location.origin}${location.pathname.replace(/index\.html$/, '')}type/${shareSearch(results, owner)}#/type`;
 /** The picture through the share sheet where files can be shared, and a download otherwise. */
 export async function shareTypeCard(category: Category, result: CardResult, owner = ''): Promise<CardOutcome> {
   try {
