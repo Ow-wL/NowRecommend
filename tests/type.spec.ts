@@ -42,10 +42,11 @@ test('a friend opens the link, sees the type, takes the test and gets the match'
   await expect(page.locator('.toast')).toContainText('링크를 복사했어요');
   const copied: string = await page.evaluate(() => (window as any).copied);
   const url = copied.split('\n')[1];
-  expect(url).toMatch(/\?t=f-SHTA-99999999#\/type$/);
+  expect(url).toMatch(/\/type\/\?t=f-SHTA-99999999#\/type$/);  // through type/ (2026-11-29), whose link preview is the type picture
 
   const friend = await (await browser.newContext()).newPage();
   await friend.goto(url);
+  await expect(friend).toHaveURL(/\/\?t=f-SHTA-99999999#\/type$/);  // type/ passes the link on to the app
   await expect(friend.locator('.type-friend h2')).toContainText('혼밥 국밥 장인');
   await expect(friend.locator('.type-match')).toHaveCount(0);
   await friend.getByRole('button', { name: /나도 테스트하고 궁합 보기/ }).click();

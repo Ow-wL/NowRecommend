@@ -63,6 +63,15 @@ test('a release ships its icons, its own address in link previews and a cache na
   const image = await page.locator('meta[property="og:image"]').getAttribute('content');
   expect(image).toMatch(/^https:\/\/.+\/og\.png$/);
   expect(image).not.toContain('__PUBLIC_URL__');
+  // A shared type link's page (2026-11-29): its own picture, the site's address filled in, and on to the app with the link.
+  const typePage = await (await request.get('/type/')).text();
+  expect(typePage).toMatch(/property="og:image" content="https:\/\/[^"]+\/og-type\.png"/);
+  expect(typePage).not.toContain('__PUBLIC_URL__');
+  expect((await request.get('/og-type.png')).status()).toBe(200);
+  const friend = await page.context().newPage();
+  await friend.goto('/type/?t=f-SHTA#/type');
+  await expect(friend).toHaveURL(/\/\?t=f-SHTA#\/type$/);
+  await friend.close();
   const worker = await (await request.get('/sw.js')).text();
   expect(worker).not.toContain('__BUILD__');
   const build = worker.match(/const BUILD = '([0-9a-z]+)'/)?.[1];
