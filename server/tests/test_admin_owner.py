@@ -120,3 +120,28 @@ def test_the_server_command_lists_ids_and_records_its_changes(world, monkeypatch
         assert user.is_admin and user.token_version == 1
         record = s.scalar(select(AdminAudit).where(AdminAudit.action == "grant_admin"))
         assert record.actor_id is None and record.detail == {"before": False, "after": True, "via": "cli"}
+
+
+def test_a_change_reads_the_admin_again_right_before_it_writes(world):
+    """require_admin_write (2026-11-29): an admin that require_admin let through a moment ago, whose rights were taken
+    away, whose sessions were ended, or that was stopped since, is refused before anything is written."""
+    import pytest
+    from fastapi import HTTPException
+
+    from app.routes.reports import require_admin_write
+    _, _, make, _ = world
+    for change in ({"is_admin": False}, {"token_version": 1}, {"suspended_at": datetime.now(timezone.utc)}):
+        other = person(make, f"op{len(change)}{list(change)[0]}@example.com", admin=True)
+        with make() as s:
+            seen = s.get(User, other.id)  # what require_admin saw
+            with make() as t:
+                fresh = t.get(User, other.id)
+                for key, value in change.items():
+                    setattr(fresh, key, value)
+                t.commit()
+            with pytest.raises(HTTPException) as refused:
+                require_admin_write(seen, s)
+            assert refused.value.status_code == 403
+    still = person(make, "still@example.com", admin=True)
+    with make() as s:
+        assert require_admin_write(s.get(User, still.id), s).id == still.id

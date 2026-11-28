@@ -22,7 +22,7 @@ from ..models import Feedback, User
 from ..ratelimit import client_address
 from ..stats import count
 from .auth import _iso
-from .reports import require_admin
+from .reports import require_admin, require_admin_write
 
 router = APIRouter()
 
@@ -96,7 +96,7 @@ def list_feedback(before: datetime | None = None, beforeId: uuid.UUID | None = N
 
 
 @router.post("/api/admin/feedback/{feedback_id}")
-def update_feedback(feedback_id: uuid.UUID, update: FeedbackUpdate, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
+def update_feedback(feedback_id: uuid.UUID, update: FeedbackUpdate, admin: User = Depends(require_admin_write), session: Session = Depends(get_session)):
     from .admin import audit
     item = session.get(Feedback, feedback_id)
     if item is None:
@@ -113,7 +113,7 @@ def update_feedback(feedback_id: uuid.UUID, update: FeedbackUpdate, admin: User 
 
 
 @router.delete("/api/admin/feedback/{feedback_id}", status_code=204)
-def delete_feedback(feedback_id: uuid.UUID, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
+def delete_feedback(feedback_id: uuid.UUID, admin: User = Depends(require_admin_write), session: Session = Depends(get_session)):
     from .admin import audit
     item = session.get(Feedback, feedback_id)
     if item is not None:

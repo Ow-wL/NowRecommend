@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, StringConstraints
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from ..ai_items import is_ai_pick
@@ -46,6 +46,33 @@ def require_admin(user: User = Depends(current_user)) -> User:
     if not user.is_admin:
         raise HTTPException(403, "관리자만 볼 수 있어요.")
     return user
+
+
+# One PostgreSQL advisory lock stands for "who is an admin" (2026-11-29, GPT review). Every admin change holds it shared
+# until it commits; giving or taking admin rights (routes/admin.py set_admin, app.cli.admin) holds it alone. It is taken
+# before any row lock, so it adds no lock cycle: row locks in opposite orders (the owner taking B's rights while B signs
+# the owner out, two admins signing each other out) were a deadlock with a share lock on the admin's own row.
+ADMIN_RIGHTS_LOCK = 0x6E6F7772_61646D6E  # "nowradmn"
+
+
+def admin_rights_lock(session: Session, alone: bool = False) -> None:
+    """Held until the transaction ends. SQLite (the tests) has no such lock and no concurrent writers."""
+    if session.get_bind().dialect.name == "postgresql":
+        session.execute(text("SELECT pg_advisory_xact_lock(:key)" if alone else "SELECT pg_advisory_xact_lock_shared(:key)"), {"key": ADMIN_RIGHTS_LOCK})
+
+
+def require_admin_write(user: User = Depends(require_admin), session: Session = Depends(get_session)) -> User:
+    """For a route that changes something (2026-11-29, GPT review): with the rights lock held shared, the admin's own row
+    is read again. A rights change waits for a change already under way; a change that starts after one sees the rights
+    gone, the account stopped, or its sessions ended (token version moved on), and is refused. Same request session as
+    require_admin (FastAPI caches the dependency), so the lock is in the transaction that writes."""
+    version = user.token_version
+    admin_rights_lock(session)
+    fresh = session.get(User, user.id, populate_existing=True)
+    if fresh is None or not fresh.is_admin or fresh.suspended_at is not None or fresh.token_version != version:
+        session.rollback()
+        raise HTTPException(403, "관리자 권한이 없어요.")
+    return fresh
 
 
 def public_report(report: Report, item: Item | None) -> dict:
@@ -101,7 +128,7 @@ def list_reports(status: Status | Literal["all"] = "open", _: User = Depends(req
 
 
 @router.post("/api/admin/reports/{report_id}")
-def update_report(report_id: uuid.UUID, update: ReportUpdate, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
+def update_report(report_id: uuid.UUID, update: ReportUpdate, admin: User = Depends(require_admin_write), session: Session = Depends(get_session)):
     from .admin import audit
     report = session.get(Report, report_id)
     if report is None:

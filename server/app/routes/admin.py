@@ -30,10 +30,11 @@ from ..retention import ACCESS_DAYS, AUDIT_DAYS, FEEDBACK_DAYS, STATS_DAYS
 from ..stats import EVENTS, today
 from ..auth import verify_password
 from .auth import _iso, password_attempt
-from .reports import require_admin
+from .reports import admin_rights_lock, require_admin, require_admin_write
 
 router = APIRouter()
 Admin = Annotated[User, Depends(require_admin)]
+AdminWrite = Annotated[User, Depends(require_admin_write)]  # routes that change something
 Reason = Annotated[str, StringConstraints(min_length=2, max_length=300, strip_whitespace=True)]
 Note = Annotated[str, StringConstraints(max_length=300, strip_whitespace=True)]
 # Counted in stats_daily from this day on (stats.py); the console shows "no data" before it, not zeros.
@@ -227,10 +228,12 @@ def _not_self_or_admin(admin: User, user: User, what: str, settings: Settings) -
 
 
 @router.post("/api/admin/members/{member_id}/suspend")
-def suspend_member(member_id: uuid.UUID, request: Suspension, admin: Admin, session: Session = Depends(get_session),
+def suspend_member(member_id: uuid.UUID, request: Suspension, admin: AdminWrite, session: Session = Depends(get_session),
                    settings: Settings = Depends(get_settings), mailer: Mailer | None = Depends(get_mailer)):
     """Stops the account (terms: 이용 제한): its tokens end now, it cannot sign in or reset its password. The reason is
     mailed to the account's address unless the admin says not to (the terms allow telling it right after an urgent stop)."""
+    if member_id == owner_id(settings):
+        raise HTTPException(409, "운영자 계정은 정지할 수 없어요.")
     user = _get_member(session, member_id, lock=True)
     _not_self_or_admin(admin, user, "정지", settings)
     if user.suspended_at is not None:
@@ -262,7 +265,7 @@ def suspend_member(member_id: uuid.UUID, request: Suspension, admin: Admin, sess
 
 
 @router.post("/api/admin/members/{member_id}/unsuspend")
-def unsuspend_member(member_id: uuid.UUID, request: Because, admin: Admin, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)):
+def unsuspend_member(member_id: uuid.UUID, request: Because, admin: AdminWrite, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)):
     user = _get_member(session, member_id, lock=True)
     if user.suspended_at is None:
         raise HTTPException(409, "정지된 계정이 아니에요.")
@@ -274,7 +277,7 @@ def unsuspend_member(member_id: uuid.UUID, request: Because, admin: Admin, sessi
 
 
 @router.post("/api/admin/members/{member_id}/signout")
-def sign_out_member(member_id: uuid.UUID, request: Because, admin: Admin, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)):
+def sign_out_member(member_id: uuid.UUID, request: Because, admin: AdminWrite, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)):
     """Ends every sign-in of the account (a lost phone, a shared computer); the person signs in again with the password."""
     user = _get_member(session, member_id, lock=True)
     if user.id == admin.id:
@@ -316,6 +319,7 @@ def set_admin(member_id: uuid.UUID, request: AdminChange, admin: Admin, session:
     if not right:
         raise HTTPException(401, "비밀번호가 맞지 않아요.")
     attempt.give_back()
+    admin_rights_lock(session, alone=True)  # waits for admin changes under way; none starts until this commits
     me = session.get(User, admin.id, with_for_update=True, populate_existing=True)
     if me is None or not is_owner(me, settings) or me.password_hash != checked_hash or me.token_version != checked_version:
         session.rollback()
@@ -534,7 +538,7 @@ def item_details(item_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a
 
 
 @router.post("/api/admin/items/{item_id}/hide")
-def hide_item(item_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,39}$")], request: Suspension, admin: Admin,
+def hide_item(item_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,39}$")], request: Suspension, admin: AdminWrite,
               session: Session = Depends(get_session)):
     """Out of new recommendations and the published catalog; the AI is asked to avoid it and its answer is dropped if it
     names it anyway. Favourites and history that hold it already keep it. The seed job leaves it hidden."""
@@ -548,7 +552,7 @@ def hide_item(item_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0
 
 
 @router.post("/api/admin/items/{item_id}/show")
-def show_item(item_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,39}$")], request: Because, admin: Admin,
+def show_item(item_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,39}$")], request: Because, admin: AdminWrite,
               session: Session = Depends(get_session)):
     """Undoes hide only: the review status stays what the catalog says (an item taken out of the published file stays out)."""
     item = _get_item(session, item_id)

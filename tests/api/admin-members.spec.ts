@@ -86,3 +86,33 @@ test('another admin sees no admin-rights buttons', async ({ page }) => {
   await expect(page.getByRole('dialog').getByRole('button', { name: '이용 정지' })).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('button', { name: /관리자로 지정|권한 거두기/ })).toHaveCount(0);
 });
+
+test('a first visit to the console without a connection says so, not the error screen', async ({ page }) => {
+  await signedIn(page);
+  await page.goto('/#/home');
+  await expect(page.locator('.appbar')).toBeVisible();
+  // The console is fetched on demand; here its file cannot be fetched (no connection on a first visit).
+  await page.route('**/src/components/admin/AdminConsole.tsx*', route => route.abort('internetdisconnected'));
+  await page.context().setOffline(true);
+  await page.evaluate(() => { window.location.hash = '#/admin'; });
+  await expect(page.getByRole('heading', { name: '연결이 없어요' })).toBeVisible();
+  await expect(page.locator('.crash-screen')).toHaveCount(0);
+  await page.context().setOffline(false);
+  await page.getByRole('button', { name: '서비스로 돌아가기' }).click();
+  await expect(page).toHaveURL(/#\/home$/);
+});
+
+test('rights taken away while the console is open close it at once', async ({ page }) => {
+  await signedIn(page);
+  let admin = true;
+  await page.unroute(`${API}/api/auth/me`);
+  await page.route(`${API}/api/auth/me`, route => fulfill(route, { user: { ...owner, isAdmin: admin }, hasStore: false, storeUpdatedAt: null, storeVersion: 0 }));
+  await page.route(`${API}/api/admin/members/m1`, route => admin ? fulfill(route, details()) : fulfill(route, { detail: '관리자만 볼 수 있어요.' }, 403));
+  await page.goto('/#/admin/members');
+  await expect(page.locator('.ac-table tbody tr')).toHaveCount(3);
+  admin = false;
+  await page.locator('.ac-table tbody tr').first().getByRole('button').click();  // the next answer is refused
+  await expect(page).toHaveURL(/#\/home$/);
+  await expect(page.getByText('관리자 권한이 없어져 관리 화면을 닫았어요.')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '관리' })).toHaveCount(0);
+});

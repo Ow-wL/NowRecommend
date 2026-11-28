@@ -41,7 +41,10 @@ import { ReportDialog } from './components/ReportDialog';
 import { FeedbackDialog } from './components/FeedbackDialog';
 // The admin console is fetched only when opened (2026-11-26): it is about a tenth of the app's script and only the operator
 // uses it. It needs the network anyway (every panel asks the API), so the service worker keeps it as it is fetched.
-const AdminConsole = lazy(() => import('./components/admin/AdminConsole').then(module => ({ default: module.AdminConsole })));
+// A failed fetch (no connection on a first visit, or a file gone after a release) shows AdminUnavailable instead of the
+// app's error screen; its 다시 시도 loads the page again, which also fetches the console again (React keeps a lazy result).
+const AdminConsole = lazy(() => import('./components/admin/AdminConsole').then(module => ({ default: module.AdminConsole }))
+  .catch(() => ({ default: ({ onExit }: { onExit: () => void }) => <AdminUnavailable onExit={onExit} /> })));
 import { LearnLoop } from './components/LearnLoop';
 import { countVisit, sendStat } from './api/stats';
 import { TasteReasons } from './components/TasteReasons';
@@ -62,6 +65,8 @@ import { changePassword, fetchMe, deleteAccount, fetchRemoteStore, logoutEverywh
 import { planLogin } from './sync';
 import { useAccountSync } from './useAccountSync';
 import { ApiError } from './api/client';
+import { ADMIN_DENIED } from './api/admin';
+import { AdminUnavailable } from './components/AdminUnavailable';
 import { AuthPanel } from './components/AuthPanel';
 import { Legal } from './components/Legal';
 import { ADULT_KEY, CONTACT_EMAIL, adultConfirmed, confirmAdult } from './legal';
@@ -304,6 +309,35 @@ export default function App() {
     fetchMe(account.token).then(me => { if (live && !!me.user.isAdmin !== !!account.user.isAdmin) { const next = { ...account, user: me.user }; writeAccount(next); setAccount(next); } }).catch(() => { /* the store sync reports an expired sign-in */ });
     return () => { live = false; };
   }, [account?.token]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // Rights taken away while the console is open (2026-11-29): the console closes at once instead of showing its last
+  // answers until the next one fails. Asked again when an admin answer is refused (ADMIN_DENIED), when the tab comes back
+  // into view, and every minute while the console is open.
+  const pageNow = useRef(page); pageNow.current = page;
+  const accountNow = useRef(account); accountNow.current = account;
+  useEffect(() => {
+    if (page !== 'admin' || !account || !apiEnabled()) return;
+    const leave = (message: string) => { if (pageNow.current !== 'admin') return; navigate('home'); notify(message); };
+    let asking = false;
+    const recheck = () => {
+      const current = accountNow.current;
+      if (!current || asking) return;
+      asking = true;
+      fetchMe(current.token).then(me => {
+        // A late answer for an account that is no longer the one signed in (signed out, another account) changes nothing.
+        if (me.user.isAdmin || accountNow.current?.token !== current.token) return;
+        const next = { ...current, user: me.user }; writeAccount(next); setAccount(next);
+        leave('관리자 권한이 없어져 관리 화면을 닫았어요.');
+      }).catch(err => { if (err instanceof ApiError && err.status === 401 && accountNow.current?.token === current.token) leave('로그인이 끝나 관리 화면을 닫았어요. 다시 로그인해주세요.'); })
+        .finally(() => { asking = false; });
+    };
+    const shown = () => { if (document.visibilityState === 'visible') recheck(); };
+    window.addEventListener(ADMIN_DENIED, recheck);
+    document.addEventListener('visibilitychange', shown);
+    const timer = window.setInterval(recheck, 60_000);
+    return () => { window.removeEventListener(ADMIN_DENIED, recheck); document.removeEventListener('visibilitychange', shown); window.clearInterval(timer); };
+  }, [page, account?.token]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // An account that is no admin (any more) does not stay on the console's address.
+  useEffect(() => { if (page === 'admin' && account && !account.user.isAdmin) navigate('home'); }, [page, account?.user.isAdmin]);  // eslint-disable-line react-hooks/exhaustive-deps
   // What signing in does to this browser's data is decided by planLogin (src/sync.ts). The account's copy is read first: if
   // that fails, nobody is signed in and nothing is uploaded, so a failed read can never replace the account's data.
   async function signIn(session: AuthSession, mode: 'login' | 'signup') {

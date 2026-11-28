@@ -1,4 +1,5 @@
 import { apiJson, API_BASE_URL } from './client';
+export { ADMIN_DENIED } from './client';
 import { authHeaders } from './auth';
 
 // The admin console's own routes (server/app/routes/admin.py, 2026-11-26). Every one needs an admin account; the server
