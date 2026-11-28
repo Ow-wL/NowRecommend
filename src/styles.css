@@ -855,6 +855,10 @@ main:has(.why[open]) .check-legend .when-open { display: inline; }
 .crash-screen h1 { font-size: 26px; }
 .crash-screen p { margin-top: 12px; color: var(--text-muted); line-height: 1.6; }
 .admin-loading { max-width: 520px; margin: 0 auto; padding: 96px 24px; color: var(--text-muted); }
+.admin-unavailable { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.admin-unavailable h1 { margin: 4px 0 0; font-size: 22px; color: var(--text-primary); }
+.admin-unavailable p { margin: 0; line-height: 1.6; }
+.admin-unavailable-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
 .crash-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .send-note a { text-decoration: underline; text-underline-offset: 3px; }
 .legal-page { max-width: 720px; margin: 0 auto; padding: 8px 0 48px; }

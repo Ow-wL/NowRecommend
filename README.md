@@ -1,371 +1,232 @@
-# 지금 추천
+<div align="center">
 
-React·TypeScript·Vite로 만든 음식·음악 추천 앱입니다. 둥근 카드와 사진 중심의 화면([DESIGN.md](./DESIGN.md) v6.1)에서 평소 취향과 이번 요청 조건을 분리하고, 추천 이유를 확인한 뒤 최종 선택을 기록합니다. 다크·시스템 테마와 강조색 설정, 로그인(계정 동기화), AI 음악 추천과 음식·음악 AI 실험실을 제공합니다.
+# 🍜🎧 지금 추천
 
-공개 사이트 [지금 추천](https://nowrec.kr/)은 Google Cloud의 추천 API(유사도 검색 + AI 재순위)와 연결되어 있습니다. 배포 구성은 [DEPLOY.md](./DEPLOY.md)에 있습니다.
+**지금 상황을 한 문장으로 적으면, 어울리는 음식과 음악을 골라 줍니다.**
 
-## 실행과 검증
+평소 취향과 이번 요청의 조건을 나눠 읽고, 추천 이유와 함께 메뉴 3개·곡 5곡을 보여 주는 웹 서비스입니다. → [nowrec.kr](https://nowrec.kr)
 
-Node.js 22와 Microsoft Edge를 사용합니다.
+[![Frontend tests](https://github.com/Ow-wL/NowRecommend/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/Ow-wL/NowRecommend/actions/workflows/frontend-ci.yml) [![Server tests](https://github.com/Ow-wL/NowRecommend/actions/workflows/server-ci.yml/badge.svg)](https://github.com/Ow-wL/NowRecommend/actions/workflows/server-ci.yml) [![Deploy](https://github.com/Ow-wL/NowRecommend/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/Ow-wL/NowRecommend/actions/workflows/deploy-pages.yml)
+
+![React](https://img.shields.io/badge/React_19-20232A?logo=react&logoColor=61DAFB) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_17_·_pgvector-4169E1?logo=postgresql&logoColor=white) ![Cloud Run](https://img.shields.io/badge/Cloud_Run-4285F4?logo=googlecloud&logoColor=white) ![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?logo=githubpages&logoColor=white) ![Gemini](https://img.shields.io/badge/Gemini-8E75B2?logo=googlegemini&logoColor=white)
+
+<img src="docs/images/result-food-light.png" alt="'비 오는 저녁, 맵지 않고 따뜻한 국물 요리'에 대한 음식 추천 결과. 저녁·따뜻함·국물 조건과 매콤함 제외 칩, AI 추정 재료 안내, 닭곰탕·갈비탕·칼국수 카드" width="860">
+
+</div>
+
+> [!IMPORTANT]
+> **추천은 사실이 아니라 제안입니다.** 등록된 목록과 AI(Google Gemini)의 판단으로 만들며, AI는 실제로 없는 메뉴나 곡을 말하거나 사실과 다른 설명을 할 수 있습니다. 재료와 제외 조건은 등록 정보와 AI가 추정한 재료 기준이라 실제 판매처와 다를 수 있습니다. **알레르기 안전을 보장하지 않으므로** 주문 전에 판매처에 직접 확인해야 하고, 추천은 의학·영양 상담이 아닙니다. 알레르기·질환 같은 건강 표현은 따로 동의를 받은 뒤에만 기록하거나 보냅니다. 이용은 만 18세 이상입니다(Gemini API 약관). 약관과 처리방침은 사이트의 `#/terms`·`#/privacy`(내용은 [`src/legal.ts`](src/legal.ts))에 있고, 법률 검토를 거친 문서가 아닙니다.
+
+## 목차
+
+[역할](#-역할) · [화면](#-화면) · [주요 기능](#-주요-기능) · [구조](#%EF%B8%8F-구조) · [빠른 시작](#-빠른-시작) · [검증](#-검증) · [배포](#-배포) · [데이터·외부 서비스 출처](#%EF%B8%8F-데이터외부-서비스-출처) · [문서](#-문서)
+
+## 👤 역할
+
+| 담당 | 범위 |
+|---|---|
+| 이주형 ([@Ow-wL](https://github.com/Ow-wL)) | 전부 — 기획, 프런트엔드, 추천 API와 DB, AI 연동, 카탈로그 검수, 약관·처리방침 초안, 테스트와 CI, GCP 배포와 운영, 문서 |
+
+개발은 Claude Code를 사용하는 하네스 엔지니어링 방식으로 진행했습니다. 단계마다 계획 문서([plans.md](plans.md), [plans-rag.md](plans-rag.md), [plans-music-ai.md](plans-music-ai.md))를 먼저 쓰고, 테스트와 배포 기록([DEPLOY.md](DEPLOY.md))으로 완료를 확인했습니다. 설계 결정, 보안, 되돌리기 어려운 변경 같은 중요한 작업은 Codex(GPT)에게도 교차 검토를 받았습니다.
+
+## 📸 화면
+
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/images/home-light.png" alt="홈 화면. '오늘 뭐 먹지? 한 문장이면 끝.' 입력창과 예시 칩, 음식·음악·음식 + 음악 카드"><br><sub><b>홈</b> — 한 문장으로 바로 추천받거나, 음식·음악·같이 추천으로 들어갑니다</sub></td>
+    <td width="50%" align="center"><img src="docs/images/type-light.png" alt="취향 유형 테스트 화면. 음식·음악 전환, 테스트 시작 버튼, 음식 유형 16가지 카드"><br><sub><b>취향 유형</b> — 24문장에 답하면 네 글자 유형, 16가지 도감</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="docs/images/result-mobile-dark.png" alt="휴대폰 폭의 다크 모드 음식 추천 결과. 조건 칩, 제외 조건 안내, 하단 탭 메뉴" width="260"><br><sub><b>모바일·다크 모드</b> — 하단 탭 메뉴</sub></td>
+  </tr>
+</table>
+
+<sub>운영 사이트 nowrec.kr에서 로그인하지 않은 상태로 찍었습니다(2026-11-29). 위 추천 결과는 그때 AI가 고른 것이라 같은 문장이어도 다시 받으면 달라질 수 있습니다. 음식 사진은 Unsplash·Pexels·Wikimedia Commons(사진별 출처는 앱의 사진 정보).</sub>
+
+## ✨ 주요 기능
+
+| | 기능 | 내용 |
+|---|---|---|
+| 🍜 | **한 문장 음식 추천** | 상황 문장에서 조건(시간대·맛·제외 재료 등)을 찾아 칩으로 보여 주고, 메뉴 3개를 이유와 함께 고릅니다. 지원하지 않는 조건(가격·배달·위치)은 바꾸지 않고 알립니다 |
+| 🎧 | **음악 추천** | AI가 상황과 취향에 맞는 5곡을 고르고, Apple 스토어에서 실제로 있는 곡을 확인해 먼저 보여 줍니다. 발매 연도, 비슷한 곡 요청 |
+| 🍱 | **같이 추천** | 음식에 어울리는 곡을 짝지어 줍니다. 모델 없이 태그 규칙으로 고르므로 이유를 확인할 수 있습니다 |
+| 🧩 | **취향 유형** | 음식·음악 각각 24문장(5점 척도)으로 네 글자 유형(16가지)과 축별 비율. 친구에게 링크를 보내 궁합 보기, 공유 카드, 유형으로 추천받기 |
+| ❤️ | **즐겨찾기·기록** | 저장한 후보 안에서 추천, 고정·한 장 교체·최대 3개 비교, 선택 기록과 만족도·메모, 검색·달력, 직접 기록, 이번 달 요약 |
+| 🔊 | **듣기** | 30초 Apple 미리듣기, 곡 상세의 Apple Music 플레이어와 YouTube 플레이어, 다른 음악 앱 검색 링크 |
+| 👤 | **계정과 동기화** | 로그인 없이(게스트) 쓸 수 있고, 가입하면 취향·기록을 기기 간에 합쳐서 맞춥니다. 가입 이메일 확인, 비밀번호 재설정 메일, 모든 기기 로그아웃 |
+| 🛡️ | **안전장치** | 만 18세 확인, 건강 표현 별도 동의, AI 하루 한도(넘으면 등록 목록으로 추천), 의견 보내기·오류 신고 |
+| 🗂️ | **관리 콘솔** | 관리자 계정에만 보이는 `#/admin` — 개요, 이용 통계, 문의함, 회원(정지), 콘텐츠(숨김), 추천·AI, 접속 기록, 운영 상태, 조치 기록의 9구역 |
+| 🌗 | **편의** | 라이트·다크·시스템 테마와 강조색, 지금 날씨 반영, 말로 입력, 공유, 백업·가져오기, 홈 화면 설치와 오프라인 동작(서비스 워커) |
+
+> 서버 주소(`VITE_API_BASE_URL`) 없이 빌드하면 내장 카탈로그와 브라우저 규칙만 쓰는 오프라인 모드로 동작합니다. 이때는 계정·AI·관리 콘솔이 없습니다.
+
+## 🏗️ 구조
+
+```mermaid
+flowchart LR
+    U(["사용자"]) --> F["Frontend<br/>React · TypeScript · Vite<br/>GitHub Pages · nowrec.kr"]
+    F -->|"REST"| B["Backend API<br/>FastAPI · Cloud Run"]
+    B --> R["추천 엔진<br/>AI 엔진 + 카탈로그 파이프라인"]
+    R --> D[("Cloud SQL<br/>PostgreSQL 17 · pgvector")]
+    R --> G["Google Gemini<br/>생성 · 문장 해석 · 임베딩"]
+    B -.->|"곡 확인 · 플레이어"| X["Apple iTunes · YouTube Data API"]
+    B -.->|"확인 · 재설정 메일"| M["SMTP (Resend)"]
+    F -.->|"미리듣기 · 날씨"| W["Apple · Open-Meteo"]
+```
+
+- **AI가 실패해도 답이 나갑니다.** 모델 오류·시간 초과·한도 초과면 유사도 검색 결과(카탈로그 파이프라인)와 템플릿 이유로 대신 답하고, 화면에 "기본 방식으로 추천했어요"를 표시합니다.
+- **필수 제외는 AI에 맡기지 않습니다.** 등록 재료는 SQL로 거르고, AI가 이름 붙인 메뉴는 AI가 추정한 재료로 다시 확인해 "AI 추정"으로 표시합니다.
+- **조건 어휘는 한 파일에서 나옵니다.** 태그·제외 어휘(`shared/vocab.json`)와 해석·필터 사례(`shared/*-cases.json`)를 프런트와 서버가 함께 읽고 함께 검사합니다.
+- **API는 인스턴스 하나로 띄웁니다.** 분당 제한과 캐시가 메모리에 있고, 하루 한도는 DB(`usage_daily`)에 둡니다.
+
+<details>
+<summary><b>저장소 구성</b></summary>
+
+```text
+src/              React 앱: 화면(components/), 관리 콘솔(components/admin/), 서버 요청(api/), 추천·해석 규칙(domain.ts)
+public/           아이콘, manifest, 서비스 워커(sw.js), 자체 호스팅 음식 사진, 지난 판 약관(legal/)
+shared/           프런트와 서버가 같이 읽는 어휘(vocab.json), 해석·필터 사례, 약관 버전(legal.json)
+server/
+  app/            FastAPI: routes/, 추천(recommend.py, ai_engine.py), 인증, 한도(budget.py), 메일, llm/
+  app/cli/        seed · embed · draft · review · eval · eval_ai · admin · migrate · media
+  alembic/        DB 마이그레이션 0001~0014
+  data/           시드 카탈로그(seed_items.json)와 검수 항목(reviewed_items.json)
+  eval/           평가 세트와 보고서
+  tests/          pytest
+tests/            Playwright: 오프라인(tests/*.spec.ts), 서버 모드(api/), 빌드 결과물(built/)
+scripts/          카탈로그 내보내기, 아이콘·OG·사진 사본 만들기, 약관 스냅숏
+docs/             README 이미지, 자세한 기록(DETAILS.md)
+```
+
+</details>
+
+## 🚀 빠른 시작
+
+**필요한 것:** Node.js 22 · Microsoft Edge(브라우저 테스트) · 서버 모드는 Docker Desktop과 Gemini API 키
+
+**오프라인 모드** (서버 없이, 내장 카탈로그)
 
 ```powershell
 npm install
-npm run dev
-npm test
-npm run build
-npm run test:e2e
+```
+```powershell
+npm run dev                      # http://127.0.0.1:5173
 ```
 
-기본 주소는 `http://127.0.0.1:5173`입니다. 브라우저 테스트 설정은 `channel: msedge`이며, 시스템 Edge가 없으면 `npx playwright install msedge`로 준비합니다. Chromium 설치만으로 이 설정의 Edge를 대체할 수는 없습니다.
+**서버 모드** (PostgreSQL 17 + pgvector와 FastAPI를 컨테이너로)
 
-브라우저 테스트는 두 프로젝트로 나뉩니다.
-
-- `offline`: 기존 스펙. API 주소 없이 지정 포트(기본 5173)에서 실행합니다.
-- `api`: `tests/api/`. 다음 포트(기본 5174)에 가짜 API 주소 `http://127.0.0.1:5999`로 띄운 dev 서버에서 실행하고, 요청은 route로 가로챕니다. 실제 서버나 Gemini는 호출하지 않습니다.
-
-다른 프로젝트가 5173을 사용하면 테스트 실행에만 임시 포트를 지정합니다(서버 모드 테스트는 그다음 포트를 사용). 기본 개발·테스트 포트는 바뀌지 않으며 기존 서버를 재사용하거나 종료하지 않습니다.
+루트 `.env`에 `GEMINI_API_KEY`를 넣습니다. API 컨테이너는 시작할 때 Alembic 마이그레이션을 적용합니다.
 
 ```powershell
-$env:PLAYWRIGHT_PORT = '5187'
-try { npm run test:e2e } finally { Remove-Item Env:PLAYWRIGHT_PORT -ErrorAction SilentlyContinue }
+docker compose up -d --build     # DB 127.0.0.1:5433, API 127.0.0.1:8010
+```
+```powershell
+docker compose exec api python -m app.cli.seed     # 카탈로그 넣기 (바뀐 항목만)
+```
+```powershell
+docker compose exec api python -m app.cli.embed    # 문장 임베딩 계산 (바뀐 항목만)
+```
+```powershell
+$env:VITE_API_BASE_URL = 'http://127.0.0.1:8010'; npm run dev
 ```
 
-## API 서버와 DB
+API의 CORS 허용 주소가 `127.0.0.1:5173`·`localhost:5173`이라, 포트를 바꾸면 `CORS_ORIGINS`도 바꿉니다. 포트가 겹치면 `DB_PORT`·`API_PORT`로 옮깁니다.
 
-DB·유사도 검색·AI 재순위 계획은 [plans-rag.md](./plans-rag.md)에 있습니다. R0~R7을 마쳤고 2026-10-19에 Cloud Run + Cloud SQL로 공개 배포했습니다([DEPLOY.md](./DEPLOY.md)). 프론트엔드는 `VITE_API_BASE_URL`이 있을 때만 서버를 호출합니다.
+<details>
+<summary><b>환경변수</b> (값은 커밋하지 않습니다)</summary>
 
-### 프론트엔드의 두 가지 모드
-
-| 모드 | 조건 | 동작 |
+| 위치 | 키 | 용도 |
 |---|---|---|
-| 오프라인 | `VITE_API_BASE_URL` 없음(기본 `npm run dev`, 저장소 변수를 지운 Pages 빌드) | 기존과 같이 내장 카탈로그(`src/data.ts`)와 브라우저 규칙으로 즉시 추천 |
-| 서버 | `VITE_API_BASE_URL=http://127.0.0.1:8010`(로컬) 또는 배포 API 주소(지금의 Pages 빌드) | `/api/catalog`로 카탈로그를 받고, 추천·재추천·피드백 후 다시 채우기·한 장 교체를 `/api/recommend`로 요청 |
+| 빌드 (`VITE_*`) | `VITE_API_BASE_URL` | 서버 모드. 없으면 오프라인 모드 |
+| | `VITE_PUBLIC_URL`, `VITE_RELEASE` | 링크 미리보기 주소, 빌드 이름(오류 기록·오프라인 캐시 이름) |
+| | `VITE_OPERATOR_NAME`, `VITE_CONTACT_EMAIL` | 약관·처리방침의 운영자와 문의 주소 |
+| | `VITE_WEATHER`, `VITE_OPEN_METEO_KEY` | `off`면 날씨 버튼을 끔, 유료 Open-Meteo 키 |
+| | `VITE_APPLE_PREVIEWS`, `VITE_APPLE_EMBED`, `VITE_YOUTUBE_EMBED` | `off`면 미리듣기·Apple Music 플레이어·YouTube 플레이어를 끔 |
+| 서버 | `DATABASE_URL` | 기본은 로컬 `127.0.0.1:5433` |
+| | `GEMINI_API_KEY` | 생성·해석·임베딩. 없으면 AI 없이 동작 |
+| | `LLM_MODEL`, `MUSIC_ENGINE`, `FOOD_ENGINE` | 모델(코드 기본 `gemini-3.6-flash`, 운영 `gemini-3.5-flash-lite`), 엔진 `ai`·`catalog` |
+| | `AUTH_SECRET` | 계정 기능. 없으면 계정 경로가 503이고 게스트 전용 |
+| | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, `PUBLIC_APP_URL` | 확인·재설정 메일과 메일 속 링크 주소 |
+| | `EMAIL_VERIFICATION` | 가입 이메일 확인(코드 기본 false, 운영 true) |
+| | `YOUTUBE_API_KEY` | YouTube 플레이어용 영상 검색. 없으면 플레이어를 내지 않음 |
+| | `AI_DAILY_LIMIT`, `AI_DAILY_PER_MEMBER`, `AI_DAILY_PER_GUEST` | 하루 AI 한도(기본 3000 · 100 · 40, 0은 끔) |
+| | `CORS_ORIGINS`, `TRUST_PROXY`, `ADMIN_OWNER_ID`, `API_DOCS` | 허용 출처, 프록시 뒤 IP 읽기, 관리자 지정 권한 계정, `/docs` 켜기 |
 
-서버 모드로 개발 서버를 띄우려면 아래처럼 실행합니다. API의 CORS 허용 주소가 `127.0.0.1:5173`·`localhost:5173`이므로 포트를 바꾸면 `CORS_ORIGINS`도 함께 바꿔야 합니다.
+전체 목록과 기본값은 [`server/app/config.py`](server/app/config.py)에, 빌드 변수의 실제 값은 [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)이 저장소 Actions 변수에서 읽습니다.
+
+</details>
+
+관리자 지정, 카탈로그 늘리기(AI 초안 → 사람 검수), 평가 도구는 [docs/DETAILS.md](docs/DETAILS.md)에 있습니다.
+
+## ✅ 검증
 
 ```powershell
-$env:VITE_API_BASE_URL = 'http://127.0.0.1:8010'
-try { npm run dev } finally { Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue }
+npm test                         # 단위 테스트 (Vitest)
 ```
-
-- 카탈로그는 응답 형식을 검사한 뒤 탭의 sessionStorage에 캐시합니다. 서버가 응답하지 않으면 캐시나 내장 카탈로그로 계속 동작합니다.
-- 추천 요청 중에는 버튼이 "추천을 고르는 중"으로 잠깁니다. 화면을 옮기거나 새 요청을 보내면 이전 응답은 무시합니다.
-- 서버 오류·시간 초과 시 "다시 시도하기"와 "기본 추천으로 보기"(브라우저 규칙)를 제공합니다. 기본 추천으로 본 결과에는 안내가 표시됩니다.
-- 서버가 답했지만 AI 재순위가 실패했거나 문장 임베딩을 쓰지 못한 경우에도 결과 화면에 "기본 방식으로 추천했어요" 안내가 표시됩니다. 문장 임베딩이 없으면 그 가중치는 조건 태그로 넘어갑니다.
-- 장기 비선호·이번 요청 제외를 누르면 해당 카드는 바로 사라지고, 빈자리는 서버 응답으로 채웁니다. 서버가 실패해도 피드백 자체는 유지됩니다.
-
-Docker Desktop이 필요합니다. PostgreSQL 17 + pgvector와 FastAPI 서버를 함께 실행하며, API 컨테이너는 시작할 때 Alembic 마이그레이션을 적용합니다.
-
 ```powershell
-docker compose up -d --build
-docker compose exec api python -m app.cli.seed
-docker compose exec api python -m app.cli.embed
-curl http://127.0.0.1:8010/api/catalog?category=food
+npm run test:e2e                 # 브라우저 테스트: 오프라인 + 가짜 API 서버 모드 (Playwright, Edge)
+```
+```powershell
+npm run build                    # 타입 검사와 빌드
+```
+```powershell
+npm run test:dist                # 빌드 결과물: 보안 정책(CSP), 아이콘, 오프라인 캐시
+```
+```powershell
+cd server; .venv\Scripts\python -m pytest     # 서버 (Python 3.12+, DB 테스트는 NOWREC_DB_TESTS=1)
 ```
 
-- `app.cli.seed`: `server/data/seed_items.json`을 검수 완료 상태로 넣습니다. 여러 번 실행해도 바뀐 항목만 갱신합니다.
-- `app.cli.embed`: 검수 완료 항목 중 임베딩 원문·모델·차원이 바뀐 항목만 `gemini-embedding-2`(768차원)로 계산합니다. `--dry-run`은 API를 호출하지 않고 대상만 보여줍니다.
-- `src/data.ts`를 고치면 `npx vite-node scripts/export-catalog.ts`로 시드 파일을 다시 만듭니다. 둘이 어긋나면 `npm test`가 실패합니다.
-- `GET /api/catalog?category=food|music`은 검수 완료 항목만 프론트 `Item` 형식으로 돌려주고, 카탈로그 전체 내용 기준의 `catalogVersion`을 함께 줍니다.
-- **음악은 2026-11-02부터 AI가 직접 고릅니다**(`MUSIC_ENGINE=ai`, 실험 비교 [plans-music-ai.md](./plans-music-ai.md) §6의 결과). `POST /api/recommend`의 `category: "music"`은 아래 카탈로그 파이프라인 대신 `server/app/ai_engine.py`가 답합니다.
-  - 모델이 아는 곡 중에서 상황·취향에 맞는 5곡을 곡명·아티스트·이유·확신도(`confidence`)·태그와 함께 고릅니다(`llm/free.py`). 서버는 중복·이미 본 곡·비선호·취향 곡 자체·모르는 태그를 걸러내지만, 곡이 실제로 있는지는 확인하지 못합니다. 화면은 "AI가 직접 고른 곡"임을 알리고 카드에 확신도 배지를 붙입니다.
-  - 고른 곡은 `items`에 `status: draft`, `source: ai_draft`, id `ai-<해시>`로 저장합니다(`ai_items.py`). 그래서 다음 회차의 `seenIds`·`pinnedIds`·비선호·취향 ID를 다시 "곡명 - 아티스트"로 바꿀 수 있고, 카탈로그에 이미 있는 곡(이름·아티스트 일치)은 그 항목(커버·Apple Music 링크 포함)으로 돌려줍니다. 초안은 `/api/catalog`·검색 파이프라인·`app.cli.review`에 나오지 않습니다.
-  - 고정한 곡은 그대로 두고 나머지만 새로 받습니다. 모델이 실패하거나(한도·시간 초과) 응답이 모두 걸러지면 카탈로그 파이프라인 결과로 대체하고 `meta.engine: "catalog"`, `meta.engineWanted: "ai"`를 표시합니다. 즐겨찾기 범위(`candidateIds`) 요청과 음식은 카탈로그 파이프라인을 씁니다. 요청의 `engine: "catalog"|"ai"`로 직접 고를 수도 있습니다(실험실이 씁니다).
-  - 브라우저는 카탈로그에 없는 AI 곡을 `nowrecommend-known-items-v1`에 기억해(최근 400개) 즐겨찾기·취향·기록에서 이름을 보여줍니다. 오프라인 모드(서버 없음)의 음악 추천은 전과 같이 내장 카탈로그를 씁니다.
-- `POST /api/recommend`의 카탈로그 파이프라인(음식, 즐겨찾기 범위, 음악 대체 경로)은 다음 순서로 동작합니다.
-  1. 필수 제외·비선호·이번 요청 제외·즐겨찾기 범위를 SQL로 거릅니다. `해산물` 같은 묶음 제외는 등록 재료 중 덮는 값(지금은 `생선`)으로 거릅니다.
-     - 가격·배달·주변 표현("만원 이하", "배달 가능한")은 문장 임베딩과 AI 재순위에 보내기 전에 지웁니다. 예전 클라이언트가 보낸 `maxPrice`는 무시합니다.
-  2. 상황 문장 임베딩, 취향 항목 평균 벡터, 조건 태그 일치를 합쳐 점수를 매깁니다. 등록한 취향 항목은 한 회차에 하나까지만 앞에 두고, 나머지는 요청에 맞는 새 후보 뒤로 보냅니다.
-  3. 탐색 온도 `tau`와 MMR로 후보 10개(음악 15곡)를 고릅니다.
-  4. `gemini-3.6-flash`가 그 후보 안에서만 3개/5곡을 고르고 취향·상황 이유를 씁니다(`mode: rag`). 서버가 ID·개수·필수 카드를 검증하고 모자라면 유사도 순서로 채웁니다.
-  5. 모델 오류·10초 초과·한도 초과(429)·과부하(503)·유효한 선택 없음이면 유사도 상위 결과와 템플릿 이유를 돌려줍니다(`mode: retrieval_only`). 429·503 뒤에는 잠시 모델 호출을 건너뜁니다.
-  6. 요청마다 `recommendation_logs`에 기록합니다.
-- 현재 키는 무료 등급이라 `gemini-3.6-flash` 생성 요청이 **분당 5회, 하루 20회**로 제한됩니다. 그래서 배포 서버는 2026-10-20부터 `LLM_MODEL=gemini-3.5-flash-lite`를 씁니다(DEPLOY.md §4). 한도를 넘으면 결과가 `retrieval_only`로 나옵니다(plans-rag.md §12 결정 5).
-- 재순위 설정: `LLM_MODEL`(기본 `gemini-3.6-flash`), `RERANK_ENABLED`(기본 true), `RERANK_TIMEOUT_MS`(기본·최소 10000).
-- `POST /api/parse`는 `{category, text}`를 받습니다.
-  - 브라우저와 같은 규칙으로 먼저 해석하고, 규칙이 놓친 단어가 있을 때만 LLM에 물어 결과를 합칩니다. 제외는 합집합입니다.
-  - 응답의 `unsupported`는 지원하지 않는 조건(`price`·`delivery`·`place`·`ingredient`)과 문장 속 표현입니다. 조건으로 바꾸지 않고 알리기만 합니다.
-  - 응답의 `ai`는 `not_needed`·`used`·`unavailable`·`failed` 중 하나입니다. LLM 해석은 `PARSE_ENABLED=false`로 끌 수 있습니다.
-  - 해석 규칙은 `shared/parse-cases.json`으로 프론트 `parseConditions`와 서버가 함께 검사합니다.
-
-### 계정과 동기화 (2026-11-02)
-
-서버에 `AUTH_SECRET`이 설정되어 있으면 회원가입·로그인을 제공합니다(`server/app/auth.py`, `server/app/routes/auth.py`, 마이그레이션 `0004`). 비워 두면 계정 경로가 503으로 답하고 앱은 지금처럼 로그인 없이(게스트) 동작합니다.
-
-| 경로 | 설명 |
+| 지켜지는 것 | 방법 |
 |---|---|
-| `POST /api/auth/signup` `{email, password(8~128자), name(1~16자)}` | 가입하고 토큰을 돌려줍니다(201). 같은 이메일은 409 |
-| `POST /api/auth/login` `{email, password}` | 토큰과 사용자 정보. 이메일·비밀번호가 틀리면 둘 다 같은 401 문구 |
-| `GET /api/auth/me` | `Authorization: Bearer <토큰>`으로 현재 사용자와 저장 버전(`storeVersion`) |
-| `GET /api/me/store` | 계정에 저장된 브라우저 저장소(`Store` 전체 JSON)와 버전(`version`) |
-| `PUT /api/me/store` `{store, baseVersion}` | 저장하고 새 버전을 돌려줍니다. 다른 기기가 `baseVersion` 뒤에 먼저 저장했으면 409. 1MB(`STORE_MAX_BYTES`) 초과는 413, 분당 60회(`STORE_WRITES_PER_MINUTE`) 초과는 429 |
-| `POST /api/auth/delete` `{password}` | 계정과 저장 데이터를 삭제(204) |
-| `POST /api/auth/password` `{currentPassword, newPassword}` | 비밀번호를 바꾸고 새 토큰을 돌려줍니다. 다른 기기의 토큰은 모두 끝납니다 |
-| `POST /api/auth/logout-all` | 이 계정의 모든 토큰을 끝냅니다(204). 이 기기 포함 |
-| `POST /api/auth/reset/request` `{email}` | 가입된 주소면 재설정 링크를 메일로 보냅니다. 가입 여부와 무관하게 같은 202 응답 |
-| `POST /api/auth/reset/confirm` `{token, password}` | 메일의 링크로 새 비밀번호를 정하고 로그인합니다. 링크는 한 번만, 30분 동안 |
+| 프런트와 서버의 조건 해석이 같은지 | `shared/parse-cases.json`, `shared/filter-cases.json`을 양쪽 테스트가 함께 읽음 |
+| 내장 카탈로그와 서버 시드가 같은지 | `src/data.ts`와 `server/data/seed_items.json`이 어긋나면 `npm test` 실패 |
+| 실제 서버·Gemini를 부르지 않는지 | 브라우저 테스트는 가짜 API 주소로 요청을 가로채고, 서버 테스트는 가짜 임베더·모델 |
+| DB 스키마가 모델과 맞는지 | CI에서 pgvector 컨테이너에 `alembic upgrade head`와 `alembic check` |
+| AI 추천 품질이 나빠지지 않았는지 | `python -m app.cli.eval_ai check NAME --against ai-r1` (48개 상황, Gemini 비용 발생) |
 
-- 비밀번호는 PBKDF2-HMAC-SHA256(사용자별 솔트)으로 저장하고, 토큰은 `AUTH_SECRET`으로 서명한 14일(`AUTH_TOKEN_DAYS`, 2026-11-26까지는 30일) 만료 토큰입니다. 일반 로그아웃은 이 브라우저의 토큰만 지우므로, 서버에서 끊으려면 "모든 기기에서 로그아웃"을 씁니다. 세션 표가 없어서 비밀 값을 바꾸면 모두 로그아웃됩니다.
-- **계정 하나만 로그아웃시킬 수 있습니다(2026-11-17).** 토큰에 계정의 `token_version`(마이그레이션 `0009`)을 넣고, 요청마다 계정의 현재 값과 같은지 확인합니다. 비밀번호 변경·재설정·"모든 기기에서 로그아웃"이 이 값을 올려 이전 토큰을 모두 끝냅니다. 이 변경 전에 발급된 토큰은 0으로 읽어 그대로 유효합니다.
-- **비밀번호 재설정 링크**는 `<PUBLIC_APP_URL>#/reset/<토큰>`입니다. 토큰은 서명된 값으로, 발급 당시 비밀번호 해시의 지문을 담습니다. 비밀번호가 바뀌면 지문이 달라지므로 링크는 한 번만 쓸 수 있고, 표를 따로 두지 않습니다. 세션 토큰과 재설정 토큰은 서로 대신 쓸 수 없습니다. 프론트는 링크의 토큰을 한 번 읽은 뒤 주소를 `#/login`으로 바꿉니다.
-- **메일 발송**은 표준 라이브러리의 SMTP입니다(`server/app/mail.py`). `SMTP_HOST`·`SMTP_PORT`·`SMTP_USER`·`SMTP_PASSWORD`·`MAIL_FROM` 다섯 값으로 어떤 메일 서비스든 붙습니다. 465번은 처음부터 TLS, 그 밖의 포트는 STARTTLS가 되지 않으면 보내지 않습니다. `SMTP_HOST`나 `MAIL_FROM`이 비어 있으면 재설정 요청은 503으로 답하고 화면은 "지금은 메일로 비밀번호를 다시 정할 수 없어요"라고 알립니다. `/api/health`의 `mail.configured`로 확인합니다.
-- 재설정 메일은 한 계정에 하루 3통(`RESET_DAILY_PER_EMAIL`), 한 주소에서 하루 10번(`RESET_DAILY_PER_ADDRESS`)까지입니다. 계정별 한도를 넘어도 응답은 같고 메일만 나가지 않습니다. 서비스 전체로는 하루 80통(`RESET_DAILY_TOTAL`)에서 멈춥니다. 메일 서비스 무료 한도(하루 100통)를 하루의 요청 몰림이 다 쓰지 못하게 하려는 것이고, 넘으면 오류 로그가 남습니다.
-- 비밀번호를 확인하거나 메일을 보내는 경로(`/api/auth/password`·`delete`·`logout-all`·`reset/*`)도 분당 요청 제한을 받습니다.
-- **틀린 비밀번호를 시간 단위로 셉니다(2026-11-17).** 분당 제한은 1분이 지나면 잊고, 여러 주소로 나눠 한 계정을 맞혀 보는 것은 막지 못합니다. 그래서 로그인에서 틀린 횟수를 두 가지로 셉니다. 한 주소에서 한 계정에 한 시간 10번(`LOGIN_FAILS_PER_HOUR`): 맞혀 보는 쪽만 다음 정각까지 429이고, 다른 주소에 있는 계정 주인은 그대로 로그인합니다. 모든 주소를 합쳐 한 계정에 한 시간 100번(`LOGIN_FAILS_PER_HOUR_ANY`): 여기에 닿아야 그 계정의 로그인이 모두 기다립니다(맞는 비밀번호도). 이때도 이미 로그인된 기기는 그대로 쓰고, 재설정 메일의 링크로는 바로 들어옵니다. 비밀번호 변경·탈퇴의 현재 비밀번호 확인은 로그인된 세션의 것만 따로 세므로(한 시간 10번), 바깥에서 그 횟수를 채워 주인을 막을 수 없습니다. 비밀번호를 보기 전에 세고 맞으면 되돌리며, 가입되지 않은 주소도 똑같이 세고 같은 시간 동안 확인해, 거절 여부나 응답 시간으로 가입 여부를 알 수 없게 했습니다. 주소와 이메일은 복원할 수 없는 값으로 바꿔 `usage_daily`에 두고 7일 뒤 지웁니다. 0은 끔.
-- 비밀번호 저장은 "확인한 해시가 그대로일 때만" 하는 UPDATE 한 문장입니다. 같은 링크로 동시에 온 요청 중 하나만 성공하고, 응답의 토큰은 그 UPDATE가 만든 버전으로 발급합니다.
-- 재설정 토큰은 세션 토큰과 다른 키로 서명합니다. 서명만 확인하던 이전 API 코드가 재설정 토큰을 세션으로 받아들일 수 없습니다.
-- **롤백 주의**: API를 `0009` 이전 이미지로 되돌리면 끝낸 세션(비밀번호 변경, 모든 기기 로그아웃)이 만료 전까지 다시 받아들여집니다. 되돌릴 때는 `--downgrade`(직전 이미지는 `0008`, 2026-11-10 이전 이미지는 `0006`)와 함께 `AUTH_SECRET`도 교체합니다(모두 로그아웃됨).
-- 한계: 가입 시 이메일 인증은 아직 없습니다. 메일 발송은 요청 안에서 동기로 하므로, 가입된 주소와 아닌 주소의 응답 시간이 다를 수 있습니다(가입 폼의 409가 이미 가입 여부를 알려주는 것과 같은 수준의 노출).
-- 테스트: `server/tests/test_account_recovery.py`(토큰 종류와 버전, 변경·재설정·전체 로그아웃, 링크 1회·만료, 한도, SMTP 순서), `tests/api/auth.spec.ts`(비밀번호 찾기, 메일 링크, 만료된 링크, 비밀번호 변경, 모든 기기 로그아웃).
-- 가입·로그인 경로도 기존 요청 제한(IP당 분당 30회)을 받습니다. `/api/health`의 `auth.enabled`로 설정 여부를 확인할 수 있습니다.
-- 서버는 `store` 내용을 해석하지 않고 크기와 버전만 확인합니다. 어떤 데이터가 들어가는지는 프론트의 `Store` 타입(`src/domain.ts`)이 정합니다.
-- 저장 버전(`users.store_version`, 마이그레이션 `0007`)은 저장할 때마다 1씩 오릅니다. 조건부 저장은 `UPDATE … WHERE store_version = baseVersion` 한 문장이라, 동시에 온 두 저장이 둘 다 성공하지 않습니다. `baseVersion` 없이 보내는 옛 프론트는 전처럼 무조건 저장되고 버전만 오릅니다.
-- 테스트: `server/tests/test_auth.py`는 PostgreSQL 없이 SQLite의 `users` 표만 만들어 경로를 검사합니다.
+`frontend-ci.yml`은 모든 브랜치와 PR에서 돌고, `main`의 필수 검사입니다(2026-11-17부터 브랜치 보호). CI는 Playwright의 Chromium을, 개발 PC는 Edge를 씁니다. `server-ci.yml`은 `server/`·`shared/`가 바뀔 때 돕니다.
 
-프론트엔드(서버 모드)에서는 상단 바의 "로그인" 또는 `#/login`에서 로그인·회원가입을 합니다(`src/components/AuthPanel.tsx`, `src/account.ts`, `src/api/auth.ts`).
+아직 확인하지 못한 것은 실사용자 과제 수행, 실제 모바일 키보드, 스크린리더입니다.
 
-- 로그인 없이도 전과 같이 이 브라우저에서 바로 쓸 수 있습니다(게스트). 토큰은 `nowrecommend-auth-v1`에 저장하고 `Store`·백업에는 들어가지 않습니다.
-- **계정 데이터는 덮어쓰지 않고 합칩니다(2026-11-16, `src/sync.ts`·`src/useAccountSync.ts`).** 브라우저는 마지막으로 계정과 일치했던 버전과 그때의 색인을 저장소와 같은 localStorage 레코드의 `_sync` 필드에 기억합니다(따로 읽히거나 쓰이지 않도록 한 레코드로 묶었고, `Store`·백업·업로드에는 들어가지 않습니다).
-  - 앱을 열 때, 탭으로 돌아올 때(버전만 확인), 저장이 409로 거절됐을 때 계정의 데이터를 받아 합친 뒤 그 버전 위에 다시 저장합니다.
-  - 합치는 규칙: 목록(즐겨찾기·선호·비선호·태그)은 한쪽이 넣은 것은 넣고 뺀 것은 뺍니다. 기록·프리셋·직접 입력 취향은 id별로, 한쪽만 고친 것은 그쪽 것을 쓰고 둘 다 고쳤으면 더 나중에 손댄 것을 씁니다. 한쪽이 지웠어도 다른 쪽이 고친 항목은 남깁니다. 이름·화면 설정·취향 유형은 바꾼 쪽 값을 씁니다.
-  - 기억이 없는 브라우저(이 변경 전에 로그인한 브라우저)는 아무것도 지워진 것으로 보지 않고 둘을 합칩니다.
-  - 계정 데이터를 읽지 못했으면(연결 실패, 이 빌드가 해석할 수 없는 데이터) 올리지 않습니다. 로그인 중이었다면 로그인하지 않은 상태로 남습니다.
-  - 변경 내용은 1.5초 뒤 저장하고, 내 계정 모달에 저장 상태를 보여줍니다. 401이 오면 토큰이 만료된 것으로 보고 로그아웃하며 데이터는 브라우저에 남습니다.
-- **가입·로그인이 이 브라우저의 데이터에 하는 일(`planLogin`)**:
-  - 계정 없이 쓰던 데이터: 계정에 저장된 것이 없으면 계정에 올리고(이름이 기본값이면 계정 이름으로), 있으면 계정 것으로 바꾸며 로컬 데이터는 `nowrecommend-prototype-v1-before-login`에 보관합니다.
-  - 같은 계정이 쓰던 데이터: 계정 것과 합칩니다.
-  - 다른 계정이 쓰던 데이터(로그아웃하고 남은 것): 올리지 않고 보관만 합니다. 새 계정은 자기 데이터나 빈 상태로 시작합니다.
-- 로그아웃은 토큰만 지우고 브라우저 데이터는 남깁니다. "로그아웃하고 이 브라우저에서 지우기"는 아직 저장하지 않은 변경을 먼저 계정에 올리고, 성공했을 때만 이 브라우저의 데이터를 지웁니다. 계정 삭제는 비밀번호를 다시 확인한 뒤 서버의 계정과 데이터를 지웁니다.
-- 로그인 중에 "이 브라우저의 데이터 모두 초기화"를 하면 그 삭제도 계정에 반영됩니다(확인 창에 적혀 있습니다).
-- 탭마다 자기가 계정과 맞춘 버전을 따로 기억하고, 저장소와 그 기억은 한 레코드로 함께 읽고 씁니다. 그래서 같은 계정으로 연 두 탭이 서로의 변경을 지우지 않습니다. 다른 탭에서 로그인·로그아웃·계정 전환을 하면 이 탭은 새로 고쳐집니다.
-- 버전이 없는 서버(`0007` 이전 API)를 만나면 저장할 때마다 먼저 읽고 합친 뒤 올립니다. 서버가 거절해 주지 못하므로, 읽기와 쓰기 사이의 짧은 틈은 남습니다.
-- 계정을 삭제하면 이 브라우저에 남은 데이터는 주인 없는 데이터가 되어, 이후 새로 가입하는 계정에 올라갑니다(같은 사람이 다시 가입하는 경우를 위한 선택).
-- 한계: 같은 항목을 두 기기에서 동시에 고치면 한쪽 수정만 남습니다(항목 안쪽은 합치지 않습니다). 합친 결과가 한도(기록 50개, 프리셋 분야별 20개)를 넘으면 오래된 기록과 넘친 프리셋은 빠집니다. 로그인하지 않은 브라우저의 두 탭은 전처럼 나중에 저장한 탭의 내용이 남습니다.
-- API를 `0007` 이전 이미지로 되돌리려면 먼저 `python -m app.cli.migrate --downgrade 0006`이 필요합니다(그 이미지는 `0007`을 모르면 시작하지 못합니다). 되돌린 직후에는 이미 열려 있던 탭이 기억한 버전 위에 한 번 저장을 보내는데, 옛 API는 그 조건을 무시합니다. 그 사이 다른 기기가 저장했다면 그 한 번은 덮어쓰므로, API를 되돌릴 때는 Pages도 같은 시점의 커밋으로 함께 되돌립니다.
-- 테스트: `src/sync.test.ts`(합치는 규칙, 두 기기 시나리오, 읽기 실패, 버전 없는 서버, 로그인 결정), `tests/api/auth.spec.ts`(가입 → 업로드, 로그인 → 다운로드와 로컬 보관, 잘못된 비밀번호, 로그아웃, 이미 로그인된 브라우저가 먼저 읽는지, 409 병합, 읽기 실패 시 로그인 중단, 두 번째 사람의 가입, 로그아웃하고 지우기, 두 탭), `server/tests/test_auth.py`(오래된 기기의 저장 거절, PostgreSQL에서 동시에 온 저장 8개 중 하나만 성공).
+## 📦 배포
 
-### 출시 준비 다듬기 (2026-11-17)
-
-- **에러 화면과 오류 수집**: 화면을 그리다 난 오류는 빈 화면 대신 "다시 불러오기 / 홈에서 다시 시작"을 보여줍니다(`src/components/ErrorBoundary.tsx`). 브라우저의 오류는 `POST /api/client-errors`로 서버 로그에 한 줄로 남습니다(`src/errors.ts`, `server/app/routes/client_errors.py`). 보내는 것은 오류 메시지, 코드 위치, 화면 종류(주소의 첫 마디만), 빌드 이름이고 DB에는 저장하지 않습니다. 방문당 5건, 같은 오류는 한 번만 보냅니다. Cloud Logging에서 `client error`로 찾습니다.
-- **헬스 체크가 스키마를 봅니다**: `/api/health`는 DB가 한 번도 마이그레이션되지 않았으면(`alembic_version` 없음) 503입니다. 빈 DB로 복원된 경우를 업타임 체크가 잡습니다. 응답의 `database.revision`이 현재 마이그레이션입니다.
-- **비밀번호 해시**: PBKDF2 반복 횟수를 600,000으로 올렸습니다. 예전 해시는 그대로 확인되고 다음 로그인 때 새 횟수로 다시 저장합니다.
-- **서버 이미지**: `server/requirements.lock`의 정확한 버전으로 설치하고, 비루트 사용자(uid 10001)로 실행합니다. 버전을 올릴 때는 잠금 파일 머리말의 절차를 따르고, 이미지 안에서 테스트를 돌립니다(2026-11-17: 593개 통과).
-- **보안 정책(CSP)**: 빌드 결과물의 `index.html`에 Content-Security-Policy가 들어갑니다(`vite.config.ts`). 다른 사이트를 프레임으로 넣는 것은 Apple Music 플레이어(`frame-src https://embed.music.apple.com`) 하나만 허용합니다. 스크립트는 자기 출처와 해시가 맞는 인라인 테마 스크립트만 실행되고, 통신은 API·iTunes·Open-Meteo로만 나갑니다. 새 외부 호스트를 쓰게 되면 여기에 추가해야 합니다. 개발 서버에는 적용되지 않습니다.
-- **빌드 변수**: `VITE_PUBLIC_URL`(사이트 주소, 링크 미리보기의 `og:url`·`og:image`), `VITE_RELEASE`(오류 기록과 오프라인 캐시 이름에 쓰는 빌드 이름, 배포 워크플로가 커밋으로 채움). 호스팅을 옮길 때는 `VITE_PUBLIC_URL`과 서버의 `CORS_ORIGINS`·`PUBLIC_APP_URL`을 함께 바꿉니다.
-- **서비스 워커**: 캐시 이름에 빌드 이름이 들어가 배포마다 이전 캐시를 지우고, 같은 주소의 다른 사이트 캐시는 건드리지 않습니다.
-- **아이콘**: iOS 홈 화면용 `apple-touch-icon.png`과 설치용 192·512 PNG를 추가했습니다. SVG를 고치면 `node scripts/make-icons.cjs`로 다시 만듭니다.
-- **CI**: `.github/workflows/frontend-ci.yml`이 모든 브랜치와 PR에서 단위 테스트, 브라우저 테스트(개발 서버), 빌드, 빌드 결과물 테스트(`npm run test:dist`: 보안 정책, 아이콘, 캐시 이름)를 돌립니다. CI는 Playwright가 설치하는 Chromium을 쓰고(`PW_CHANNEL=chromium`), 개발 PC는 Edge를 씁니다.
-- **화면 문구**: "체험 버전" 같은 시연용 문구를 정리했고, "다음 추천 실패 체험하기" 버튼은 개발 서버에서만 보입니다.
-- 아직 사람이 해야 하는 설정: `main` 브랜치 보호(위 CI를 필수로), Cloud SQL 삭제 보호, 백업 복원 연습, 호스팅 이전과 도메인.
-
-### 약관·개인정보 처리방침과 가입 동의 (2026-11-17)
-
-- `#/terms`와 `#/privacy`에 이용약관과 개인정보 처리방침이 있습니다. 내용은 `src/legal.ts`의 데이터이고, 홈 화면 아래와 가입 폼에서 연결됩니다. 로그인 없이 읽을 수 있습니다.
-- 처리방침은 코드가 실제로 하는 일만 적습니다(무엇을 어디에 저장하는지, 무엇이 어느 회사로 나가는지). 코드가 바뀌면 문서를 함께 고치고 `LEGAL_VERSION`을 올립니다. **법률 검토를 거친 문서가 아닙니다. 공개 출시 전에 검토가 필요합니다.**
-- 가입 폼은 이용약관, 개인정보 수집·이용, 만 18세 이상 세 가지를 각각 체크해야 제출됩니다. 미리 체크된 항목은 없습니다. 서버는 세 동의가 모두 왔고 약관 버전이 지금 시행 중인 것(`shared/legal.json`, 프론트와 서버가 같은 파일을 읽음)일 때만 가입을 받고, 그 버전과 시각을 계정에 기록합니다(`users.terms_version`·`terms_agreed_at`, 마이그레이션 `0010`). 동의가 빠지면 422, 예전 버전에 동의했으면 409(새로 고침 안내)입니다. 설정 `SIGNUP_CONSENT_REQUIRED=false`는 이 확인을 끕니다.
-- **연령 확인은 비로그인에도 합니다.** 서버가 연결된 사이트를 처음 열면 "만 18세 이상이신가요?"를 한 번 묻고, 답을 이 브라우저에 기억합니다(`src/components/AgeGate.tsx`). 약관과 처리방침은 답하지 않아도 읽을 수 있습니다. 본인 확인이 아니라 본인의 답에 의존하는 확인입니다.
-- 요청 문장 원문은 기본적으로 DB에 저장하지 않습니다(`LOG_RAW_TEXT` 기본값 false). 처리방침의 약속이 배포 설정 하나에 달려 있지 않게 했습니다. 로컬 평가에서만 켭니다.
-- "이 브라우저의 데이터 모두 초기화"는 취향·기록뿐 아니라 그 보관본(`-before-login` 등)과 캐시(곡 확인, 미리듣기, AI 추천 항목)까지 지웁니다(`clearBrowserData`).
-- **이용 연령은 만 18세 이상입니다.** Gemini API 약관이 18세 미만이 쓸 가능성이 있는 서비스에 API를 쓰지 못하게 하기 때문입니다. 14세로 낮추려면 AI 제공 경로를 바꿔야 합니다(예: Vertex AI의 약관 확인 후 전환).
-- 운영자 이름과 문의 주소는 빌드 변수 `VITE_OPERATOR_NAME`·`VITE_CONTACT_EMAIL`입니다(저장소 Actions 변수). 비어 있으면 문서에 "운영자 정보가 아직 등록되지 않았어요"가 보입니다. 공개 출시 전에 반드시 넣습니다.
-- 위치는 "지금 날씨 반영"을 누를 때만 쓰고, 버튼 아래에 보내는 곳과 정밀도를 적습니다. "말로 입력"은 듣는 동안 음성이 브라우저의 음성 인식 서비스로 간다고 알립니다.
-- 처리방침의 보관 기간이 기대는 설정(2026-11-17 조회): 접속 기록 30일은 Cloud Logging `_Default` 버킷의 보관 기간, 백업 7일은 Cloud SQL 자동 백업 보관 개수입니다. 이 설정을 바꾸면 문서도 고칩니다. 하루 한도 기록 7일은 코드가 지웁니다(`budget.forget_old`).
-- 아직 사람 손이 필요한 약속: 약관 변경의 사전 공지, 만 18세 미만 계정의 삭제, 가입 시 이름·이메일의 수정 요청 처리.
-- 전문가 확인이 필요한 것: 국외 이전 고지의 필수 항목(이전 국가·시기·방법·거부 방법), 처리 위탁 표기, 파기 절차, 알레르기처럼 건강과 닿는 입력의 취급.
-
-### 외부 서비스 이용 조건 (2026-11-17 확인)
-
-각 서비스의 공식 약관 페이지를 읽고 정리했습니다. 약관은 바뀌므로 출시 직전에 다시 확인합니다. 법률 해석이 아닙니다.
-
-| 서비스 | 쓰는 곳 | 확인한 조건 | 상용 출시 전 할 일 |
-|---|---|---|---|
-| GitHub Pages | 프론트 호스팅 | 상업 거래 사이트나 상업적 SaaS 제공 용도로는 쓸 수 없음(Pages 사용 한도 문서) | **다른 정적 호스팅으로 이전**(계획 5단계의 도메인 이전과 함께) |
-| Open-Meteo | 날씨 반영 | 무료 API는 비상업 용도만. 구독료나 광고가 있으면 상업으로 봄. 데이터는 CC BY 4.0이라 출처 표기 필요 | 유료화·광고를 하면 `VITE_WEATHER=off`로 끄거나 유료 플랜의 키를 `VITE_OPEN_METEO_KEY`에 넣음. 출처 표기는 넣었음 |
-| Gemini API | 추천·해석 | 유료 등급(결제가 연결된 프로젝트)은 입력을 제품 개선에 쓰지 않음. 무료 등급은 씀. 만 18세 이상 대상 서비스에만 사용 가능 | 키가 유료 프로젝트의 것인지 확인. 이용 연령 18세 유지 |
-| Apple iTunes 검색·미리듣기·앨범 이미지 | 곡 확인, 미리듣기 | 미리듣기와 앨범 이미지는 그 곡을 홍보하는 목적에만. 저장·캐시 금지(재생만). iTunes 제공 표기와 스토어 링크를 가까이 둘 것. 호출은 분당 약 20회 | 제공 표기를 상세 화면에 넣었음. 광고·유료 기능과 함께 쓰려면 Apple에 확인. `VITE_APPLE_PREVIEWS=off`는 미리듣기 버튼만 끄며, 앨범 이미지와 곡 확인(브라우저·서버)은 남음 |
-| Apple Music 임베드 플레이어 | 곡 상세의 "Apple Music 플레이어 열기" | Apple이 공유용으로 제공하는 플레이어(`embed.music.apple.com`). 개발자 토큰·유료 멤버십 불필요. 비로그인은 30초, 플레이어 안에서 Apple Music 구독 계정으로 로그인하면 전곡(Apple 안내 문서). 플레이어는 Apple이 직접 이용 정보를 수집하고 최대 2년 보관(Apple Music 웹 플레이어 개인정보 안내). 임베드 전용 이용약관 문서는 찾지 못함 | 처리방침에 수집 항목을 적었음. 실제 구독 계정의 로그인·전곡 재생은 운영 도메인에서 확인 필요(Safari·시크릿 모드는 서드파티 쿠키 차단으로 로그인 유지가 안 될 수 있음). `VITE_APPLE_EMBED=off`로 끔 |
-| YouTube Data API·임베드 플레이어 | 곡 상세의 "YouTube로 듣기" | 검색은 프로젝트당 하루 100회(2026-06-01부터 따로 셈, 태평양 시간 자정에 초기화). API 데이터는 30일 넘게 보관 금지. 이용약관에 YouTube 이용약관 동의 문구, 처리방침에 YouTube API 서비스 사용·Google 개인정보처리방침 링크·플레이어가 수집하는 정보를 적어야 함. 플레이어는 200×200 이상, 가리거나 바꾸지 않음, HTTP Referer가 있어야 재생(2025-07부터, 없으면 오류 153). 아동용 영상은 추적 금지(2026-11-18 공식 문서 확인) | 키는 서버에만(`YOUTUBE_API_KEY`, 헤더로 전송). 서버가 하루 50회(`YOUTUBE_DAILY_LIMIT`, 0이면 꺼짐)·주소당 10회까지 검색하고 7일 기억(10분마다 지난 답을 지움). 처음 쓸 때 약관 동의. 끄려면 `VITE_YOUTUBE_EMBED=off` |
-| 멜론·지니·FLO·VIBE·벅스·YouTube Music·Spotify | 곡 상세의 "내 음악 앱에서 찾기" | 다른 사이트용 재생 SDK·임베드·로그인 연동을 제공하지 않음(2026-11-17 조사. Spotify Web Playback SDK는 개발 모드 5명 제한이라 공개 서비스에 쓸 수 없음). 검색 화면으로 가는 링크만 둠 | 모바일에서 멜론·지니·FLO는 검색어 없이 첫 화면이 열릴 수 있어 "제목·가수 복사"를 함께 둠 |
-| Unsplash | 음식 사진 38장(자체 호스팅, 2026-11-17에 `scripts/host-unsplash.cjs`로 옮김) | 상업적 사용 가능, 출처 표기는 권장(상세 화면에 작가와 사진 페이지를 표기) | 없음 |
-| Pexels | 음식 사진 25장(자체 호스팅) | 상업적 사용 가능, 출처 표기 불필요 | 없음 |
-
-- 끄고 켜는 스위치는 `src/features.ts`에 있고, 값은 `.github/workflows/deploy-pages.yml`이 저장소 Actions 변수에서 읽습니다.
-
-### 비용 한도 (2026-11-17)
-
-AI 모델 호출은 돈이 들고, 추천·해석 경로는 로그인 없이 열려 있습니다. 분당 제한은 프로세스 메모리에 있어 재시작하면 잊히고 하루치를 더하지 않으므로, 하루 한도를 DB(`usage_daily`, 마이그레이션 `0008`, `server/app/budget.py`)에 둡니다. 하루는 한국 시간 기준이고, 값은 환경 변수로 바꿉니다(0은 끔).
-
-| 한도 | 기본값 | 넘으면 |
+| 부분 | 어디에 | 어떻게 |
 |---|---|---|
-| 서비스 전체 모델 호출 `AI_DAILY_LIMIT` | 3000회/일 | 모델을 부르지 않습니다. 추천은 검수 카탈로그로, 해석은 규칙만으로 답합니다 |
-| 계정 한 개의 요청 `AI_DAILY_PER_MEMBER` | 100회/일 | 그 계정의 요청만 위처럼 답합니다 |
-| 비로그인 주소 하나의 요청 `AI_DAILY_PER_GUEST` | 40회/일 | 그 주소의 비로그인 요청만 위처럼 답합니다 |
-| 주소 하나의 가입 `SIGNUP_DAILY_PER_ADDRESS` | 20회/일 | 가입이 429로 거절됩니다 |
-| 분당 요청 `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_GUEST_PER_MINUTE` | 30 / 15 | 429. 로그인한 요청은 계정별로, 비로그인은 주소별로 셉니다 |
-
-- **호출 한 번의 비용(2026-11-17 측정)**: 운영과 같은 모델(`gemini-3.5-flash-lite`)로 로컬에서 8건을 보내 API가 알려 주는 토큰 수를 읽었습니다. 표본이 작으니 어림값입니다.
-
-  | 요청 | 입력 토큰 | 출력 토큰 | 한 번의 비용 |
-  |---|---|---|---|
-  | 음식 추천 | 약 1,570 | 430~740 | 약 0.0019달러 |
-  | 음악 추천 | 약 880 | 680~940 | 약 0.0023달러 |
-  | 문장 해석(규칙이 못 읽은 문장만) | 약 470 | 약 30 | 약 0.0002달러 |
-
-  가격은 유료 등급 기준 입력 100만 토큰 0.30달러, 출력 2.50달러입니다(Gemini API 가격표, 2026-11-17 확인). 추천 한 번을 0.0023달러로 잡으면 `AI_DAILY_LIMIT=3000`은 하루 최대 약 6.9달러(한 달 약 207달러), 1000은 하루 약 2.3달러(한 달 약 69달러)입니다. 결제 예산 알림은 월 12만 원이므로, 그 안에 두려면 1000 안팎이 맞습니다. 기본값 3000은 그대로 두었고 운영 값은 `AI_DAILY_LIMIT` 환경 변수로 정합니다. 운영은 2026-11-17부터 1000입니다(그 전 7일의 AI 요청은 40건).
-- 모델을 부를 때마다 `model usage model=… prompt=… output=… thinking=… total=…` 한 줄이 로그에 남습니다(`server/app/llm/client.py`). 요청 문장과 답은 들어가지 않습니다. 실제 사용량은 이 줄을 모아서 봅니다: `gcloud logging read 'textPayload:"model usage"' --project harness-recommend --freshness=7d`.
-- 한도를 넘어도 오류가 아니라 답이 나갑니다. 응답 `meta.limit`이 `guest`·`member`·`service` 중 하나로 이유를 알리고, 화면은 "오늘 받을 수 있는 AI 추천을 모두 썼어요"처럼 한도라고 말합니다(비로그인에게는 로그인하면 더 받을 수 있다고 안내).
-- 전체 한도는 모델 호출 직전에 셉니다(`llm/provider.py`의 `BudgetedModel`). DB가 답하지 못하면 모델을 부르지 않습니다. `draft`·`eval` 같은 명령줄 도구는 세지 않습니다.
-- 호출자의 하루치는 모델에 실제로 닿는 순간에 요청당 한 번 셉니다(`budget.py`의 `Gate`). 캐시·규칙·고정 항목만으로 답한 요청은 세지 않습니다. 한도를 넘은 호출자의 요청에서는 문장 임베딩(유료 호출)도 부르지 않습니다.
-- 문장 임베딩도 캐시에 없는 문장이면 서비스 전체 한도에서 1회로 셉니다.
-- 한도 때문에 규칙만으로 답한 해석 결과는 캐시에 남기지 않습니다. 같은 문장을 보낸 다른 사람은 AI 해석을 받습니다.
-- 비로그인 사용자는 주소를 비밀 값과 함께 해시한 값으로만 세고, 7일이 지난 행은 지웁니다. 같은 주소를 쓰는 사람들(학교, 카페)은 비로그인 한도를 나눠 쓰게 되므로, 로그인하면 계정별로 셉니다.
-- 프론트는 로그인 상태면 추천·해석 요청에 토큰을 함께 보냅니다(`src/account.ts`의 `sessionHeaders`).
-- 같은 내용의 오류 신고를 같은 사람이 다시 보내면 이미 열린 신고로 답하고, 한 항목에 열린 신고는 20개까지만 쌓입니다.
-- 가입 한도는 실제로 만들어진 계정만 셉니다(입력 오류나 이미 가입된 이메일은 세지 않음).
-- 기본값은 추정입니다. 실제 호출당 비용과 예산에 맞춰 `AI_DAILY_LIMIT`부터 정하세요.
-
-### 카탈로그 늘리기 (AI 초안 → 사람 검수)
-
-`server/data/drafts/`에 이름 파일을 두고 실행합니다. 음식은 한 줄에 메뉴 하나, 음악은 `제목 - 아티스트` 형식입니다. 이 폴더는 컨테이너와 연결되며 git에 올리지 않습니다.
+| 화면 | GitHub Pages, 도메인 `nowrec.kr` | `main`에 push하면 `deploy-pages.yml`이 테스트·빌드·배포. `main`은 PR로만 받습니다 |
+| API | Cloud Run `nowrecommend-api` (서울 리전, 인스턴스 0~1개) | 이미지를 만들어 Artifact Registry에 올린 뒤 `gcloud run deploy` |
+| DB | Cloud SQL PostgreSQL 17 + pgvector | 컨테이너가 시작할 때 확장 마이그레이션을 적용. 자동 백업 7개 |
+| 카탈로그 | Cloud Run 작업 `nowrecommend-seed` | 시드와 임베딩을 바뀐 항목만 갱신 |
 
 ```powershell
-docker compose exec api python -m app.cli.draft --category food data/drafts/food-names.txt
-docker compose exec api python -m app.cli.review export
-docker compose exec api python -m app.cli.review import
-docker compose exec api python -m app.cli.review publish
+docker build -f server/Dockerfile -t nowrecommend-api .     # 프로젝트 루트에서 (shared/와 server/만 들어감)
 ```
 
-- `draft`: AI가 설명·태그·재료·이모지·색을 채워 `draft` 상태로 저장합니다. 10개씩 묶어 한 번에 요청하고, 이미 있는 이름은 건너뜁니다. 초안은 추천과 `/api/catalog`에 나오지 않습니다.
-- `review export`: `server/data/drafts/review.json`을 만듭니다. 각 항목에 AI가 채운 필드, 경고(알레르기 재료 확인 필요, 모르는 곡, 이름·내용이 비슷한 기존 항목), `decision: pending`이 들어 있습니다.
-- 파일을 고쳐 `decision`을 `approve`·`reject`로 바꿉니다. **음식은 재료를 확인한 뒤 `allergensChecked: true`로 바꿔야 승인됩니다.** 재료는 `shared/vocab.json`의 `excludableIngredients`에 있는 이름만 쓸 수 있습니다. 새 재료가 필요하면 먼저 어휘(`exclusions`·`excludableIngredients`)에 더합니다. 등록 재료가 제외 어휘에 없으면 "참깨는 빼줘" 같은 요청이 아무 데도 걸리지 않기 때문입니다.
-- `review import`: 승인 항목을 `reviewed`로 바꾸고 임베딩합니다. 오래된 파일로 이미 처리된 항목을 덮어쓰지 않습니다.
-- `review publish`: 승인된 AI 항목을 `server/data/reviewed_items.json`으로 내보냅니다. 이 파일을 커밋하면 `app.cli.seed`(배포의 시드 작업 포함)가 기본 시드 다음에 함께 넣으므로, 새로 만든 DB에도 같은 카탈로그가 들어갑니다.
-- 무료 한도(하루 약 20회 생성 요청)를 넘으면 해당 묶음은 `모델 오류: ClientError 429`로 건너뜁니다. `--batch 20`으로 요청 수를 줄일 수 있고, 이때는 `RERANK_TIMEOUT_MS`를 넉넉히(예: 150000) 줍니다.
-- `python -m app.cli.eval`(server 폴더에서 실행)은 평가 세트 60개(`server/eval/cases.json`)로 기존 규칙·유사도·취향만 방식을 비교하고, 조건 해석 정확도를 잽니다. 결과는 `server/eval/report.md`에 씁니다. `--with-ai`를 주면 AI 경로도 일부 사례에 대해 측정하며, 이때는 생성 한도를 씁니다. 정답 라벨이 기본 시드 31개만 알기 때문에 기본으로 그 안에서만 순위를 매깁니다(`--full-catalog`로 전체).
-- `python -m app.cli.eval_ai`는 운영 기본인 AI 엔진과 카탈로그 경로를 같은 48개 상황(`server/eval/ai_cases.json`)으로 채점합니다. `run NAME`(답변 받기), `judge NAME`(다른 모델의 심사), `songs NAME`(Apple 스토어 확인), `report NAME...`(표 만들기) 순서로 실행하고, 각 단계는 저장하며 진행해 끊겨도 이어서 할 수 있습니다. 배포 전에는 `check NAME --against ai-r1`로 2026-11-10 기준선보다 나빠졌는지 봅니다. `run`과 `judge`는 Gemini 호출 비용이 듭니다. 결과는 `server/eval/ai_report.md`에 있습니다.
-- 서버 테스트는 GitHub Actions `server-ci.yml`에서 pgvector 컨테이너와 함께 실행됩니다(`server/`·`shared/` 변경 시).
-- `POST /api/recommend`·`/api/parse`·`/api/lab/music/free`는 세 경로를 합쳐 클라이언트별 분당 30회로 제한됩니다(`RATE_LIMIT_PER_MINUTE`, 0이면 끔). `TRUST_PROXY=true`이면 `X-Forwarded-For`의 **가장 오른쪽** 주소(프록시가 붙인 값)로 클라이언트를 구분합니다. 왼쪽 값은 클라이언트가 마음대로 보낼 수 있습니다.
+API는 새 리비전으로 배포하고, 문제가 있으면 트래픽을 직전 리비전으로 되돌립니다. DB 마이그레이션이 바뀐 배포는 되돌리기 전에 downgrade가 필요할 수 있습니다. 리비전별 운영 기록, 되돌리기, 모니터링·알림, 비용은 [DEPLOY.md](DEPLOY.md)에 있습니다.
 
-### AI 실험실 (`#/lab`)
+## 🗂️ 데이터·외부 서비스 출처
 
-**2026-11-17부터 관리자 계정 전용입니다.** 실험실은 모델을 고를 수 있고 본 추천의 검사 일부를 거치지 않으므로, `/api/lab/*`은 관리자 토큰에만 답하고(비로그인 401, 일반 계정 403) 화면의 진입 버튼도 관리자에게만 보입니다. 계정 없이 로컬에서 실험하려면 서버에 `LAB_PUBLIC=true`를 줍니다. 관리자 지정은 `python -m app.cli.admin`입니다.
+| 쓰이는 곳 | 출처 |
+|---|---|
+| 추천 생성, 문장 해석, 문장 임베딩 | Google Gemini API (운영 `gemini-3.5-flash-lite`, 임베딩 `gemini-embedding-2`) |
+| 카탈로그 | 음식 81개·음악 226곡. 기본 시드에 AI 초안을 사람이 검수해 더함(`server/data/`) |
+| 곡 확인, 앨범 커버, 30초 미리듣기, Apple Music 플레이어 | Apple iTunes Search API · Apple Music 임베드 |
+| 곡 상세의 YouTube 플레이어 | YouTube Data API · YouTube 임베드 플레이어 |
+| 지금 날씨 반영 | Open-Meteo (CC BY 4.0, 화면에 출처 표기) |
+| 음식 사진 | Unsplash, Pexels (자체 호스팅), 일부 Wikimedia Commons |
+| 확인·재설정 메일 | Resend (SMTP) |
+| 글꼴 | Pretendard (OFL) |
 
-등록 목록에서 고르는 방식(A)과 AI가 바로 고르는 방식(B)을 같은 입력으로 나란히 비교하는 페이지입니다([plans-music-ai.md](./plans-music-ai.md)). 처음에는 음악만 있었고, 음악이 B로 바뀐 뒤(2026-11-02) **음식 실험**을 더했습니다. 서버 모드에서 홈과 내 취향에 입구가 있습니다. 화면 위의 "음식 실험 / 음악 실험"으로 분야를 바꾸며, 분야마다 회차와 기록이 따로입니다.
+각 서비스의 이용 조건(상업 이용, 표기, 보관 기간, 하루 한도)과 끄는 스위치는 [docs/DETAILS.md의 외부 서비스 이용 조건](docs/DETAILS.md#외부-서비스-이용-조건-2026-11-17-확인)에 있습니다.
 
-- A(등록 목록): `POST /api/recommend`에 `engine: "catalog"`를 보내 카탈로그 파이프라인(유사도 검색 + AI 재순위)을 씁니다. 음악도 이 경로로 비교할 수 있습니다.
-- B(AI 자유 추천): `POST /api/lab/{food|music}/free`. 등록 취향(항목 ID는 서버가 "이름 - 아티스트" 또는 메뉴 이름으로 바꿈)·조건·직접 적은 좋아하는 것을 보내면 모델이 아는 것 중 3개(음식)/5곡(음악)과 확신도·어휘 태그를 돌려줍니다. 고른 항목은 음악 엔진과 같은 방식으로 `items`에 초안으로 저장되어 응답의 `item`으로 함께 옵니다. 서버는 빈 값·중복·이미 본 항목·비선호·취향 항목 자체를 걸러내지만, 이름이 글자 그대로 같을 때만 같은 항목으로 봅니다. 곡이 실제로 있는지, 음식의 재료 제외를 지켰는지는 확인하지 못합니다. 실패하면 대체 결과 없이 실패를 그대로 돌려줍니다.
-- 음식 B의 핵심 비교 항목은 **재료·알레르기 제외**입니다. A는 등록 재료로 SQL에서 보장하지만 B는 AI의 판단이라 화면에 경고를 붙이고, 곡별 "없는 곡이에요"에 해당하는 표시가 음식에서는 "조건에 안 맞아요"입니다.
-- B 모델은 `LAB_FREE_MODELS`(기본 `["gemini-3.5-flash-lite","gemini-3.6-flash"]`) 중에서 화면에서 고르고, `GET /api/lab/models`가 목록을 줍니다. 같은 이름의 모델은 재순위·해석·음악 엔진과 429 쿨다운을 공유합니다. 첫 번째가 아닌 모델은 하루 `LAB_EXTRA_MODEL_DAILY_LIMIT`회(기본 10)까지만 부릅니다.
-- 비교 평가(A/비슷/B)·항목별 표시(좋아요·별로예요·없는 곡/조건에 안 맞음)·메모는 이 브라우저의 `nowrecommend-lab-v2`에만 저장되고(분야 포함), 추천 기록·취향에는 반영하지 않습니다. 실험 기록에서 분야별 집계와 JSON 내려받기를 할 수 있습니다. 이전 `nowrecommend-lab-v1` 기록은 읽지 않습니다.
-- `docker compose exec api python -m app.cli.compare`는 대표 상황 10개를 유사도만 쓴 결과와 AI 재순위 결과로 나란히 출력합니다. 실제 API를 호출하며, 한도에 맞춰 사례 사이에 13초씩 쉽니다.
-- 필터 의미는 `shared/filter-cases.json` 사례로 프론트 `eligibleCandidates`와 서버 SQL을 함께 검사합니다. 문장 임베딩이 실패하거나 API 키가 없으면 취향과 태그만으로 순위를 매기고 `contextSimilarity: false`를 표시합니다.
+## 📚 문서
 
-- 호스트 포트 기본값은 DB `5433`, API `8010`입니다. 충돌하면 `DB_PORT`, `API_PORT` 환경 변수로 바꿉니다.
-- `GEMINI_API_KEY`는 셸 환경 변수 또는 루트 `.env`에서 읽습니다. health 응답에는 설정 여부만 표시됩니다.
-- 태그·제외 어휘의 단일 기준은 `shared/vocab.json`입니다. 프론트(`src/data.ts`)와 서버가 같은 파일을 읽습니다.
-
-서버 단위 테스트(Python 3.12 이상):
-
-```powershell
-cd server
-py -3.14 -m venv .venv
-.venv\Scripts\python -m pip install -e ".[dev]"
-.venv\Scripts\python -m pytest
-```
-
-`docker compose up -d db` 후 `$env:NOWREC_DB_TESTS='1'`을 설정하면 DB 테스트까지 실행합니다. DB 테스트는 별도의 `nowrecommend_test` 데이터베이스를 새로 만들어 사용하며, 임베딩은 가짜 임베더로 대체해 API를 호출하지 않습니다.
-
-## 사용 흐름
-
-1. 음식 또는 음악 선택 → 처음에만 평소 선호 항목을 고르는 화면을 보여줍니다. 몇 개만 골라도 되고 "취향 없이 바로 추천받기"로 건너뛸 수 있습니다. 취향이 없으면 카드에 취향 이유를 쓰지 않습니다.
-2. 상황 입력 → 같은 화면에서 찾은 조건을 확인·수정(필요하면 "조건 직접 고르기") → 추천.
-3. 음식 3개·음악 5곡을 기본으로 표시하되 필수 제외 적용 후 실제 후보가 부족하면 실제 개수만 표시. 재추천 순서는 고정 후보 → 이번 요청에서 아직 안 본 후보 → 본 후보입니다. 상황 태그는 거르는 조건이 아니라 순위 기준이라, 맞는 새 후보가 떨어지면 맞지 않는 새 후보를 "조건에 맞는 새 후보가 부족해요" 안내와 함께 보여주고, 정말 다 본 뒤에만 "모두 살펴봤어요"라고 합니다. "추천 중 유일하게 …" 비교 문장은 보이는 카드 묶음이 바뀔 때마다 다시 계산합니다(기록은 당시 묶음 기준). 카드마다 주요 특성과 조건별 충족 여부(✓ 충족, – 해당 없음, △ 일부만 확인)를 보여줍니다.
-4. 저장, 이번 요청에서 제외, 개별 항목의 장기 비선호를 구분. 재추천은 미노출 후보를 우선하며 소진 시 재노출을 안내.
-5. 음식은 "선택하고 기록" → 완료 화면에서 네이버 지도·만개의레시피 검색으로 이어집니다(검색일 뿐 판매·영업·배달은 확인하지 않음). 음악은 "Apple Music에서 듣기"(확인된 곡 페이지가 있을 때) 또는 "YouTube에서 검색"이 주 버튼입니다. 기록은 실제 식사·감상 완료를 뜻하지 않습니다.
-   - 결과 카드의 더보기 › "내 취향에 추가"는 다음 추천의 취향에 실제로 반영합니다. 만족도·메모는 기록용입니다.
-6. 기록 상세에서 선택 변경·취소. 같은 조건으로 다시 추천하면 현재 취향을 적용하는 새 요청.
-7. 홈 기본 프리셋과 분야별 개인 조건 저장·이름 변경·삭제·적용 미리보기.
-8. 즐겨찾기 이름/아티스트·분야·태그 필터·최근 저장순, 표시된 저장 후보 안에서 추천. 범위 부족은 자동 완화하지 않고 전체 후보 전환을 사용자가 선택.
-9. 결과의 요청별 고정·한 장 교체·최대 3개 비교와 바로 선택. 새 요청에는 고정·비교를 가져오지 않음.
-10. 선택 기록에 만족도·200자 메모. 추천·평소 취향에 자동 반영하지 않음(화면에도 그렇게 안내).
-
-음식·음악의 취향은 독립적입니다. 선택·즐겨찾기·기록은 장기 취향을 자동으로 바꾸지 않습니다. 음악의 YouTube 검색은 새 탭을 열며 음원 재생 기능은 없습니다.
-
-## 입력 해석
-
-규칙 기반으로 알려진 표현만 해석합니다. 예: `안 매운`, `매운 건 빼고`, `밀 제외`, `해산물은 빼고`, `과제`, `산책`, `차분한`, `보컬 없는`.
-
-가격·예산 기능은 2026-10-27에 없앴습니다(판매처 데이터가 없어 정확한 가격을 줄 수 없음). `만원 이하`·`저렴하게`·`가성비` 같은 가격 표현, `배달`·`포장` 같은 배달 표현, `근처`·`주변` 같은 위치 표현, 재료 정보가 없는 제외(`새우` 등)는 입력하는 동안 "지원하지 않는 조건"으로 알리고 다른 조건으로 바꾸지 않습니다. `해산물` 제외는 등록 재료의 `생선`만 거를 수 있어 "일부만 확인할 수 있는 조건"으로 알립니다. "빼줘·말고·없는·알레르기"가 부정하는 범위를 읽습니다. `국물 있는 건 빼줘`·`고소한 거 말고`처럼 "…한 건/거"로 끝나는 구절은 구절 전체를, `오이랑 고수 빼줘`·`점심, 고수, 참깨 빼줘`처럼 나열한 말은 목록 전체를 부정합니다(쉼표 목록은 각 부분이 한 단어일 때만). 부정한 말은 원하는 조건이 되지 않습니다. 뺄 수 있으면 제외로 적용하고(`매콤한 거 말고` → 매콤함 제외, `깨 빼주세요` → 참깨), 뺄 수 없으면 지원하지 않는 조건으로 알립니다(특징은 `국물 제외`·`고소함 제외`, 모르는 재료는 `고수 제외`). 한 글자 재료는 `exclusionShortWords`에 있는 것만 읽습니다. 서버 모드에서 AI가 더한 음식 제외는 문장에 식단·알레르기 표현(비건, 알레르기, 못 먹어요, 안 들어간 등)이나 매운맛 언급이 있을 때만 받습니다. `비건`·`채식주의`·`베지테리언`과 `동물성 … 없이`는 규칙(`dietExclusions`, 별칭 `동물성`)으로 해당 재료 묶음을 제외하므로 AI 없이도 지켜집니다. 뺄 수 없는 특징(예: `국물 제외`)은 AI 재순위에 `avoid`로 전달돼 추천 이유로 내세우지 않습니다. 알아볼 수 없는 표현이 있을 수 있어 입력 화면에 "문장에서 알아본 표현만 조건으로 바꿔요"를 함께 보여줍니다. 사례는 `shared/parse-cases.json`의 `unsupported`가 앞뒤 구현을 함께 검사합니다. 입력하는 동안 규칙으로 찾은 조건이 "이번 요청 조건"에 바로 나타납니다. 서버 모드에서는 "추천받기"를 누를 때 규칙이 놓친 단어가 있으면 AI가 함께 해석하고, AI가 더한 조건이 있으면 그 사실을 보여줍니다. 조건으로 바꾸지 못한 말(`치킨` 등)은 따로 알리지 않습니다. 문장 원문이 추천에 함께 쓰이기 때문입니다. AI가 더한 조건이 충돌하면 추천하지 않고 입력 화면에 남습니다.
-
-자동 추출과 직접 선택을 분리합니다. 같은 문장으로 다시 추천받을 때 삭제한 자동 조건을 되살리지 않으며, 새 문장에는 자동 조건만 다시 계산합니다. 충돌 조건은 수정 후 추천할 수 있습니다. 해석하지 못한 표현은 적용하지 않습니다.
-
-## 저장 범위와 복원
-
-- 취향·즐겨찾기·최대 50세션 기록은 사이트 주소별 localStorage에 저장됩니다. 기기 간 동기화는 없습니다.
-- 세션당 상세 회차는 최대 10개입니다. 오래된 상세를 정리해도 최종 선택 요약은 보존합니다.
-- 입력·단계·결과·일시 제외·누적 노출은 sessionStorage에 보관하여 같은 탭 새로고침과 화면 이동에서 복원합니다.
-- 홈 이동만으로 요청을 종료하지 않습니다. 새 요청 시작·명시적 요청 종료·최종 선택 완료에서 활성 요청을 초기화합니다. 브라우저가 닫힌 탭을 복원할 수 있으므로 탭 종료만으로 초기화됨을 보장하지 않습니다.
-- 영구 포맷 v2는 기존 `nowrecommend-prototype-v1` 키를 유지합니다. v1 원본은 `nowrecommend-prototype-v1-backup`에 보존합니다. 이전 기록에 없는 이유는 재계산하지 않습니다.
-- 손상 데이터는 덮어쓰지 않고 원본 내려받기와 명시적 초기화를 제공합니다. 저장 거부·용량 부족 시 화면 변경과 영구 저장 성공을 구분해 안내합니다.
-- 프리셋(분야별 20개·이름 30자), 만족도·메모, 테마·강조색도 영구 데이터에 포함됩니다.
-- 가격 제거 전에 저장된 데이터(기록·회차·프리셋의 `maxPrice`, 항목의 `price`·`cost`, 탭의 예산 입력)는 읽을 때 지우고 다시 저장합니다. 백업 가져오기도 같습니다. 기록의 원래 문장과 즐겨찾기·취향 등 다른 데이터는 그대로 둡니다.
-- 설정에서 5MB 이하 JSON 백업·가져오기 미리보기·전체 교체와 취향/즐겨찾기/기록/프리셋별 초기화를 제공합니다. 가져오기는 버전·자료형·ID·분야·중복을 검증하고 현재 데이터를 먼저 백업합니다. 교체 전 브라우저 원본은 `nowrecommend-prototype-v1-before-import`에 보존하며 저장 실패 시 기존 데이터를 유지합니다. 진행 중 요청은 백업하지 않고 교체 시 종료합니다.
-
-## 배포
-
-이 폴더가 GitHub 저장소 루트입니다. Settings → Pages → Source에서 GitHub Actions를 사용합니다. `main` 푸시가 `.github/workflows/deploy-pages.yml`의 단위 테스트·빌드·배포를 실행합니다. 지금은 저장소 변수 `VITE_API_BASE_URL`에 배포 API 주소가 있어 Pages가 서버 모드로 빌드됩니다. 변수를 지우면 오프라인 모드로 돌아갑니다. API 서버(Cloud Run + Cloud SQL)의 구성·재배포·되돌리기는 [DEPLOY.md](./DEPLOY.md)에 있습니다.
-
-실제 사이트: [지금 추천](https://nowrec.kr/).
-
-해시 경로(`#/history`)와 상대 정적 자산 경로로 저장소 하위 주소 새로고침을 지원합니다. 로컬과 배포 사이트의 브라우저 저장소는 분리됩니다. 브라우저 테스트는 로컬 검증이며 배포 Actions는 단위 테스트와 빌드를 실행합니다.
-
-## 2026-11-09 추가 기능 (브랜치 `upgrades-v1`)
-
-- **화면 전환 움직임**: 화면과 단계가 바뀔 때 블록이 방향(앞으로·뒤로)에 맞춰 차례로 들어오고, 결과 카드·대화상자·토스트·메뉴에도 짧은 등장이 있어요(DESIGN.md §0.2).
-- **AI 추천 대기 화면**: 서버 추천을 기다리는 동안 진행 단계와 카드 모양 자리를 보여줘요(`LoadingResults`).
-- **완료 화면 느낌 입력**: 선택 직후 만족도·메모를 바로 남겨요(기록용).
-- **지금 조건**: 한국 시각 시간대에 맞는 빠른 조건 칩이 맨 앞에 있고, "지금 날씨 반영"을 누르면 위치 허용 뒤 Open-Meteo 현재 날씨(비·눈·더위·추위)로 바뀌어요. 위치는 약 1km로 반올림해 보내고 결과는 탭에 30분 둬요(`moment.ts`, `weather.ts`).
-- **말로 입력**: 브라우저 음성 인식(Web Speech API)으로 상황을 말하면 문장에 이어 붙어요. 지원 브라우저에서만 보여요(`voice.ts`).
-- **공유**: 결과·완료 화면에서 요청 이름, 항목, 조건, 앱 주소를 시스템 공유 창으로 보내거나 클립보드에 복사해요(`share.ts`).
-- **30초 미리듣기**: 음악 카드·완료 화면·플레이리스트에서 Apple 미리듣기를 재생해요. 확인된 곡 페이지의 트랙 ID로 스토어 lookup에서 주소를 받아 브라우저에 기억하고, AI 곡은 곡 확인 결과의 주소를 써요. 플레이어는 하나예요(`preview.ts`).
-- **사이트 안에서 전곡 듣기(2026-11-17)**: 곡 상세의 "Apple Music 플레이어 열기"가 Apple Music의 임베드 플레이어를 그 자리에 열어요(`src/fullPlay.ts`, `src/components/FullPlay.tsx`). 누르기 전에는 플레이어를 불러오지 않고, 상세를 닫으면 플레이어가 사라져 재생이 멈춰요. 미리듣기와 플레이어는 하나만 재생돼요. 플레이어의 스토어는 Apple lookup이 그 곡을 한국 스토어에 올려 둔 경우에만 `kr`(한국어 화면), 아니면 확인된 곡 페이지의 스토어를 써요. 한국 스토어에서 확인하지 못한 곡(`regionUnconfirmed`)에는 플레이어를 두지 않아요. 멜론 등 다른 음악 앱은 사이트 안 재생을 제공하지 않아, 각 앱의 검색 화면을 새 탭으로 열고 마지막에 연 앱을 이 브라우저에 기억해 맨 앞에 보여줘요.
-- **플레이리스트**: 음악 결과를 한 목록으로 보고 복사·공유해요(`Playlist.tsx`).
-- **기록 요약 카드**: 내 취향 화면에 이번 달 선택 수, 음식·음악 비율, 자주 고른 특징, 자주 고르는 시간대, 만족 비율(`stats.ts`).
-- **기록 검색·달력·직접 기록**: 문장·항목·조건으로 찾고, 월 달력에서 날을 골라요. "직접 기록"은 추천 없이 먹거나 들은 카탈로그 항목을 느낌·메모와 함께 남겨요(`calendar.ts`, `HistoryCalendar.tsx`, `ManualRecord.tsx`, `history.ts`의 `manualEntry`).
-- **취향 유형 공유 카드**: 유형 결과를 정사각 이미지로 그려 공유·저장해요. 홈과 내 취향에서 바로 들어가요(`typeCard.ts`).
-- **PWA**: `public/manifest.webmanifest`와 `public/sw.js`. 빌드된 사이트에서만 등록하고, 페이지는 네트워크 우선·해시 자산은 캐시 우선이에요. 외부 사진과 API는 캐시하지 않아요. 오프라인 페이지는 워커가 설치될 때 받은 자기 배포판의 것만 쓰고(페이지의 `nowrecommend-build` 표식으로 확인), 새 워커는 옛 판을 쓰는 탭이 모두 닫힌 뒤에 넘겨받아요(`tests/built/sw-release.spec.ts`).
-- **사진 자리 표시**: 그림이 뜨기 전 분야색 타일과 아이콘이 자리를 지키고 페이드인해요(`ItemArt`).
-- **API 500의 CORS 헤더**: 처리하지 못한 서버 오류도 CORS 헤더가 붙은 JSON 500으로 내려가 브라우저가 서버 오류로 읽어요(`server/app/errors.py`).
-- **오타 제안**: 조건 단어와 한 음절만 다른 말에 "혹시 … 말씀이신가요?"를 보여주고 누르면 그 단어만 바꿔요(`typo.ts`).
-
-## 범위와 남은 작업
-
-브라우저 앱은 plans.md의 P0 및 사용자 승인 P1·P2이고, 서버·DB·AI는 plans-rag.md의 R0~R7입니다. P0 기록은 [IMPLEMENTATION.md](./IMPLEMENTATION.md), P1·P2 기능·검증·시연 동선은 [EXTENSIONS.md](./EXTENSIONS.md), P0 검증은 [VERIFICATION.md](./VERIFICATION.md), 디자인 기준은 [DESIGN.md](./DESIGN.md), 서버 계획과 평가는 [plans-rag.md](./plans-rag.md), 배포는 [DEPLOY.md](./DEPLOY.md)에 있습니다.
-
-브라우저 단독(오프라인) 카탈로그는 미검증 샘플 음식 16개·음악 15곡입니다. 서버 카탈로그에는 2026-10-26에 AI 초안으로 만들고 Claude가 1차 검수한 음악 211곡을 더해 음악 226곡입니다(`server/data/reviewed_items.json`). 음식 초안 86개는 알레르기 확인 전이라 승인하지 않았습니다(로컬 `server/data/drafts/review.json`). 가격 정보는 없으며 등록된 재료는 실제 판매처의 재료를 보증하지 않습니다. 데이터 ID·필드·태그·검색 URL은 자동 검증하지만 실제 곡·아티스트의 운영 검수는 별도입니다. Apple Music 링크는 스토어가 같은 제목·아티스트의 곡으로 돌려준 곡 페이지만 씁니다(`python -m app.cli.media tracks`, 224곡 중 221곡). 나머지는 YouTube 검색을 보여줍니다.
-
-F3~F9 및 라이트·시스템·사용자 강조색 설정, 추천 서버·DB·AI 재순위와 공개 배포를 마쳤습니다. 남은 일:
-
-- 음악 AI 실험(#/lab, 내 취향 › 실험실에서 진입)으로 저장된 곡 목록 방식과 AI 자유 추천 중 하나를 정하기([plans-music-ai.md](./plans-music-ai.md)).
-- 음식 초안 86개의 알레르기·태그 검수와 승인.
-- 로그인과 취향·기록의 서버 저장·기기 간 동기화(plans-rag.md §12 결정 1). 실험을 마친 뒤 진행합니다.
-- 사용자 3명의 과제 수행과 실제 모바일 키보드·스크린리더 검증.
-
-## 코드 구성
-
-- `src/components/`: 공통 카드·모달·기록 상세.
-- `src/styles/tokens.css`, `src/styles.css`: 라이트 기본·다크 토큰, 상단 바·하단 탭·흐름 화면 레이아웃, 상태·반응형.
-- `src/domain.ts`: 조건 출처·파싱·필터·추천.
-- `src/history.ts`: 회차 스냅샷·최종 선택.
-- `src/navigation.ts`, `src/sessionStorage.ts`: 해시 탐색·현재 요청 복원.
-- `src/storage.ts`: 영구 데이터 검증·v1 변환·저장·손상 원본 보존.
-- `src/data.ts`: 샘플 카탈로그·검토 상태·자동 검증.
-- `src/api/`: 서버 모드의 카탈로그·추천·해석·실험 요청.
-- `src/components/MusicLab.tsx`, `src/lab.ts`: 음악 AI 실험 화면과 브라우저 실험 기록.
-- `src/styles/tokens.css`, `src/styles.css`: 색·간격 토큰과 v6.1 스타일시트.
-- `src/moment.ts`, `src/weather.ts`, `src/voice.ts`, `src/share.ts`, `src/preview.ts`, `src/stats.ts`, `src/calendar.ts`, `src/typo.ts`, `src/typeCard.ts`: 2026-11-09 추가 기능의 규칙과 브라우저 API 호출. `src/components/LoadingResults.tsx`, `PreviewButton.tsx`, `Playlist.tsx`, `HistoryCalendar.tsx`, `ManualRecord.tsx`: 그 화면 조각.
-- `src/songCheck.ts`: AI가 고른 곡을 Apple 검색으로 확인하고 커버와 곡 링크를 붙여요.
-- `src/account.ts`, `src/api/auth.ts`, `src/components/AuthPanel.tsx`: 로그인·회원가입. `src/sync.ts`, `src/useAccountSync.ts`: 계정 동기화(버전, 병합, 로그인 시 데이터 처리). `src/knownItems.ts`: 카탈로그 밖 AI 추천 항목의 브라우저 기억. `src/components/Lab.tsx`, `src/lab.ts`, `src/api/lab.ts`: AI 실험실.
-- `src/media.json`, `src/media.ts`, `src/components/ItemArt.tsx`: 항목 사진·앨범 커버와 생성 커버(DESIGN.md v3). 앨범 커버는 `python -m app.cli.media covers`(iTunes Search API, 약 15분)로 다시 받고, 영어 제목 후보(`check`)는 사람이 확인한 뒤 표시합니다. 음식 사진은 Wikimedia Commons에서 메뉴별로 골라 촬영자·라이선스와 함께 적습니다.
-- `server/`: FastAPI·SQLAlchemy·Alembic 추천 서버, CLI(시드·임베딩·초안·검수·평가), pytest.
-- `shared/`: 프론트와 서버가 함께 쓰는 어휘(`vocab.json`)와 공통 사례(`parse-cases.json`, `filter-cases.json`).
+| 문서 | 내용 |
+|---|---|
+| [docs/DETAILS.md](docs/DETAILS.md) | 옛 README의 자세한 기록: 두 가지 모드, 추천 파이프라인, 계정과 동기화, 약관과 동의, 외부 서비스 조건, 비용 한도, 카탈로그 늘리기, 입력 해석, 저장 범위 |
+| [DEPLOY.md](DEPLOY.md) | GCP 구성, 배포·되돌리기, 운영 기록, 모니터링과 비용 |
+| [DESIGN.md](DESIGN.md) | 디자인 시스템(v9) |
+| [erd.md](erd.md) | 데이터베이스 구조의 초기 설계(이후 표는 `server/alembic/versions/`의 마이그레이션 0001~0014) |
+| [plans.md](plans.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [EXTENSIONS.md](EXTENSIONS.md) · [VERIFICATION.md](VERIFICATION.md) | 브라우저 앱 계획과 2026-10-13 시점의 구현·검증 기록 |
+| [plans-rag.md](plans-rag.md) | DB·유사도 검색·AI 재순위 계획(R0~R7) |
+| [plans-music-ai.md](plans-music-ai.md) | 음악 AI 추천 방식 비교 실험 |
+| [server/eval/ai_report.md](server/eval/ai_report.md) | AI 엔진 평가 결과 |

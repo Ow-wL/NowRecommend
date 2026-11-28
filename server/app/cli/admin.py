@@ -15,6 +15,7 @@ from sqlalchemy import select
 from ..auth import normalize_email
 from ..db import get_sessionmaker
 from ..models import AdminAudit, User
+from ..routes.reports import admin_rights_lock
 
 
 def main() -> None:
@@ -29,6 +30,8 @@ def main() -> None:
             return
         if not args.email:
             parser.error("email is required")
+        if args.action in ("grant", "revoke"):
+            admin_rights_lock(session, alone=True)  # as the console does: after admin changes under way, before new ones
         user = session.scalar(select(User).where(User.email == normalize_email(args.email)).with_for_update())
         if user is None:
             raise SystemExit("no account with that email; sign up first")

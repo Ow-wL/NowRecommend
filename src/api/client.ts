@@ -3,6 +3,11 @@ export const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL ?? '').trim().re
 export const apiEnabled = (base = API_BASE_URL) => base !== '';
 
 export type ApiErrorKind = 'offline' | 'timeout' | 'http' | 'invalid';
+/** Sent on window when the server refuses an admin route (401/403), from any screen of the console: the app asks who it
+ *  is again and closes the console if the rights are gone (App.tsx, 2026-11-29). A wrong password on set_admin is a 401
+ *  too; the check then finds the account still an admin and nothing happens. */
+export const ADMIN_DENIED = 'nowrecommend-admin-denied';
+
 export class ApiError extends Error {
   constructor(readonly kind: ApiErrorKind, message: string, readonly status?: number) { super(message); this.name = 'ApiError'; }
 }
@@ -30,6 +35,7 @@ export async function apiJson<T>(path: string, validate: (value: unknown) => val
       // The server's own message (FastAPI `detail`) when it has one: the login form shows it as is.
       let detail = '';
       try { const text = await response.text(); const parsed = JSON.parse(text); if (typeof parsed?.detail === 'string') detail = parsed.detail; } catch { /* no usable body */ }
+      if ((response.status === 401 || response.status === 403) && path.startsWith('/api/admin/') && typeof window !== 'undefined') window.dispatchEvent(new Event(ADMIN_DENIED));
       throw new ApiError('http', detail || `HTTP ${response.status}`, response.status);
     }
     let value: unknown;
